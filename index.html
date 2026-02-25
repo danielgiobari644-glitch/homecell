@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Home.cell - Professional Community Social Network">
+    <meta name="theme-color" content="#2563EB">
+    <title>Home.cell - Community Network</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./styles.css">
+</head>
+<script>
+/* Disable Right Click */
+document.addEventListener('contextmenu', function (e) {
+    e.preventDefault();
+});
+
+/* Disable F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U */
+document.addEventListener('keydown', function (e) {
+
+    // F12
+    if (e.key === "F12") {
+        e.preventDefault();
+    }
+
+    // Ctrl+Shift+I
+    if (e.ctrlKey && e.shiftKey && e.key === "I") {
+        e.preventDefault();
+    }
+
+    // Ctrl+Shift+J
+    if (e.ctrlKey && e.shiftKey && e.key === "J") {
+        e.preventDefault();
+    }
+
+    // Ctrl+Shift+C
+    if (e.ctrlKey && e.shiftKey && e.key === "C") {
+        e.preventDefault();
+    }
+
+    // Ctrl+U (View Source)
+    if (e.ctrlKey && e.key === "u") {
+        e.preventDefault();
+    }
+
+    // Ctrl+S (Save page)
+    if (e.ctrlKey && e.key === "s") {
+        e.preventDefault();
+    }
+
+});
+setInterval(function () {
+    debugger;
+}, 1000);
+
+setInterval(function () {
+    if (window.outerWidth - window.innerWidth > 160 ||
+        window.outerHeight - window.innerHeight > 160) {
+        document.body.innerHTML = "Developer tools not allowed";
+    }
+}, 1000);
+
+</script>
+<body class="bg-slate-50 dark:bg-slate-950">
+    
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 z-[9999] flex items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-950 dark:to-blue-950/30">
+        <div class="flex flex-col items-center gap-6">
+            <div class="w-24 h-24 bg-gradient-to-br from-blue-600 to-blue-500 rounded-3xl flex items-center justify-center shadow-2xl animate-pulse">
+                <i class="fa-solid fa-users text-4xl text-white"></i>
+            </div>
+            <p class="text-slate-600 dark:text-slate-400 font-bold uppercase tracking-widest text-sm">Connecting to Home.cell...</p>
+            <div class="flex gap-2">
+                <div class="w-2.5 h-2.5 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 0ms"></div>
+                <div class="w-2.5 h-2.5 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 150ms"></div>
+                <div class="w-2.5 h-2.5 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 300ms"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tutorial Overlay -->
+    <div id="tutorial" class="hidden fixed inset-0 z-[100] flex flex-col items-center justify-center p-6 bg-white/95 dark:bg-slate-950/95 backdrop-blur-xl">
+        <div class="max-w-lg w-full bg-white dark:bg-slate-900 rounded-[4rem] p-12 shadow-2xl relative flex flex-col items-center text-center gap-8 border-2 border-slate-200 dark:border-slate-800">
+            <div id="tutorial-icon" class="w-32 h-32 rounded-[3rem] bg-gradient-to-br from-blue-600 to-blue-500 text-white flex items-center justify-center text-6xl shadow-2xl shadow-blue-600/40 transition-all duration-500">
+                <i class="fa-solid fa-users"></i>
+            </div>
+            <div class="space-y-4">
+                <h2 id="tutorial-title" class="text-5xl font-black dark:text-white tracking-tight">Welcome!</h2>
+                <p id="tutorial-description" class="text-slate-600 dark:text-slate-400 font-medium text-xl leading-relaxed">Your community social network</p>
+            </div>
+            <div id="tutorial-dots" class="flex gap-3"></div>
+            <div class="w-full flex gap-4">
+                <button id="tutorial-back" class="hidden flex-1 py-5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-black rounded-[2rem] hover:scale-105 active:scale-95 text-sm uppercase tracking-widest transition-all">
+                    <i class="fa-solid fa-arrow-left mr-2"></i>Back
+                </button>
+                <button id="tutorial-next" class="flex-[2] py-5 bg-gradient-to-r from-blue-600 to-blue-500 text-white font-black rounded-[2rem] shadow-xl shadow-blue-600/30 hover:scale-105 active:scale-95 text-sm uppercase tracking-widest transition-all">
+                    Next <i class="fa-solid fa-arrow-right ml-2"></i>
+                </button>
+            </div>
+            <div id="tutorial-step-indicator" class="absolute -top-16 left-1/2 -translate-x-1/2 bg-gradient-to-r from-blue-600 to-blue-500 text-white px-8 py-4 rounded-2xl text-sm font-black uppercase tracking-widest shadow-xl">
+                Step 1 of 4
+            </div>
+        </div>
+        <button id="tutorial-skip" class="mt-8 text-slate-500 hover:text-blue-600 font-black uppercase text-sm hover:scale-105 transition-all">
+            Skip Tutorial
+        </button>
+    </div>
+
+    <!-- Main App Container -->
+    <div id="app" class="min-h-screen flex flex-col md:flex-row bg-slate-50 dark:bg-slate-950 transition-colors duration-500 hidden">
+        
+        <!-- Desktop Sidebar Navigation -->
+        <nav id="desktop-nav" class="hidden md:flex flex-col w-20 lg:w-80 bg-white dark:bg-slate-900 border-r-2 border-slate-200 dark:border-slate-800 shadow-xl">
+            <!-- Logo -->
+            <div class="p-8 border-b-2 border-slate-200 dark:border-slate-800">
+                <a href="#/" class="flex items-center gap-4 group">
+                    <div class="w-14 h-14 bg-gradient-to-br from-blue-600 to-blue-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-600/30 group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-users text-xl"></i>
+                    </div>
+                    <span class="hidden lg:block font-black text-3xl tracking-tight dark:text-white">Home.cell</span>
+                </a>
+            </div>
+            
+            <!-- Navigation Links -->
+            <div class="flex-1 px-4 py-6 space-y-2 overflow-y-auto custom-scrollbar" id="nav-links"></div>
+            
+            <!-- User Profile & Settings -->
+            <div class="p-6 border-t-2 border-slate-200 dark:border-slate-800 space-y-4">
+                <a href="#/profile" id="nav-profile-link" class="flex items-center gap-4 p-4 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl transition-all group">
+                    <div id="nav-profile-avatar" class="w-14 h-14 bg-gradient-to-br from-slate-200 to-slate-100 dark:from-slate-800 dark:to-slate-700 rounded-2xl flex items-center justify-center text-slate-500 dark:text-slate-400 shadow-inner group-hover:scale-105 transition-transform">
+                        <i class="fa-solid fa-user text-xl"></i>
+                    </div>
+                    <div class="hidden lg:block min-w-0 flex-1">
+                        <p id="nav-profile-name" class="text-base font-bold dark:text-white truncate">User</p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wide">Edit Profile</p>
+                    </div>
+                </a>
+                <button id="theme-toggle" class="flex items-center gap-4 w-full px-5 py-4 rounded-2xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all font-medium group">
+                    <i class="fa-solid fa-moon text-xl group-hover:scale-110 transition-transform"></i>
+                    <span class="hidden lg:block text-base font-medium">Theme</span>
+                </button>
+            </div>
+        </nav>
+
+        <!-- Mobile Bottom Navigation -->
+        <nav id="mobile-nav" class="md:hidden fixed bottom-0 left-0 right-0 z-50 px-4 pb-safe">
+            <div class="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-2 border-slate-200 dark:border-slate-800 rounded-[2.5rem] h-20 flex items-center justify-around shadow-2xl mb-4" id="mobile-nav-links"></div>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 relative overflow-hidden flex flex-col pb-24 md:pb-0 h-screen">
+            <div id="page-auth" class="page active"></div>
+            <div id="page-feed" class="page"></div>
+            <div id="page-chat" class="page"></div>
+            <div id="page-documents" class="page"></div>
+            <div id="page-bible" class="page"></div>
+            <div id="page-members" class="page"></div>
+            <div id="page-admin" class="page"></div>
+            <div id="page-settings" class="page"></div>
+            <div id="page-profile" class="page"></div>
+        </main>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed top-6 right-6 z-[9998] flex flex-col gap-3 pointer-events-none"></div>
+
+    <!-- Scripts -->
+    <script type="module" src="./app.js"></script>
+</body>
+</html>
