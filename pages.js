@@ -13,19 +13,42 @@ window.renderFeed = function() {
     const canDeletePosts = window.hasPermission(AdminPermissions.DELETE_POSTS);
     let posts = [];
     let postType = 'text';
-    let selectedBg = 'bg-gradient-to-br from-blue-600 to-blue-500';
-    let mediaData = null;
+    let selectedBackground = null;
+    let selectedAspect = 'landscape';
+    let selectedFont = 'Inter, sans-serif';
+    let selectedTextColor = '#ffffff';
+    let draftTitle = '';
+    let draftText = '';
+    let mediaPreviewUrl = null;
+    let mediaFile = null;
     let showCreatePost = false;
+    let initialPostsLoaded = false;
 
     const backgrounds = [
-        { class: 'bg-gradient-to-br from-blue-600 to-blue-500', name: 'Ocean', icon: '🌊' },
-        { class: 'bg-gradient-to-br from-purple-600 to-pink-500', name: 'Sunset', icon: '🌅' },
-        { class: 'bg-gradient-to-br from-emerald-600 to-teal-500', name: 'Forest', icon: '🌲' },
-        { class: 'bg-gradient-to-br from-amber-600 to-orange-500', name: 'Autumn', icon: '🍂' },
-        { class: 'bg-gradient-to-br from-rose-600 to-red-500', name: 'Passion', icon: '❤️' },
-        { class: 'bg-gradient-to-br from-indigo-600 to-blue-500', name: 'Sky', icon: '☁️' },
-        { class: 'bg-gradient-to-br from-slate-700 to-slate-900', name: 'Night', icon: '🌙' },
-        { class: 'bg-gradient-to-br from-yellow-500 to-amber-500', name: 'Sunshine', icon: '☀️' }
+        { class: 'bg-gradient-to-br from-blue-600 to-blue-500', name: 'Blue Wave', icon: '🌊' },
+        { class: 'bg-gradient-to-br from-purple-600 to-pink-500', name: 'Sunset Studio', icon: '📺' },
+        { class: 'bg-gradient-to-br from-emerald-600 to-teal-500', name: 'Forest Note', icon: '✏️' },
+        { class: 'bg-gradient-to-br from-amber-600 to-orange-500', name: 'Power Pulse', icon: '📣' },
+        { class: 'bg-gradient-to-br from-rose-600 to-red-500', name: 'Passion Pen', icon: '🖊️' },
+        { class: 'bg-gradient-to-br from-indigo-600 to-blue-500', name: 'Sky Screen', icon: '🖥️' },
+        { class: 'bg-gradient-to-br from-slate-700 to-slate-900', name: 'Night Draft', icon: '🌙' },
+        { class: 'bg-gradient-to-br from-yellow-500 to-amber-500', name: 'Sunshine Memo', icon: '📌' }
+    ];
+
+    selectedBackground = backgrounds[0];
+    const textFonts = [
+        { label: 'Inter', css: 'Inter, sans-serif' },
+        { label: 'Poppins', css: 'Poppins, sans-serif' },
+        { label: 'Playfair', css: 'Playfair Display, serif' },
+        { label: 'Roboto', css: 'Roboto, sans-serif' }
+    ];
+
+    const textColors = [
+        { label: 'White', value: '#ffffff' },
+        { label: 'Sky', value: '#bae6fd' },
+        { label: 'Lavender', value: '#c4b5fd' },
+        { label: 'Mint', value: '#a7f3d0' },
+        { label: 'Sunshine', value: '#fde68a' }
     ];
 
     function render() {
@@ -36,6 +59,37 @@ window.renderFeed = function() {
                     <!-- Announcements Section -->
                     <div id="announcements-banner"></div>
                     
+                    <!-- Quick Actions & Spotlight -->
+                    <div class="grid gap-4 lg:grid-cols-[1.35fr_0.65fr]">
+                        <div class="bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 rounded-[2.5rem] p-8 shadow-2xl border border-white/10 text-white overflow-hidden relative">
+                            <div class="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.18),_transparent_25%),_linear-gradient(180deg,_rgba(56,189,248,0.15),_transparent_40%)]"></div>
+                            <div class="relative z-10">
+                                <p class="text-sm uppercase tracking-[0.3em] opacity-80">Community Spotlight</p>
+                                <h2 class="text-4xl font-black mt-4">Launch a story, poll or update</h2>
+                                <p class="mt-4 text-slate-200 text-base leading-relaxed max-w-xl">Need inspiration? Create an update, ask a quick community question, or share a short video. Your next great post starts right here.</p>
+                                <div class="mt-8 grid gap-3 sm:grid-cols-3">
+                                    <button onclick="window.setPostType('text')" class="rounded-3xl px-5 py-4 bg-white/10 border border-white/20 hover:bg-white/15 transition-all font-bold">Text post</button>
+                                    <button onclick="window.setPostType('image')" class="rounded-3xl px-5 py-4 bg-white/10 border border-white/20 hover:bg-white/15 transition-all font-bold">Photo story</button>
+                                    <button onclick="window.setPostType('video')" class="rounded-3xl px-5 py-4 bg-white/10 border border-white/20 hover:bg-white/15 transition-all font-bold">Video update</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="space-y-4">
+                            <div class="rounded-[2.5rem] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-xl">
+                                <p class="text-xs uppercase tracking-[0.25em] text-slate-500 dark:text-slate-400 font-bold">Fast features</p>
+                                <ul class="mt-4 space-y-3 text-sm text-slate-600 dark:text-slate-300">
+                                    <li>• Smart text backgrounds with icons like screens, pens and megaphones.</li>
+                                    <li>• Instant video preview mode for faster posting.</li>
+                                    <li>• Instant app notifications for fresh posts and new chat messages.</li>
+                                </ul>
+                            </div>
+                            <div class="rounded-[2.5rem] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-xl">
+                                <p class="text-sm font-black dark:text-white">Community builder</p>
+                                <p class="mt-3 text-slate-500 dark:text-slate-400 text-sm leading-relaxed">Turn replies into spark conversations and keep everyone engaged with real-time notifications and bold story visuals.</p>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Create Post Card (Hidden by default) -->
                     <div id="create-post-section" class="hidden"></div>
 
@@ -127,15 +181,40 @@ window.renderFeed = function() {
 
         if (postType === 'text') {
             area.innerHTML = `
-                <div class="space-y-6">
+                <div class="space-y-4">
+                    <input id="post-title-input" type="text" placeholder="Optional title" class="form-input text-xl font-bold" />
                     <textarea id="post-text-input" rows="4" placeholder="What's on your mind?" class="form-input resize-none text-lg"></textarea>
+                    <div class="grid grid-cols-3 gap-3 text-xs uppercase tracking-[0.24em] font-bold text-slate-500 dark:text-slate-400">
+                        <button type="button" onclick="window.setTextAspect('portrait')" class="rounded-2xl py-3 ${selectedAspect === 'portrait' ? 'bg-slate-900 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}">Portrait</button>
+                        <button type="button" onclick="window.setTextAspect('square')" class="rounded-2xl py-3 ${selectedAspect === 'square' ? 'bg-slate-900 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}">1:1</button>
+                        <button type="button" onclick="window.setTextAspect('landscape')" class="rounded-2xl py-3 ${selectedAspect === 'landscape' ? 'bg-slate-900 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}">Landscape</button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="space-y-2">
+                            <p class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Font style</p>
+                            <div class="grid grid-cols-2 gap-2">
+                                ${textFonts.map(font => `
+                                    <button type="button" onclick="window.setTextFont('${font.css}')" class="rounded-2xl py-3 text-sm ${selectedFont === font.css ? 'bg-slate-900 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}">${font.label}</button>
+                                `).join('')}
+                            </div>
+                        </div>
+                        <div class="space-y-2">
+                            <p class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Text color</p>
+                            <div class="grid grid-cols-3 gap-2">
+                                ${textColors.map(color => `
+                                    <button type="button" onclick="window.setTextColor('${color.value}')" class="h-10 rounded-2xl border-2 ${selectedTextColor === color.value ? 'border-white' : 'border-transparent'}" style="background: ${color.value};"></button>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
                     <div class="space-y-4">
                         <p class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Choose Background</p>
                         <div class="grid grid-cols-4 gap-3">
                             ${backgrounds.map(bg => `
-                                <button onclick="window.selectBackground('${bg.class}')" class="relative h-20 rounded-2xl ${bg.class} hover:scale-105 transition-all border-4 ${selectedBg === bg.class ? 'border-white dark:border-slate-700 ring-4 ring-blue-600/30' : 'border-transparent'} shadow-lg group">
-                                    <span class="text-white text-2xl group-hover:scale-125 transition-transform inline-block">${bg.icon}</span>
-                                    <span class="absolute bottom-1 left-0 right-0 text-center text-white text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity">${bg.name}</span>
+                                <button onclick="window.selectBackground('${bg.name}')" class="relative h-20 rounded-2xl ${bg.class} hover:scale-105 transition-all border-4 ${selectedBackground.name === bg.name ? 'border-white dark:border-slate-700 ring-4 ring-blue-600/30' : 'border-transparent'} shadow-lg group overflow-hidden">
+                                    <div class="absolute inset-0 bg-black/10" style="backdrop-filter: blur(4px);"></div>
+                                    <span class="relative text-white text-3xl opacity-90 transition-transform group-hover:scale-105 inline-block">${bg.icon}</span>
+                                    <span class="absolute bottom-3 left-0 right-0 text-center text-white text-xs font-bold opacity-100">${bg.name}</span>
                                 </button>
                             `).join('')}
                         </div>
@@ -151,7 +230,7 @@ window.renderFeed = function() {
                         <div class="text-center">
                             <i class="fa-solid fa-image text-5xl text-slate-400 group-hover:text-blue-600 transition-colors mb-4"></i>
                             <p class="text-sm font-bold text-slate-500 dark:text-slate-400 group-hover:text-blue-600 transition-colors">Click to select photo</p>
-                            <p class="text-xs text-slate-400 mt-2">Max 5MB</p>
+                            <p class="text-xs text-slate-400 mt-2">Max 500MB</p>
                         </div>
                     </div>
                 </div>
@@ -166,12 +245,27 @@ window.renderFeed = function() {
                         <div class="text-center">
                             <i class="fa-solid fa-video text-5xl text-slate-400 group-hover:text-rose-600 transition-colors mb-4"></i>
                             <p class="text-sm font-bold text-slate-500 dark:text-slate-400 group-hover:text-rose-600 transition-colors">Click to select video</p>
-                            <p class="text-xs text-slate-400 mt-2">Max 5MB</p>
+                            <p class="text-xs text-slate-400 mt-2">Max 500MB</p>
                         </div>
                     </div>
                 </div>
             `;
             document.getElementById('post-media-input')?.addEventListener('change', handleMediaUpload);
+        }
+
+        const titleInput = document.getElementById('post-title-input');
+        if (titleInput) {
+            titleInput.value = draftTitle;
+            titleInput.addEventListener('input', (event) => {
+                draftTitle = event.target.value;
+            });
+        }
+        const textInput = document.getElementById('post-text-input');
+        if (textInput) {
+            textInput.value = draftText;
+            textInput.addEventListener('input', (event) => {
+                draftText = event.target.value;
+            });
         }
     }
 
@@ -180,56 +274,76 @@ window.renderFeed = function() {
         if (!file) return;
         
         if (file.size > MAX_FILE_SIZE) {
-            window.showError(`File too large! Maximum size is ${Math.round(MAX_FILE_SIZE / 1024 / 1024)}MB`);
+            const maxMB = Math.round(MAX_FILE_SIZE / 1024 / 1024);
+            window.showError(`File too large! Maximum size is ${maxMB}MB`);
             return;
         }
-        
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            mediaData = event.target.result;
-            const preview = document.getElementById('media-preview');
-            if (preview) {
-                if (postType === 'image') {
-                    preview.innerHTML = `
-                        <div class="relative w-full h-full group">
-                            <img src="${mediaData}" class="w-full h-full object-cover rounded-3xl">
-                            <div class="absolute inset-0 bg-black/50 rounded-3xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                <p class="text-white font-bold text-sm">Click to change</p>
-                            </div>
-                        </div>
-                    `;
-                } else {
-                    preview.innerHTML = `
-                        <div class="relative w-full h-full group">
-                            <video src="${mediaData}" class="w-full h-full object-cover rounded-3xl" controls></video>
-                            <div class="absolute inset-0 bg-black/50 rounded-3xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                                <p class="text-white font-bold text-sm">Click to change</p>
-                            </div>
-                        </div>
-                    `;
-                }
-            }
-            window.showSuccess('File uploaded successfully!');
-        };
-        reader.readAsDataURL(file);
+
+        mediaFile = file;
+        mediaPreviewUrl = URL.createObjectURL(file);
+        mediaData = null;
+
+        const preview = document.getElementById('media-preview');
+        if (!preview) return;
+
+        if (postType === 'image') {
+            preview.innerHTML = `
+                <div class="relative w-full h-full group">
+                    <img src="${mediaPreviewUrl}" class="w-full h-full object-cover rounded-3xl">
+                    <div class="absolute inset-0 bg-black/40 rounded-3xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <p class="text-white font-bold text-sm">Click to change</p>
+                    </div>
+                </div>
+            `;
+        } else {
+            preview.innerHTML = `
+                <div class="relative w-full h-full group">
+                    <video src="${mediaPreviewUrl}" class="w-full h-full object-cover rounded-3xl" controls preload="metadata"></video>
+                    <div class="absolute inset-0 bg-black/40 rounded-3xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                        <p class="text-white font-bold text-sm">Click to change</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        window.showSuccess('File ready to post instantly!');
     }
 
     window.setPostType = function(type) {
         postType = type;
-        mediaData = null;
+        mediaFile = null;
+        mediaPreviewUrl = null;
         renderPostInput();
     };
 
-    window.selectBackground = function(bgClass) {
-        selectedBg = bgClass;
+    window.setTextAspect = function(aspect) {
+        selectedAspect = aspect;
+        renderPostInput();
+    };
+
+    window.setTextFont = function(font) {
+        selectedFont = font;
+        renderPostInput();
+    };
+
+    window.setTextColor = function(color) {
+        selectedTextColor = color;
+        renderPostInput();
+    };
+
+    window.selectBackground = function(bgName) {
+        const chosen = backgrounds.find(bg => bg.name === bgName);
+        if (chosen) selectedBackground = chosen;
         renderPostInput();
     };
 
     window.previewPost = function() {
+        const titleInput = document.getElementById('post-title-input');
         const textInput = document.getElementById('post-text-input');
-        const text = textInput?.value.trim();
+        const title = titleInput?.value.trim() || draftTitle.trim();
+        const text = textInput?.value.trim() || draftText.trim();
         
-        if (!text && !mediaData) {
+        if (!title && !text && !mediaFile) {
             window.showError('Please add some content to preview');
             return;
         }
@@ -257,22 +371,33 @@ window.renderFeed = function() {
                     </div>
                     
                     ${postType === 'text' && text ? `
-                        <div class="${selectedBg} rounded-2xl p-8 text-white text-center">
-                            <p class="text-2xl font-bold leading-relaxed">${text}</p>
+                        <div class="${selectedBackground.class} rounded-2xl p-8 text-white text-center relative overflow-hidden">
+                            <div class="absolute top-4 right-4 text-5xl opacity-20">${selectedBackground.icon}</div>
+                            <div class="relative">
+                                <p class="text-2xl font-bold leading-relaxed">${text}</p>
+                            </div>
                         </div>
                     ` : ''}
                     
-                    ${postType === 'image' && mediaData ? `
+                    ${postType === 'image' && mediaPreviewUrl ? `
                         ${text ? `<p class="dark:text-white mb-4 text-lg leading-relaxed">${text}</p>` : ''}
-                        <div class="rounded-2xl overflow-hidden">
-                            <img src="${mediaData}" class="w-full">
+                        <div class="relative rounded-2xl overflow-hidden">
+                            <img src="${mediaPreviewUrl}" class="w-full">
+                            <div class="absolute top-4 left-4 inline-flex items-center gap-2 rounded-full bg-white/90 text-slate-900 shadow-lg px-3 py-2 text-xs font-bold">
+                                <i class="fa-solid fa-image"></i>
+                                Photo preview
+                            </div>
                         </div>
                     ` : ''}
                     
-                    ${postType === 'video' && mediaData ? `
+                    ${postType === 'video' && mediaPreviewUrl ? `
                         ${text ? `<p class="dark:text-white mb-4 text-lg leading-relaxed">${text}</p>` : ''}
-                        <div class="rounded-2xl overflow-hidden">
-                            <video src="${mediaData}" class="w-full" controls></video>
+                        <div class="relative rounded-2xl overflow-hidden">
+                            <video src="${mediaPreviewUrl}" class="w-full" controls preload="metadata"></video>
+                            <div class="absolute top-4 left-4 inline-flex items-center gap-2 rounded-full bg-white/90 text-slate-900 shadow-lg px-3 py-2 text-xs font-bold">
+                                <i class="fa-solid fa-video"></i>
+                                Video preview
+                            </div>
                         </div>
                     ` : ''}
                 </div>
@@ -291,10 +416,10 @@ window.renderFeed = function() {
     };
 
     async function handlePostSubmit() {
-        const textInput = document.getElementById('post-text-input');
-        const text = textInput?.value.trim();
+        const title = draftTitle.trim();
+        const text = draftText.trim();
         
-        if (!text && !mediaData) {
+        if (!title && !text && !mediaFile) {
             window.showError('Please add some content to your post');
             return;
         }
@@ -306,8 +431,12 @@ window.renderFeed = function() {
 
         try {
             const postData = {
+                title: draftTitle || '',
                 text: text || '',
                 type: postType,
+                aspect: selectedAspect,
+                font: selectedFont,
+                textColor: selectedTextColor,
                 authorUid: currentUser.uid,
                 authorName: currentProfile.fullName || currentProfile.username,
                 authorPhoto: currentProfile.photoURL || null,
@@ -319,17 +448,24 @@ window.renderFeed = function() {
             };
 
             if (postType === 'text') {
-                postData.background = selectedBg;
-            } else if (mediaData) {
-                postData.mediaUrl = mediaData;
+                postData.background = selectedBackground;
+            } else if (mediaFile && mediaPreviewUrl) {
+                postData.mediaUrl = mediaPreviewUrl;
+                postData.mediaType = mediaFile.type.startsWith('image/') ? 'image' : 'video';
+                postData.mediaName = mediaFile.name;
             }
 
             const postRef = await addDoc(collection(db, 'posts'), postData);
             const shareLink = `${window.location.origin}${window.location.pathname}#/post/${postRef.id}`;
             await updateDoc(postRef, { shareLink });
 
-            if (textInput) textInput.value = '';
-            mediaData = null;
+            draftTitle = '';
+            draftText = '';
+            selectedFont = 'Inter, sans-serif';
+            selectedTextColor = '#ffffff';
+            selectedAspect = 'landscape';
+            mediaFile = null;
+            mediaPreviewUrl = null;
             showCreatePost = false;
             document.getElementById('create-post-section').classList.add('hidden');
             document.getElementById('fab-create-post').innerHTML = '<i class="fa-solid fa-plus text-2xl"></i>';
@@ -400,11 +536,23 @@ window.renderFeed = function() {
 
     function loadPosts() {
         onSnapshot(collection(db, 'posts'), (snapshot) => {
+            if (initialPostsLoaded) {
+                snapshot.docChanges().forEach(change => {
+                    if (change.type === 'added') {
+                        const post = { id: change.doc.id, ...change.doc.data() };
+                        if (post.authorUid !== currentUser.uid) {
+                            addNotification('New community post', `${post.authorName} shared a new ${post.type === 'text' ? 'story' : post.type} post`, 'info', '#/feed');
+                        }
+                    }
+                });
+            }
+
             posts = snapshot.docs
                 .map(d => ({ id: d.id, ...d.data() }))
                 .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
             
             renderPosts();
+            initialPostsLoaded = true;
         });
     }
 
@@ -425,6 +573,8 @@ window.renderFeed = function() {
         
         feed.innerHTML = posts.map(post => {
             const isLiked = post.likes?.includes(currentUser.uid);
+            const backgroundClass = post.background?.class || 'bg-gradient-to-br from-blue-600 to-blue-500';
+            const backgroundIcon = post.background?.icon || '📝';
             return `
                 <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 border-2 border-slate-200 dark:border-slate-800 shadow-xl hover-lift animate-fade-in">
                     <div class="flex items-center gap-4 mb-6">
@@ -442,23 +592,35 @@ window.renderFeed = function() {
                         ` : ''}
                     </div>
                     
-                    ${post.type === 'text' && post.text ? `
-                        <div class="${post.background || 'bg-gradient-to-br from-blue-600 to-blue-500'} rounded-2xl p-8 text-white text-center mb-6">
-                            <p class="text-2xl font-bold leading-relaxed">${post.text}</p>
+                    ${post.type === 'text' && (post.title || post.text) ? `
+                        <div class="${backgroundClass} rounded-2xl p-8 text-white text-center mb-6 relative overflow-hidden" style="aspect-ratio: ${post.aspect === 'portrait' ? '9 / 16' : post.aspect === 'square' ? '1 / 1' : '16 / 9'}; min-height: 18rem;">
+                            <div class="absolute top-4 right-4 text-5xl opacity-20">${backgroundIcon}</div>
+                            <div class="relative flex flex-col h-full justify-center gap-4">
+                                ${post.title ? `<div class="inline-flex items-center justify-center gap-3 text-2xl font-black" style="font-family: ${post.font || 'Inter, sans-serif'}; color: ${post.textColor || '#ffffff'};"><span>${backgroundIcon}</span>${post.title}</div>` : ''}
+                                <p class="text-2xl font-bold leading-relaxed" style="font-family: ${post.font || 'Inter, sans-serif'}; color: ${post.textColor || '#ffffff'};">${post.text}</p>
+                            </div>
                         </div>
                     ` : ''}
                     
                     ${post.type === 'image' && post.mediaUrl ? `
                         ${post.text ? `<p class="dark:text-white mb-4 text-lg leading-relaxed">${post.text}</p>` : ''}
-                        <div class="rounded-2xl overflow-hidden mb-6">
+                        <div class="relative rounded-2xl overflow-hidden mb-6">
                             <img src="${post.mediaUrl}" class="w-full">
+                            <div class="absolute top-4 left-4 inline-flex items-center gap-2 rounded-full bg-white/90 text-slate-900 shadow-lg px-3 py-2 text-xs font-bold">
+                                <i class="fa-solid fa-image"></i>
+                                Photo
+                            </div>
                         </div>
                     ` : ''}
                     
                     ${post.type === 'video' && post.mediaUrl ? `
                         ${post.text ? `<p class="dark:text-white mb-4 text-lg leading-relaxed">${post.text}</p>` : ''}
-                        <div class="rounded-2xl overflow-hidden mb-6">
+                        <div class="relative rounded-2xl overflow-hidden mb-6">
                             <video src="${post.mediaUrl}" class="w-full" controls></video>
+                            <div class="absolute top-4 left-4 inline-flex items-center gap-2 rounded-full bg-white/90 text-slate-900 shadow-lg px-3 py-2 text-xs font-bold">
+                                <i class="fa-solid fa-video"></i>
+                                Video
+                            </div>
                         </div>
                     ` : ''}
                     
@@ -601,13 +763,15 @@ window.renderFeed = function() {
 };
 
 // ===== ADMIN PANEL PAGE =====
+// Admin panel state
+let adminActiveTab = 'users';
+
 window.renderAdmin = function() {
     const container = document.getElementById('page-admin');
     const { db, currentUser, currentProfile, UserRole, AdminPermissions } = window.app;
     const { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, setDoc } = window.firebase;
     
     const isSuperAdmin = currentProfile?.role === UserRole.SUPER_ADMIN;
-    let activeTab = 'users';
     let users = [];
 
     container.innerHTML = `
@@ -618,20 +782,23 @@ window.renderAdmin = function() {
                     <p class="text-slate-500 dark:text-slate-400 font-medium">Manage your community</p>
                 </div>
                 
-                <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 border-2 border-slate-200 dark:border-slate-800 shadow-xl">
+                <div class="glass-card p-8">
                     <!-- Tabs -->
                     <div class="flex gap-3 overflow-x-auto pb-2 mb-8">
-                        <button onclick="window.switchAdminTab('users')" class="px-8 py-4 rounded-2xl font-bold text-sm uppercase tracking-wider transition-all hover:scale-105 ${activeTab === 'users' ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-600/30' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}">
+                        <button onclick="window.switchAdminTab('users')" class="px-8 py-4 rounded-2xl font-bold text-sm uppercase tracking-wider transition-all hover:scale-105 hover-glow ${adminActiveTab === 'users' ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-lg' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}">
                             <i class="fa-solid fa-users mr-2"></i>All Users
                         </button>
                         ${isSuperAdmin || window.hasPermission(AdminPermissions.SEND_ANNOUNCEMENTS) ? `
-                            <button onclick="window.switchAdminTab('announcements')" class="px-8 py-4 rounded-2xl font-bold text-sm uppercase tracking-wider transition-all hover:scale-105 ${activeTab === 'announcements' ? 'bg-gradient-to-r from-amber-600 to-amber-500 text-white shadow-lg shadow-amber-600/30' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}">
+                            <button onclick="window.switchAdminTab('announcements')" class="px-8 py-4 rounded-2xl font-bold text-sm uppercase tracking-wider transition-all hover:scale-105 hover-glow ${adminActiveTab === 'announcements' ? 'bg-gradient-to-r from-amber-600 to-amber-500 text-white shadow-lg' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}">
                                 <i class="fa-solid fa-bullhorn mr-2"></i>Announcements
                             </button>
                         ` : ''}
                         ${isSuperAdmin ? `
-                            <button onclick="window.switchAdminTab('admins')" class="px-8 py-4 rounded-2xl font-bold text-sm uppercase tracking-wider transition-all hover:scale-105 ${activeTab === 'admins' ? 'bg-gradient-to-r from-purple-600 to-purple-500 text-white shadow-lg shadow-purple-600/30' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}">
+                            <button onclick="window.switchAdminTab('admins')" class="px-8 py-4 rounded-2xl font-bold text-sm uppercase tracking-wider transition-all hover:scale-105 hover-glow ${adminActiveTab === 'admins' ? 'bg-gradient-to-r from-purple-600 to-purple-500 text-white shadow-lg' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}">
                                 <i class="fa-solid fa-user-shield mr-2"></i>Manage Admins
+                            </button>
+                            <button onclick="window.switchAdminTab('apk')" class="px-8 py-4 rounded-2xl font-bold text-sm uppercase tracking-wider transition-all hover:scale-105 hover-glow ${adminActiveTab === 'apk' ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white shadow-lg' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}">
+                                <i class="fa-brands fa-android mr-2"></i>Android App
                             </button>
                         ` : ''}
                     </div>
@@ -643,7 +810,7 @@ window.renderAdmin = function() {
     `;
 
     window.switchAdminTab = function(tab) {
-        activeTab = tab;
+        adminActiveTab = tab;
         window.renderAdmin();
     };
 
@@ -665,21 +832,26 @@ window.renderAdmin = function() {
         const content = document.getElementById('admin-content');
         if (!content) return;
 
-        if (activeTab === 'users') {
+        if (adminActiveTab === 'users') {
             content.innerHTML = `
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="users-grid"></div>
             `;
             renderUsers();
-        } else if (activeTab === 'announcements') {
+        } else if (adminActiveTab === 'announcements') {
             content.innerHTML = `
                 <div class="space-y-6" id="announcements-section"></div>
             `;
             renderAnnouncements();
-        } else if (activeTab === 'admins') {
+        } else if (adminActiveTab === 'admins') {
             content.innerHTML = `
                 <div class="space-y-6" id="admins-section"></div>
             `;
             renderAdminManagement();
+        } else if (adminActiveTab === 'apk') {
+            content.innerHTML = `
+                <div class="space-y-6" id="apk-section"></div>
+            `;
+            renderApkManagement();
         }
     }
 
@@ -1376,6 +1548,299 @@ window.renderAdmin = function() {
             window.showError('Failed to delete announcement');
         }
     };
+
+    // APK Management Function
+    async function renderApkManagement() {
+        const section = document.getElementById('apk-section');
+        if (!section) return;
+
+        const { storage, ref, uploadBytesResumable, getDownloadURL, deleteObject } = window.firebaseStorage;
+
+        // Load current APK data
+        let currentApk = null;
+        try {
+            const apkDoc = await getDoc(doc(db, 'app_settings', 'android_apk'));
+            if (apkDoc.exists()) {
+                currentApk = apkDoc.data();
+            }
+        } catch (err) {
+            console.error('Failed to load APK data:', err);
+        }
+
+        section.innerHTML = `
+            <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] p-10 border-2 border-slate-200 dark:border-slate-800 shadow-xl">
+                <div class="flex items-center gap-4 mb-8">
+                    <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-600 to-emerald-500 flex items-center justify-center text-white shadow-xl">
+                        <i class="fa-brands fa-android text-3xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-3xl font-black dark:text-white">Android App Management</h2>
+                        <p class="text-sm text-slate-500 dark:text-slate-400">Upload and manage the Android APK file</p>
+                    </div>
+                </div>
+
+                ${currentApk ? `
+                    <div class="mb-8 p-6 bg-emerald-50 dark:bg-emerald-900/20 border-2 border-emerald-200 dark:border-emerald-800 rounded-2xl">
+                        <div class="flex items-start justify-between gap-4">
+                            <div class="flex items-center gap-4">
+                                <div class="w-14 h-14 bg-emerald-600 rounded-xl flex items-center justify-center text-white">
+                                    <i class="fa-solid fa-check text-2xl"></i>
+                                </div>
+                                <div>
+                                    <p class="font-black text-emerald-900 dark:text-emerald-100 text-lg">Current APK Active</p>
+                                    <p class="text-sm text-emerald-700 dark:text-emerald-300 font-medium">Version ${currentApk.version || '1.0'} • ${(currentApk.size / 1024 / 1024).toFixed(2)}MB</p>
+                                    <p class="text-xs text-emerald-600 dark:text-emerald-400 mt-1">
+                                        Uploaded: ${new Date(currentApk.uploadedAt).toLocaleDateString()} at ${new Date(currentApk.uploadedAt).toLocaleTimeString()}
+                                    </p>
+                                </div>
+                            </div>
+                            <button onclick="window.deleteCurrentApk()" class="px-4 py-2 bg-rose-600 text-white rounded-xl font-bold hover:scale-105 active:scale-95 transition-all">
+                                <i class="fa-solid fa-trash mr-2"></i>Delete
+                            </button>
+                        </div>
+                    </div>
+                ` : `
+                    <div class="mb-8 p-6 bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl text-center">
+                        <i class="fa-solid fa-info-circle text-4xl text-slate-400 mb-4"></i>
+                        <p class="text-slate-600 dark:text-slate-400 font-medium">No APK file uploaded yet</p>
+                    </div>
+                `}
+
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">App Version</label>
+                        <input type="text" id="apk-version" placeholder="e.g., 1.0.0" class="form-input" value="${currentApk?.version || ''}">
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-2">Semantic versioning recommended (e.g., 1.0.0, 1.2.3)</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Select APK File</label>
+                        <div class="relative">
+                            <input type="file" id="apk-file-input" accept=".apk" class="hidden">
+                            <button onclick="document.getElementById('apk-file-input').click()" class="w-full py-4 bg-slate-100 dark:bg-slate-800 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all">
+                                <i class="fa-solid fa-upload mr-2"></i>Choose APK File
+                            </button>
+                        </div>
+                        <p id="apk-file-name" class="text-sm text-slate-500 dark:text-slate-400 mt-2"></p>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
+                            What's New (Changelog)
+                            <span class="text-xs font-normal normal-case text-slate-400">Optional</span>
+                        </label>
+                        <textarea id="apk-changelog" rows="4" class="form-input resize-none" placeholder="• Bug fixes and improvements&#10;• New feature: ...&#10;• Performance optimizations">${currentApk?.changelog || ''}</textarea>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-2">Users will see this when the update is available</p>
+                    </div>
+
+                    <div id="apk-upload-progress" class="hidden">
+                        <div class="bg-slate-100 dark:bg-slate-800 rounded-full h-3 overflow-hidden">
+                            <div id="apk-progress-bar" class="h-full bg-gradient-to-r from-emerald-600 to-emerald-500 transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                        <p id="apk-progress-text" class="text-sm text-slate-600 dark:text-slate-400 font-bold mt-2 text-center">Uploading...</p>
+                    </div>
+
+                    <button id="apk-upload-btn" class="w-full py-5 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-black rounded-2xl shadow-xl shadow-emerald-600/30 hover:shadow-2xl hover:shadow-emerald-600/40 hover:scale-105 active:scale-95 uppercase tracking-wider text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                        <i class="fa-solid fa-cloud-arrow-up mr-2"></i>${currentApk ? 'Update APK File' : 'Upload APK File'}
+                    </button>
+
+                    <div class="mt-6 p-6 bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-800 rounded-2xl">
+                        <div class="flex items-start gap-3">
+                            <i class="fa-solid fa-lightbulb text-blue-600 dark:text-blue-400 text-xl mt-1"></i>
+                            <div class="text-sm text-blue-800 dark:text-blue-300">
+                                <p class="font-bold mb-2">Tips for Faster Uploads:</p>
+                                <ul class="space-y-1 list-disc list-inside">
+                                    <li>Keep APK size under 50MB for faster uploads</li>
+                                    <li>Use Android App Bundle (.aab) format when possible</li>
+                                    <li>Enable ProGuard/R8 code shrinking in your app</li>
+                                    <li>Remove unused resources and libraries</li>
+                                    <li>Users will see update notifications automatically</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        let selectedFile = null;
+
+        // File input handler
+        document.getElementById('apk-file-input')?.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                if (!file.name.endsWith('.apk')) {
+                    window.showError('Please select a valid APK file');
+                    return;
+                }
+                
+                // Warn for large files
+                const fileSizeMB = file.size / (1024 * 1024);
+                if (fileSizeMB > 100) {
+                    window.showWarning(`⚠️ Large file (${fileSizeMB.toFixed(1)}MB). Upload may take a while. Consider optimizing your APK.`);
+                } else if (fileSizeMB > 50) {
+                    window.showWarning(`File size: ${fileSizeMB.toFixed(1)}MB. Larger files take longer to upload.`);
+                }
+                
+                selectedFile = file;
+                const fileName = document.getElementById('apk-file-name');
+                if (fileName) {
+                    fileName.textContent = `Selected: ${file.name} (${fileSizeMB.toFixed(2)}MB)`;
+                    fileName.className = 'text-sm text-emerald-600 dark:text-emerald-400 font-bold mt-2';
+                }
+            }
+        });
+
+        // Upload button handler
+        document.getElementById('apk-upload-btn')?.addEventListener('click', async () => {
+            const versionInput = document.getElementById('apk-version');
+            const version = versionInput?.value.trim();
+            const changelogInput = document.getElementById('apk-changelog');
+            const changelog = changelogInput?.value.trim() || '';
+
+            if (!version) {
+                window.showError('Please enter a version number');
+                return;
+            }
+
+            if (!selectedFile) {
+                window.showError('Please select an APK file');
+                return;
+            }
+
+            const uploadBtn = document.getElementById('apk-upload-btn');
+            const progressContainer = document.getElementById('apk-upload-progress');
+            const progressBar = document.getElementById('apk-progress-bar');
+            const progressText = document.getElementById('apk-progress-text');
+
+            try {
+                uploadBtn.disabled = true;
+                uploadBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Uploading...';
+                progressContainer.classList.remove('hidden');
+
+                // Delete old APK if exists
+                if (currentApk && currentApk.storagePath) {
+                    try {
+                        const oldRef = ref(storage, currentApk.storagePath);
+                        await deleteObject(oldRef);
+                    } catch (err) {
+                        console.log('Old APK not found, continuing...');
+                    }
+                }
+
+                // Upload new APK
+                const timestamp = Date.now();
+                const storagePath = `apk/HomeCellApp_${version}_${timestamp}.apk`;
+                const storageRef = ref(storage, storagePath);
+                const uploadTask = uploadBytesResumable(storageRef, selectedFile);
+
+                let startTime = Date.now();
+                let lastBytes = 0;
+                let lastTime = Date.now();
+
+                uploadTask.on('state_changed',
+                    (snapshot) => {
+                        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                        progressBar.style.width = progress + '%';
+                        
+                        // Calculate speed and time remaining
+                        const currentTime = Date.now();
+                        const timeDiff = (currentTime - lastTime) / 1000; // seconds
+                        const bytesDiff = snapshot.bytesTransferred - lastBytes;
+                        
+                        if (timeDiff > 0) {
+                            const speedMBps = (bytesDiff / timeDiff) / (1024 * 1024);
+                            const remainingBytes = snapshot.totalBytes - snapshot.bytesTransferred;
+                            const remainingSeconds = speedMBps > 0 ? remainingBytes / (speedMBps * 1024 * 1024) : 0;
+                            
+                            let timeText = '';
+                            if (remainingSeconds > 60) {
+                                timeText = ` • ${Math.ceil(remainingSeconds / 60)}min remaining`;
+                            } else if (remainingSeconds > 0) {
+                                timeText = ` • ${Math.ceil(remainingSeconds)}sec remaining`;
+                            }
+                            
+                            progressText.textContent = `Uploading: ${Math.round(progress)}%${timeText}`;
+                            
+                            lastBytes = snapshot.bytesTransferred;
+                            lastTime = currentTime;
+                        } else {
+                            progressText.textContent = `Uploading: ${Math.round(progress)}%`;
+                        }
+                    },
+                    (error) => {
+                        console.error('Upload error:', error);
+                        window.showError('Failed to upload APK');
+                        uploadBtn.disabled = false;
+                        uploadBtn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up mr-2"></i>Upload APK File';
+                        progressContainer.classList.add('hidden');
+                    },
+                    async () => {
+                        try {
+                            const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
+
+                            // Save to Firestore with changelog
+                            await setDoc(doc(db, 'app_settings', 'android_apk'), {
+                                version: version,
+                                downloadUrl: downloadUrl,
+                                storagePath: storagePath,
+                                size: selectedFile.size,
+                                changelog: changelog,
+                                uploadedAt: timestamp,
+                                uploadedBy: currentUser.uid
+                            });
+
+                            window.showSuccess('APK uploaded successfully!');
+                            renderApkManagement(); // Refresh the section
+                        } catch (err) {
+                            console.error('Error saving APK metadata:', err);
+                            window.showError('Failed to save APK metadata');
+                        }
+                    }
+                );
+            } catch (err) {
+                console.error('Upload error:', err);
+                window.showError('Failed to upload APK');
+                uploadBtn.disabled = false;
+                uploadBtn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up mr-2"></i>Upload APK File';
+                progressContainer.classList.add('hidden');
+            }
+        });
+    }
+
+    window.deleteCurrentApk = async function() {
+        if (!confirm('Delete the current APK? Users will no longer see the download button.')) return;
+
+        try {
+            const apkDoc = await getDoc(doc(db, 'app_settings', 'android_apk'));
+            if (!apkDoc.exists()) {
+                window.showError('No APK found');
+                return;
+            }
+
+            const apkData = apkDoc.data();
+            const { storage, ref, deleteObject } = window.firebaseStorage;
+
+            // Delete from storage
+            if (apkData.storagePath) {
+                try {
+                    const storageRef = ref(storage, apkData.storagePath);
+                    await deleteObject(storageRef);
+                } catch (err) {
+                    console.error('Error deleting from storage:', err);
+                }
+            }
+
+            // Delete from Firestore
+            await deleteDoc(doc(db, 'app_settings', 'android_apk'));
+
+            window.showSuccess('APK deleted successfully');
+            window.renderAdmin(); // Refresh admin page
+        } catch (err) {
+            console.error('Delete APK error:', err);
+            window.showError('Failed to delete APK');
+        }
+    };
 };
 
 
@@ -1683,39 +2148,56 @@ window.renderChat = function() {
     let messages = [];
 
     container.innerHTML = `
-        <div class="flex-1 flex flex-col h-full bg-slate-50 dark:bg-slate-950 overflow-hidden">
-            <div class="p-6 glass border-b-2 border-slate-200 dark:border-slate-800 flex items-center gap-5">
-                <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-600 to-emerald-500 flex items-center justify-center text-white shadow-xl shadow-emerald-600/20">
+        <div class="flex-1 flex flex-col h-full bg-slate-950 overflow-hidden">
+            <div class="p-6 rounded-[2.5rem] bg-gradient-to-r from-slate-900 via-slate-950 to-slate-900 shadow-2xl border border-slate-800 mb-4 flex items-center gap-5">
+                <div class="w-16 h-16 rounded-3xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center text-white shadow-2xl shadow-emerald-600/25">
                     <i class="fa-solid fa-comments text-2xl"></i>
                 </div>
                 <div>
-                    <h2 class="text-3xl font-black dark:text-white">Community Chat</h2>
-                    <p class="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase">Real-time messaging</p>
+                    <h2 class="text-3xl font-black text-white chat-header-title">Community Chat</h2>
+                    <p class="text-sm text-slate-400 uppercase tracking-[0.24em] font-semibold">Live conversations</p>
                 </div>
             </div>
             
-            <div id="chat-messages" class="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar scroll-container">
+            <div id="chat-messages" class="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar scroll-container bg-slate-900/80 border border-slate-800 rounded-[2.5rem] shadow-inner">
                 <div class="flex items-center justify-center h-full">
-                    <i class="fa-solid fa-spinner animate-spin text-5xl text-blue-600"></i>
+                    <div class="text-center text-slate-500">
+                        <i class="fa-solid fa-spinner animate-spin text-4xl mb-4"></i>
+                        <p class="text-sm uppercase tracking-[0.2em]">Loading messages</p>
+                    </div>
                 </div>
             </div>
             
-            <div class="p-6 glass border-t-2 border-slate-200 dark:border-slate-800">
+            <div class="p-4 mt-4 rounded-[2.5rem] bg-slate-900 border border-slate-800 shadow-2xl">
                 <form id="chat-form" class="flex items-end gap-3">
                     <input type="file" id="chat-file-input" class="hidden" accept="image/*,video/*">
-                    <button type="button" id="chat-attach-btn" class="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 flex items-center justify-center hover:scale-110 active:scale-95 transition-all">
+                    <button type="button" id="chat-attach-btn" class="w-14 h-14 rounded-3xl bg-slate-800 border border-slate-700 text-slate-400 flex items-center justify-center hover:bg-slate-800/90 transition-all">
                         <i class="fa-solid fa-paperclip text-xl"></i>
                     </button>
-                    <textarea id="chat-input" rows="1" placeholder="Type message..." class="flex-1 form-input resize-none max-h-32"></textarea>
-                    <button type="submit" class="w-14 h-14 rounded-full bg-gradient-to-br from-emerald-600 to-emerald-500 text-white flex items-center justify-center shadow-xl shadow-emerald-600/30 hover:scale-110 active:scale-95 transition-all">
+                    <textarea id="chat-input" rows="1" placeholder="Type message..." class="flex-1 form-input resize-none max-h-32 bg-slate-950 border-slate-800 text-slate-100 placeholder-slate-500"></textarea>
+                    <button type="submit" class="w-14 h-14 rounded-3xl bg-gradient-to-br from-emerald-500 to-teal-500 text-white flex items-center justify-center shadow-2xl shadow-emerald-600/30 hover:scale-105 transition-all">
                         <i class="fa-solid fa-paper-plane text-lg"></i>
                     </button>
                 </form>
+                <div class="mt-3 text-[12px] text-slate-500">Tap the clip to attach images or videos, then press send.</div>
             </div>
         </div>
     `;
 
+    let initialChatLoaded = false;
+
     onSnapshot(collection(db, 'messages'), (snapshot) => {
+        if (initialChatLoaded) {
+            snapshot.docChanges().forEach(change => {
+                if (change.type === 'added') {
+                    const msg = { id: change.doc.id, ...change.doc.data() };
+                    if (msg.senderUid !== currentUser.uid) {
+                        addNotification('New chat message', `${msg.senderName} sent a new message`, 'info', '#/chat');
+                    }
+                }
+            });
+        }
+
         messages = snapshot.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
         const container = document.getElementById('chat-messages');
         if (!container) return;
@@ -1737,32 +2219,32 @@ window.renderChat = function() {
             const canDelete = canModerate || isMe;
             
             return `
-                <div class="flex gap-4 ${isMe ? 'flex-row-reverse' : ''} animate-fade-in group">
-                    ${!isMe ? `
-                        <div class="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-600 to-emerald-500 text-white flex items-center justify-center font-black text-lg shadow-lg">
-                            ${msg.senderName[0].toUpperCase()}
-                        </div>
-                    ` : ''}
-                    <div class="flex flex-col ${isMe ? 'items-end' : ''} max-w-[70%]">
-                        ${!isMe ? `<p class="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">@${msg.senderName}</p>` : ''}
-                        <div class="px-6 py-4 rounded-3xl shadow-xl ${isMe ? 'bg-gradient-to-br from-emerald-600 to-emerald-500 text-white' : 'bg-white dark:bg-slate-900 dark:text-white border-2 border-slate-200 dark:border-slate-800'}">
-                            ${msg.attachment ? `
-                                <div class="mb-3">
-                                    ${msg.attachment.type === 'image' ? 
-                                        `<img src="${msg.attachment.url}" class="max-w-xs rounded-2xl" loading="lazy">` : 
-                                        `<video src="${msg.attachment.url}" controls class="max-w-xs rounded-2xl"></video>`
-                                    }
-                                </div>
-                            ` : ''}
-                            <p class="text-base leading-relaxed">${msg.text}</p>
-                        </div>
-                        <div class="flex items-center gap-3 mt-2">
-                            <p class="text-xs text-slate-400 font-medium">${new Date(msg.timestamp).toLocaleTimeString()}</p>
-                            ${canDelete ? `
-                                <button onclick="window.deleteChatMessage('${msg.id}')" class="text-xs text-rose-500 font-bold opacity-0 group-hover:opacity-100 transition-opacity">
-                                    Delete
-                                </button>
-                            ` : ''}
+                <div class="flex ${isMe ? 'justify-end' : 'justify-start'} animate-fade-in">
+                    <div class="flex items-end gap-3 ${isMe ? 'flex-row-reverse' : ''} max-w-[80%]">
+                        ${!isMe ? `
+                            <div class="w-12 h-12 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 text-white flex items-center justify-center font-black text-lg shadow-lg">
+                                ${msg.senderName[0].toUpperCase()}
+                            </div>
+                        ` : ''}
+                        <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'}">
+                            ${!isMe ? `<p class="text-[11px] uppercase tracking-[0.24em] text-slate-500 mb-2">@${msg.senderName}</p>` : ''}
+                            <div class="chat-bubble ${isMe ? 'chat-bubble-sent' : 'chat-bubble-received'}">
+                                ${msg.attachment ? `
+                                    <div class="mb-3 rounded-3xl overflow-hidden border border-slate-700">
+                                        ${msg.attachment.type === 'image' ? 
+                                            `<img src="${msg.attachment.url}" class="w-full object-cover">` : 
+                                            `<video src="${msg.attachment.url}" controls class="w-full object-cover"></video>`
+                                        }
+                                    </div>
+                                ` : ''}
+                                <p class="chat-bubble-text">${msg.text}</p>
+                            </div>
+                            <div class="chat-meta ${isMe ? 'justify-end' : 'justify-start'}">
+                                <span>${new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                ${canDelete ? `
+                                    <button onclick="window.deleteChatMessage('${msg.id}')" class="chat-delete-btn">Delete</button>
+                                ` : ''}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1770,6 +2252,7 @@ window.renderChat = function() {
         }).join('');
         
         setTimeout(() => container.scrollTop = container.scrollHeight, 100);
+        initialChatLoaded = true;
     });
 
     document.getElementById('chat-form')?.addEventListener('submit', async (e) => {
@@ -1807,7 +2290,8 @@ window.renderChat = function() {
         if (!file) return;
         
         if (file.size > MAX_FILE_SIZE) {
-            window.showError('File too large. Max 5MB');
+            const maxMB = Math.round(MAX_FILE_SIZE / 1024 / 1024);
+            window.showError(`File too large. Max ${maxMB}MB`);
             return;
         }
         
@@ -1876,7 +2360,7 @@ window.renderDocuments = function() {
                                 <div class="text-center">
                                     <i class="fa-solid fa-cloud-arrow-up text-6xl text-slate-400 group-hover:text-blue-600 transition-colors mb-4"></i>
                                     <p class="text-sm font-bold text-slate-500 dark:text-slate-400 group-hover:text-blue-600 transition-colors">Select File</p>
-                                    <p class="text-xs text-slate-400 mt-2">PDF, DOC, IMG (5MB Max)</p>
+                                    <p class="text-xs text-slate-400 mt-2">PDF, DOC, IMG (500MB Max)</p>
                                 </div>
                             </div>
                             <input type="text" id="doc-title" placeholder="Document title" required class="form-input">
@@ -1899,7 +2383,8 @@ window.renderDocuments = function() {
         if (!file) return;
         
         if (file.size > MAX_FILE_SIZE) {
-            window.showError('File too large. Max 5MB');
+            const maxMB = Math.round(MAX_FILE_SIZE / 1024 / 1024);
+            window.showError(`File too large. Max ${maxMB}MB`);
             return;
         }
         
@@ -1937,7 +2422,7 @@ window.renderDocuments = function() {
             
             fileData = null;
             document.getElementById('doc-title').value = '';
-            document.getElementById('doc-drop-zone').innerHTML = '<div class="text-center"><i class="fa-solid fa-cloud-arrow-up text-6xl text-slate-400 mb-4"></i><p class="text-sm font-bold text-slate-500">Select File</p><p class="text-xs text-slate-400 mt-2">PDF, DOC, IMG (5MB Max)</p></div>';
+            document.getElementById('doc-drop-zone').innerHTML = '<div class="text-center"><i class="fa-solid fa-cloud-arrow-up text-6xl text-slate-400 mb-4"></i><p class="text-sm font-bold text-slate-500">Select File</p><p class="text-xs text-slate-400 mt-2">PDF, DOC, IMG (500MB Max)</p></div>';
             window.showSuccess('Document uploaded! Awaiting approval');
         } catch (err) {
             window.showError('Upload failed');
@@ -2195,6 +2680,153 @@ window.renderSettings = function() {
                 </div>
                 `}
 
+                <!-- Custom Theme Section -->
+                <div class="glass-card">
+                    <div class="flex items-center gap-4 mb-8">
+                        <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-600 to-pink-500 flex items-center justify-center text-white shadow-xl">
+                            <i class="fa-solid fa-palette text-2xl"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-2xl font-black dark:text-white">Custom Theme</h2>
+                            <p class="text-sm text-slate-500 dark:text-slate-400">Choose your favorite color scheme</p>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <!-- Theme Option: Purple Dreams -->
+                        <div onclick="window.setCustomTheme('default')" class="cursor-pointer p-5 rounded-2xl border-2 ${localStorage.getItem('customTheme') === 'default' || !localStorage.getItem('customTheme') ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20' : 'border-slate-200 dark:border-slate-700 hover:border-purple-300 dark:hover:border-purple-700'} transition-all hover:scale-105">
+                            <div class="flex items-center gap-3 mb-3">
+                                <div class="flex gap-1.5">
+                                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-purple-600 shadow-md"></div>
+                                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-cyan-600 shadow-md"></div>
+                                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 shadow-md"></div>
+                                </div>
+                                ${localStorage.getItem('customTheme') === 'default' || !localStorage.getItem('customTheme') ? '<i class="fa-solid fa-check-circle text-purple-600 text-xl"></i>' : ''}
+                            </div>
+                            <h3 class="font-bold dark:text-white">Purple Dreams</h3>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Modern & Vibrant</p>
+                        </div>
+
+                        <!-- Theme Option: Ocean Blue -->
+                        <div onclick="window.setCustomTheme('ocean')" class="cursor-pointer p-5 rounded-2xl border-2 ${localStorage.getItem('customTheme') === 'ocean' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-700'} transition-all hover:scale-105">
+                            <div class="flex items-center gap-3 mb-3">
+                                <div class="flex gap-1.5">
+                                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-sky-500 to-sky-600 shadow-md"></div>
+                                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-cyan-600 shadow-md"></div>
+                                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-teal-500 to-teal-600 shadow-md"></div>
+                                </div>
+                                ${localStorage.getItem('customTheme') === 'ocean' ? '<i class="fa-solid fa-check-circle text-blue-600 text-xl"></i>' : ''}
+                            </div>
+                            <h3 class="font-bold dark:text-white">Ocean Blue</h3>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Fresh & Calming</p>
+                        </div>
+
+                        <!-- Theme Option: Sunset Vibes -->
+                        <div onclick="window.setCustomTheme('sunset')" class="cursor-pointer p-5 rounded-2xl border-2 ${localStorage.getItem('customTheme') === 'sunset' ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20' : 'border-slate-200 dark:border-slate-700 hover:border-orange-300 dark:hover:border-orange-700'} transition-all hover:scale-105">
+                            <div class="flex items-center gap-3 mb-3">
+                                <div class="flex gap-1.5">
+                                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 shadow-md"></div>
+                                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-pink-500 to-pink-600 shadow-md"></div>
+                                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500 to-amber-600 shadow-md"></div>
+                                </div>
+                                ${localStorage.getItem('customTheme') === 'sunset' ? '<i class="fa-solid fa-check-circle text-orange-600 text-xl"></i>' : ''}
+                            </div>
+                            <h3 class="font-bold dark:text-white">Sunset Vibes</h3>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Warm & Energetic</p>
+                        </div>
+
+                        <!-- Theme Option: Forest Green -->
+                        <div onclick="window.setCustomTheme('forest')" class="cursor-pointer p-5 rounded-2xl border-2 ${localStorage.getItem('customTheme') === 'forest' ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20' : 'border-slate-200 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-700'} transition-all hover:scale-105">
+                            <div class="flex items-center gap-3 mb-3">
+                                <div class="flex gap-1.5">
+                                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-md"></div>
+                                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-lime-500 to-lime-600 shadow-md"></div>
+                                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-teal-500 to-teal-600 shadow-md"></div>
+                                </div>
+                                ${localStorage.getItem('customTheme') === 'forest' ? '<i class="fa-solid fa-check-circle text-emerald-600 text-xl"></i>' : ''}
+                            </div>
+                            <h3 class="font-bold dark:text-white">Forest Green</h3>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Natural & Soothing</p>
+                        </div>
+
+                        <!-- Theme Option: Royal Purple -->
+                        <div onclick="window.setCustomTheme('royal')" class="cursor-pointer p-5 rounded-2xl border-2 ${localStorage.getItem('customTheme') === 'royal' ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20' : 'border-slate-200 dark:border-slate-700 hover:border-purple-300 dark:hover:border-purple-700'} transition-all hover:scale-105">
+                            <div class="flex items-center gap-3 mb-3">
+                                <div class="flex gap-1.5">
+                                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-purple-700 shadow-md"></div>
+                                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-pink-500 to-pink-600 shadow-md"></div>
+                                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-violet-600 shadow-md"></div>
+                                </div>
+                                ${localStorage.getItem('customTheme') === 'royal' ? '<i class="fa-solid fa-check-circle text-purple-600 text-xl"></i>' : ''}
+                            </div>
+                            <h3 class="font-bold dark:text-white">Royal Purple</h3>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Elegant & Bold</p>
+                        </div>
+
+                        <!-- Theme Option: Crimson Red -->
+                        <div onclick="window.setCustomTheme('crimson')" class="cursor-pointer p-5 rounded-2xl border-2 ${localStorage.getItem('customTheme') === 'crimson' ? 'border-red-500 bg-red-50 dark:bg-red-900/20' : 'border-slate-200 dark:border-slate-700 hover:border-red-300 dark:hover:border-red-700'} transition-all hover:scale-105">
+                            <div class="flex items-center gap-3 mb-3">
+                                <div class="flex gap-1.5">
+                                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-red-500 to-red-600 shadow-md"></div>
+                                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 shadow-md"></div>
+                                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-pink-500 to-pink-600 shadow-md"></div>
+                                </div>
+                                ${localStorage.getItem('customTheme') === 'crimson' ? '<i class="fa-solid fa-check-circle text-red-600 text-xl"></i>' : ''}
+                            </div>
+                            <h3 class="font-bold dark:text-white">Crimson Red</h3>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Passionate & Exciting</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notifications Section -->
+                <div class="glass-card">
+                    <div class="flex items-center gap-4 mb-8">
+                        <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center text-white shadow-xl">
+                            <i class="fa-solid fa-bell text-2xl"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-2xl font-black dark:text-white">Notifications</h2>
+                            <p class="text-sm text-slate-500 dark:text-slate-400">Manage your notification preferences</p>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <label class="flex items-center justify-between p-5 rounded-2xl border-2 border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-600 transition-all cursor-pointer">
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                                    <i class="fa-solid fa-bell-concierge text-blue-600 dark:text-blue-400 text-xl"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold dark:text-white">Enable Push Notifications</h3>
+                                    <p class="text-sm text-slate-500 dark:text-slate-400">Get notified about updates and messages</p>
+                                </div>
+                            </div>
+                            <div class="relative">
+                                <input type="checkbox" id="notifications-toggle" ${localStorage.getItem('notificationsEnabled') !== 'false' ? 'checked' : ''}
+                                    onchange="window.toggleNotifications(this.checked)"
+                                    class="sr-only peer">
+                                <div class="w-14 h-8 bg-slate-200 dark:bg-slate-700 peer-checked:bg-blue-600 rounded-full peer-checked:after:translate-x-6 after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all"></div>
+                            </div>
+                        </label>
+                        
+                        <div class="p-5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
+                            <div class="flex items-start gap-3">
+                                <i class="fa-solid fa-info-circle text-blue-500 text-lg mt-0.5"></i>
+                                <div class="text-sm text-slate-600 dark:text-slate-400">
+                                    <p class="font-semibold mb-1">What you'll receive:</p>
+                                    <ul class="space-y-1">
+                                        <li>• App update notifications</li>
+                                        <li>• New message alerts</li>
+                                        <li>• Post interactions</li>
+                                        <li>• Community announcements</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] p-10 border-2 border-slate-200 dark:border-slate-800 shadow-xl">
                     <h2 class="text-2xl font-black dark:text-white mb-8">Account Actions</h2>
                     <button onclick="window.handleSignOut()" class="w-full py-5 bg-gradient-to-r from-rose-600 to-rose-500 text-white font-black rounded-[2rem] shadow-xl shadow-rose-600/30 hover:scale-105 active:scale-95 transition-all uppercase text-sm tracking-wider">
@@ -2248,7 +2880,7 @@ window.renderProfile = function() {
                         </div>
                         <input type="file" id="photo-input" class="hidden" accept="image/*">
                         <button onclick="document.getElementById('photo-input').click()" class="px-8 py-4 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-2xl font-bold hover:scale-105 active:scale-95 transition-all">
-                            <i class="fa-solid fa-camera mr-2"></i>Change Photo (Max 5MB)
+                            <i class="fa-solid fa-camera mr-2"></i>Change Photo (Max 500MB)
                         </button>
                     </div>
 
@@ -2296,7 +2928,8 @@ window.renderProfile = function() {
         if (!file) return;
         
         if (file.size > MAX_FILE_SIZE) {
-            window.showError('Photo too large. Max 5MB');
+            const maxMB = Math.round(MAX_FILE_SIZE / 1024 / 1024);
+            window.showError(`Photo too large. Max ${maxMB}MB`);
             return;
         }
         

@@ -4,14 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Home.cell - Professional Community Social Network">
-    <meta name="theme-color" content="#2563EB">
+    <meta name="theme-color" content="#0066cc">
+    <meta name="mobile-web-app-capable" content="true">
+    <meta name="apple-mobile-web-app-capable" content="true">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Home.cell - Community Network</title>
+    <link rel="manifest" href="./manifest.json">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%230066cc' width='192' height='192'/><text x='50%' y='50%' font-size='120' font-weight='bold' fill='white' text-anchor='middle' dominant-baseline='central' font-family='sans-serif'>HC</text></svg>">
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- Ultra-Modern Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&family=Poppins:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./styles.css">
 </head>
 <script>
@@ -69,91 +75,102 @@ setInterval(function () {
 <body class="bg-slate-50 dark:bg-slate-950">
     
     <!-- Loading Overlay -->
-    <div id="loading-overlay" class="fixed inset-0 z-[9999] flex items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-950 dark:to-blue-950/30">
-        <div class="flex flex-col items-center gap-6">
-            <div class="w-24 h-24 bg-gradient-to-br from-blue-600 to-blue-500 rounded-3xl flex items-center justify-center shadow-2xl animate-pulse">
-                <i class="fa-solid fa-users text-4xl text-white"></i>
+    <div id="loading-overlay" class="fixed inset-0 z-[9999] flex items-center justify-center bg-white dark:bg-slate-900 backdrop-blur">
+        <div class="flex flex-col items-center gap-8">
+            <div class="relative">
+                <div class="w-28 h-28 bg-gradient-to-br from-blue-600 to-blue-500 rounded-2xl flex items-center justify-center shadow-lg">
+                    <i class="fa-solid fa-users text-5xl text-white"></i>
+                </div>
             </div>
-            <p class="text-slate-600 dark:text-slate-400 font-bold uppercase tracking-widest text-sm">Connecting to Home.cell...</p>
+            <div class="text-center space-y-2">
+                <p class="text-slate-800 dark:text-slate-200 font-bold text-lg">Home.cell</p>
+                <p class="text-slate-600 dark:text-slate-400 font-medium text-sm">Loading your community...</p>
+            </div>
             <div class="flex gap-2">
-                <div class="w-2.5 h-2.5 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 0ms"></div>
-                <div class="w-2.5 h-2.5 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 150ms"></div>
-                <div class="w-2.5 h-2.5 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 300ms"></div>
+                <div class="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 0ms"></div>
+                <div class="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 150ms"></div>
+                <div class="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 300ms"></div>
             </div>
         </div>
     </div>
 
     <!-- Tutorial Overlay -->
-    <div id="tutorial" class="hidden fixed inset-0 z-[100] flex flex-col items-center justify-center p-6 bg-white/95 dark:bg-slate-950/95 backdrop-blur-xl">
-        <div class="max-w-lg w-full bg-white dark:bg-slate-900 rounded-[4rem] p-12 shadow-2xl relative flex flex-col items-center text-center gap-8 border-2 border-slate-200 dark:border-slate-800">
-            <div id="tutorial-icon" class="w-32 h-32 rounded-[3rem] bg-gradient-to-br from-blue-600 to-blue-500 text-white flex items-center justify-center text-6xl shadow-2xl shadow-blue-600/40 transition-all duration-500">
+    <div id="tutorial" class="hidden fixed inset-0 z-[100] flex flex-col items-center justify-center p-6 bg-black/40 dark:bg-black/60 backdrop-blur">
+        <div class="max-w-lg w-full bg-white dark:bg-slate-900 rounded-2xl p-12 shadow-2xl relative flex flex-col items-center text-center gap-8 border border-slate-200 dark:border-slate-800">
+            <div id="tutorial-icon" class="w-24 h-24 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-500 text-white flex items-center justify-center text-5xl shadow-lg transition-all duration-500">
                 <i class="fa-solid fa-users"></i>
             </div>
-            <div class="space-y-4">
-                <h2 id="tutorial-title" class="text-5xl font-black dark:text-white tracking-tight">Welcome!</h2>
-                <p id="tutorial-description" class="text-slate-600 dark:text-slate-400 font-medium text-xl leading-relaxed">Your community social network</p>
+            <div class="space-y-3">
+                <h2 id="tutorial-title" class="text-3xl font-bold dark:text-white tracking-tight">Welcome!</h2>
+                <p id="tutorial-description" class="text-slate-600 dark:text-slate-400 font-medium text-base leading-relaxed">Your community social network</p>
             </div>
-            <div id="tutorial-dots" class="flex gap-3"></div>
-            <div class="w-full flex gap-4">
-                <button id="tutorial-back" class="hidden flex-1 py-5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-black rounded-[2rem] hover:scale-105 active:scale-95 text-sm uppercase tracking-widest transition-all">
+            <div id="tutorial-dots" class="flex gap-2"></div>
+            <div class="w-full flex gap-3">
+                <button id="tutorial-back" class="hidden flex-1 py-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 text-sm uppercase tracking-wider transition-all duration-200 btn btn-secondary">
                     <i class="fa-solid fa-arrow-left mr-2"></i>Back
                 </button>
-                <button id="tutorial-next" class="flex-[2] py-5 bg-gradient-to-r from-blue-600 to-blue-500 text-white font-black rounded-[2rem] shadow-xl shadow-blue-600/30 hover:scale-105 active:scale-95 text-sm uppercase tracking-widest transition-all">
+                <button id="tutorial-next" class="flex-[2] py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 active:scale-95 text-sm uppercase tracking-wider transition-all duration-200 btn btn-primary">
                     Next <i class="fa-solid fa-arrow-right ml-2"></i>
                 </button>
             </div>
-            <div id="tutorial-step-indicator" class="absolute -top-16 left-1/2 -translate-x-1/2 bg-gradient-to-r from-blue-600 to-blue-500 text-white px-8 py-4 rounded-2xl text-sm font-black uppercase tracking-widest shadow-xl">
+            <div id="tutorial-step-indicator" class="absolute -top-12 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-wider shadow-lg">
                 Step 1 of 4
             </div>
         </div>
-        <button id="tutorial-skip" class="mt-8 text-slate-500 hover:text-blue-600 font-black uppercase text-sm hover:scale-105 transition-all">
+        <button id="tutorial-skip" class="mt-8 text-slate-500 hover:text-blue-600 font-bold uppercase text-sm hover:scale-105 transition-all duration-200">
             Skip Tutorial
         </button>
     </div>
 
     <!-- Main App Container -->
-    <div id="app" class="min-h-screen flex flex-col md:flex-row bg-slate-50 dark:bg-slate-950 transition-colors duration-500 hidden">
+    <div id="app" class="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 transition-colors duration-500 hidden">
         
-        <!-- Desktop Sidebar Navigation -->
-        <nav id="desktop-nav" class="hidden md:flex flex-col w-20 lg:w-80 bg-white dark:bg-slate-900 border-r-2 border-slate-200 dark:border-slate-800 shadow-xl">
-            <!-- Logo -->
-            <div class="p-8 border-b-2 border-slate-200 dark:border-slate-800">
-                <a href="#/" class="flex items-center gap-4 group">
-                    <div class="w-14 h-14 bg-gradient-to-br from-blue-600 to-blue-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-600/30 group-hover:scale-110 transition-transform">
-                        <i class="fa-solid fa-users text-xl"></i>
+        <!-- Top Header Navigation -->
+        <header id="app-header" class="sticky top-0 z-40 bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 shadow-sm">
+            <div class="mx-auto flex w-full max-w-[1240px] items-center gap-4 px-4 py-3 sm:px-6 lg:px-8">
+                <a href="#/" class="brand-link flex items-center gap-3 text-decoration-none flex-shrink-0">
+                    <div class="w-14 h-14 rounded-full bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center text-white shadow-lg shadow-blue-600/30">
+                        <i class="fa-solid fa-users text-xl font-bold"></i>
                     </div>
-                    <span class="hidden lg:block font-black text-3xl tracking-tight dark:text-white">Home.cell</span>
-                </a>
-            </div>
-            
-            <!-- Navigation Links -->
-            <div class="flex-1 px-4 py-6 space-y-2 overflow-y-auto custom-scrollbar" id="nav-links"></div>
-            
-            <!-- User Profile & Settings -->
-            <div class="p-6 border-t-2 border-slate-200 dark:border-slate-800 space-y-4">
-                <a href="#/profile" id="nav-profile-link" class="flex items-center gap-4 p-4 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl transition-all group">
-                    <div id="nav-profile-avatar" class="w-14 h-14 bg-gradient-to-br from-slate-200 to-slate-100 dark:from-slate-800 dark:to-slate-700 rounded-2xl flex items-center justify-center text-slate-500 dark:text-slate-400 shadow-inner group-hover:scale-105 transition-transform">
-                        <i class="fa-solid fa-user text-xl"></i>
-                    </div>
-                    <div class="hidden lg:block min-w-0 flex-1">
-                        <p id="nav-profile-name" class="text-base font-bold dark:text-white truncate">User</p>
-                        <p class="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wide">Edit Profile</p>
+                    <div class="flex flex-col leading-tight">
+                        <span class="brand-title text-3xl font-black text-slate-900 dark:text-white tracking-tight">Home.cell</span>
+                        <span class="text-xs text-slate-500 dark:text-slate-400 font-semibold">Community hub</span>
                     </div>
                 </a>
-                <button id="theme-toggle" class="flex items-center gap-4 w-full px-5 py-4 rounded-2xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all font-medium group">
-                    <i class="fa-solid fa-moon text-xl group-hover:scale-110 transition-transform"></i>
-                    <span class="hidden lg:block text-base font-medium">Theme</span>
-                </button>
+
+                <nav id="top-nav-links" class="hidden md:flex items-center gap-2 ml-6"></nav>
+
+                <div class="hidden md:flex flex-1 justify-center px-2">
+                    <div class="relative w-full max-w-xl">
+                        <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                        <input type="search" placeholder="Search community, resources or chat" class="form-input pl-12 pr-4 h-12 w-full" />
+                    </div>
+                </div>
+
+                <div class="hidden md:flex items-center gap-3">
+                    <button onclick="navigateTo('/chat')" class="btn btn-primary btn-sm">New message</button>
+                </div>
+
+                <div class="ml-auto flex items-center gap-2">
+                    <button onclick="window.requestNotificationPermission()" class="btn btn-ghost icon-btn" aria-label="Enable notifications"><i class="fa-solid fa-bell"></i></button>
+                    <button onclick="window.toggleNotificationCenter()" class="btn btn-ghost icon-btn relative" aria-label="Open notifications">
+                        <i class="fa-solid fa-bell-on"></i>
+                        <span id="notification-badge-nav" class="hidden absolute -top-2 -right-2 w-5 h-5 bg-red-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center">0</span>
+                    </button>
+                    <button onclick="location.href='#/profile'" class="btn btn-ghost icon-btn" aria-label="Open profile">
+                        <i class="fa-solid fa-user"></i>
+                    </button>
+                </div>
             </div>
-        </nav>
+        </header>
 
         <!-- Mobile Bottom Navigation -->
-        <nav id="mobile-nav" class="md:hidden fixed bottom-0 left-0 right-0 z-50 px-4 pb-safe">
-            <div class="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-2 border-slate-200 dark:border-slate-800 rounded-[2.5rem] h-20 flex items-center justify-around shadow-2xl mb-4" id="mobile-nav-links"></div>
+        <nav id="mobile-nav" class="md:hidden fixed bottom-0 left-0 right-0 z-50 px-3 pb-safe">
+            <div class="bg-white dark:bg-slate-900 backdrop-blur-2xl border-2 border-slate-200 dark:border-slate-800 rounded-3xl h-20 flex items-center justify-around shadow-2xl shadow-black/20 mb-4" id="mobile-nav-links"></div>
         </nav>
 
         <!-- Main Content Area -->
-        <main class="flex-1 relative overflow-hidden flex flex-col pb-24 md:pb-0 h-screen">
+        <main class="flex-1 relative overflow-hidden flex flex-col pb-24 h-screen">
             <div id="page-auth" class="page active"></div>
             <div id="page-feed" class="page"></div>
             <div id="page-chat" class="page"></div>
@@ -164,6 +181,31 @@ setInterval(function () {
             <div id="page-settings" class="page"></div>
             <div id="page-profile" class="page"></div>
         </main>
+    </div>
+
+    <!-- APK Download Button Container -->
+    <div id="apk-download-container" class="hidden fixed bottom-28 md:bottom-24 left-6 right-6 md:left-auto md:right-6 md:max-w-md z-[9997]"></div>
+
+    <!-- Notification Center -->
+    <div id="notification-center" class="hidden fixed top-20 right-6 w-96 max-w-[calc(100vw-3rem)] z-[9999]">
+        <div class="bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col">
+            <div class="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                <div>
+                    <h3 class="font-bold text-lg dark:text-white">Notifications</h3>
+                    <p class="text-xs text-slate-600 dark:text-slate-400 font-medium" id="notification-count-text">0 notifications</p>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="window.markAllNotificationsAsRead()" class="btn btn-sm btn-ghost">Mark all read</button>
+                    <button onclick="window.clearAllNotifications()" class="btn btn-sm btn-danger">Clear all</button>
+                </div>
+            </div>
+            <div id="notifications-list" class="max-h-96 overflow-y-auto custom-scrollbar p-4 space-y-2">
+                <div class="text-center py-12 text-slate-400">
+                    <i class="fa-solid fa-bell-slash text-3xl mb-3 block"></i>
+                    <p class="font-semibold text-sm">No notifications yet</p>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Toast Notification Container -->
