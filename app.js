@@ -659,6 +659,7 @@ async function handleSignup(email, password, username, fullName, phoneNumber, ge
             role = UserRole.SUPER_ADMIN;
             permissions = Object.values(AdminPermissions);
         }
+        const now = Date.now();
         await setDoc(doc(db, 'users', user.uid), {
             uid: user.uid,
             email: user.email,
@@ -668,7 +669,8 @@ async function handleSignup(email, password, username, fullName, phoneNumber, ge
             gender: gender,
             role: role,
             permissions: permissions,
-            createdAt: Date.now(),
+            createdAt: now,
+            usernameLastChanged: now,
             hasSeenTutorial: false
         });
         showSuccess('Account created successfully!');

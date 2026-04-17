@@ -2124,6 +2124,9 @@ window.renderMembers = function() {
                     updatedAt: Date.now(),
                     updatedBy: currentUser.uid
                 };
+                if (username !== user.username) {
+                    updates.usernameLastChanged = Date.now();
+                }
                 
                 await updateDoc(doc(db, 'users', userId), updates);
                 
@@ -2911,7 +2914,7 @@ window.renderSettings = function() {
 window.renderProfile = function() {
     const container = document.getElementById('page-profile');
     const { db, currentUser, currentProfile, MAX_FILE_SIZE } = window.app;
-    const { doc, updateDoc } = window.firebase;
+    const { collection, doc, getDocs, query, updateDoc, where } = window.firebase;
     let photoData = null;
 
     container.innerHTML = `
@@ -2949,7 +2952,10 @@ window.renderProfile = function() {
                         
                         <div>
                             <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Username</label>
-                            <input type="text" value="${currentProfile?.username || ''}" disabled class="form-input opacity-50 cursor-not-allowed">
+                            <input type="text" id="profile-username" value="${currentProfile?.username || ''}" class="form-input">
+                            <p id="username-change-note" class="text-xs mt-2 ${Date.now() < ((currentProfile?.usernameLastChanged || currentProfile?.createdAt || 0) + 14 * 24 * 60 * 60 * 1000) ? 'text-rose-500' : 'text-slate-500 dark:text-slate-400'}">
+                                ${Date.now() < ((currentProfile?.usernameLastChanged || currentProfile?.createdAt || 0) + 14 * 24 * 60 * 60 * 1000) ? `You can change your username again on ${new Date((currentProfile?.usernameLastChanged || currentProfile?.createdAt || 0) + 14 * 24 * 60 * 60 * 1000).toLocaleDateString()}` : 'You may change your username once every 14 days.'}
+                            </p>
                         </div>
                         
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -3003,12 +3009,44 @@ window.renderProfile = function() {
     document.getElementById('profile-form')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         
+        const newUsername = document.getElementById('profile-username').value.trim().toLowerCase();
         const updates = {
             fullName: document.getElementById('profile-fullname').value.trim(),
             phoneNumber: document.getElementById('profile-phone').value.trim(),
             gender: document.getElementById('profile-gender').value,
             bio: document.getElementById('profile-bio').value.trim()
         };
+        
+        const currentUsername = currentProfile?.username || '';
+        const lastChanged = currentProfile?.usernameLastChanged || currentProfile?.createdAt || 0;
+        const nextAllowedChangeAt = lastChanged + 14 * 24 * 60 * 60 * 1000;
+        const now = Date.now();
+        
+        if (newUsername && newUsername !== currentUsername) {
+            if (now < nextAllowedChangeAt) {
+                window.showError(`Username can only be changed once every 14 days. Next change available on ${new Date(nextAllowedChangeAt).toLocaleDateString()}.`);
+                return;
+            }
+            if (newUsername.length < 3) {
+                window.showError('Username must be at least 3 characters long.');
+                return;
+            }
+            if (!/^[a-zA-Z0-9_\.]+$/.test(newUsername)) {
+                window.showError('Username can only contain letters, numbers, underscores, and periods.');
+                return;
+            }
+            if (newUsername !== currentUsername) {
+                const usersRef = collection(db, 'users');
+                const usernameQuery = query(usersRef, where('username', '==', newUsername));
+                const snap = await getDocs(usernameQuery);
+                if (!snap.empty) {
+                    window.showError('That username is already taken.');
+                    return;
+                }
+                updates.username = newUsername;
+                updates.usernameLastChanged = now;
+            }
+        }
         
         if (photoData) updates.photoURL = photoData;
         
