@@ -125,52 +125,32 @@ setInterval(function () {
     <!-- Main App Container -->
     <div id="app" class="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 transition-colors duration-500 hidden">
         
-        <!-- Top Header Navigation -->
-        <header id="app-header" class="sticky top-0 z-40 bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 shadow-sm">
-            <div class="mx-auto flex w-full max-w-[1240px] items-center gap-4 px-4 py-3 sm:px-6 lg:px-8">
-                <a href="#/" class="brand-link flex items-center gap-3 text-decoration-none flex-shrink-0">
-                    <div class="w-14 h-14 rounded-full bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center text-white shadow-lg shadow-blue-600/30">
-                        <i class="fa-solid fa-users text-xl font-bold"></i>
+        <!-- Sidebar Toggle Button -->
+        <button onclick="window.toggleSidebar()" class="fixed top-4 left-4 z-50 btn btn-ghost icon-btn bg-white dark:bg-slate-900 shadow-lg border border-slate-200 dark:border-slate-800" aria-label="Toggle sidebar">
+            <i class="fa-solid fa-bars text-xl"></i>
+        </button>
+
+        <!-- Sidebar -->
+        <div id="sidebar" class="fixed top-0 left-0 h-full w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 shadow-xl transform -translate-x-full transition-transform duration-300 z-40">
+            <div class="p-6 border-b border-slate-200 dark:border-slate-800">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center text-white shadow-lg">
+                        <i class="fa-solid fa-users text-lg font-bold"></i>
                     </div>
                     <div class="flex flex-col leading-tight">
-                        <span class="brand-title text-3xl font-black text-slate-900 dark:text-white tracking-tight">Home.cell</span>
+                        <span class="text-xl font-black text-slate-900 dark:text-white tracking-tight">Home.cell</span>
                         <span class="text-xs text-slate-500 dark:text-slate-400 font-semibold">Community hub</span>
                     </div>
-                </a>
-
-                <nav id="top-nav-links" class="hidden md:flex items-center gap-2 ml-6"></nav>
-
-                <div class="hidden md:flex flex-1 justify-center px-2">
-                    <div class="relative w-full max-w-xl">
-                        <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                        <input type="search" placeholder="Search community, resources or chat" class="form-input pl-12 pr-4 h-12 w-full" />
-                    </div>
-                </div>
-
-                <div class="hidden md:flex items-center gap-3">
-                    <button onclick="navigateTo('/chat')" class="btn btn-primary btn-sm">New message</button>
-                </div>
-
-                <div class="ml-auto flex items-center gap-2">
-                    <button onclick="window.requestNotificationPermission()" class="btn btn-ghost icon-btn" aria-label="Enable notifications"><i class="fa-solid fa-bell"></i></button>
-                    <button onclick="window.toggleNotificationCenter()" class="btn btn-ghost icon-btn relative" aria-label="Open notifications">
-                        <i class="fa-solid fa-bell-on"></i>
-                        <span id="notification-badge-nav" class="hidden absolute -top-2 -right-2 w-5 h-5 bg-red-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center">0</span>
-                    </button>
-                    <button onclick="location.href='#/profile'" class="btn btn-ghost icon-btn" aria-label="Open profile">
-                        <i class="fa-solid fa-user"></i>
-                    </button>
                 </div>
             </div>
-        </header>
+            <nav class="p-4 space-y-2" id="sidebar-nav-links"></nav>
+        </div>
 
-        <!-- Mobile Bottom Navigation -->
-        <nav id="mobile-nav" class="md:hidden fixed bottom-0 left-0 right-0 z-50 px-3 pb-safe">
-            <div class="bg-white dark:bg-slate-900 backdrop-blur-2xl border-2 border-slate-200 dark:border-slate-800 rounded-3xl h-20 flex items-center justify-around shadow-2xl shadow-black/20 mb-4" id="mobile-nav-links"></div>
-        </nav>
+        <!-- Sidebar Overlay -->
+        <div id="sidebar-overlay" class="fixed inset-0 bg-black/50 z-30 hidden" onclick="window.toggleSidebar()"></div>
 
         <!-- Main Content Area -->
-        <main class="flex-1 relative overflow-hidden flex flex-col pb-24 h-screen">
+        <main class="flex-1 relative overflow-hidden flex flex-col h-screen">
             <div id="page-auth" class="page active"></div>
             <div id="page-feed" class="page"></div>
             <div id="page-chat" class="page"></div>

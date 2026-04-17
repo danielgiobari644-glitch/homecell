@@ -477,6 +477,27 @@ textarea.form-input {
     font-weight: 400;
 }
 
+.text-title-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 0.9rem 1.4rem;
+    border-radius: 999px;
+    border: 2px solid #ffffff;
+    background: rgba(255,255,255,0.08);
+    max-width: 100%;
+    word-break: break-word;
+    white-space: normal;
+}
+
+@media (max-width: 768px) {
+    .text-title-pill {
+        padding: 0.75rem 1rem;
+        font-size: 1rem;
+    }
+}
+
 /* Form labels */
 .form-label {
     display: block;
@@ -637,6 +658,171 @@ textarea.form-input {
     color: var(--text-primary);
 }
 
+.sidebar-nav-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    color: var(--text-secondary);
+    background: transparent;
+    border-radius: var(--radius-lg);
+    font-size: 16px;
+    font-weight: 500;
+    text-decoration: none !important;
+    transition: all var(--duration-fast) var(--easing-standard);
+}
+
+.sidebar-nav-link:hover {
+    background: var(--surface-tertiary);
+    color: var(--text-primary);
+}
+
+.sidebar-nav-link.active {
+    background: var(--brand-primary);
+    color: var(--text-inverse);
+    box-shadow: 0 4px 12px rgba(0, 102, 204, 0.15);
+}
+
+#app-header {
+    padding: 1rem 0.75rem;
+}
+
+#app-header .brand-title {
+    font-size: clamp(1.4rem, 2.3vw, 1.9rem);
+}
+
+#app-header .brand-link {
+    min-width: 0;
+}
+
+#top-nav-links {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding-bottom: 2px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+#top-nav-links::-webkit-scrollbar {
+    display: none;
+}
+
+#app-header .form-input {
+    min-width: 0;
+}
+
+.post-card {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+.text-card {
+    overflow: hidden;
+}
+
+.text-card .text-card-body {
+    max-height: calc(100% - 5.5rem);
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 0.35rem;
+    margin-top: 0.25rem;
+    -webkit-overflow-scrolling: touch;
+}
+
+.text-card .text-card-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+.text-card .text-card-body::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.35);
+    border-radius: 999px;
+}
+
+.text-card .text-card-body::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.text-card .text-title-pill {
+    white-space: normal;
+    word-break: break-word;
+}
+
+.post-card img,
+.post-card video {
+    width: 100%;
+    height: auto;
+    max-height: 90vh;
+    object-fit: cover;
+    border-radius: 1.5rem;
+}
+
+#page-chat .chat-bubble {
+    max-width: 100%;
+}
+
+#page-chat .chat-bubble-received {
+    background: rgba(148, 163, 184, 0.22);
+    color: #0f172a;
+    border-color: rgba(148, 163, 184, 0.32);
+}
+
+#page-chat .chat-bubble-sent {
+    background: linear-gradient(135deg, #10b981 0%, #14b8a6 100%);
+    color: #ffffff;
+    border-color: rgba(34, 197, 94, 0.45);
+}
+
+#page-chat .chat-bubble-text {
+    line-height: 1.95;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: inherit;
+    text-shadow: none;
+}
+
+@media (max-width: 768px) {
+    .text-card {
+        aspect-ratio: auto !important;
+        min-height: auto !important;
+    }
+
+    .post-card img,
+    .post-card video {
+        max-height: 60vh;
+    }
+}
+
+@media (max-width: 1024px) {
+    #app-header {
+        padding: 0.9rem 0.75rem;
+    }
+}
+
+@media (max-width: 768px) {
+    #app-header {
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
+    }
+
+    #app-header .brand-link {
+        gap: 0.75rem;
+    }
+
+    #app-header .btn {
+        min-width: auto;
+    }
+
+    #app-header .icon-btn {
+        padding: 0.85rem;
+    }
+
+    #app-header .brand-title {
+        font-size: 1.5rem;
+    }
+}
+
 .top-nav-link i {
     font-size: 14px;
     width: auto;
@@ -749,9 +935,9 @@ textarea.form-input {
     overflow: hidden;
 }
 
-.line-clamp-1 { -webkit-line-clamp: 1; }
-.line-clamp-2 { -webkit-line-clamp: 2; }
-.line-clamp-3 { -webkit-line-clamp: 3; }
+.line-clamp-1 { line-clamp: 1; -webkit-line-clamp: 1; }
+.line-clamp-2 { line-clamp: 2; -webkit-line-clamp: 2; }
+.line-clamp-3 { line-clamp: 3; -webkit-line-clamp: 3; }
 
 /* ============================================
    Chat UI Enhancements

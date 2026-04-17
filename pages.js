@@ -17,6 +17,7 @@ window.renderFeed = function() {
     let selectedAspect = 'landscape';
     let selectedFont = 'Inter, sans-serif';
     let selectedTextColor = '#ffffff';
+    let selectedTitleBorderColor = '#ffffff';
     let draftTitle = '';
     let draftText = '';
     let mediaPreviewUrl = null;
@@ -51,6 +52,14 @@ window.renderFeed = function() {
         { label: 'Sunshine', value: '#fde68a' }
     ];
 
+    const titleBorderColors = [
+        { label: 'White', value: '#ffffff' },
+        { label: 'Sky', value: '#38bdf8' },
+        { label: 'Lavender', value: '#c084fc' },
+        { label: 'Mint', value: '#4ade80' },
+        { label: 'Sunshine', value: '#facc15' }
+    ];
+
     function render() {
         container.innerHTML = `
             <div class="flex-1 overflow-y-auto custom-scrollbar scroll-container bg-gradient-to-br from-slate-50 via-blue-50/20 to-slate-50 dark:from-slate-950 dark:via-blue-950/10 dark:to-slate-950">
@@ -67,7 +76,7 @@ window.renderFeed = function() {
                                 <p class="text-sm uppercase tracking-[0.3em] opacity-80">Community Spotlight</p>
                                 <h2 class="text-4xl font-black mt-4">Launch a story, poll or update</h2>
                                 <p class="mt-4 text-slate-200 text-base leading-relaxed max-w-xl">Need inspiration? Create an update, ask a quick community question, or share a short video. Your next great post starts right here.</p>
-                                <div class="mt-8 grid gap-3 sm:grid-cols-3">
+                                <div class="mt-8 grid gap-3 sm:grid-cols-3" style="grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));">
                                     <button onclick="window.setPostType('text')" class="rounded-3xl px-5 py-4 bg-white/10 border border-white/20 hover:bg-white/15 transition-all font-bold">Text post</button>
                                     <button onclick="window.setPostType('image')" class="rounded-3xl px-5 py-4 bg-white/10 border border-white/20 hover:bg-white/15 transition-all font-bold">Photo story</button>
                                     <button onclick="window.setPostType('video')" class="rounded-3xl px-5 py-4 bg-white/10 border border-white/20 hover:bg-white/15 transition-all font-bold">Video update</button>
@@ -189,7 +198,7 @@ window.renderFeed = function() {
                         <button type="button" onclick="window.setTextAspect('square')" class="rounded-2xl py-3 ${selectedAspect === 'square' ? 'bg-slate-900 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}">1:1</button>
                         <button type="button" onclick="window.setTextAspect('landscape')" class="rounded-2xl py-3 ${selectedAspect === 'landscape' ? 'bg-slate-900 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}">Landscape</button>
                     </div>
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-2 gap-3" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
                         <div class="space-y-2">
                             <p class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Font style</p>
                             <div class="grid grid-cols-2 gap-2">
@@ -206,10 +215,18 @@ window.renderFeed = function() {
                                 `).join('')}
                             </div>
                         </div>
+                        <div class="space-y-2">
+                            <p class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Title border color</p>
+                            <div class="grid grid-cols-5 gap-2">
+                                ${titleBorderColors.map(color => `
+                                    <button type="button" onclick="window.setTitleBorderColor('${color.value}')" class="h-10 rounded-2xl border-2 ${selectedTitleBorderColor === color.value ? 'border-white' : 'border-transparent'}" style="background: ${color.value};"></button>
+                                `).join('')}
+                            </div>
+                        </div>
                     </div>
                     <div class="space-y-4">
                         <p class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Choose Background</p>
-                        <div class="grid grid-cols-4 gap-3">
+                        <div class="grid grid-cols-4 gap-3" style="grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));">
                             ${backgrounds.map(bg => `
                                 <button onclick="window.selectBackground('${bg.name}')" class="relative h-20 rounded-2xl ${bg.class} hover:scale-105 transition-all border-4 ${selectedBackground.name === bg.name ? 'border-white dark:border-slate-700 ring-4 ring-blue-600/30' : 'border-transparent'} shadow-lg group overflow-hidden">
                                     <div class="absolute inset-0 bg-black/10" style="backdrop-filter: blur(4px);"></div>
@@ -331,6 +348,11 @@ window.renderFeed = function() {
         renderPostInput();
     };
 
+    window.setTitleBorderColor = function(color) {
+        selectedTitleBorderColor = color;
+        renderPostInput();
+    };
+
     window.selectBackground = function(bgName) {
         const chosen = backgrounds.find(bg => bg.name === bgName);
         if (chosen) selectedBackground = chosen;
@@ -370,11 +392,12 @@ window.renderFeed = function() {
                         </div>
                     </div>
                     
-                    ${postType === 'text' && text ? `
-                        <div class="${selectedBackground.class} rounded-2xl p-8 text-white text-center relative overflow-hidden">
+                    ${postType === 'text' && (title || text) ? `
+                        <div class="${selectedBackground.class} rounded-2xl p-8 text-white text-center relative overflow-visible text-card">
                             <div class="absolute top-4 right-4 text-5xl opacity-20">${selectedBackground.icon}</div>
-                            <div class="relative">
-                                <p class="text-2xl font-bold leading-relaxed">${text}</p>
+                            <div class="relative flex flex-col items-center gap-6 justify-center">
+                                ${title ? `<div class="text-title-pill inline-flex items-center justify-center gap-3 text-2xl font-black" style="font-family: ${selectedFont}; color: ${selectedTextColor}; border-color: ${selectedTitleBorderColor};">${selectedBackground.icon}${title}</div>` : ''}
+                                <p class="text-2xl font-bold leading-relaxed" style="font-family: ${selectedFont}; color: ${selectedTextColor};">${text}</p>
                             </div>
                         </div>
                     ` : ''}
@@ -437,6 +460,7 @@ window.renderFeed = function() {
                 aspect: selectedAspect,
                 font: selectedFont,
                 textColor: selectedTextColor,
+                titleBorderColor: selectedTitleBorderColor,
                 authorUid: currentUser.uid,
                 authorName: currentProfile.fullName || currentProfile.username,
                 authorPhoto: currentProfile.photoURL || null,
@@ -449,8 +473,18 @@ window.renderFeed = function() {
 
             if (postType === 'text') {
                 postData.background = selectedBackground;
-            } else if (mediaFile && mediaPreviewUrl) {
-                postData.mediaUrl = mediaPreviewUrl;
+            } else if (mediaFile) {
+                const mediaId = `media-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+                try {
+                    await window.storeMediaLocally(mediaFile, mediaId);
+                    postData.mediaId = mediaId;
+                } catch (err) {
+                    console.error('Media storage error:', err);
+                    window.showError('Failed to save media locally');
+                    btn.innerHTML = originalHtml;
+                    btn.disabled = false;
+                    return;
+                }
                 postData.mediaType = mediaFile.type.startsWith('image/') ? 'image' : 'video';
                 postData.mediaName = mediaFile.name;
             }
@@ -463,6 +497,7 @@ window.renderFeed = function() {
             draftText = '';
             selectedFont = 'Inter, sans-serif';
             selectedTextColor = '#ffffff';
+            selectedTitleBorderColor = '#ffffff';
             selectedAspect = 'landscape';
             mediaFile = null;
             mediaPreviewUrl = null;
@@ -534,8 +569,23 @@ window.renderFeed = function() {
         });
     }
 
+    async function attachLocalMediaUrls(postList) {
+        await Promise.all(postList.map(async post => {
+            if (post.mediaId) {
+                try {
+                    const localUrl = await window.getMediaLocally(post.mediaId);
+                    if (localUrl) {
+                        post.mediaUrl = localUrl;
+                    }
+                } catch (err) {
+                    console.error('Local media lookup failed for', post.mediaId, err);
+                }
+            }
+        }));
+    }
+
     function loadPosts() {
-        onSnapshot(collection(db, 'posts'), (snapshot) => {
+        onSnapshot(collection(db, 'posts'), async (snapshot) => {
             if (initialPostsLoaded) {
                 snapshot.docChanges().forEach(change => {
                     if (change.type === 'added') {
@@ -551,6 +601,7 @@ window.renderFeed = function() {
                 .map(d => ({ id: d.id, ...d.data() }))
                 .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
             
+            await attachLocalMediaUrls(posts);
             renderPosts();
             initialPostsLoaded = true;
         });
@@ -576,7 +627,7 @@ window.renderFeed = function() {
             const backgroundClass = post.background?.class || 'bg-gradient-to-br from-blue-600 to-blue-500';
             const backgroundIcon = post.background?.icon || '📝';
             return `
-                <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 border-2 border-slate-200 dark:border-slate-800 shadow-xl hover-lift animate-fade-in">
+                <div class="post-card bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 border-2 border-slate-200 dark:border-slate-800 shadow-xl hover-lift animate-fade-in">
                     <div class="flex items-center gap-4 mb-6">
                         <div class="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-blue-600 to-blue-500 flex items-center justify-center text-white font-black text-lg shadow-lg">
                             ${post.authorPhoto ? `<img src="${post.authorPhoto}" class="w-full h-full object-cover">` : (post.authorName[0] || 'U').toUpperCase()}
@@ -593,11 +644,13 @@ window.renderFeed = function() {
                     </div>
                     
                     ${post.type === 'text' && (post.title || post.text) ? `
-                        <div class="${backgroundClass} rounded-2xl p-8 text-white text-center mb-6 relative overflow-hidden" style="aspect-ratio: ${post.aspect === 'portrait' ? '9 / 16' : post.aspect === 'square' ? '1 / 1' : '16 / 9'}; min-height: 18rem;">
+                        <div class="${backgroundClass} rounded-2xl p-6 text-white text-center mb-6 relative overflow-hidden text-card" style="aspect-ratio: ${post.aspect === 'portrait' ? '9 / 16' : post.aspect === 'square' ? '1 / 1' : '16 / 9'}; min-height: 18rem;">
                             <div class="absolute top-4 right-4 text-5xl opacity-20">${backgroundIcon}</div>
-                            <div class="relative flex flex-col h-full justify-center gap-4">
-                                ${post.title ? `<div class="inline-flex items-center justify-center gap-3 text-2xl font-black" style="font-family: ${post.font || 'Inter, sans-serif'}; color: ${post.textColor || '#ffffff'};"><span>${backgroundIcon}</span>${post.title}</div>` : ''}
-                                <p class="text-2xl font-bold leading-relaxed" style="font-family: ${post.font || 'Inter, sans-serif'}; color: ${post.textColor || '#ffffff'};">${post.text}</p>
+                            <div class="relative flex flex-col h-full justify-start gap-4 overflow-hidden">
+                                ${post.title ? `<div class="text-title-pill inline-flex items-center justify-center gap-3 text-2xl font-black mx-auto" style="font-family: ${post.font || 'Inter, sans-serif'}; color: ${post.textColor || '#ffffff'}; border-color: ${post.titleBorderColor || '#ffffff'};">${backgroundIcon}${post.title}</div>` : ''}
+                                <div class="text-card-body overflow-y-auto text-left px-1 pt-1 pb-2">
+                                    <p class="text-2xl font-bold leading-relaxed" style="font-family: ${post.font || 'Inter, sans-serif'}; color: ${post.textColor || '#ffffff'};">${post.text}</p>
+                                </div>
                             </div>
                         </div>
                     ` : ''}
@@ -751,7 +804,11 @@ window.renderFeed = function() {
         if (!confirm('Delete this post?')) return;
         
         try {
+            const post = posts.find(p => p.id === postId);
             await deleteDoc(doc(db, 'posts', postId));
+            if (post?.mediaId) {
+                await window.deleteMediaLocally(post.mediaId);
+            }
             window.showSuccess('Post deleted');
         } catch (err) {
             console.error('Delete post error:', err);

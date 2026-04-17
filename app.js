@@ -46,6 +46,86 @@ const AdminPermissions = {
     MANAGE_ADMINS: 'manage_admins'
 };
 
+// IndexedDB for local media storage
+let mediaDB = null;
+
+function initMediaDB() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open('HomeCellMediaDB', 1);
+        
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => {
+            mediaDB = request.result;
+            resolve(mediaDB);
+        };
+        
+        request.onupgradeneeded = (event) => {
+            const db = event.target.result;
+            if (!db.objectStoreNames.contains('media')) {
+                const store = db.createObjectStore('media', { keyPath: 'id' });
+                store.createIndex('timestamp', 'timestamp', { unique: false });
+            }
+        };
+    });
+}
+
+async function storeMediaLocally(file, id) {
+    if (!mediaDB) await initMediaDB();
+    
+    return new Promise((resolve, reject) => {
+        const transaction = mediaDB.transaction(['media'], 'readwrite');
+        const store = transaction.objectStore('media');
+        
+        const mediaData = {
+            id: id,
+            file: file,
+            filename: file.name,
+            type: file.type,
+            size: file.size,
+            timestamp: Date.now()
+        };
+        
+        const request = store.add(mediaData);
+        request.onsuccess = () => resolve(id);
+        request.onerror = () => reject(request.error);
+    });
+}
+
+async function getMediaLocally(id) {
+    if (!mediaDB) await initMediaDB();
+    
+    return new Promise((resolve, reject) => {
+        const transaction = mediaDB.transaction(['media'], 'readonly');
+        const store = transaction.objectStore('media');
+        const request = store.get(id);
+        
+        request.onsuccess = () => {
+            if (request.result) {
+                resolve(URL.createObjectURL(request.result.file));
+            } else {
+                resolve(null);
+            }
+        };
+        request.onerror = () => reject(request.error);
+    });
+}
+
+async function deleteMediaLocally(id) {
+    if (!mediaDB) await initMediaDB();
+    
+    return new Promise((resolve, reject) => {
+        const transaction = mediaDB.transaction(['media'], 'readwrite');
+        const store = transaction.objectStore('media');
+        const request = store.delete(id);
+        
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
+    });
+}
+
+// Initialize media database on app start
+initMediaDB().catch(console.error);
+
 // Custom theme definitions (Modern Professional Colors)
 const customThemes = {
     default: {
@@ -109,6 +189,10 @@ window.firebase = { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, q
 window.firebaseAuth = { signOut };
 window.firebaseStorage = { storage, ref, uploadBytesResumable, getDownloadURL, deleteObject };
 window.app = { db, auth, storage, currentUser, currentProfile, UserRole, AdminPermissions, MAX_FILE_SIZE, geminiApiKey };
+window.initMediaDB = initMediaDB;
+window.storeMediaLocally = storeMediaLocally;
+window.getMediaLocally = getMediaLocally;
+window.deleteMediaLocally = deleteMediaLocally;
 
 function showToast(message, type = 'info') {
     const container = document.getElementById('toast-container');
@@ -265,19 +349,16 @@ window.clearAllNotifications = function() {
 
 function updateNotificationBadge() {
     const badge = document.getElementById('notification-badge');
-    const badgeNav = document.getElementById('notification-badge-nav');
     const count = getUnreadCount();
     
-    [badge, badgeNav].forEach(el => {
-        if (el) {
-            if (count > 0) {
-                el.textContent = count > 99 ? '99+' : count;
-                el.classList.remove('hidden');
-            } else {
-                el.classList.add('hidden');
-            }
+    if (badge) {
+        if (count > 0) {
+            badge.textContent = count > 99 ? '99+' : count;
+            badge.classList.remove('hidden');
+        } else {
+            badge.classList.add('hidden');
         }
-    });
+    }
     
     const countText = document.getElementById('notification-count-text');
     if (countText) {
@@ -285,32 +366,78 @@ function updateNotificationBadge() {
     }
 }
 
-window.toggleNotificationCenter = function() {
-    const panel = document.getElementById('notification-center');
-    if (!panel) return;
+window.toggleMobileDropdown = function() {
+    const dropdown = document.getElementById('mobile-dropdown');
+    if (!dropdown) return;
     
-    if (panel.classList.contains('hidden')) {
-        panel.classList.remove('hidden');
-        panel.classList.add('animate-scale-in');
-        renderNotificationsList();
-        
+    if (dropdown.classList.contains('hidden')) {
+        dropdown.classList.remove('hidden');
+        dropdown.classList.add('animate-fade-in');
         setTimeout(() => {
-            document.addEventListener('click', closeNotificationOnClickOutside);
+            document.addEventListener('click', closeMobileDropdownOnClickOutside);
         }, 100);
     } else {
-        panel.classList.add('hidden');
-        document.removeEventListener('click', closeNotificationOnClickOutside);
+        dropdown.classList.add('hidden');
+        dropdown.classList.remove('animate-fade-in');
+        document.removeEventListener('click', closeMobileDropdownOnClickOutside);
     }
 };
 
-function closeNotificationOnClickOutside(e) {
-    const panel = document.getElementById('notification-center');
-    const trigger = e.target.closest('button[onclick*="toggleNotificationCenter"]');
+window.toggleSidebar = function() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    if (!sidebar || !overlay) return;
     
-    if (!panel.classList.contains('hidden')) {
-        if (!panel.contains(e.target) && !trigger) {
-            panel.classList.add('hidden');
-            document.removeEventListener('click', closeNotificationOnClickOutside);
+    const isOpen = !sidebar.classList.contains('-translate-x-full');
+    
+    if (isOpen) {
+        sidebar.classList.add('-translate-x-full');
+        overlay.classList.add('hidden');
+    } else {
+        sidebar.classList.remove('-translate-x-full');
+        overlay.classList.remove('hidden');
+    }
+};
+
+window.toggleDesktopDropdown = function() {
+    const dropdown = document.getElementById('desktop-dropdown');
+    if (!dropdown) return;
+    
+    if (dropdown.classList.contains('hidden')) {
+        dropdown.classList.remove('hidden');
+        dropdown.classList.add('animate-scale-in');
+        setTimeout(() => {
+            document.addEventListener('click', closeDesktopDropdownOnClickOutside);
+        }, 100);
+    } else {
+        dropdown.classList.add('hidden');
+        dropdown.classList.remove('animate-scale-in');
+        document.removeEventListener('click', closeDesktopDropdownOnClickOutside);
+    }
+};
+
+function closeMobileDropdownOnClickOutside(e) {
+    const dropdown = document.getElementById('mobile-dropdown');
+    const trigger = e.target.closest('button[onclick*="toggleMobileDropdown"]');
+    
+    if (!dropdown.classList.contains('hidden')) {
+        if (!dropdown.contains(e.target) && !trigger) {
+            dropdown.classList.add('hidden');
+            dropdown.classList.remove('animate-fade-in');
+            document.removeEventListener('click', closeMobileDropdownOnClickOutside);
+        }
+    }
+}
+
+function closeDesktopDropdownOnClickOutside(e) {
+    const dropdown = document.getElementById('desktop-dropdown');
+    const trigger = e.target.closest('button[onclick*="toggleDesktopDropdown"]');
+    
+    if (!dropdown.classList.contains('hidden')) {
+        if (!dropdown.contains(e.target) && !trigger) {
+            dropdown.classList.add('hidden');
+            dropdown.classList.remove('animate-scale-in');
+            document.removeEventListener('click', closeDesktopDropdownOnClickOutside);
         }
     }
 }
@@ -640,8 +767,7 @@ function setupNavigation() {
         { path: '/settings', icon: 'fa-gear', label: 'Settings', admin: false }
     ];
     
-    const topNav = document.getElementById('top-nav-links');
-    const mobileNav = document.getElementById('mobile-nav-links');
+    const sidebarNav = document.getElementById('sidebar-nav-links');
     
     const filteredRoutes = routes.filter(r => {
         if (!r.admin) return true;
@@ -650,20 +776,11 @@ function setupNavigation() {
         return currentProfile?.role === UserRole.ADMIN;
     });
     
-    if (topNav) {
-        topNav.innerHTML = filteredRoutes.map(route => `
-            <a href="#${route.path}" data-route="${route.path}" class="top-nav-link">
-                <i class="fa-solid ${route.icon} text-base"></i>
+    if (sidebarNav) {
+        sidebarNav.innerHTML = filteredRoutes.map(route => `
+            <a href="#${route.path}" data-route="${route.path}" onclick="window.toggleSidebar()" class="sidebar-nav-link flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-slate-700 dark:text-slate-300">
+                <i class="fa-solid ${route.icon} text-lg"></i>
                 <span>${route.label}</span>
-            </a>
-        `).join('');
-    }
-    
-    if (mobileNav) {
-        mobileNav.innerHTML = filteredRoutes.slice(0, 5).map(route => `
-            <a href="#${route.path}" data-route="${route.path}" class="mobile-nav-link flex flex-col items-center gap-1.5 text-slate-600 dark:text-slate-400 transition-all">
-                <i class="fa-solid ${route.icon} text-xl"></i>
-                <span class="text-[10px] font-bold uppercase tracking-wide">${route.label}</span>
             </a>
         `).join('');
     }
