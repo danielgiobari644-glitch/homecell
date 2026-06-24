@@ -1,4 +1,4 @@
-// js/calendar.js
+// calendar.js
 // Custom Monthly Calendar with dynamic day-grids, RSVPs, and Agenda panels
 
 let currentCalendarDate = new Date();

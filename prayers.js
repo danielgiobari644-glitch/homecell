@@ -1,4 +1,4 @@
-// js/prayers.js
+// prayers.js
 // Prayer & Intercession Room logic with filters, urgent flare animation, and transactions for agreement tracking
 
 let selectedPrayerCategory = 'all';

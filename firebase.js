@@ -1,4 +1,4 @@
-// js/firebase.js
+// firebase.js
 // Firebase configuration and auth services
 
 const firebaseConfig = {

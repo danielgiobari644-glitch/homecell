@@ -1,4 +1,4 @@
-// js/toast.js
+// toast.js
 // Custom Toast Notification System
 
 function showToast(message, type = 'success') {

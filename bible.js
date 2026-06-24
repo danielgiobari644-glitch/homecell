@@ -1,4 +1,4 @@
-// js/bible.js
+// bible.js
 // Interactive Bible Study Engine with multi-book selectors, keyword search, copy trigger, and Speech Synthesis (TTS)
 
 const SCRIPTURE_DATA = {

@@ -1,4 +1,4 @@
-// js/downloads.js
+// downloads.js
 // Downloads Hub Module - Non-Admin Exclusive
 
 function initDownloadsModule() {

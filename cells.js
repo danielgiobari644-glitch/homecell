@@ -1,4 +1,4 @@
-// js/cells.js
+// cells.js
 // Fellowship Cell Groups, directory, join/leave, cell-specific chats, events, and co-leader appointment
 
 let activeCellListener = null;

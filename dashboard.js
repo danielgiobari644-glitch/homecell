@@ -1,4 +1,4 @@
-// js/dashboard.js
+// dashboard.js
 // Dashboard features, countdown timer, stats, quotes, and stream banner
 
 const BIBLE_QUOTES = [

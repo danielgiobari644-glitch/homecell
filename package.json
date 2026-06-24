@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "node server.js",
-    "build": "mkdir -p dist && cp -r index.html app.js js/ netlify.toml dist/ 2>/dev/null || true",
+    "build": "mkdir -p dist && cp -r index.html *.js netlify.toml dist/ 2>/dev/null || true",
     "start": "node server.js",
     "clean": "rm -rf dist",
     "lint": "echo 'Vanilla JS - no lint required'"

@@ -1,4 +1,4 @@
-// js/admin.js
+// admin.js
 // Super Admin Controls Desk - membership registry, parish events, trivia factory, installer publisher, and system settings
 
 let usersListListener = null;
