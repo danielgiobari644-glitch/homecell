@@ -13,9 +13,24 @@ const BIBLE_QUOTES = [
 
 function initDashboard() {
   startCountdownTicker();
+  startLiveClock();
   refreshScriptureQuote();
   syncDashboardStats();
   syncSystemConfigs();
+}
+
+function startLiveClock() {
+  const timeEl = document.getElementById('live-time-clock');
+  const dateEl = document.getElementById('live-date-clock');
+  if (!timeEl || !dateEl) return;
+
+  function update() {
+    const now = new Date();
+    timeEl.innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    dateEl.innerText = now.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+  }
+  update();
+  setInterval(update, 1000);
 }
 
 function startCountdownTicker() {

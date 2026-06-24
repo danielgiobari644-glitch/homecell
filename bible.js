@@ -1,5 +1,24 @@
 // bible.js
-// Interactive Bible Study Engine with multi-book selectors, keyword search, copy trigger, and Speech Synthesis (TTS)
+// Interactive Bible Study Engine with all 66 books, live API chapter fetches, search, and Text-To-Speech (TTS)
+
+const BIBLE_BOOKS_CHAPTERS = {
+  // Old Testament
+  "Genesis": 50, "Exodus": 40, "Leviticus": 27, "Numbers": 36, "Deuteronomy": 34,
+  "Joshua": 24, "Judges": 21, "Ruth": 4, "1 Samuel": 31, "2 Samuel": 24,
+  "1 Kings": 22, "2 Kings": 25, "1 Chronicles": 29, "2 Chronicles": 36,
+  "Ezra": 10, "Nehemiah": 13, "Esther": 10, "Job": 42, "Psalms": 150,
+  "Proverbs": 31, "Ecclesiastes": 12, "Song of Solomon": 8, "Isaiah": 66,
+  "Jeremiah": 52, "Lamentations": 5, "Ezekiel": 48, "Daniel": 12, "Hosea": 14,
+  "Joel": 3, "Amos": 9, "Obadiah": 1, "Jonah": 4, "Micah": 7, "Nahum": 3,
+  "Habakkuk": 3, "Zephaniah": 3, "Haggai": 2, "Zechariah": 14, "Malachi": 4,
+  // New Testament
+  "Matthew": 28, "Mark": 16, "Luke": 24, "John": 21, "Acts": 28,
+  "Romans": 16, "1 Corinthians": 16, "2 Corinthians": 13, "Galatians": 6,
+  "Ephesians": 6, "Philippians": 4, "Colossians": 4, "1 Thessalonians": 5,
+  "2 Thessalonians": 3, "1 Timothy": 6, "2 Timothy": 4, "Titus": 3,
+  "Philemon": 1, "Hebrews": 13, "James": 5, "1 Peter": 5, "2 Peter": 3,
+  "1 John": 5, "2 John": 1, "3 John": 1, "Jude": 1, "Revelation": 22
+};
 
 const SCRIPTURE_DATA = {
   "Genesis": {
@@ -65,7 +84,7 @@ const SCRIPTURE_DATA = {
   "Romans": {
     8: {
       28: "And we know that all things work together for good to them that love God, to them who are the called according to his purpose.",
-      31: "What shall we then say to these things? If God be for us, who can be against us?",
+      31: "What shall we then say to things? If God be for us, who can be against us?",
       38: "For I am persuaded, that neither death, nor life, nor angels, nor principalities, nor powers, nor things present, nor things to come,",
       39: "Nor height, nor depth, nor any other creature, shall be able to separate us from the love of God, which is in Christ Jesus our Lord."
     },
@@ -77,13 +96,14 @@ const SCRIPTURE_DATA = {
 };
 
 let currentSpeechUtterance = null;
+window.loadedBibleChapterData = {};
 
 function initBibleEngine() {
   const bookSelect = document.getElementById('bible-book-select');
   if (!bookSelect) return;
 
   bookSelect.innerHTML = '';
-  Object.keys(SCRIPTURE_DATA).forEach(book => {
+  Object.keys(BIBLE_BOOKS_CHAPTERS).forEach(book => {
     const opt = document.createElement('option');
     opt.value = book;
     opt.innerText = book;
@@ -101,13 +121,12 @@ function loadChapters() {
   const book = bookSelect.value;
   chapterSelect.innerHTML = '';
 
-  if (SCRIPTURE_DATA[book]) {
-    Object.keys(SCRIPTURE_DATA[book]).forEach(chap => {
-      const opt = document.createElement('option');
-      opt.value = chap;
-      opt.innerText = `Chapter ${chap}`;
-      chapterSelect.appendChild(opt);
-    });
+  const totalChapters = BIBLE_BOOKS_CHAPTERS[book] || 1;
+  for (let c = 1; c <= totalChapters; c++) {
+    const opt = document.createElement('option');
+    opt.value = c;
+    opt.innerText = `Chapter ${c}`;
+    chapterSelect.appendChild(opt);
   }
 
   loadVerses();
@@ -123,27 +142,78 @@ function loadVerses() {
   const book = bookSelect.value;
   const chapter = chapterSelect.value;
 
-  versesBox.innerHTML = '';
+  window.loadedBibleChapterData = {};
 
-  const chapterData = SCRIPTURE_DATA[book]?.[chapter];
-  if (!chapterData) {
-    versesBox.innerHTML = '<p class="text-slate-400 text-center py-6">No verses available.</p>';
-    return;
-  }
+  versesBox.innerHTML = `
+    <div class="text-center py-12 text-slate-400 font-medium flex flex-col items-center gap-3">
+      <div class="w-8 h-8 rounded-full border-4 border-slate-200 border-t-blue-600 animate-spin"></div>
+      <p class="text-xs">Retrieving holy scriptures from study archive...</p>
+    </div>
+  `;
 
-  Object.entries(chapterData).forEach(([vNum, text]) => {
-    const verseDiv = document.createElement('div');
-    verseDiv.className = "p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-900 border border-transparent hover:border-slate-200 dark:hover:border-zinc-800 transition-all cursor-pointer select-none";
-    verseDiv.setAttribute('id', `verse-${book}-${chapter}-${vNum}`);
-    verseDiv.onclick = () => copyVerseToClipboard(book, chapter, vNum, text);
+  fetch(`https://bible-api.com/${encodeURIComponent(book + ' ' + chapter)}`)
+    .then(res => {
+      if (!res.ok) throw new Error("API error");
+      return res.json();
+    })
+    .then(data => {
+      versesBox.innerHTML = '';
+      if (!data.verses || data.verses.length === 0) {
+        versesBox.innerHTML = '<p class="text-slate-400 text-center py-6">No verses found in this chapter.</p>';
+        return;
+      }
 
-    verseDiv.innerHTML = `
-      <span class="text-xs font-bold font-mono text-blue-600 dark:text-blue-400 mr-2 bg-blue-100 dark:bg-blue-950/50 px-2 py-0.5 rounded-full">${vNum}</span>
-      <span class="text-sm text-slate-800 dark:text-zinc-200 leading-relaxed">${text}</span>
-    `;
+      data.verses.forEach(v => {
+        const vNum = v.verse;
+        const text = v.text.trim();
+        window.loadedBibleChapterData[vNum] = text;
 
-    versesBox.appendChild(verseDiv);
-  });
+        const verseDiv = document.createElement('div');
+        verseDiv.className = "p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-900 border border-transparent hover:border-slate-200 dark:hover:border-zinc-800 transition-all cursor-pointer select-none";
+        verseDiv.setAttribute('id', `verse-${book}-${chapter}-${vNum}`);
+        verseDiv.onclick = () => copyVerseToClipboard(book, chapter, vNum, text);
+
+        verseDiv.innerHTML = `
+          <span class="text-xs font-bold font-mono text-blue-600 dark:text-blue-400 mr-2 bg-blue-100 dark:bg-blue-950/50 px-2 py-0.5 rounded-full">${vNum}</span>
+          <span class="text-sm text-slate-800 dark:text-zinc-200 leading-relaxed">${text}</span>
+        `;
+        versesBox.appendChild(verseDiv);
+      });
+    })
+    .catch(err => {
+      console.warn("Bible API query failed or offline, loading fallback local chapter data:", err);
+      versesBox.innerHTML = '';
+      const fallbackData = SCRIPTURE_DATA[book]?.[chapter];
+      if (fallbackData) {
+        Object.entries(fallbackData).forEach(([vNum, text]) => {
+          window.loadedBibleChapterData[vNum] = text;
+
+          const verseDiv = document.createElement('div');
+          verseDiv.className = "p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-900 border border-transparent hover:border-slate-200 dark:hover:border-zinc-800 transition-all cursor-pointer select-none";
+          verseDiv.setAttribute('id', `verse-${book}-${chapter}-${vNum}`);
+          verseDiv.onclick = () => copyVerseToClipboard(book, chapter, vNum, text);
+
+          verseDiv.innerHTML = `
+            <span class="text-xs font-bold font-mono text-blue-600 dark:text-blue-400 mr-2 bg-blue-100 dark:bg-blue-950/50 px-2 py-0.5 rounded-full">${vNum}</span>
+            <span class="text-sm text-slate-800 dark:text-zinc-200 leading-relaxed">${text}</span>
+          `;
+          versesBox.appendChild(verseDiv);
+        });
+        window.showToast?.(`Offline local study text loaded.`, "info");
+      } else {
+        versesBox.innerHTML = `
+          <div class="text-center py-12 text-slate-400 space-y-4">
+            <p class="font-bold">Bible Study Text Unavailable Offline</p>
+            <p class="text-xs max-w-sm mx-auto leading-relaxed">
+              To read this chapter offline, please connect to the internet. Genesis, John, Psalms, Proverbs, and Romans contain rich preloaded local sample chapters!
+            </p>
+            <button onclick="loadVerses()" class="bg-blue-600 text-white font-bold text-xs uppercase tracking-wider px-4 py-2 rounded-xl hover:bg-blue-700 cursor-pointer">
+              Try Again
+            </button>
+          </div>
+        `;
+      }
+    });
 }
 
 function filterVerses() {
@@ -155,14 +225,13 @@ function filterVerses() {
   const chapterSelect = document.getElementById('bible-chapter-select');
   const book = bookSelect.value;
   const chapter = chapterSelect.value;
-  const chapterData = SCRIPTURE_DATA[book]?.[chapter];
 
   const versesBox = document.getElementById('bible-verses-box');
-  if (!versesBox || !chapterData) return;
+  if (!versesBox || !window.loadedBibleChapterData) return;
 
   versesBox.innerHTML = '';
 
-  Object.entries(chapterData).forEach(([vNum, text]) => {
+  Object.entries(window.loadedBibleChapterData).forEach(([vNum, text]) => {
     if (text.toLowerCase().includes(query) || vNum.includes(query)) {
       const verseDiv = document.createElement('div');
       verseDiv.className = "p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-900 border border-transparent hover:border-slate-200 dark:hover:border-zinc-800 transition-all cursor-pointer select-none";
@@ -203,9 +272,9 @@ function speakFullChapter() {
 
   const book = bookSelect.value;
   const chapter = chapterSelect.value;
-  const chapterData = SCRIPTURE_DATA[book]?.[chapter];
+  const chapterData = window.loadedBibleChapterData;
 
-  if (!chapterData) return;
+  if (!chapterData || Object.keys(chapterData).length === 0) return;
 
   let textToSpeak = `${book} Chapter ${chapter}. `;
   Object.entries(chapterData).forEach(([vNum, text]) => {
@@ -214,7 +283,7 @@ function speakFullChapter() {
 
   if ('speechSynthesis' in window) {
     currentSpeechUtterance = new SpeechSynthesisUtterance(textToSpeak);
-    currentSpeechUtterance.rate = 0.95; // Slightly slower for clear pronunciation
+    currentSpeechUtterance.rate = 0.95;
     
     const btn = document.getElementById('btn-chapter-tts');
     if (btn) {

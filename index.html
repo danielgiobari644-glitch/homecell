@@ -240,9 +240,9 @@
           
           <div class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 px-3">Connect Portal</div>
 
-          <button onclick="switchTab('portfolio')" id="nav-portfolio" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-all text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-blue-950/40 border border-transparent">
-            <i data-lucide="briefcase" class="w-5 h-5"></i>
-            Creator Portfolio
+          <button onclick="switchTab('feed')" id="nav-feed" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-all text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 border border-transparent">
+            <i data-lucide="message-square" class="w-5 h-5"></i>
+            Community Feed
           </button>
           
           <button onclick="switchTab('dashboard')" id="nav-dashboard" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-all text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 border border-transparent">
@@ -296,101 +296,107 @@
       <!-- Central Canvas Content space -->
       <main class="flex-grow min-w-0">
         
-        <!-- Tab 0: Creator Portfolio Page -->
-        <section id="tab-portfolio" class="app-tab active space-y-8 animate-fade-in">
-          <div class="bg-gradient-to-r from-blue-700 to-indigo-800 text-white rounded-[3rem] p-8 md:p-12 shadow-xl relative overflow-hidden">
-            <div class="absolute -right-16 -bottom-16 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
-            <div class="relative max-w-2xl space-y-4">
-              <span class="bg-white/20 backdrop-blur-md px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest text-blue-100">PLATFORM ARCHITECT</span>
-              <h1 class="text-4xl md:text-5xl font-black font-display tracking-tight leading-none">Daniel Giobari</h1>
-              <p class="text-lg text-blue-100 font-medium">
-                Passionate software architect, community builder, and system engineer driving real digital transformation for modern fellowship networks.
+        <!-- Tab 0: Community Feed Page -->
+        <section id="tab-feed" class="app-tab active space-y-6 animate-fade-in">
+          
+          <!-- Banner for Feed -->
+          <div class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-[2.5rem] p-8 shadow-md relative overflow-hidden">
+            <div class="absolute -right-16 -bottom-16 w-48 h-48 bg-white/10 rounded-full blur-2xl"></div>
+            <div class="relative max-w-2xl space-y-2">
+              <span class="bg-white/20 backdrop-blur-md px-3.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-blue-100">Parish Fellowship Stream</span>
+              <h1 class="text-3xl md:text-4xl font-black font-display tracking-tight leading-none">The Community Feed</h1>
+              <p class="text-xs md:text-sm text-blue-100">
+                A warm place to share testimonies of God's goodness, stay updated with Parish announcements, and lift each other up.
               </p>
-              <div class="flex flex-wrap gap-4 pt-4">
-                <a href="mailto:danielgiobari644@gmail.com" class="bg-white text-indigo-900 px-6 py-3 rounded-2xl font-black text-sm uppercase tracking-wider hover:scale-105 active:scale-95 transition-all flex items-center gap-2">
-                  <i data-lucide="mail" class="w-4 h-4"></i> Contact Daniel
-                </a>
-                <button onclick="switchTab('dashboard')" class="bg-indigo-600 hover:bg-indigo-700 border border-indigo-400 px-6 py-3 rounded-2xl font-black text-sm uppercase tracking-wider hover:scale-105 active:scale-95 transition-all flex items-center gap-2">
-                  Launch App Portal <i data-lucide="arrow-right" class="w-4 h-4"></i>
-                </button>
-              </div>
             </div>
           </div>
 
-          <!-- Creator Bento Grid of projects -->
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm md:col-span-2 space-y-4">
-              <div class="flex items-center gap-3">
-                <div class="p-2.5 bg-blue-100 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 rounded-xl">
-                  <i data-lucide="globe" class="w-6 h-6"></i>
+          <!-- Social Feed Columns Grid -->
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <!-- Main Feed Column (Post Composer and Streams) -->
+            <div class="lg:col-span-2 space-y-6">
+              
+              <!-- Social Post Composer -->
+              <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm space-y-4">
+                <div class="flex items-start gap-3">
+                  <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 font-bold flex items-center justify-center text-sm font-display shadow-inner" id="feed-user-avatar">
+                    ?
+                  </div>
+                  <div class="flex-grow">
+                    <textarea id="feed-composer-text" rows="3" class="w-full text-sm bg-slate-50 dark:bg-zinc-800/50 border border-slate-200 dark:border-zinc-800/80 rounded-2xl p-4 focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-zinc-100 resize-none transition-all placeholder:text-slate-400" placeholder="What is God doing in your life today? Share a testimony or praise..."></textarea>
+                  </div>
                 </div>
-                <h3 class="text-xl font-black font-display tracking-tight">Active Tech Stack & Vision</h3>
+
+                <!-- Composer Controls -->
+                <div class="flex flex-wrap items-center justify-between gap-4 pt-2 border-t border-slate-100 dark:border-zinc-800/60">
+                  <div class="flex items-center gap-4">
+                    <!-- Post Type Selector (Testimony vs Normal Note) -->
+                    <select id="feed-post-type" class="text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl px-3 py-2 font-bold text-slate-700 dark:text-zinc-200 focus:outline-none">
+                      <option value="testimony">🙏 Share Testimony</option>
+                      <option value="post">✍️ General Post</option>
+                    </select>
+
+                    <!-- Announcement Toggle (Admin & Cell Leaders Only) -->
+                    <div id="feed-announcement-toggle-box" class="hidden items-center gap-2">
+                      <input type="checkbox" id="feed-is-announcement" class="w-4 h-4 text-purple-600 rounded border-slate-300 focus:ring-purple-500 cursor-pointer" />
+                      <label for="feed-is-announcement" class="text-xs font-bold text-purple-700 dark:text-purple-400 cursor-pointer flex items-center gap-1">
+                        <i data-lucide="megaphone" class="w-3.5 h-3.5"></i> Post Announcement (Official)
+                      </label>
+                    </div>
+                  </div>
+
+                  <button onclick="publishToFeed()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase tracking-wider px-5 py-2.5 rounded-xl transition-all hover:scale-105 active:scale-95 flex items-center gap-2 cursor-pointer shadow-sm">
+                    Publish to Feed <i data-lucide="send" class="w-3.5 h-3.5"></i>
+                  </button>
+                </div>
               </div>
-              <p class="text-sm text-slate-600 dark:text-zinc-300 leading-relaxed">
-                We believe in simple, accessible web architecture. By rejecting bloated JavaScript frameworks, this platform delivers unmatched load speeds, perfect search engine visibility, and reliable execution through pure <strong>Vanilla JS, Semantic HTML5, and dynamic Tailwind styling</strong>.
-              </p>
-              <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2">
-                <div class="bg-slate-50 dark:bg-zinc-800/50 p-3 rounded-xl border border-slate-200 dark:border-zinc-800">
-                  <span class="text-xs font-bold text-slate-400 block uppercase">BACKEND</span>
-                  <span class="text-sm font-black text-slate-800 dark:text-zinc-200">Firebase Suite</span>
-                </div>
-                <div class="bg-slate-50 dark:bg-zinc-800/50 p-3 rounded-xl border border-slate-200 dark:border-zinc-800">
-                  <span class="text-xs font-bold text-slate-400 block uppercase">FRONTEND</span>
-                  <span class="text-sm font-black text-slate-800 dark:text-zinc-200">Vanilla ES6 JS</span>
-                </div>
-                <div class="bg-slate-50 dark:bg-zinc-800/50 p-3 rounded-xl border border-slate-200 dark:border-zinc-800 col-span-2 sm:col-span-1">
-                  <span class="text-xs font-bold text-slate-400 block uppercase">STYLING</span>
-                  <span class="text-sm font-black text-slate-800 dark:text-zinc-200">Tailwind CSS v4</span>
+
+              <!-- Live Stream Feed Posts Container -->
+              <div id="community-posts-stream" class="space-y-6">
+                <!-- Posts loaded via JS -->
+                <div class="text-center py-12 text-slate-400 font-medium flex flex-col items-center gap-3">
+                  <i data-lucide="loader-2" class="w-8 h-8 animate-spin text-blue-500"></i>
+                  Loading fellowship feed...
                 </div>
               </div>
+
             </div>
 
-            <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm space-y-3">
-              <h3 class="text-lg font-black font-display text-blue-600 dark:text-blue-400 flex items-center gap-2">
-                <i data-lucide="users" class="w-5 h-5"></i> Leadership Role
-              </h3>
-              <p class="text-sm text-slate-600 dark:text-zinc-300">
-                Daniel Giobari is the designated <strong>Super Admin</strong> of the entire hcell workspace ecosystem. Access controls automatically unlock advanced admin tabs for registered profiles matching his account email: 
-              </p>
-              <div class="bg-blue-50 dark:bg-blue-950/20 px-4 py-2.5 rounded-xl border border-blue-100 dark:border-blue-900/40 text-xs font-mono font-bold text-blue-700 dark:text-blue-400 truncate">
-                danielgiobari644@gmail.com
+            <!-- Sidebars: Testimonies & Quick Info (Desktop only) -->
+            <div class="space-y-6">
+              
+              <!-- Quick Help Guidance Box -->
+              <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm space-y-4">
+                <h4 class="font-black font-display text-slate-900 dark:text-zinc-100 flex items-center gap-2 text-sm uppercase tracking-wider text-blue-600 dark:text-blue-400">
+                  <i data-lucide="help-circle" class="w-4 h-4"></i> About this Feed
+                </h4>
+                <p class="text-xs text-slate-500 dark:text-zinc-400 leading-relaxed">
+                  Connect and engage with your brothers and sisters in Christ. Ask for prayer, like testimonies, read official parish announcements, and leave comments of support!
+                </p>
+                <div class="text-[10px] bg-slate-50 dark:bg-zinc-800/40 p-3 rounded-xl border border-slate-100 dark:border-zinc-800/60 space-y-1.5">
+                  <span class="font-bold text-slate-700 dark:text-zinc-300 block">📢 Who can post Announcements?</span>
+                  <p class="text-slate-500 dark:text-zinc-400">Only Super Admins and Cell Leaders can broadcast official announcements to the entire Parish.</p>
+                </div>
               </div>
+
+              <!-- Side Widget: Featured Stories & Testimonies (Syncs dynamically with members' profiles) -->
+              <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm space-y-4">
+                <h4 class="font-black font-display text-slate-900 dark:text-zinc-100 flex items-center gap-2 text-sm uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                  <i data-lucide="sparkles" class="w-4 h-4"></i> Member Journeys
+                </h4>
+                <p class="text-xs text-slate-500 dark:text-zinc-400 leading-relaxed">
+                  Read about how God is moving in the lives of our parish members. Modify your testimony using the profile settings in the menu below.
+                </p>
+                <div id="sidebar-testimonies-list" class="space-y-3">
+                  <!-- Loaded dynamically from user profiles with active testimonies -->
+                </div>
+              </div>
+
             </div>
+
           </div>
 
-          <!-- Featured App Assemblies -->
-          <div class="space-y-4">
-            <h3 class="text-2xl font-black font-display tracking-tight text-slate-900 dark:text-zinc-50">Featured Portfolio Modules</h3>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 space-y-3 shadow-sm">
-                <div class="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold">
-                  <i data-lucide="flame" class="w-5 h-5"></i>
-                </div>
-                <h4 class="text-lg font-bold font-display">Intercession Core</h4>
-                <p class="text-xs text-slate-500 dark:text-zinc-400">
-                  Real-time prayer request categorized petition deck with flame flares, agreement telemetry, and intercessor RSVP controls.
-                </p>
-              </div>
-              <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 space-y-3 shadow-sm">
-                <div class="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-950/50 text-purple-600 dark:text-purple-400 flex items-center justify-center font-bold">
-                  <i data-lucide="message-square" class="w-5 h-5"></i>
-                </div>
-                <h4 class="text-lg font-bold font-display">Fellowship Chatroom</h4>
-                <p class="text-xs text-slate-500 dark:text-zinc-400">
-                  Instant text delivery chat channel scoped to individual fellowship cells with co-leader security controls.
-                </p>
-              </div>
-              <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 space-y-3 shadow-sm">
-                <div class="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
-                  <i data-lucide="book-open" class="w-5 h-5"></i>
-                </div>
-                <h4 class="text-lg font-bold font-display">Scripture Search Engine</h4>
-                <p class="text-xs text-slate-500 dark:text-zinc-400">
-                  Bible Study tool supporting keyword searches, chapter selection, and browser-driven Text-To-Speech (TTS) audio vocalization.
-                </p>
-              </div>
-            </div>
-          </div>
         </section>
 
         <!-- Tab 1: Parish Dashboard (Bento Grid) -->
@@ -413,29 +419,41 @@
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             
             <!-- Gathering Countdown Ticker -->
-            <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm md:col-span-2 flex flex-col justify-between space-y-4">
+            <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm flex flex-col justify-between space-y-4">
               <div>
                 <span class="text-xs font-bold uppercase tracking-widest text-slate-400">NEXT GATHERING COUNTDOWN</span>
-                <h2 class="text-3xl font-black font-display tracking-tight mt-1 text-slate-900 dark:text-zinc-100">Parish Saturday Assembly</h2>
-                <p class="text-sm text-slate-500 dark:text-zinc-400 mt-1">Joint congregational fellowship and prayer assembly</p>
+                <h2 class="text-xl font-black font-display tracking-tight mt-1 text-slate-900 dark:text-zinc-100">Parish Saturday Assembly</h2>
+                <p class="text-xs text-slate-500 dark:text-zinc-400 mt-1">Joint congregational fellowship</p>
               </div>
-              <div class="grid grid-cols-4 gap-2 text-center py-4">
-                <div class="bg-slate-100 dark:bg-zinc-800 p-3 rounded-2xl">
-                  <span id="countdown-days" class="text-3xl font-black font-mono block text-blue-600 dark:text-blue-400">00</span>
-                  <span class="text-[10px] uppercase font-bold text-slate-400">Days</span>
+              <div class="grid grid-cols-4 gap-1.5 text-center py-2">
+                <div class="bg-slate-100 dark:bg-zinc-800 p-2.5 rounded-xl">
+                  <span id="countdown-days" class="text-xl font-black font-mono block text-blue-600 dark:text-blue-400">00</span>
+                  <span class="text-[9px] uppercase font-bold text-slate-400">Days</span>
                 </div>
-                <div class="bg-slate-100 dark:bg-zinc-800 p-3 rounded-2xl">
-                  <span id="countdown-hours" class="text-3xl font-black font-mono block text-blue-600 dark:text-blue-400">00</span>
-                  <span class="text-[10px] uppercase font-bold text-slate-400">Hours</span>
+                <div class="bg-slate-100 dark:bg-zinc-800 p-2.5 rounded-xl">
+                  <span id="countdown-hours" class="text-xl font-black font-mono block text-blue-600 dark:text-blue-400">00</span>
+                  <span class="text-[9px] uppercase font-bold text-slate-400">Hours</span>
                 </div>
-                <div class="bg-slate-100 dark:bg-zinc-800 p-3 rounded-2xl">
-                  <span id="countdown-minutes" class="text-3xl font-black font-mono block text-blue-600 dark:text-blue-400">00</span>
-                  <span class="text-[10px] uppercase font-bold text-slate-400">Mins</span>
+                <div class="bg-slate-100 dark:bg-zinc-800 p-2.5 rounded-xl">
+                  <span id="countdown-minutes" class="text-xl font-black font-mono block text-blue-600 dark:text-blue-400">00</span>
+                  <span class="text-[9px] uppercase font-bold text-slate-400">Mins</span>
                 </div>
-                <div class="bg-slate-100 dark:bg-zinc-800 p-3 rounded-2xl">
-                  <span id="countdown-seconds" class="text-3xl font-black font-mono block text-rose-500">00</span>
-                  <span class="text-[10px] uppercase font-bold text-slate-400">Secs</span>
+                <div class="bg-slate-100 dark:bg-zinc-800 p-2.5 rounded-xl">
+                  <span id="countdown-seconds" class="text-xl font-black font-mono block text-rose-500">00</span>
+                  <span class="text-[9px] uppercase font-bold text-slate-400">Secs</span>
                 </div>
+              </div>
+            </div>
+
+            <!-- Live Clock Card -->
+            <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm flex flex-col justify-between space-y-4">
+              <div>
+                <span class="text-xs font-bold uppercase tracking-widest text-slate-400">YOUR LOCAL TIME</span>
+                <div id="live-time-clock" class="text-2xl font-black font-mono text-slate-900 dark:text-zinc-100 mt-2">12:00:00 PM</div>
+                <div id="live-date-clock" class="text-xs font-bold text-slate-500 mt-1">Wednesday, June 24, 2026</div>
+              </div>
+              <div class="flex items-center gap-1.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-900/40 px-2.5 py-1 rounded-xl w-max">
+                <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping"></span> Live System Sync
               </div>
             </div>
 
@@ -448,9 +466,9 @@
                     <i data-lucide="refresh-cw" class="w-4 h-4"></i>
                   </button>
                 </div>
-                <p id="dashboard-quote-text" class="text-base font-medium leading-relaxed italic text-indigo-100">"Thy word is a lamp unto my feet, and a light unto my path."</p>
+                <p id="dashboard-quote-text" class="text-sm font-medium leading-relaxed italic text-indigo-100">"Thy word is a lamp unto my feet, and a light unto my path."</p>
               </div>
-              <div id="dashboard-quote-ref" class="text-xs font-bold text-indigo-300 font-mono tracking-wider">Psalms 119:105 (KJV)</div>
+              <div id="dashboard-quote-ref" class="text-[10px] font-bold text-indigo-300 font-mono tracking-wider">Psalms 119:105 (KJV)</div>
             </div>
 
           </div>
@@ -997,6 +1015,30 @@
       </div>
     </div>
 
+    <!-- Change Cell Leader Modal -->
+    <div id="change-leader-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+      <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl w-full max-w-md p-8 shadow-2xl relative">
+        <button onclick="closeChangeLeaderModal()" class="absolute top-6 right-6 text-slate-400 hover:text-slate-600">
+          <i data-lucide="x" class="w-6 h-6"></i>
+        </button>
+        <h3 class="text-2xl font-black font-display tracking-tight text-slate-900 dark:text-zinc-100 mb-2">Change Cell Leader</h3>
+        <p class="text-xs text-slate-500 mb-6 font-medium">Assign a new leader for this group. The current leader will be set to regular Member status, and the new leader will be promoted.</p>
+        
+        <form id="change-leader-form" class="space-y-4 text-sm">
+          <input type="hidden" id="change-leader-cell-id" />
+          <div>
+            <label class="block text-xs font-bold text-slate-400 mb-2">Select Fellowship Member</label>
+            <select id="change-leader-select" required class="w-full px-4 py-3 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl font-bold text-slate-800 dark:text-zinc-100 focus:outline-none">
+              <!-- Dynamically populated -->
+            </select>
+          </div>
+          <button type="submit" class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-all cursor-pointer shadow-sm">
+            Confirm Assignment Change
+          </button>
+        </form>
+      </div>
+    </div>
+
     <!-- Floating status alerts (Toasts) -->
     <div id="toast-container" class="fixed bottom-6 right-6 z-50 space-y-3 pointer-events-none"></div>
 
@@ -1017,6 +1059,7 @@
     <script src="calendar.js"></script>
     <script src="downloads.js"></script>
     <script src="admin.js"></script>
+    <script src="feed.js"></script>
     <script src="app.js"></script>
     
     <script>

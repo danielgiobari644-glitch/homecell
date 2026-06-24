@@ -48,6 +48,7 @@ function syncMembershipRegistry() {
 
     usersListListener = window.db.collection('users').orderBy('createdAt', 'desc').onSnapshot(snap => {
       container.innerHTML = '';
+      window.allUsersList = [];
       if (snap.empty) {
         container.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-slate-400">No registered members found.</td></tr>`;
         return;
@@ -56,6 +57,7 @@ function syncMembershipRegistry() {
       snap.forEach(doc => {
         const u = doc.data();
         const uid = doc.id;
+        window.allUsersList.push({ uid, ...u });
 
         const tr = document.createElement('tr');
         tr.className = "border-b border-slate-100 dark:border-zinc-800 text-slate-800 dark:text-zinc-200";
@@ -152,16 +154,21 @@ function syncAdminCells() {
           <div class="text-[10px] text-slate-400 font-semibold mt-2">Leader: ${cell.leaderName} (${cell.leaderEmail})</div>
         </div>
 
-        <div class="flex gap-2 mt-4 pt-3 border-t border-slate-100 dark:border-zinc-800/60">
-          <button onclick="toggleCellSuspension('${cellId}', '${cell.status}')" class="flex-1 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-            isSuspended
-              ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-              : 'bg-amber-600 hover:bg-amber-700 text-white'
-          }">
-            ${isSuspended ? 'Activate Cell' : 'Suspend Cell'}
-          </button>
-          <button onclick="deleteCellGroup('${cellId}')" class="px-2.5 py-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 dark:bg-rose-950/20 dark:text-rose-400 rounded-lg cursor-pointer">
-            <i data-lucide="trash-2" class="w-4 h-4"></i>
+        <div class="flex flex-col gap-2 mt-4 pt-3 border-t border-slate-100 dark:border-zinc-800/60">
+          <div class="flex gap-2">
+            <button onclick="toggleCellSuspension('${cellId}', '${cell.status}')" class="flex-grow py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+              isSuspended
+                ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                : 'bg-amber-600 hover:bg-amber-700 text-white'
+            }">
+              ${isSuspended ? 'Activate Cell' : 'Suspend Cell'}
+            </button>
+            <button onclick="deleteCellGroup('${cellId}')" class="px-2.5 py-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 dark:bg-rose-950/20 dark:text-rose-400 rounded-lg cursor-pointer">
+              <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>
+          </div>
+          <button onclick="openChangeCellLeaderModal('${cellId}')" class="w-full py-1.5 text-xs font-bold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all cursor-pointer text-center">
+            Change Cell Leader
           </button>
         </div>
       `;
@@ -566,7 +573,76 @@ document.addEventListener("DOMContentLoaded", () => {
       updateStreamDesk();
     });
   }
+
+  const clForm = document.getElementById('change-leader-form');
+  if (clForm) {
+    clForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const cellId = document.getElementById('change-leader-cell-id').value;
+      const newLeaderUid = document.getElementById('change-leader-select').value;
+      const newLeader = (window.allUsersList || []).find(u => u.uid === newLeaderUid);
+      if (!newLeader) return;
+
+      window.db.collection('cells').doc(cellId).get().then(cellDoc => {
+        if (!cellDoc.exists) {
+          window.showToast?.("Cell fellowship group not found.", "error");
+          return;
+        }
+
+        const cellData = cellDoc.data();
+        const oldLeaderUid = cellData.leaderUid;
+
+        const batch = window.db.batch();
+
+        // Update Cell Doc
+        batch.update(window.db.collection('cells').doc(cellId), {
+          leaderUid: newLeaderUid,
+          leaderName: newLeader.displayName || newLeader.email,
+          leaderEmail: newLeader.email
+        });
+
+        // Promote new leader
+        batch.update(window.db.collection('users').doc(newLeaderUid), {
+          role: 'Cell Leader',
+          cellId: cellId
+        });
+
+        // Demote old leader (if different from new leader)
+        if (oldLeaderUid && oldLeaderUid !== newLeaderUid) {
+          batch.update(window.db.collection('users').doc(oldLeaderUid), {
+            role: 'Member'
+          });
+        }
+
+        return batch.commit().then(() => {
+          window.showToast?.("Cell leadership reassigned successfully.");
+          closeChangeLeaderModal();
+        });
+      })
+      .catch(err => window.handleFirestoreError(err, 'write', 'reassign_leader'));
+    });
+  }
 });
+
+function openChangeCellLeaderModal(cellId) {
+  const cellIdInput = document.getElementById('change-leader-cell-id');
+  if (cellIdInput) cellIdInput.value = cellId;
+
+  const select = document.getElementById('change-leader-select');
+  if (select) {
+    select.innerHTML = (window.allUsersList || []).map(u => `
+      <option value="${u.uid}">${u.displayName || u.email} (${u.role || 'Member'})</option>
+    `).join('');
+  }
+
+  const modal = document.getElementById('change-leader-modal');
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeChangeLeaderModal() {
+  const modal = document.getElementById('change-leader-modal');
+  if (modal) modal.classList.add('hidden');
+}
 
 // Expose globally
 window.initAdminModule = initAdminModule;
@@ -582,3 +658,5 @@ window.checkTriviaAnswer = checkTriviaAnswer;
 window.updateSupportDesk = updateSupportDesk;
 window.updateStreamDesk = updateStreamDesk;
 window.setAdminSubTab = setAdminSubTab;
+window.openChangeCellLeaderModal = openChangeCellLeaderModal;
+window.closeChangeLeaderModal = closeChangeLeaderModal;

@@ -204,5 +204,35 @@ service cloudfire.firestore {
       allow read: if isSignedIn();
       allow write: if isAdmin();
     }
+
+    // --- Community Feed & Social Center ---
+    match /community_feed/{postId} {
+      allow read: if isSignedIn();
+      allow create: if isVerified()
+                    && incoming().id == postId
+                    && incoming().text is string && incoming().text.size() <= 2000
+                    && incoming().type in ['post', 'announcement', 'testimony']
+                    && incoming().authorUid == request.auth.uid
+                    && incoming().authorName is string && incoming().authorName.size() <= 100
+                    && incoming().authorRole is string
+                    && incoming().likesCount is number
+                    && incoming().likes is object
+                    && incoming().createdAt == request.time;
+      allow update: if isVerified() && (
+        // Allow members to toggle likes or add comments (updates to comments list)
+        (incoming().id == existing().id
+         && incoming().text == existing().text
+         && incoming().type == existing().type
+         && incoming().authorUid == existing().authorUid
+         && incoming().authorName == existing().authorName
+         && incoming().likes is object
+         && incoming().likesCount is number)
+        ||
+        isAdmin()
+      );
+      allow delete: if isVerified() && (
+        existing().authorUid == request.auth.uid || isAdmin()
+      );
+    }
   }
 }

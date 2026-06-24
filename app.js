@@ -1,7 +1,7 @@
 // app.js
 // Central Application Orchestrator and Navigation Desk
 
-let activeTab = 'portfolio';
+let activeTab = 'feed';
 
 // Initialize Theme early to prevent flicker
 function initTheme() {
@@ -34,7 +34,7 @@ function switchTab(tabId) {
   activeTab = tabId;
 
   // List of all navigation tabs
-  const tabIds = ['portfolio', 'dashboard', 'bible', 'cells', 'prayers', 'calendar', 'downloads', 'admin'];
+  const tabIds = ['feed', 'dashboard', 'bible', 'cells', 'prayers', 'calendar', 'downloads', 'admin'];
 
   tabIds.forEach(id => {
     const pane = document.getElementById(`tab-${id}`);
@@ -60,6 +60,7 @@ function switchTab(tabId) {
   });
 
   // Call designated module initializers on tab switch
+  if (tabId === 'feed' && window.initFeedEngine) window.initFeedEngine();
   if (tabId === 'dashboard' && window.initDashboard) window.initDashboard();
   if (tabId === 'bible' && window.initBibleEngine) window.initBibleEngine();
   if (tabId === 'cells' && window.initCellsModule) window.initCellsModule();
@@ -92,7 +93,7 @@ function listenToAuthState() {
       
       window.currentUserRole = 'Guest';
       window.currentUserProfile = null;
-      switchTab('portfolio');
+      switchTab('feed');
       return;
     }
 
@@ -134,7 +135,7 @@ function listenToAuthState() {
           if (authModal) authModal.classList.add('hidden');
 
           // Initialize Dashboard
-          if (activeTab === 'portfolio') {
+          if (activeTab === 'feed') {
             switchTab('dashboard');
           } else {
             switchTab(activeTab);
