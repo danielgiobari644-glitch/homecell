@@ -1,197 +1,1031 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Home.cell - Professional Community Social Network">
-    <meta name="theme-color" content="#0066cc">
-    <meta name="mobile-web-app-capable" content="true">
-    <meta name="apple-mobile-web-app-capable" content="true">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Home.cell - Community Network</title>
-    <link rel="manifest" href="./manifest.json">
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%230066cc' width='192' height='192'/><text x='50%' y='50%' font-size='120' font-weight='bold' fill='white' text-anchor='middle' dominant-baseline='central' font-family='sans-serif'>HC</text></svg>">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Home.cell - Parish & Fellowship Portal</title>
     
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Tailwind CSS Play CDN (v4 Compiler) -->
+    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+    
+    <!-- Lucide Icons Global CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Google Fonts: Inter, DM Sans, JetBrains Mono -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <!-- Ultra-Modern Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&family=Poppins:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="./styles.css">
-</head>
-<script>
-/* Disable Right Click */
-document.addEventListener('contextmenu', function (e) {
-    e.preventDefault();
-});
-
-/* Disable F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U */
-document.addEventListener('keydown', function (e) {
-
-    // F12
-    if (e.key === "F12") {
-        e.preventDefault();
-    }
-
-    // Ctrl+Shift+I
-    if (e.ctrlKey && e.shiftKey && e.key === "I") {
-        e.preventDefault();
-    }
-
-    // Ctrl+Shift+J
-    if (e.ctrlKey && e.shiftKey && e.key === "J") {
-        e.preventDefault();
-    }
-
-    // Ctrl+Shift+C
-    if (e.ctrlKey && e.shiftKey && e.key === "C") {
-        e.preventDefault();
-    }
-
-    // Ctrl+U (View Source)
-    if (e.ctrlKey && e.key === "u") {
-        e.preventDefault();
-    }
-
-    // Ctrl+S (Save page)
-    if (e.ctrlKey && e.key === "s") {
-        e.preventDefault();
-    }
-
-});
-setInterval(function () {
-    debugger;
-}, 1000);
-
-setInterval(function () {
-    if (window.outerWidth - window.innerWidth > 160 ||
-        window.outerHeight - window.innerHeight > 160) {
-        document.body.innerHTML = "Developer tools not allowed";
-    }
-}, 1000);
-
-</script>
-<body class="bg-slate-50 dark:bg-slate-950">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Fira+Code:wght@300..700&family=Inter:wght@100..900&display=swap" rel="stylesheet">
     
-    <!-- Loading Overlay -->
-    <div id="loading-overlay" class="fixed inset-0 z-[9999] flex items-center justify-center bg-white dark:bg-slate-900 backdrop-blur">
-        <div class="flex flex-col items-center gap-8">
-            <div class="relative">
-                <div class="w-28 h-28 bg-gradient-to-br from-blue-600 to-blue-500 rounded-2xl flex items-center justify-center shadow-lg">
-                    <i class="fa-solid fa-users text-5xl text-white"></i>
-                </div>
-            </div>
-            <div class="text-center space-y-2">
-                <p class="text-slate-800 dark:text-slate-200 font-bold text-lg">Home.cell</p>
-                <p class="text-slate-600 dark:text-slate-400 font-medium text-sm">Loading your community...</p>
-            </div>
-            <div class="flex gap-2">
-                <div class="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 0ms"></div>
-                <div class="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 150ms"></div>
-                <div class="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 300ms"></div>
-            </div>
-        </div>
+    <!-- Firebase Compat SDKs (CDN) -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+    <!-- Custom CSS Variables & High-Contrast Style -->
+    <style type="text/css">
+      body {
+        font-family: 'Inter', sans-serif;
+      }
+      .font-display {
+        font-family: 'DM Sans', sans-serif;
+      }
+      .font-mono {
+        font-family: 'Fira Code', monospace;
+      }
+      
+      /* High Contrast Scrollbar */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #475569;
+        border-radius: 9999px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #334155;
+      }
+
+      /* Base Light / Dark styles for maximum accessibility */
+      html {
+        color-scheme: light;
+      }
+      html.dark {
+        color-scheme: dark;
+      }
+
+      /* Seamless tab transition helper */
+      .app-tab {
+        display: none;
+      }
+      .app-tab.active {
+        display: block;
+      }
+    </style>
+  </head>
+  <body class="bg-slate-50 text-slate-900 dark:bg-zinc-950 dark:text-zinc-50 min-h-screen flex flex-col transition-colors duration-300">
+    
+    <!-- Dynamic Stream Broadcast Notification Banner -->
+    <div id="live-broadcast-banner" class="hidden w-full bg-rose-600 text-white font-semibold py-3 px-4 flex items-center justify-between shadow-md animate-pulse">
+      <div class="flex items-center gap-2 max-w-[80%]">
+        <i data-lucide="radio" class="w-5 h-5 flex-shrink-0"></i>
+        <span class="truncate" id="broadcast-banner-title">Gathering Live Now! Watch fellowship live stream:</span>
+      </div>
+      <button onclick="switchTab('dashboard')" class="bg-white text-rose-700 font-bold px-4 py-1.5 rounded-full hover:bg-rose-50 text-sm flex items-center gap-1.5 transition-all cursor-pointer">
+        Tune In <i data-lucide="play" class="w-4 h-4"></i>
+      </button>
     </div>
 
-    <!-- Tutorial Overlay -->
-    <div id="tutorial" class="hidden fixed inset-0 z-[100] flex flex-col items-center justify-center p-6 bg-black/40 dark:bg-black/60 backdrop-blur">
-        <div class="max-w-lg w-full bg-white dark:bg-slate-900 rounded-2xl p-12 shadow-2xl relative flex flex-col items-center text-center gap-8 border border-slate-200 dark:border-slate-800">
-            <div id="tutorial-icon" class="w-24 h-24 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-500 text-white flex items-center justify-center text-5xl shadow-lg transition-all duration-500">
-                <i class="fa-solid fa-users"></i>
-            </div>
-            <div class="space-y-3">
-                <h2 id="tutorial-title" class="text-3xl font-bold dark:text-white tracking-tight">Welcome!</h2>
-                <p id="tutorial-description" class="text-slate-600 dark:text-slate-400 font-medium text-base leading-relaxed">Your community social network</p>
-            </div>
-            <div id="tutorial-dots" class="flex gap-2"></div>
-            <div class="w-full flex gap-3">
-                <button id="tutorial-back" class="hidden flex-1 py-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 text-sm uppercase tracking-wider transition-all duration-200 btn btn-secondary">
-                    <i class="fa-solid fa-arrow-left mr-2"></i>Back
-                </button>
-                <button id="tutorial-next" class="flex-[2] py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 active:scale-95 text-sm uppercase tracking-wider transition-all duration-200 btn btn-primary">
-                    Next <i class="fa-solid fa-arrow-right ml-2"></i>
-                </button>
-            </div>
-            <div id="tutorial-step-indicator" class="absolute -top-12 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-wider shadow-lg">
-                Step 1 of 4
-            </div>
+    <!-- Onboarding / Welcome Modal overlay -->
+    <div id="onboarding-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+      <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl w-full max-w-xl p-8 max-h-[90vh] overflow-y-auto shadow-2xl">
+        <div class="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800 pb-4 mb-6">
+          <h2 class="text-2xl font-black font-display tracking-tight text-blue-600 dark:text-blue-400">Welcome to Home.cell</h2>
+          <button onclick="closeOnboardingModal()" class="text-slate-500 hover:text-slate-800 dark:hover:text-zinc-200">
+            <i data-lucide="x" class="w-6 h-6"></i>
+          </button>
         </div>
-        <button id="tutorial-skip" class="mt-8 text-slate-500 hover:text-blue-600 font-bold uppercase text-sm hover:scale-105 transition-all duration-200">
-            Skip Tutorial
+        <p class="text-sm text-slate-600 dark:text-zinc-300 mb-6">
+          Thank you for joining our parish fellowship portal! Let's complete your onboarding so you can join a fellowship cell group.
+        </p>
+        <form id="onboarding-form" class="space-y-4">
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 mb-2">Display Name</label>
+            <input type="text" id="ob-display-name" required class="w-full px-4 py-3 bg-slate-100 dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 text-slate-900 dark:text-zinc-100" placeholder="e.g. Bro. John Doe" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 mb-2">Spiritual Bio / Testimony</label>
+            <textarea id="ob-spiritual-bio" required rows="3" class="w-full px-4 py-3 bg-slate-100 dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 text-slate-900 dark:text-zinc-100" placeholder="Share your testimony or walk with God..."></textarea>
+          </div>
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 mb-2">Localized City / Coordinates</label>
+            <input type="text" id="ob-coordinates" required class="w-full px-4 py-3 bg-slate-100 dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 text-slate-900 dark:text-zinc-100" placeholder="e.g. Port Harcourt, Nigeria" />
+          </div>
+          
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 mb-2">Join a Cell Group Choice</label>
+            <select id="ob-cell-choice" class="w-full px-4 py-3 bg-slate-100 dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 text-slate-900 dark:text-zinc-100">
+              <option value="none">Register / Setup Independently later</option>
+              <option value="new">Create/Register a new Fellowship Cell Group</option>
+              <!-- Populated dynamically with cells -->
+            </select>
+          </div>
+
+          <div id="ob-new-cell-section" class="hidden p-4 bg-blue-50 dark:bg-blue-950/30 rounded-2xl border border-blue-200 dark:border-blue-900/50 space-y-3">
+            <h3 class="text-sm font-bold text-blue-700 dark:text-blue-400">New Fellowship Cell Details</h3>
+            <div>
+              <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 mb-1">Cell Name</label>
+              <input type="text" id="ob-new-cell-name" class="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl text-slate-900 dark:text-zinc-100 text-sm" placeholder="e.g. Grace Fellowship" />
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 mb-1">City Location</label>
+              <input type="text" id="ob-new-cell-city" class="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl text-slate-900 dark:text-zinc-100 text-sm" placeholder="e.g. Port Harcourt" />
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 mb-1">Cell Description</label>
+              <input type="text" id="ob-new-cell-desc" class="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl text-slate-900 dark:text-zinc-100 text-sm" placeholder="Brief description of gathering location & focus" />
+            </div>
+          </div>
+
+          <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all">
+            Save Profile & Onboard <i data-lucide="check-circle" class="w-5 h-5"></i>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Login / Registration Modal overlay -->
+    <div id="auth-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-lg z-40 flex items-center justify-center p-4">
+      <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl w-full max-w-md p-8 shadow-2xl relative">
+        <div class="text-center mb-8">
+          <div class="inline-flex p-3.5 bg-blue-100 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 rounded-2xl mb-3">
+            <i data-lucide="home" class="w-8 h-8"></i>
+          </div>
+          <h1 class="text-3xl font-black font-display tracking-tight text-slate-900 dark:text-zinc-100">Home.cell</h1>
+          <p class="text-slate-500 dark:text-zinc-400 text-sm mt-1">Parish Fellowship Connection Portal</p>
+        </div>
+
+        <!-- Tab Toggle for Auth Mode -->
+        <div class="flex border-b border-slate-200 dark:border-zinc-800 mb-6 font-semibold">
+          <button onclick="setAuthTab('signin')" id="btn-tab-signin" class="flex-1 pb-3 text-center border-b-2 border-blue-600 text-blue-600">Sign In</button>
+          <button onclick="setAuthTab('signup')" id="btn-tab-signup" class="flex-1 pb-3 text-center border-b-2 border-transparent text-slate-500 dark:text-zinc-400">Sign Up</button>
+        </div>
+
+        <!-- Google OAuth Trigger Button -->
+        <button id="google-auth-btn" class="w-full py-3 border border-slate-300 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-800 rounded-xl flex items-center justify-center gap-3 font-semibold text-sm transition-all mb-4 cursor-pointer text-slate-700 dark:text-zinc-200">
+          <svg class="w-5 h-5" viewBox="0 0 24 24">
+            <path fill="#EA4335" d="M12 5.04c1.61 0 3.05.55 4.19 1.63l3.12-3.12C17.43 1.76 14.92 1 12 1 7.35 1 3.39 3.65 1.45 7.5l3.85 2.99C6.22 7.04 8.89 5.04 12 5.04z"/>
+            <path fill="#4285F4" d="M23.49 12.27c0-.81-.07-1.59-.2-2.36H12v4.47h6.44c-.28 1.47-1.11 2.71-2.36 3.55l3.66 2.84c2.14-1.97 3.38-4.88 3.38-8.5z"/>
+            <path fill="#FBBC05" d="M5.3 14.5c-.25-.75-.39-1.55-.39-2.38s.14-1.63.39-2.38l-3.85-2.99C.53 8.35 0 10.12 0 12s.53 3.65 1.45 5.25l3.85-2.99z"/>
+            <path fill="#34A853" d="M12 23c3.24 0 5.97-1.07 7.96-2.91l-3.66-2.84c-1.01.68-2.31 1.09-3.9 1.09-3.11 0-5.78-2-6.7-4.96L1.85 16.3C3.79 20.35 7.85 23 12 23z"/>
+          </svg>
+          Continue with Google
         </button>
+
+        <div class="relative flex py-2 items-center mb-4">
+          <div class="flex-grow border-t border-slate-200 dark:border-zinc-800"></div>
+          <span class="flex-shrink mx-4 text-xs font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest">Or standard</span>
+          <div class="flex-grow border-t border-slate-200 dark:border-zinc-800"></div>
+        </div>
+
+        <form id="auth-form" class="space-y-4">
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 mb-2">Email Address</label>
+            <input type="email" id="auth-email" required class="w-full px-4 py-3 bg-slate-100 dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 text-slate-900 dark:text-zinc-100 text-sm" placeholder="you@domain.com" />
+          </div>
+          <div>
+            <div class="flex justify-between items-center mb-2">
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">Password</label>
+              <button type="button" onclick="triggerPasswordReset()" id="btn-forgot" class="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline">Forgot password?</button>
+            </div>
+            <input type="password" id="auth-password" required class="w-full px-4 py-3 bg-slate-100 dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 text-slate-900 dark:text-zinc-100 text-sm" placeholder="••••••••" />
+          </div>
+
+          <button type="submit" id="auth-submit-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl cursor-pointer transition-all flex items-center justify-center gap-2">
+            Sign In <i data-lucide="arrow-right" class="w-5 h-5"></i>
+          </button>
+        </form>
+      </div>
     </div>
 
-    <!-- Main App Container -->
-    <div id="app" class="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 transition-colors duration-500 hidden">
+    <!-- Core Layout Header -->
+    <header class="bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border-b border-slate-200 dark:border-zinc-800 sticky top-0 z-30 transition-colors">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between">
         
-        <!-- Sidebar Toggle Button -->
-        <button onclick="window.toggleSidebar()" class="fixed bottom-6 left-4 z-50 btn btn-ghost icon-btn bg-white dark:bg-slate-900 shadow-lg border border-slate-200 dark:border-slate-800" aria-label="Toggle sidebar">
-            <i class="fa-solid fa-bars text-xl"></i>
-        </button>
-
-        <!-- Sidebar -->
-        <div id="sidebar" class="fixed top-0 left-0 h-full w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 shadow-xl transform -translate-x-full transition-transform duration-300 z-40">
-            <div class="p-6 border-b border-slate-200 dark:border-slate-800">
-                <div class="flex items-center gap-3">
-                    <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center text-white shadow-lg">
-                        <i class="fa-solid fa-users text-lg font-bold"></i>
-                    </div>
-                    <div class="flex flex-col leading-tight">
-                        <span class="text-xl font-black text-slate-900 dark:text-white tracking-tight">Home.cell</span>
-                        <span class="text-xs text-slate-500 dark:text-slate-400 font-semibold">Community hub</span>
-                    </div>
-                </div>
-            </div>
-            <nav class="p-4 space-y-2" id="sidebar-nav-links"></nav>
+        <!-- Logo and Platform name -->
+        <div class="flex items-center gap-3 cursor-pointer" onclick="switchTab('portfolio')">
+          <div class="p-2 bg-blue-600 text-white rounded-xl shadow-md">
+            <i data-lucide="home" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <span class="text-xl font-black font-display tracking-tight text-slate-900 dark:text-zinc-50 flex items-center gap-1.5">
+              Home.cell
+            </span>
+            <span class="text-[10px] uppercase font-bold tracking-widest text-slate-400 block -mt-1">Parish fellowship</span>
+          </div>
         </div>
 
-        <!-- Sidebar Overlay -->
-        <div id="sidebar-overlay" class="fixed inset-0 bg-black/50 z-30 hidden" onclick="window.toggleSidebar()"></div>
+        <!-- Toolbar controls -->
+        <div class="flex items-center gap-4">
+          <!-- Light/Dark Contrast Theme Switcher -->
+          <button onclick="toggleTheme()" id="theme-toggle-btn" class="p-2.5 bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-200 rounded-xl hover:scale-105 active:scale-95 transition-all cursor-pointer" title="Switch high-contrast theme">
+            <i data-lucide="sun" class="w-5 h-5 block dark:hidden"></i>
+            <i data-lucide="moon" class="w-5 h-5 hidden dark:block"></i>
+          </button>
 
-        <!-- Main Content Area -->
-        <main class="flex-1 relative overflow-hidden flex flex-col h-screen">
-            <div id="page-auth" class="page active"></div>
-            <div id="page-feed" class="page"></div>
-            <div id="page-chat" class="page"></div>
-            <div id="page-documents" class="page"></div>
-            <div id="page-bible" class="page"></div>
-            <div id="page-members" class="page"></div>
-            <div id="page-admin" class="page"></div>
-            <div id="page-settings" class="page"></div>
-            <div id="page-profile" class="page"></div>
-        </main>
-    </div>
+          <!-- Current Logged User Profile card info -->
+          <div id="user-profile-badge" class="hidden sm:flex items-center gap-3 bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 px-4 py-1.5 rounded-xl">
+            <div class="text-right">
+              <span id="header-user-name" class="text-xs font-bold block text-slate-900 dark:text-zinc-100">Member</span>
+              <span id="header-user-role" class="text-[9px] uppercase font-bold text-slate-400 bg-slate-200 dark:bg-zinc-700 px-1.5 py-0.5 rounded tracking-widest">USER</span>
+            </div>
+            <button onclick="signOutUser()" class="text-rose-500 hover:text-rose-700 p-1 rounded hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors" title="Log Out">
+              <i data-lucide="log-out" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
 
-    <!-- APK Download Button Container -->
-    <div id="apk-download-container" class="hidden fixed bottom-28 md:bottom-24 left-6 right-6 md:left-auto md:right-6 md:max-w-md z-[9997]"></div>
+      </div>
+    </header>
 
-    <!-- Notification Center -->
-    <div id="notification-center" class="hidden fixed top-20 right-6 w-96 max-w-[calc(100vw-3rem)] z-[9999]">
-        <div class="bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col">
-            <div class="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-                <div>
-                    <h3 class="font-bold text-lg dark:text-white">Notifications</h3>
-                    <p class="text-xs text-slate-600 dark:text-slate-400 font-medium" id="notification-count-text">0 notifications</p>
+    <!-- Main Workspace Frame -->
+    <div class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 flex-grow flex flex-col md:flex-row gap-8 py-8">
+      
+      <!-- Sticky Navigation Bar / Side navigation -->
+      <aside class="md:w-64 flex-shrink-0">
+        <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 sticky top-24 space-y-2 shadow-sm">
+          
+          <div class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 px-3">Connect Portal</div>
+
+          <button onclick="switchTab('portfolio')" id="nav-portfolio" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-all text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-blue-950/40 border border-transparent">
+            <i data-lucide="briefcase" class="w-5 h-5"></i>
+            Creator Portfolio
+          </button>
+          
+          <button onclick="switchTab('dashboard')" id="nav-dashboard" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-all text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 border border-transparent">
+            <i data-lucide="layout-grid" class="w-5 h-5"></i>
+            Parish Dashboard
+          </button>
+
+          <button onclick="switchTab('bible')" id="nav-bible" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-all text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 border border-transparent">
+            <i data-lucide="book-open" class="w-5 h-5"></i>
+            Scripture & Audio
+          </button>
+
+          <button onclick="switchTab('cells')" id="nav-cells" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-all text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 border border-transparent">
+            <i data-lucide="users" class="w-5 h-5"></i>
+            Fellowship Cells
+          </button>
+
+          <button onclick="switchTab('prayers')" id="nav-prayers" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-all text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 border border-transparent">
+            <i data-lucide="flame" class="w-5 h-5"></i>
+            Intercession Room
+          </button>
+
+          <button onclick="switchTab('calendar')" id="nav-calendar" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-all text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 border border-transparent">
+            <i data-lucide="calendar" class="w-5 h-5"></i>
+            Parish Calendar
+          </button>
+
+          <button onclick="switchTab('downloads')" id="nav-downloads" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-all text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 border border-transparent">
+            <i data-lucide="download" class="w-5 h-5"></i>
+            Downloads Hub
+          </button>
+
+          <!-- Super Admin Area (Daniel) -->
+          <div id="admin-nav-separator" class="hidden border-t border-slate-200 dark:border-zinc-800 my-4 pt-4 text-xs font-bold uppercase tracking-wider text-purple-400 dark:text-purple-300 px-3">Administration</div>
+          
+          <button onclick="switchTab('admin')" id="nav-admin" class="hidden w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition-all text-purple-600 hover:bg-purple-50 dark:text-purple-400 dark:hover:bg-purple-950/20 border border-transparent">
+            <i data-lucide="shield-alert" class="w-5 h-5"></i>
+            Super Admin Console
+          </button>
+
+          <div class="pt-6 border-t border-slate-100 dark:border-zinc-800">
+            <button onclick="openProfileEditModal()" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer">
+              <i data-lucide="user-cog" class="w-4 h-4"></i>
+              Edit Testimony Profile
+            </button>
+          </div>
+
+        </div>
+      </aside>
+
+      <!-- Central Canvas Content space -->
+      <main class="flex-grow min-w-0">
+        
+        <!-- Tab 0: Creator Portfolio Page -->
+        <section id="tab-portfolio" class="app-tab active space-y-8 animate-fade-in">
+          <div class="bg-gradient-to-r from-blue-700 to-indigo-800 text-white rounded-[3rem] p-8 md:p-12 shadow-xl relative overflow-hidden">
+            <div class="absolute -right-16 -bottom-16 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
+            <div class="relative max-w-2xl space-y-4">
+              <span class="bg-white/20 backdrop-blur-md px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest text-blue-100">PLATFORM ARCHITECT</span>
+              <h1 class="text-4xl md:text-5xl font-black font-display tracking-tight leading-none">Daniel Giobari</h1>
+              <p class="text-lg text-blue-100 font-medium">
+                Passionate software architect, community builder, and system engineer driving real digital transformation for modern fellowship networks.
+              </p>
+              <div class="flex flex-wrap gap-4 pt-4">
+                <a href="mailto:danielgiobari644@gmail.com" class="bg-white text-indigo-900 px-6 py-3 rounded-2xl font-black text-sm uppercase tracking-wider hover:scale-105 active:scale-95 transition-all flex items-center gap-2">
+                  <i data-lucide="mail" class="w-4 h-4"></i> Contact Daniel
+                </a>
+                <button onclick="switchTab('dashboard')" class="bg-indigo-600 hover:bg-indigo-700 border border-indigo-400 px-6 py-3 rounded-2xl font-black text-sm uppercase tracking-wider hover:scale-105 active:scale-95 transition-all flex items-center gap-2">
+                  Launch App Portal <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Creator Bento Grid of projects -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm md:col-span-2 space-y-4">
+              <div class="flex items-center gap-3">
+                <div class="p-2.5 bg-blue-100 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 rounded-xl">
+                  <i data-lucide="globe" class="w-6 h-6"></i>
                 </div>
+                <h3 class="text-xl font-black font-display tracking-tight">Active Tech Stack & Vision</h3>
+              </div>
+              <p class="text-sm text-slate-600 dark:text-zinc-300 leading-relaxed">
+                We believe in simple, accessible web architecture. By rejecting bloated JavaScript frameworks, this platform delivers unmatched load speeds, perfect search engine visibility, and reliable execution through pure <strong>Vanilla JS, Semantic HTML5, and dynamic Tailwind styling</strong>.
+              </p>
+              <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2">
+                <div class="bg-slate-50 dark:bg-zinc-800/50 p-3 rounded-xl border border-slate-200 dark:border-zinc-800">
+                  <span class="text-xs font-bold text-slate-400 block uppercase">BACKEND</span>
+                  <span class="text-sm font-black text-slate-800 dark:text-zinc-200">Firebase Suite</span>
+                </div>
+                <div class="bg-slate-50 dark:bg-zinc-800/50 p-3 rounded-xl border border-slate-200 dark:border-zinc-800">
+                  <span class="text-xs font-bold text-slate-400 block uppercase">FRONTEND</span>
+                  <span class="text-sm font-black text-slate-800 dark:text-zinc-200">Vanilla ES6 JS</span>
+                </div>
+                <div class="bg-slate-50 dark:bg-zinc-800/50 p-3 rounded-xl border border-slate-200 dark:border-zinc-800 col-span-2 sm:col-span-1">
+                  <span class="text-xs font-bold text-slate-400 block uppercase">STYLING</span>
+                  <span class="text-sm font-black text-slate-800 dark:text-zinc-200">Tailwind CSS v4</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm space-y-3">
+              <h3 class="text-lg font-black font-display text-blue-600 dark:text-blue-400 flex items-center gap-2">
+                <i data-lucide="users" class="w-5 h-5"></i> Leadership Role
+              </h3>
+              <p class="text-sm text-slate-600 dark:text-zinc-300">
+                Daniel Giobari is the designated <strong>Super Admin</strong> of the entire hcell workspace ecosystem. Access controls automatically unlock advanced admin tabs for registered profiles matching his account email: 
+              </p>
+              <div class="bg-blue-50 dark:bg-blue-950/20 px-4 py-2.5 rounded-xl border border-blue-100 dark:border-blue-900/40 text-xs font-mono font-bold text-blue-700 dark:text-blue-400 truncate">
+                danielgiobari644@gmail.com
+              </div>
+            </div>
+          </div>
+
+          <!-- Featured App Assemblies -->
+          <div class="space-y-4">
+            <h3 class="text-2xl font-black font-display tracking-tight text-slate-900 dark:text-zinc-50">Featured Portfolio Modules</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 space-y-3 shadow-sm">
+                <div class="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold">
+                  <i data-lucide="flame" class="w-5 h-5"></i>
+                </div>
+                <h4 class="text-lg font-bold font-display">Intercession Core</h4>
+                <p class="text-xs text-slate-500 dark:text-zinc-400">
+                  Real-time prayer request categorized petition deck with flame flares, agreement telemetry, and intercessor RSVP controls.
+                </p>
+              </div>
+              <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 space-y-3 shadow-sm">
+                <div class="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-950/50 text-purple-600 dark:text-purple-400 flex items-center justify-center font-bold">
+                  <i data-lucide="message-square" class="w-5 h-5"></i>
+                </div>
+                <h4 class="text-lg font-bold font-display">Fellowship Chatroom</h4>
+                <p class="text-xs text-slate-500 dark:text-zinc-400">
+                  Instant text delivery chat channel scoped to individual fellowship cells with co-leader security controls.
+                </p>
+              </div>
+              <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 space-y-3 shadow-sm">
+                <div class="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
+                  <i data-lucide="book-open" class="w-5 h-5"></i>
+                </div>
+                <h4 class="text-lg font-bold font-display">Scripture Search Engine</h4>
+                <p class="text-xs text-slate-500 dark:text-zinc-400">
+                  Bible Study tool supporting keyword searches, chapter selection, and browser-driven Text-To-Speech (TTS) audio vocalization.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Tab 1: Parish Dashboard (Bento Grid) -->
+        <section id="tab-dashboard" class="app-tab space-y-8 animate-fade-in">
+          
+          <!-- YouTube Live Embed section if stream active -->
+          <div id="live-stream-pane" class="hidden bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-[2.5rem] p-6 shadow-md space-y-4">
+            <div class="flex items-center gap-2 text-rose-600 font-bold">
+              <span class="w-2.5 h-2.5 bg-rose-600 rounded-full animate-ping"></span>
+              Live Parish Stream Broadcast
+            </div>
+            <h2 id="stream-pane-title" class="text-2xl font-black font-display">Stream Title</h2>
+            <p id="stream-pane-desc" class="text-sm text-slate-500 dark:text-zinc-400 -mt-2">Description</p>
+            <div class="aspect-video w-full rounded-2xl overflow-hidden bg-slate-900">
+              <iframe id="stream-iframe" class="w-full h-full" src="" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            </div>
+          </div>
+
+          <!-- Bento Grid Container -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            
+            <!-- Gathering Countdown Ticker -->
+            <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm md:col-span-2 flex flex-col justify-between space-y-4">
+              <div>
+                <span class="text-xs font-bold uppercase tracking-widest text-slate-400">NEXT GATHERING COUNTDOWN</span>
+                <h2 class="text-3xl font-black font-display tracking-tight mt-1 text-slate-900 dark:text-zinc-100">Parish Saturday Assembly</h2>
+                <p class="text-sm text-slate-500 dark:text-zinc-400 mt-1">Joint congregational fellowship and prayer assembly</p>
+              </div>
+              <div class="grid grid-cols-4 gap-2 text-center py-4">
+                <div class="bg-slate-100 dark:bg-zinc-800 p-3 rounded-2xl">
+                  <span id="countdown-days" class="text-3xl font-black font-mono block text-blue-600 dark:text-blue-400">00</span>
+                  <span class="text-[10px] uppercase font-bold text-slate-400">Days</span>
+                </div>
+                <div class="bg-slate-100 dark:bg-zinc-800 p-3 rounded-2xl">
+                  <span id="countdown-hours" class="text-3xl font-black font-mono block text-blue-600 dark:text-blue-400">00</span>
+                  <span class="text-[10px] uppercase font-bold text-slate-400">Hours</span>
+                </div>
+                <div class="bg-slate-100 dark:bg-zinc-800 p-3 rounded-2xl">
+                  <span id="countdown-minutes" class="text-3xl font-black font-mono block text-blue-600 dark:text-blue-400">00</span>
+                  <span class="text-[10px] uppercase font-bold text-slate-400">Mins</span>
+                </div>
+                <div class="bg-slate-100 dark:bg-zinc-800 p-3 rounded-2xl">
+                  <span id="countdown-seconds" class="text-3xl font-black font-mono block text-rose-500">00</span>
+                  <span class="text-[10px] uppercase font-bold text-slate-400">Secs</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Dynamic Scripture Quote of the Day card -->
+            <div class="bg-gradient-to-br from-indigo-900 to-slate-950 text-white border border-transparent rounded-3xl p-6 shadow-sm flex flex-col justify-between space-y-4">
+              <div>
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-xs font-bold uppercase tracking-widest text-indigo-300">Daily Scripture</span>
+                  <button onclick="refreshScriptureQuote()" class="text-indigo-400 hover:text-indigo-100 transition-colors p-1 rounded-lg">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                  </button>
+                </div>
+                <p id="dashboard-quote-text" class="text-base font-medium leading-relaxed italic text-indigo-100">"Thy word is a lamp unto my feet, and a light unto my path."</p>
+              </div>
+              <div id="dashboard-quote-ref" class="text-xs font-bold text-indigo-300 font-mono tracking-wider">Psalms 119:105 (KJV)</div>
+            </div>
+
+          </div>
+
+          <!-- Visual Stat Chips -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm flex items-center justify-between">
+              <div>
+                <span class="text-xs font-bold uppercase tracking-widest text-slate-400 block">Active Believers</span>
+                <span id="stat-active-users" class="text-3xl font-black font-display tracking-tight text-slate-900 dark:text-zinc-100">...</span>
+              </div>
+              <div class="p-3 bg-blue-100 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 rounded-2xl">
+                <i data-lucide="users" class="w-6 h-6"></i>
+              </div>
+            </div>
+            
+            <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm flex items-center justify-between">
+              <div>
+                <span class="text-xs font-bold uppercase tracking-widest text-slate-400 block">Active Cells</span>
+                <span id="stat-active-cells" class="text-3xl font-black font-display tracking-tight text-slate-900 dark:text-zinc-100">...</span>
+              </div>
+              <div class="p-3 bg-purple-100 dark:bg-purple-950/50 text-purple-600 dark:text-purple-400 rounded-2xl">
+                <i data-lucide="home" class="w-6 h-6"></i>
+              </div>
+            </div>
+
+            <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm flex items-center justify-between">
+              <div>
+                <span class="text-xs font-bold uppercase tracking-widest text-slate-400 block">Prayer Agreement Petitions</span>
+                <span id="stat-active-prayers" class="text-3xl font-black font-display tracking-tight text-slate-900 dark:text-zinc-100">...</span>
+              </div>
+              <div class="p-3 bg-rose-100 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 rounded-2xl">
+                <i data-lucide="flame" class="w-6 h-6"></i>
+              </div>
+            </div>
+          </div>
+
+          <!-- Fellowship Information center -->
+          <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-[2.5rem] p-8 space-y-6 shadow-sm">
+            <h3 class="text-2xl font-black font-display tracking-tight">Active Support & Connection Desk</h3>
+            <p class="text-sm text-slate-600 dark:text-zinc-300">
+              Need immediate spiritual assistance or pastoral care? Connect instantly with our ordained leaders using the live communications metrics updated below:
+            </p>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+              <a id="desk-phone" href="#" class="p-4 bg-slate-50 dark:bg-zinc-800/50 border border-slate-200 dark:border-zinc-800 rounded-2xl hover:scale-105 active:scale-95 transition-all block">
+                <i data-lucide="phone" class="w-6 h-6 mx-auto mb-2 text-blue-600"></i>
+                <span class="text-xs font-bold uppercase tracking-widest text-slate-400 block">Direct Telephone</span>
+                <span id="desk-phone-val" class="font-bold text-sm text-slate-900 dark:text-zinc-100">+234-XXX-XXXX</span>
+              </a>
+              <a id="desk-whatsapp" href="#" target="_blank" class="p-4 bg-slate-50 dark:bg-zinc-800/50 border border-slate-200 dark:border-zinc-800 rounded-2xl hover:scale-105 active:scale-95 transition-all block">
+                <i data-lucide="message-square" class="w-6 h-6 mx-auto mb-2 text-emerald-500"></i>
+                <span class="text-xs font-bold uppercase tracking-widest text-slate-400 block">WhatsApp Desk</span>
+                <span id="desk-whatsapp-val" class="font-bold text-sm text-slate-900 dark:text-zinc-100">Join Chat Channel</span>
+              </a>
+              <a id="desk-email" href="#" class="p-4 bg-slate-50 dark:bg-zinc-800/50 border border-slate-200 dark:border-zinc-800 rounded-2xl hover:scale-105 active:scale-95 transition-all block">
+                <i data-lucide="mail" class="w-6 h-6 mx-auto mb-2 text-purple-600"></i>
+                <span class="text-xs font-bold uppercase tracking-widest text-slate-400 block">Pastoral Support</span>
+                <span id="desk-email-val" class="font-bold text-sm text-slate-900 dark:text-zinc-100">info@parishportal.com</span>
+              </a>
+            </div>
+          </div>
+        </section>
+
+        <!-- Tab 2: Interactive Bible Study -->
+        <section id="tab-bible" class="app-tab space-y-6 animate-fade-in">
+          <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-[2.5rem] p-8 shadow-sm space-y-6">
+            
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
+                <h1 class="text-3xl font-black font-display tracking-tight text-slate-900 dark:text-zinc-100">Interactive Bible Engine</h1>
+                <p class="text-sm text-slate-500 dark:text-zinc-400 mt-1">Study Old & New Testament chapters with text search and TTS vocalization.</p>
+              </div>
+              
+              <!-- Quick Selectors -->
+              <div class="flex flex-wrap gap-2 w-full sm:w-auto">
+                <select id="bible-book-select" onchange="loadChapters()" class="px-4 py-2 bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl text-sm font-semibold focus:outline-none text-slate-900 dark:text-zinc-100">
+                  <!-- Loaded dynamically -->
+                </select>
+                <select id="bible-chapter-select" onchange="loadVerses()" class="px-4 py-2 bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl text-sm font-semibold focus:outline-none text-slate-900 dark:text-zinc-100">
+                  <!-- Loaded dynamically -->
+                </select>
+              </div>
+            </div>
+
+            <!-- Granular search within selected book/testament -->
+            <div class="flex gap-2">
+              <input type="text" id="bible-search-input" onkeyup="filterVerses()" class="flex-1 px-4 py-3 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl text-sm focus:outline-none text-slate-900 dark:text-zinc-100" placeholder="🔍 Granular search: Instant filter verses by keyword..." />
+              <button onclick="speakFullChapter()" id="btn-chapter-tts" class="bg-blue-100 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400 hover:bg-blue-200 px-4 py-3 rounded-xl font-bold text-sm flex items-center gap-2 cursor-pointer transition-all">
+                <i data-lucide="volume-2" class="w-5 h-5"></i>
+                Read Chapter
+              </button>
+            </div>
+
+            <!-- Main Scripture panel -->
+            <div id="bible-verses-box" class="bg-slate-50 dark:bg-zinc-950 p-6 rounded-2xl border border-slate-200 dark:border-zinc-800 max-h-[500px] overflow-y-auto space-y-4">
+              <!-- Verses populate here dynamically -->
+              <div class="text-center py-12 text-slate-400">
+                <i data-lucide="book" class="w-12 h-12 mx-auto mb-3 opacity-50"></i>
+                <p>Loading scripture verses...</p>
+              </div>
+            </div>
+
+            <!-- Helper banner on Copying / Vocalizing -->
+            <div class="text-xs text-slate-400 font-medium flex items-center gap-2 bg-slate-50 dark:bg-zinc-800/50 p-3 rounded-xl border border-slate-100 dark:border-zinc-800/50">
+              <i data-lucide="info" class="w-4 h-4 text-blue-500"></i>
+              <span>💡 Study Hint: Click on any individual verse text to instantly copy its text & coordinates to your device clipboard.</span>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- Tab 3: Fellowship Cell Groups -->
+        <section id="tab-cells" class="app-tab space-y-8 animate-fade-in">
+          
+          <!-- Not joined any cell warning -->
+          <div id="no-cell-notice" class="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/50 rounded-3xl p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div class="space-y-1">
+              <h3 class="text-lg font-bold text-amber-800 dark:text-amber-400">Fellowship Cell Missing</h3>
+              <p class="text-xs text-amber-700 dark:text-amber-500">You are currently not actively associated with any registered Fellowship Cell Group.</p>
+            </div>
+            <button onclick="switchTab('cells')" class="bg-amber-600 hover:bg-amber-700 text-white font-bold px-5 py-2.5 rounded-xl text-xs uppercase tracking-wider transition-all cursor-pointer">
+              Explore Directory Below
+            </button>
+          </div>
+
+          <!-- Active Fellowship Cell (Visible only when joined) -->
+          <div id="active-cell-card" class="hidden grid grid-cols-1 md:grid-cols-3 gap-6">
+            
+            <!-- Cell details & Events list -->
+            <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm md:col-span-1 space-y-6">
+              <div>
+                <span id="active-cell-city" class="text-xs font-bold uppercase tracking-widest text-blue-500 block">...</span>
+                <h2 id="active-cell-name" class="text-3xl font-black font-display tracking-tight text-slate-900 dark:text-zinc-100">Grace Sanctuary</h2>
+                <p id="active-cell-desc" class="text-sm text-slate-500 dark:text-zinc-400 mt-2">Active cell description</p>
+              </div>
+
+              <!-- Co-leader Appointment module for Lead -->
+              <div id="co-leader-appointment" class="hidden p-4 bg-slate-50 dark:bg-zinc-800/50 border border-slate-200 dark:border-zinc-800 rounded-2xl space-y-3">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">Appoint Group Co-leader</h3>
                 <div class="flex gap-2">
-                    <button onclick="window.markAllNotificationsAsRead()" class="btn btn-sm btn-ghost">Mark all read</button>
-                    <button onclick="window.clearAllNotifications()" class="btn btn-sm btn-danger">Clear all</button>
+                  <input type="email" id="co-leader-email" class="flex-1 px-3 py-1.5 bg-white dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-lg text-xs" placeholder="Co-leader email..." />
+                  <button onclick="appointCoLeader()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer">Add</button>
                 </div>
-            </div>
-            <div id="notifications-list" class="max-h-96 overflow-y-auto custom-scrollbar p-4 space-y-2">
-                <div class="text-center py-12 text-slate-400">
-                    <i class="fa-solid fa-bell-slash text-3xl mb-3 block"></i>
-                    <p class="font-semibold text-sm">No notifications yet</p>
+              </div>
+
+              <!-- Cell level specific gather events -->
+              <div class="space-y-3">
+                <div class="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800 pb-2">
+                  <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Scheduled Cell Events</h3>
+                  <!-- Add Event Trigger button if leader -->
+                  <button id="btn-add-cell-event" onclick="openAddCellEventModal()" class="hidden text-xs text-blue-600 hover:underline font-semibold">New Event</button>
                 </div>
+                <div id="active-cell-events" class="space-y-3 text-xs">
+                  <!-- Render cell gatherings -->
+                  <p class="text-slate-400 italic">No cell gathers scheduled</p>
+                </div>
+              </div>
+
+              <button onclick="leaveActiveCell()" class="w-full py-3 bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 font-bold hover:bg-rose-100 rounded-xl text-xs uppercase tracking-widest transition-all cursor-pointer">
+                Leave Cell Group <i data-lucide="log-out" class="w-4 h-4 inline ml-1"></i>
+              </button>
             </div>
-        </div>
+
+            <!-- Dedicated Real-time Cell chat space -->
+            <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm md:col-span-2 flex flex-col justify-between h-[500px]">
+              <div class="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800 pb-3 mb-4">
+                <div class="flex items-center gap-2">
+                  <i data-lucide="message-square" class="w-5 h-5 text-emerald-500"></i>
+                  <h3 class="font-bold font-display tracking-tight text-slate-800 dark:text-zinc-100">Cell Chat Lounge</h3>
+                </div>
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Sync Active</span>
+              </div>
+
+              <!-- Messages Frame -->
+              <div id="cell-chat-messages" class="flex-grow overflow-y-auto space-y-3 pr-2 mb-4 custom-scrollbar">
+                <!-- Loaded dynamically -->
+              </div>
+
+              <!-- Input form -->
+              <form id="cell-chat-form" class="flex gap-2">
+                <input type="text" id="cell-chat-input" required class="flex-1 px-4 py-3 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl text-sm focus:outline-none text-slate-900 dark:text-zinc-100" placeholder="Speak to cell fellowship..." />
+                <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white p-3.5 rounded-xl transition-all cursor-pointer">
+                  <i data-lucide="send" class="w-5 h-5"></i>
+                </button>
+              </form>
+            </div>
+
+          </div>
+
+          <!-- Global Cell Directory -->
+          <div class="space-y-6">
+            <div class="border-b border-slate-200 dark:border-zinc-800 pb-3">
+              <h3 class="text-2xl font-black font-display tracking-tight text-slate-900 dark:text-zinc-50">Fellowship Cell Directory</h3>
+              <p class="text-sm text-slate-500 dark:text-zinc-400 mt-1">Explore and associate instantly with geographic coordinate groups in your city.</p>
+            </div>
+            
+            <div id="cells-directory" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <!-- Loaded dynamically -->
+            </div>
+          </div>
+
+        </section>
+
+        <!-- Tab 4: Prayer & Intercession Room -->
+        <section id="tab-prayers" class="app-tab space-y-8 animate-fade-in">
+          
+          <!-- Launch petition workspace -->
+          <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-[2.5rem] p-8 shadow-sm space-y-6">
+            <h2 class="text-2xl font-black font-display tracking-tight">Post Prayer Petition</h2>
+            
+            <form id="prayer-form" class="space-y-4">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 mb-2">Needs Classification</label>
+                  <select id="prayer-category" class="w-full px-4 py-3 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 text-slate-900 dark:text-zinc-100 text-sm">
+                    <option value="Health">Health / Divine Healing</option>
+                    <option value="Family">Family & Relationships</option>
+                    <option value="Career">Career & Finances</option>
+                    <option value="Spiritual Growth">Spiritual Growth</option>
+                    <option value="Wisdom">Wisdom & Guidance</option>
+                    <option value="Gratitude">Gratitude & Thanksgiving</option>
+                    <option value="General Needs">General Needs</option>
+                  </select>
+                </div>
+                <div class="flex items-center justify-between sm:pt-6">
+                  <div class="flex items-center gap-2">
+                    <input type="checkbox" id="prayer-urgency" class="w-5 h-5 text-rose-600 rounded focus:ring-rose-500 cursor-pointer" />
+                    <label for="prayer-urgency" class="text-sm font-bold text-rose-600 flex items-center gap-1 cursor-pointer">
+                      <i data-lucide="flame" class="w-4 h-4 animate-bounce"></i> Urgent Intercession Flare
+                    </label>
+                  </div>
+                </div>
+              </div>
+              
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 mb-2">Intercession Request</label>
+                <textarea id="prayer-text" required rows="3" class="w-full px-4 py-3 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 text-slate-900 dark:text-zinc-100 text-sm" placeholder="Post your burden so intercessors can stand in agreement..."></textarea>
+              </div>
+
+              <button type="submit" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-black py-3.5 rounded-xl uppercase tracking-wider text-xs shadow-md cursor-pointer transition-all">
+                Publish Intercession Petition <i data-lucide="flame" class="w-4 h-4 inline ml-1"></i>
+              </button>
+            </form>
+          </div>
+
+          <!-- Petition stream filters -->
+          <div class="space-y-6">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-200 dark:border-zinc-800 pb-3 gap-4">
+              <h3 class="text-xl font-black font-display tracking-tight">Active Intercession Feed</h3>
+              <div class="flex gap-2 overflow-x-auto w-full sm:w-auto pb-1">
+                <button onclick="filterPrayers('all')" id="btn-pfilter-all" class="px-4 py-1.5 rounded-lg text-xs font-bold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300">All</button>
+                <button onclick="filterPrayers('Health')" id="btn-pfilter-Health" class="px-4 py-1.5 rounded-lg text-xs font-bold text-slate-500 dark:text-zinc-400">Health</button>
+                <button onclick="filterPrayers('Family')" id="btn-pfilter-Family" class="px-4 py-1.5 rounded-lg text-xs font-bold text-slate-500 dark:text-zinc-400">Family</button>
+                <button onclick="filterPrayers('Career')" id="btn-pfilter-Career" class="px-4 py-1.5 rounded-lg text-xs font-bold text-slate-500 dark:text-zinc-400">Career</button>
+                <button onclick="filterPrayers('Spiritual Growth')" id="btn-pfilter-Spiritual" class="px-4 py-1.5 rounded-lg text-xs font-bold text-slate-500 dark:text-zinc-400">Spiritual</button>
+              </div>
+            </div>
+
+            <!-- List stream -->
+            <div id="prayers-deck" class="space-y-4">
+              <!-- Loaded dynamically -->
+            </div>
+          </div>
+
+        </section>
+
+        <!-- Tab 5: Parish Events Calendar -->
+        <section id="tab-calendar" class="app-tab space-y-6 animate-fade-in">
+          <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-[2.5rem] p-8 shadow-sm space-y-6">
+            
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
+                <h1 class="text-3xl font-black font-display tracking-tight text-slate-900 dark:text-zinc-100">Parish Events Calendar</h1>
+                <p class="text-sm text-slate-500 dark:text-zinc-400 mt-1">Register attendance RSVPs for universal Parish gathers and cell fellowships.</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <button onclick="prevMonth()" class="p-2 bg-slate-100 dark:bg-zinc-800 rounded-lg hover:bg-slate-200"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
+                <span id="calendar-month-year" class="text-lg font-bold font-display">Month Year</span>
+                <button onclick="nextMonth()" class="p-2 bg-slate-100 dark:bg-zinc-800 rounded-lg hover:bg-slate-200"><i data-lucide="chevron-right" class="w-5 h-5"></i></button>
+              </div>
+            </div>
+
+            <!-- Responsive Month Grid -->
+            <div class="grid grid-cols-7 gap-1 text-center font-bold text-xs uppercase tracking-wider text-slate-400 bg-slate-100 dark:bg-zinc-800 p-3 rounded-2xl">
+              <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+            </div>
+            
+            <div id="calendar-grid" class="grid grid-cols-7 gap-1 bg-slate-200 dark:bg-zinc-800/40 p-1 rounded-2xl">
+              <!-- Populated dynamically with days & dot alerts -->
+            </div>
+
+            <!-- Selected Day Events RSVP dashboard -->
+            <div id="selected-day-agenda" class="p-6 bg-slate-50 dark:bg-zinc-950 rounded-2xl border border-slate-200 dark:border-zinc-800 space-y-4">
+              <h3 id="agenda-title" class="text-lg font-black font-display">Agenda for Selected Day</h3>
+              <div id="agenda-events-list" class="space-y-4">
+                <p class="text-xs text-slate-400 italic">Select a highlighted day on the calendar above to register and review RSVPs.</p>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- Tab 6: Direct Downloads Hub -->
+        <section id="tab-downloads" class="app-tab space-y-6 animate-fade-in">
+          <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-[2.5rem] p-8 shadow-sm space-y-6">
+            
+            <div>
+              <h1 class="text-3xl font-black font-display tracking-tight text-slate-900 dark:text-zinc-100">Downloads Hub</h1>
+              <p class="text-sm text-slate-500 dark:text-zinc-400 mt-1">Get immediate direct installer triggers for native PWA configurations, mobile APKs, and desktop binaries.</p>
+            </div>
+
+            <div id="download-bundles-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <!-- Loaded dynamically -->
+            </div>
+
+          </div>
+        </section>
+
+        <!-- Tab 7: Super Admin Console -->
+        <section id="tab-admin" class="app-tab space-y-8 animate-fade-in">
+          
+          <div class="border-b border-slate-200 dark:border-zinc-800 pb-4">
+            <h1 class="text-3xl font-black font-display tracking-tight text-purple-600 dark:text-purple-400 flex items-center gap-2">
+              <i data-lucide="shield-alert" class="w-8 h-8"></i> Super Admin Console
+            </h1>
+            <p class="text-sm text-slate-500 dark:text-zinc-400 mt-1">Executive oversight exclusive for danielgiobari644@gmail.com</p>
+          </div>
+
+          <!-- Admin Sub Tabs menu -->
+          <div class="flex flex-wrap gap-2 border-b border-slate-200 dark:border-zinc-800 pb-3 font-semibold text-xs uppercase tracking-wider">
+            <button onclick="setAdminSubTab('users')" id="btn-atab-users" class="px-4 py-2 rounded-lg bg-purple-100 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300">Users Admin</button>
+            <button onclick="setAdminSubTab('cells')" id="btn-atab-cells" class="px-4 py-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:text-zinc-400 dark:hover:bg-zinc-800">Cells Oversight</button>
+            <button onclick="setAdminSubTab('trivia')" id="btn-atab-trivia" class="px-4 py-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:text-zinc-400 dark:hover:bg-zinc-800">Trivia Creator</button>
+            <button onclick="setAdminSubTab('bundles')" id="btn-atab-bundles" class="px-4 py-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:text-zinc-400 dark:hover:bg-zinc-800">Custom Downloads</button>
+            <button onclick="setAdminSubTab('configs')" id="btn-atab-configs" class="px-4 py-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:text-zinc-400 dark:hover:bg-zinc-800">Desk Setup</button>
+            <button onclick="setAdminSubTab('stream')" id="btn-atab-stream" class="px-4 py-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:text-zinc-400 dark:hover:bg-zinc-800">YouTube Stream</button>
+          </div>
+
+          <!-- Admin Sub Tab 1: Users Admin -->
+          <div id="atab-users" class="admin-sub-tab space-y-4">
+            <h3 class="text-lg font-bold font-display">Parish Core Member Registry</h3>
+            <div class="overflow-x-auto bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-sm">
+              <table class="min-w-full text-left text-xs">
+                <thead class="bg-slate-100 dark:bg-zinc-800 font-bold uppercase tracking-wider text-slate-400 border-b border-slate-200 dark:border-zinc-800">
+                  <tr>
+                    <th class="p-4">Profile Name</th>
+                    <th class="p-4">Email</th>
+                    <th class="p-4">System Role</th>
+                    <th class="p-4">Cell Fellowship</th>
+                    <th class="p-4">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-users-rows" class="divide-y divide-slate-100 dark:divide-zinc-800">
+                  <!-- Loaded dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Admin Sub Tab 2: Cell Oversight -->
+          <div id="atab-cells" class="admin-sub-tab hidden space-y-6">
+            <h3 class="text-lg font-bold font-display">Fellowship Cell Oversight Panel</h3>
+            <div id="admin-cells-controls-box" class="space-y-4">
+              <!-- Loaded dynamically -->
+            </div>
+          </div>
+
+          <!-- Admin Sub Tab 3: Trivia -->
+          <div id="atab-trivia" class="admin-sub-tab hidden space-y-6">
+            <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm space-y-4">
+              <h3 class="text-lg font-bold font-display">Bible Trivia & Q&A Creator</h3>
+              <form id="trivia-creator-form" class="space-y-3 text-sm">
+                <div>
+                  <label class="block text-xs font-bold text-slate-400 mb-1">Trivia Question</label>
+                  <input type="text" id="trivia-q" required class="w-full px-4 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg text-slate-900 dark:text-zinc-100" placeholder="e.g. Who built the Ark?" />
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                  <input type="text" id="trivia-o0" required class="px-4 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg" placeholder="Option A" />
+                  <input type="text" id="trivia-o1" required class="px-4 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg" placeholder="Option B" />
+                  <input type="text" id="trivia-o2" required class="px-4 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg" placeholder="Option C" />
+                  <input type="text" id="trivia-o3" required class="px-4 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg" placeholder="Option D" />
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-400 mb-1">Correct Option Answer</label>
+                  <select id="trivia-answer-idx" class="w-full px-4 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg">
+                    <option value="0">Option A</option>
+                    <option value="1">Option B</option>
+                    <option value="2">Option C</option>
+                    <option value="3">Option D</option>
+                  </select>
+                </div>
+                <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2.5 px-6 rounded-lg tracking-wider text-xs">Create Question</button>
+              </form>
+            </div>
+
+            <!-- Live Trivia feed -->
+            <div class="space-y-3">
+              <h4 class="text-sm font-bold uppercase tracking-wider text-slate-400">Live Questions Registry</h4>
+              <div id="admin-trivia-list" class="space-y-2">
+                <!-- Loaded dynamically -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Admin Sub Tab 4: Custom Downloads -->
+          <div id="atab-bundles" class="admin-sub-tab hidden space-y-6">
+            <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm space-y-4">
+              <h3 class="text-lg font-bold font-display">Add App Deliveries / Bundles</h3>
+              <form id="admin-bundle-form" class="space-y-3 text-sm">
+                <div class="grid grid-cols-2 gap-2">
+                  <input type="text" id="bundle-title" required class="px-4 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg" placeholder="e.g. Mobile Android APK" />
+                  <input type="text" id="bundle-size" required class="px-4 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg" placeholder="e.g. 18.5 MB" />
+                </div>
+                <input type="url" id="bundle-url" required class="w-full px-4 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg" placeholder="Installer Download URL (Direct link)" />
+                <div class="grid grid-cols-2 gap-2">
+                  <input type="text" id="bundle-tag" required class="px-4 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg" placeholder="Tag: e.g. v1.0.4 stable" />
+                  <select id="bundle-category" class="px-4 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg">
+                    <option value="android">Android Mobile</option>
+                    <option value="pwa">PWA Web App</option>
+                    <option value="desktop">Desktop Package</option>
+                  </select>
+                </div>
+                <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2.5 px-6 rounded-lg tracking-wider text-xs">Register App Bundle</button>
+              </form>
+            </div>
+
+            <!-- Active Bundles list -->
+            <div class="space-y-3">
+              <h4 class="text-sm font-bold uppercase tracking-wider text-slate-400">Registered App Deliveries</h4>
+              <div id="admin-bundles-list" class="space-y-2">
+                <!-- Loaded dynamically -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Admin Sub Tab 5: Desk Setup -->
+          <div id="atab-configs" class="admin-sub-tab hidden space-y-6">
+            <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm space-y-4">
+              <h3 class="text-lg font-bold font-display">Contact Channels Configuration</h3>
+              <form id="admin-desk-form" class="space-y-4 text-sm">
+                <div>
+                  <label class="block text-xs font-bold text-slate-400 mb-1">Support Phone Number</label>
+                  <input type="text" id="desk-form-phone" required class="w-full px-4 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg" />
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-400 mb-1">WhatsApp Support Link</label>
+                  <input type="url" id="desk-form-whatsapp" required class="w-full px-4 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg" />
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-400 mb-1">Support & Support Email</label>
+                  <input type="email" id="desk-form-email" required class="w-full px-4 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg" />
+                </div>
+                <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2.5 px-6 rounded-lg tracking-wider text-xs">Update Channels</button>
+              </form>
+            </div>
+          </div>
+
+          <!-- Admin Sub Tab 6: YouTube Live Setup -->
+          <div id="atab-stream" class="admin-sub-tab hidden space-y-6">
+            <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm space-y-4">
+              <h3 class="text-lg font-bold font-display">Live Fellowship Stream Settings</h3>
+              <form id="admin-stream-form" class="space-y-4 text-sm">
+                <div>
+                  <label class="block text-xs font-bold text-slate-400 mb-1">YouTube Embed / Live stream URL</label>
+                  <input type="url" id="admin-stream-url" required class="w-full px-4 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg" placeholder="https://www.youtube.com/embed/..." />
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-400 mb-1">Broadcast Title</label>
+                  <input type="text" id="admin-stream-title" required class="w-full px-4 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg" placeholder="e.g. Mid-Week Revival Service" />
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-400 mb-1">Broadcast Description</label>
+                  <input type="text" id="admin-stream-desc" required class="w-full px-4 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg" placeholder="Gather with believers globally..." />
+                </div>
+                
+                <div class="flex items-center gap-2 py-2">
+                  <input type="checkbox" id="admin-stream-active" class="w-5 h-5 text-purple-600 rounded cursor-pointer" />
+                  <label for="admin-stream-active" class="text-sm font-bold text-purple-600 cursor-pointer">Activate livestream broadcast banner on member dashboards</label>
+                </div>
+                
+                <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2.5 px-6 rounded-lg tracking-wider text-xs">Save Settings & Sync Banner</button>
+              </form>
+            </div>
+          </div>
+
+        </section>
+
+      </main>
     </div>
 
-    <!-- Toast Notification Container -->
-    <div id="toast-container" class="fixed top-6 right-6 z-[9998] flex flex-col gap-3 pointer-events-none"></div>
+    <!-- Edit Profile testimony dialog modal -->
+    <div id="profile-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+      <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl w-full max-w-md p-8 shadow-2xl relative">
+        <button onclick="closeProfileModal()" class="absolute top-6 right-6 text-slate-400 hover:text-slate-600">
+          <i data-lucide="x" class="w-6 h-6"></i>
+        </button>
+        <h3 class="text-2xl font-black font-display tracking-tight text-slate-900 dark:text-zinc-100 mb-6">Modify Soul Testimony</h3>
+        
+        <form id="profile-edit-form" class="space-y-4 text-sm">
+          <div>
+            <label class="block text-xs font-bold text-slate-400 mb-2">Display Name</label>
+            <input type="text" id="edit-profile-name" required class="w-full px-4 py-3 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-400 mb-2">Testimony / Bio</label>
+            <textarea id="edit-profile-bio" required rows="3" class="w-full px-4 py-3 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl resize-none"></textarea>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-400 mb-2">Localized Coordinate (City)</label>
+            <input type="text" id="edit-profile-coords" required class="w-full px-4 py-3 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl" />
+          </div>
+          <button type="submit" class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-colors">
+            Update Testimony Details
+          </button>
+        </form>
+      </div>
+    </div>
 
-    <!-- Scripts -->
-    <script type="module" src="./app.js"></script>
-</body>
+    <!-- Cell event creation modal -->
+    <div id="cell-event-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+      <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl w-full max-w-md p-8 shadow-2xl relative">
+        <button onclick="closeCellEventModal()" class="absolute top-6 right-6 text-slate-400 hover:text-slate-600">
+          <i data-lucide="x" class="w-6 h-6"></i>
+        </button>
+        <h3 class="text-2xl font-black font-display tracking-tight text-slate-900 dark:text-zinc-100 mb-4">Schedule Cell Fellowship Event</h3>
+        
+        <form id="cell-event-form" class="space-y-4 text-sm">
+          <div>
+            <label class="block text-xs font-bold text-slate-400 mb-1">Event Name</label>
+            <input type="text" id="cell-ev-title" required class="w-full px-4 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl" placeholder="e.g. Bible Trivia Night" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-400 mb-1">Date</label>
+            <input type="date" id="cell-ev-date" required class="w-full px-4 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-400 mb-1">Details & Location</label>
+            <input type="text" id="cell-ev-desc" required class="w-full px-4 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl" placeholder="Gather at Bro. Luke's..." />
+          </div>
+          <button type="submit" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all cursor-pointer">
+            Publish Event
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Floating status alerts (Toasts) -->
+    <div id="toast-container" class="fixed bottom-6 right-6 z-50 space-y-3 pointer-events-none"></div>
+
+    <footer class="bg-white dark:bg-zinc-900 border-t border-slate-200 dark:border-zinc-800 py-6 mt-12 transition-colors">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-xs font-medium text-slate-400 dark:text-zinc-500 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <span>© 2026 Home.cell Assembly. High-Contrast Accessible Vanilla Workspace.</span>
+        <span class="font-mono">Active Firebase DB Engine Integration</span>
+      </div>
+    </footer>
+
+    <!-- Core App logic scripts link -->
+    <script src="/js/firebase.js"></script>
+    <script src="/js/toast.js"></script>
+    <script src="/js/dashboard.js"></script>
+    <script src="/js/bible.js"></script>
+    <script src="/js/cells.js"></script>
+    <script src="/js/prayers.js"></script>
+    <script src="/js/calendar.js"></script>
+    <script src="/js/downloads.js"></script>
+    <script src="/js/admin.js"></script>
+    <script src="/app.js"></script>
+    
+    <script>
+      // Quick fallback to initialize Lucide icons
+      document.addEventListener("DOMContentLoaded", function() {
+        if (window.lucide) {
+          window.lucide.createIcons();
+        }
+      });
+    </script>
+  </body>
 </html>

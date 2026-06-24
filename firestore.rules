@@ -1,0 +1,208 @@
+rules_version = '2';
+service cloudfire.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net default-deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Hardened Global Helpers ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isAdmin() {
+      return isVerified() && request.auth.token.email == 'danielgiobari644@gmail.com';
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // --- User Profiles ---
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow create: if isVerified() && request.auth.uid == userId
+                    && incoming().uid == userId
+                    && incoming().displayName is string && incoming().displayName.size() <= 100
+                    && incoming().email == request.auth.token.email
+                    && incoming().bio is string && incoming().bio.size() <= 1000
+                    && incoming().coordinates is string && incoming().coordinates.size() <= 200
+                    && incoming().role == 'Member' // Block self-promotion on signup
+                    && incoming().cellId == 'none'
+                    && incoming().createdAt == request.time;
+      allow update: if isVerified() && (
+        // Self edit of bio, coordinates, displayName (Role & Cell ID are locked!)
+        (request.auth.uid == userId
+         && incoming().role == existing().role
+         && incoming().cellId == existing().cellId
+         && incoming().email == existing().email
+         && incoming().displayName is string && incoming().displayName.size() <= 100
+         && incoming().bio is string && incoming().bio.size() <= 1000
+         && incoming().coordinates is string && incoming().coordinates.size() <= 200)
+        ||
+        // Self-updating cellId when joining/leaving
+        (request.auth.uid == userId
+         && incoming().displayName == existing().displayName
+         && incoming().bio == existing().bio
+         && incoming().coordinates == existing().coordinates
+         && incoming().role == existing().role
+         && incoming().email == existing().email
+         && incoming().cellId is string && incoming().cellId.size() <= 128)
+        ||
+        // Admin edits everything
+        isAdmin()
+      );
+      allow delete: if isAdmin();
+    }
+
+    // --- Cell Groups ---
+    match /cells/{cellId} {
+      allow read: if isSignedIn();
+      allow create: if isVerified()
+                    && incoming().id == cellId
+                    && incoming().name is string && incoming().name.size() <= 100
+                    && incoming().city is string && incoming().city.size() <= 100
+                    && incoming().description is string && incoming().description.size() <= 500
+                    && incoming().leaderUid == request.auth.uid
+                    && incoming().leaderEmail == request.auth.token.email
+                    && incoming().status == 'active'
+                    && incoming().createdAt == request.time;
+      allow update: if isVerified() && (
+        // Cell leader or co-leader updating details or coLeaders list
+        ((existing().leaderUid == request.auth.uid || request.auth.token.email in existing().coLeaders)
+         && incoming().id == existing().id
+         && incoming().leaderUid == existing().leaderUid
+         && incoming().leaderEmail == existing().leaderEmail
+         && incoming().status == existing().status
+         && incoming().name is string && incoming().name.size() <= 100
+         && incoming().city is string && incoming().city.size() <= 100
+         && incoming().description is string && incoming().description.size() <= 500
+         && incoming().coLeaders is list && incoming().coLeaders.size() <= 10)
+        ||
+        // Admin full control
+        isAdmin()
+      );
+      allow delete: if isAdmin();
+
+      // Subcollection: Cell chat messages
+      match /messages/{messageId} {
+        allow read: if isVerified() && (
+          // Must be active and a member of the cell group
+          get(/databases/$(database)/documents/cells/$(cellId)).data.status == 'active'
+          && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.cellId == cellId || isAdmin())
+        );
+        allow create: if isVerified() && (
+          get(/databases/$(database)/documents/cells/$(cellId)).data.status == 'active'
+          && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.cellId == cellId
+          && incoming().senderUid == request.auth.uid
+          && incoming().senderName is string && incoming().senderName.size() <= 100
+          && incoming().text is string && incoming().text.size() <= 1000
+          && incoming().createdAt == request.time
+        );
+        allow update, delete: if isVerified() && (
+          // Allow message creator, cell leader, or admin to delete messages
+          (existing().senderUid == request.auth.uid)
+          || get(/databases/$(database)/documents/cells/$(cellId)).data.leaderUid == request.auth.uid
+          || isAdmin()
+        );
+      }
+
+      // Subcollection: Cell events
+      match /events/{eventId} {
+        allow read: if isVerified() && (
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.cellId == cellId || isAdmin()
+        );
+        allow create: if isVerified() && (
+          (get(/databases/$(database)/documents/cells/$(cellId)).data.leaderUid == request.auth.uid || request.auth.token.email in get(/databases/$(database)/documents/cells/$(cellId)).data.coLeaders)
+          && incoming().title is string && incoming().title.size() <= 100
+          && incoming().date is string && incoming().date.size() <= 50
+          && incoming().description is string && incoming().description.size() <= 500
+          && incoming().createdAt == request.time
+        );
+        allow update, delete: if isVerified() && (
+          (get(/databases/$(database)/documents/cells/$(cellId)).data.leaderUid == request.auth.uid || request.auth.token.email in get(/databases/$(database)/documents/cells/$(cellId)).data.coLeaders)
+          || isAdmin()
+        );
+      }
+    }
+
+    // --- Prayer Petitions ---
+    match /prayer_petitions/{petitionId} {
+      allow read: if isSignedIn();
+      allow create: if isVerified()
+                    && incoming().id == petitionId
+                    && incoming().category in ['Health', 'Family', 'Career', 'Spiritual Growth', 'Wisdom', 'Gratitude', 'General Needs']
+                    && incoming().text is string && incoming().text.size() <= 2000
+                    && incoming().urgency is bool
+                    && incoming().authorUid == request.auth.uid
+                    && incoming().authorName is string && incoming().authorName.size() <= 100
+                    && incoming().agreementsCount == 0
+                    && incoming().agreements == {}
+                    && incoming().createdAt == request.time;
+      allow update: if isVerified() && (
+        // Agreement toggle action
+        (incoming().id == existing().id
+         && incoming().category == existing().category
+         && incoming().text == existing().text
+         && incoming().urgency == existing().urgency
+         && incoming().authorUid == existing().authorUid
+         && incoming().authorName == existing().authorName
+         && incoming().agreements is object
+         && incoming().agreementsCount is number)
+        ||
+        isAdmin()
+      );
+      allow delete: if isVerified() && (
+        existing().authorUid == request.auth.uid || isAdmin()
+      );
+    }
+
+    // --- Parish Calendar Events ---
+    match /parish_events/{eventId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+      allow update: if isVerified() && (
+        // Allow members to update only their RSVP status
+        (incoming().id == existing().id
+         && incoming().title == existing().title
+         && incoming().date == existing().date
+         && incoming().description == existing().description
+         && incoming().rsvps is object)
+        ||
+        isAdmin()
+      );
+    }
+
+    // --- Bible Trivia ---
+    match /trivia_questions/{questionId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // --- Downloads Hub Bundles ---
+    match /download_bundles/{bundleId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // --- System Configuration Desk Setup & Live Stream Broadcast ---
+    match /system_configs/{configId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+  }
+}

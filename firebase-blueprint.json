@@ -1,0 +1,175 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Registered user profile information.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "displayName": { "type": "string" },
+        "email": { "type": "string" },
+        "bio": { "type": "string" },
+        "coordinates": { "type": "string" },
+        "role": { "type": "string", "enum": ["Member", "Cell Leader", "Cell Coordinator", "Pastor", "Super Admin"] },
+        "cellId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "displayName", "email", "bio", "coordinates", "role", "cellId", "createdAt"]
+    },
+    "Cell": {
+      "title": "Cell",
+      "description": "Fellowship cell group details.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "city": { "type": "string" },
+        "description": { "type": "string" },
+        "leaderUid": { "type": "string" },
+        "leaderName": { "type": "string" },
+        "leaderEmail": { "type": "string" },
+        "coLeaders": { "type": "array" },
+        "status": { "type": "string", "enum": ["active", "suspended"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name", "city", "description", "leaderUid", "leaderName", "leaderEmail", "coLeaders", "status", "createdAt"]
+    },
+    "CellMessage": {
+      "title": "CellMessage",
+      "description": "Message in the cellular group chat.",
+      "type": "object",
+      "properties": {
+        "senderUid": { "type": "string" },
+        "senderName": { "type": "string" },
+        "text": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["senderUid", "senderName", "text", "createdAt"]
+    },
+    "CellEvent": {
+      "title": "CellEvent",
+      "description": "Scheduled cell fellowship event.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "date": { "type": "string" },
+        "description": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "date", "description", "createdAt"]
+    },
+    "PrayerPetition": {
+      "title": "PrayerPetition",
+      "description": "Prayer request submitted by members.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "category": { "type": "string" },
+        "text": { "type": "string" },
+        "urgency": { "type": "boolean" },
+        "authorUid": { "type": "string" },
+        "authorName": { "type": "string" },
+        "agreementsCount": { "type": "number" },
+        "agreements": { "type": "object" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "category", "text", "urgency", "authorUid", "authorName", "agreementsCount", "agreements", "createdAt"]
+    },
+    "ParishEvent": {
+      "title": "ParishEvent",
+      "description": "Universal parish event with RSVPs.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "date": { "type": "string" },
+        "description": { "type": "string" },
+        "rsvps": { "type": "object" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "title", "date", "description", "rsvps", "createdAt"]
+    },
+    "TriviaQuestion": {
+      "title": "TriviaQuestion",
+      "description": "Trivia Q&A created by Super Admin.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "question": { "type": "string" },
+        "options": { "type": "array" },
+        "answerIdx": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "question", "options", "answerIdx", "createdAt"]
+    },
+    "DownloadBundle": {
+      "title": "DownloadBundle",
+      "description": "Direct installer trigger asset.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "size": { "type": "string" },
+        "url": { "type": "string" },
+        "tag": { "type": "string" },
+        "category": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "title", "size", "url", "tag", "category", "createdAt"]
+    },
+    "SystemConfig": {
+      "title": "SystemConfig",
+      "description": "Global layout settings and stream broadcast setup.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "phone": { "type": "string" },
+        "whatsapp": { "type": "string" },
+        "email": { "type": "string" },
+        "streamUrl": { "type": "string" },
+        "streamTitle": { "type": "string" },
+        "streamDesc": { "type": "string" },
+        "streamActive": { "type": "boolean" }
+      },
+      "required": ["id"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "User",
+      "description": "User profile store."
+    },
+    "cells/{cellId}": {
+      "schema": "Cell",
+      "description": "Fellowship cell records."
+    },
+    "cells/{cellId}/messages/{messageId}": {
+      "schema": "CellMessage",
+      "description": "Cell chat lounge channel."
+    },
+    "cells/{cellId}/events/{eventId}": {
+      "schema": "CellEvent",
+      "description": "Cell localized calendar gatherings."
+    },
+    "prayer_petitions/{petitionId}": {
+      "schema": "PrayerPetition",
+      "description": "Intercession petitions feed."
+    },
+    "parish_events/{eventId}": {
+      "schema": "ParishEvent",
+      "description": "Universal monthly Parish calendar gatherings."
+    },
+    "trivia_questions/{questionId}": {
+      "schema": "TriviaQuestion",
+      "description": "Bible Trivia & Q&A registry."
+    },
+    "download_bundles/{bundleId}": {
+      "schema": "DownloadBundle",
+      "description": "App deliveries/bundles."
+    },
+    "system_configs/{configId}": {
+      "schema": "SystemConfig",
+      "description": "Primary live support channels and livestream broadcast flag."
+    }
+  }
+}
