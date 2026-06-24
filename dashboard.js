@@ -118,7 +118,7 @@ function syncSystemConfigs() {
       if (phoneLink) phoneLink.href = `tel:${data.phone || ''}`;
       if (waVal && data.whatsapp) waVal.innerText = "Connect on WhatsApp";
       if (waLink) waLink.href = data.whatsapp || '#';
-      if (emailVal) emailVal.innerText = data.email || 'support@parishportal.com';
+      if (emailVal) emailVal.innerText = data.email || 'support@homecell.com';
       if (emailLink) emailLink.href = `mailto:${data.email || ''}`;
     } else {
       // Seed default contacts configuration if missing

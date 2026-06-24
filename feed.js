@@ -189,7 +189,7 @@ function loadSidebarJourneys() {
               <div class="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 text-[9px] font-bold flex items-center justify-center font-display">
                 ${(u.displayName || '?').charAt(0).toUpperCase()}
               </div>
-              <span class="text-[11px] font-bold text-slate-800 dark:text-zinc-200">${u.displayName || 'Parish Member'}</span>
+              <span class="text-[11px] font-bold text-slate-800 dark:text-zinc-200">${u.displayName || 'Fellowship Member'}</span>
               <span class="text-[9px] font-mono text-slate-400 ml-auto truncate max-w-[80px]">${u.coordinates || ''}</span>
             </div>
             <p class="text-[10px] text-slate-500 italic leading-relaxed">"${u.bio}"</p>
@@ -231,7 +231,7 @@ function publishToFeed() {
     text: textVal,
     type: finalType,
     authorUid: user.uid,
-    authorName: window.currentUserProfile?.displayName || user.email || 'Parish Member',
+    authorName: window.currentUserProfile?.displayName || user.email || 'Fellowship Member',
     authorRole: window.currentUserRole || 'Member',
     likesCount: 0,
     likes: {},
@@ -306,7 +306,7 @@ function submitPostComment(e, postId) {
 
   const commentObj = {
     authorUid: user.uid,
-    authorName: window.currentUserProfile?.displayName || user.email || 'Parish Member',
+    authorName: window.currentUserProfile?.displayName || user.email || 'Fellowship Member',
     authorRole: window.currentUserRole || 'Member',
     text: commentText,
     dateStr: new Date().toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })

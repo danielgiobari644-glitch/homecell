@@ -11,7 +11,7 @@ function initCalendarModule() {
 }
 
 function syncCalendarEvents() {
-  // Sync Universal Parish Events
+  // Sync Universal Fellowship Events
   window.db.collection('parish_events').onSnapshot(snap => {
     universalEvents = [];
     snap.forEach(doc => {
@@ -90,7 +90,7 @@ function renderCalendar() {
       ${
         hasEvents
           ? `<div class="flex gap-1 flex-wrap mt-2">
-               ${dayUniversal.map(() => `<span class="w-2 h-2 rounded-full bg-blue-500" title="Parish Event"></span>`).join('')}
+               ${dayUniversal.map(() => `<span class="w-2 h-2 rounded-full bg-blue-500" title="Fellowship Event"></span>`).join('')}
                ${dayCell.map(() => `<span class="w-2 h-2 rounded-full bg-emerald-500" title="Cell Event"></span>`).join('')}
              </div>`
           : ''
@@ -147,7 +147,7 @@ function loadAgendaForSelectedDay() {
     agendaList.innerHTML = `
       <div class="text-center py-6 text-slate-400">
         <i data-lucide="calendar-range" class="w-10 h-10 mx-auto opacity-30 mb-2"></i>
-        <p class="text-xs italic">No scheduled parish or cell gatherings on this day.</p>
+        <p class="text-xs italic">No scheduled fellowship or cell group gatherings on this day.</p>
       </div>
     `;
     if (window.lucide) window.lucide.createIcons();
@@ -178,7 +178,7 @@ function loadAgendaForSelectedDay() {
             isCellEvent
               ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400'
               : 'bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400'
-          }">${isCellEvent ? 'Cell Fellowship' : 'Universal Parish Gathering'}</span>
+          }">${isCellEvent ? 'Cell Group' : 'Universal Fellowship Gathering'}</span>
           <h4 class="text-lg font-black font-display tracking-tight text-slate-900 dark:text-zinc-100 mt-1">${ev.title}</h4>
           <p class="text-xs text-slate-500 dark:text-zinc-400 leading-relaxed">${ev.description}</p>
         </div>

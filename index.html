@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Home.cell - Parish & Fellowship Portal</title>
+    <title>Home.cell - Home Fellowship Portal</title>
     
     <!-- Tailwind CSS Play CDN (v4 Compiler) -->
     <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
@@ -89,7 +89,7 @@
           </button>
         </div>
         <p class="text-sm text-slate-600 dark:text-zinc-300 mb-6">
-          Thank you for joining our parish fellowship portal! Let's complete your onboarding so you can join a fellowship cell group.
+          Thank you for joining our home fellowship portal! Let's complete your onboarding so you can join a fellowship cell group.
         </p>
         <form id="onboarding-form" class="space-y-4">
           <div>
@@ -145,7 +145,7 @@
             <i data-lucide="home" class="w-8 h-8"></i>
           </div>
           <h1 class="text-3xl font-black font-display tracking-tight text-slate-900 dark:text-zinc-100">Home.cell</h1>
-          <p class="text-slate-500 dark:text-zinc-400 text-sm mt-1">Parish Fellowship Connection Portal</p>
+          <p class="text-slate-500 dark:text-zinc-400 text-sm mt-1">Home Fellowship Connection Portal</p>
         </div>
 
         <!-- Tab Toggle for Auth Mode -->
@@ -204,7 +204,7 @@
             <span class="text-xl font-black font-display tracking-tight text-slate-900 dark:text-zinc-50 flex items-center gap-1.5">
               Home.cell
             </span>
-            <span class="text-[10px] uppercase font-bold tracking-widest text-slate-400 block -mt-1">Parish fellowship</span>
+            <span class="text-[10px] uppercase font-bold tracking-widest text-slate-400 block -mt-1">Home fellowship</span>
           </div>
         </div>
 
@@ -247,7 +247,7 @@
           
           <button onclick="switchTab('dashboard')" id="nav-dashboard" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-all text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 border border-transparent">
             <i data-lucide="layout-grid" class="w-5 h-5"></i>
-            Parish Dashboard
+            Fellowship Dashboard
           </button>
 
           <button onclick="switchTab('bible')" id="nav-bible" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-all text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 border border-transparent">
@@ -267,7 +267,7 @@
 
           <button onclick="switchTab('calendar')" id="nav-calendar" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-all text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 border border-transparent">
             <i data-lucide="calendar" class="w-5 h-5"></i>
-            Parish Calendar
+            Events Calendar
           </button>
 
           <button onclick="switchTab('downloads')" id="nav-downloads" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-all text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 border border-transparent">
@@ -303,10 +303,10 @@
           <div class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-[2.5rem] p-8 shadow-md relative overflow-hidden">
             <div class="absolute -right-16 -bottom-16 w-48 h-48 bg-white/10 rounded-full blur-2xl"></div>
             <div class="relative max-w-2xl space-y-2">
-              <span class="bg-white/20 backdrop-blur-md px-3.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-blue-100">Parish Fellowship Stream</span>
+              <span class="bg-white/20 backdrop-blur-md px-3.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-blue-100">Fellowship Stream</span>
               <h1 class="text-3xl md:text-4xl font-black font-display tracking-tight leading-none">The Community Feed</h1>
               <p class="text-xs md:text-sm text-blue-100">
-                A warm place to share testimonies of God's goodness, stay updated with Parish announcements, and lift each other up.
+                A warm place to share testimonies of God's goodness, stay updated with fellowship announcements, and lift each other up.
               </p>
             </div>
           </div>
@@ -372,11 +372,11 @@
                   <i data-lucide="help-circle" class="w-4 h-4"></i> About this Feed
                 </h4>
                 <p class="text-xs text-slate-500 dark:text-zinc-400 leading-relaxed">
-                  Connect and engage with your brothers and sisters in Christ. Ask for prayer, like testimonies, read official parish announcements, and leave comments of support!
+                  Connect and engage with your brothers and sisters in Christ. Ask for prayer, like testimonies, read official fellowship announcements, and leave comments of support!
                 </p>
                 <div class="text-[10px] bg-slate-50 dark:bg-zinc-800/40 p-3 rounded-xl border border-slate-100 dark:border-zinc-800/60 space-y-1.5">
                   <span class="font-bold text-slate-700 dark:text-zinc-300 block">📢 Who can post Announcements?</span>
-                  <p class="text-slate-500 dark:text-zinc-400">Only Super Admins and Cell Leaders can broadcast official announcements to the entire Parish.</p>
+                  <p class="text-slate-500 dark:text-zinc-400">Only Super Admins and Cell Leaders can broadcast official announcements to the entire fellowship.</p>
                 </div>
               </div>
 
@@ -386,7 +386,7 @@
                   <i data-lucide="sparkles" class="w-4 h-4"></i> Member Journeys
                 </h4>
                 <p class="text-xs text-slate-500 dark:text-zinc-400 leading-relaxed">
-                  Read about how God is moving in the lives of our parish members. Modify your testimony using the profile settings in the menu below.
+                  Read about how God is moving in the lives of our fellowship members. Modify your testimony using the profile settings in the menu below.
                 </p>
                 <div id="sidebar-testimonies-list" class="space-y-3">
                   <!-- Loaded dynamically from user profiles with active testimonies -->
@@ -399,14 +399,14 @@
 
         </section>
 
-        <!-- Tab 1: Parish Dashboard (Bento Grid) -->
-        <section id="tab-dashboard" class="app-tab space-y-8 animate-fade-in">
+        <!-- Tab 1: Fellowship Dashboard (Bento Grid) -->
+        <section id="tab-dashboard" class="app-tab hidden space-y-8 animate-fade-in">
           
           <!-- YouTube Live Embed section if stream active -->
           <div id="live-stream-pane" class="hidden bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-[2.5rem] p-6 shadow-md space-y-4">
             <div class="flex items-center gap-2 text-rose-600 font-bold">
               <span class="w-2.5 h-2.5 bg-rose-600 rounded-full animate-ping"></span>
-              Live Parish Stream Broadcast
+              Live Fellowship Stream Broadcast
             </div>
             <h2 id="stream-pane-title" class="text-2xl font-black font-display">Stream Title</h2>
             <p id="stream-pane-desc" class="text-sm text-slate-500 dark:text-zinc-400 -mt-2">Description</p>
@@ -422,7 +422,7 @@
             <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm flex flex-col justify-between space-y-4">
               <div>
                 <span class="text-xs font-bold uppercase tracking-widest text-slate-400">NEXT GATHERING COUNTDOWN</span>
-                <h2 class="text-xl font-black font-display tracking-tight mt-1 text-slate-900 dark:text-zinc-100">Parish Saturday Assembly</h2>
+                <h2 class="text-xl font-black font-display tracking-tight mt-1 text-slate-900 dark:text-zinc-100">Fellowship Saturday Assembly</h2>
                 <p class="text-xs text-slate-500 dark:text-zinc-400 mt-1">Joint congregational fellowship</p>
               </div>
               <div class="grid grid-cols-4 gap-1.5 text-center py-2">
@@ -526,14 +526,14 @@
               <a id="desk-email" href="#" class="p-4 bg-slate-50 dark:bg-zinc-800/50 border border-slate-200 dark:border-zinc-800 rounded-2xl hover:scale-105 active:scale-95 transition-all block">
                 <i data-lucide="mail" class="w-6 h-6 mx-auto mb-2 text-purple-600"></i>
                 <span class="text-xs font-bold uppercase tracking-widest text-slate-400 block">Pastoral Support</span>
-                <span id="desk-email-val" class="font-bold text-sm text-slate-900 dark:text-zinc-100">info@parishportal.com</span>
+                <span id="desk-email-val" class="font-bold text-sm text-slate-900 dark:text-zinc-100">info@fellowshipportal.com</span>
               </a>
             </div>
           </div>
         </section>
 
         <!-- Tab 2: Interactive Bible Study -->
-        <section id="tab-bible" class="app-tab space-y-6 animate-fade-in">
+        <section id="tab-bible" class="app-tab hidden space-y-6 animate-fade-in">
           <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-[2.5rem] p-8 shadow-sm space-y-6">
             
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -581,7 +581,7 @@
         </section>
 
         <!-- Tab 3: Fellowship Cell Groups -->
-        <section id="tab-cells" class="app-tab space-y-8 animate-fade-in">
+        <section id="tab-cells" class="app-tab hidden space-y-8 animate-fade-in">
           
           <!-- Not joined any cell warning -->
           <div id="no-cell-notice" class="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/50 rounded-3xl p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -673,7 +673,7 @@
         </section>
 
         <!-- Tab 4: Prayer & Intercession Room -->
-        <section id="tab-prayers" class="app-tab space-y-8 animate-fade-in">
+        <section id="tab-prayers" class="app-tab hidden space-y-8 animate-fade-in">
           
           <!-- Launch petition workspace -->
           <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-[2.5rem] p-8 shadow-sm space-y-6">
@@ -735,14 +735,14 @@
 
         </section>
 
-        <!-- Tab 5: Parish Events Calendar -->
-        <section id="tab-calendar" class="app-tab space-y-6 animate-fade-in">
+        <!-- Tab 5: Fellowship Events Calendar -->
+        <section id="tab-calendar" class="app-tab hidden space-y-6 animate-fade-in">
           <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-[2.5rem] p-8 shadow-sm space-y-6">
             
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
-                <h1 class="text-3xl font-black font-display tracking-tight text-slate-900 dark:text-zinc-100">Parish Events Calendar</h1>
-                <p class="text-sm text-slate-500 dark:text-zinc-400 mt-1">Register attendance RSVPs for universal Parish gathers and cell fellowships.</p>
+                <h1 class="text-3xl font-black font-display tracking-tight text-slate-900 dark:text-zinc-100">Fellowship Events Calendar</h1>
+                <p class="text-sm text-slate-500 dark:text-zinc-400 mt-1">Register attendance RSVPs for universal fellowship gatherings and cell groups.</p>
               </div>
               <div class="flex items-center gap-2">
                 <button onclick="prevMonth()" class="p-2 bg-slate-100 dark:bg-zinc-800 rounded-lg hover:bg-slate-200"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
@@ -772,7 +772,7 @@
         </section>
 
         <!-- Tab 6: Direct Downloads Hub -->
-        <section id="tab-downloads" class="app-tab space-y-6 animate-fade-in">
+        <section id="tab-downloads" class="app-tab hidden space-y-6 animate-fade-in">
           <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-[2.5rem] p-8 shadow-sm space-y-6">
             
             <div>
@@ -788,7 +788,7 @@
         </section>
 
         <!-- Tab 7: Super Admin Console -->
-        <section id="tab-admin" class="app-tab space-y-8 animate-fade-in">
+        <section id="tab-admin" class="app-tab hidden space-y-8 animate-fade-in">
           
           <div class="border-b border-slate-200 dark:border-zinc-800 pb-4">
             <h1 class="text-3xl font-black font-display tracking-tight text-purple-600 dark:text-purple-400 flex items-center gap-2">
@@ -809,7 +809,7 @@
 
           <!-- Admin Sub Tab 1: Users Admin -->
           <div id="atab-users" class="admin-sub-tab space-y-4">
-            <h3 class="text-lg font-bold font-display">Parish Core Member Registry</h3>
+            <h3 class="text-lg font-bold font-display">Fellowship Core Member Registry</h3>
             <div class="overflow-x-auto bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-sm">
               <table class="min-w-full text-left text-xs">
                 <thead class="bg-slate-100 dark:bg-zinc-800 font-bold uppercase tracking-wider text-slate-400 border-b border-slate-200 dark:border-zinc-800">

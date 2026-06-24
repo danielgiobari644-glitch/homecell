@@ -198,7 +198,7 @@ function deleteCellGroup(cellId) {
     .catch(err => window.handleFirestoreError(err, 'delete', `cells/${cellId}`));
 }
 
-// 3. Parish Gatherings Manager
+// 3. Fellowship Gatherings Manager
 function syncAdminEvents() {
   const container = document.getElementById('admin-events-list');
   if (!container) return;
@@ -245,12 +245,12 @@ function createParishEvent(title, date, description) {
     rsvps: {},
     createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
   })
-    .then(() => window.showToast?.("Created Universal Parish gathering."))
+    .then(() => window.showToast?.("Created Universal Fellowship gathering."))
     .catch(err => window.handleFirestoreError(err, 'create', `parish_events/${docId}`));
 }
 
 function deleteParishEvent(eventId) {
-  const isConfirmed = confirm("Are you sure you want to delete this Parish Gathering?");
+  const isConfirmed = confirm("Are you sure you want to delete this Fellowship Gathering?");
   if (!isConfirmed) return;
 
   window.db.collection('parish_events').doc(eventId).delete()
