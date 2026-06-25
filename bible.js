@@ -163,6 +163,11 @@ function loadVerses() {
         return;
       }
 
+      // Increment user streak for studying scriptures
+      setTimeout(() => {
+        window.incrementUserStreak?.(`studying ${book} Chapter ${chapter}`);
+      }, 1000);
+
       data.verses.forEach(v => {
         const vNum = v.verse;
         const text = v.text.trim();

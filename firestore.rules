@@ -45,23 +45,10 @@ service cloudfire.firestore {
                     && incoming().cellId == 'none'
                     && incoming().createdAt == request.time;
       allow update: if isVerified() && (
-        // Self edit of bio, coordinates, displayName (Role & Cell ID are locked!)
+        // Self edit of profile (email and role are strictly locked!)
         (request.auth.uid == userId
          && incoming().role == existing().role
-         && incoming().cellId == existing().cellId
-         && incoming().email == existing().email
-         && incoming().displayName is string && incoming().displayName.size() <= 100
-         && incoming().bio is string && incoming().bio.size() <= 1000
-         && incoming().coordinates is string && incoming().coordinates.size() <= 200)
-        ||
-        // Self-updating cellId when joining/leaving
-        (request.auth.uid == userId
-         && incoming().displayName == existing().displayName
-         && incoming().bio == existing().bio
-         && incoming().coordinates == existing().coordinates
-         && incoming().role == existing().role
-         && incoming().email == existing().email
-         && incoming().cellId is string && incoming().cellId.size() <= 128)
+         && incoming().email == existing().email)
         ||
         // Admin edits everything
         isAdmin()
@@ -217,6 +204,8 @@ service cloudfire.firestore {
                     && incoming().authorRole is string
                     && incoming().likesCount is number
                     && incoming().likes is object
+                    && (incoming().imageUrl == null || (incoming().imageUrl is string && incoming().imageUrl.size() <= 6000000))
+                    && (incoming().videoUrl == null || (incoming().videoUrl is string && incoming().videoUrl.size() <= 6000000))
                     && incoming().createdAt == request.time;
       allow update: if isVerified() && (
         // Allow members to toggle likes or add comments (updates to comments list)
@@ -226,7 +215,9 @@ service cloudfire.firestore {
          && incoming().authorUid == existing().authorUid
          && incoming().authorName == existing().authorName
          && incoming().likes is object
-         && incoming().likesCount is number)
+         && incoming().likesCount is number
+         && incoming().imageUrl == existing().imageUrl
+         && incoming().videoUrl == existing().videoUrl)
         ||
         isAdmin()
       );

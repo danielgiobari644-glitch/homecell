@@ -129,6 +129,9 @@ function loadFeedStream() {
           <!-- Content Body -->
           <div class="text-sm text-slate-700 dark:text-zinc-100 whitespace-pre-wrap leading-relaxed">${post.text}</div>
 
+          <!-- Attachments -->
+          ${getMediaHTML(post.imageUrl, post.videoUrl)}
+
           <!-- Actions Footer bar -->
           <div class="flex items-center gap-6 pt-3 border-t border-slate-100 dark:border-zinc-800/60">
             <button onclick="toggleLikePost('${postId}')" class="flex items-center gap-2 text-xs font-bold transition-colors cursor-pointer ${
@@ -217,6 +220,9 @@ function publishToFeed() {
   const isAnnCheckbox = document.getElementById('feed-is-announcement');
   const isAnn = isAnnCheckbox ? isAnnCheckbox.checked : false;
 
+  const imageUrlVal = document.getElementById('feed-image-url')?.value.trim() || window.attachedImageBase64;
+  const videoUrlVal = document.getElementById('feed-video-url')?.value.trim() || window.attachedVideoBase64;
+
   if (!textVal) {
     window.showToast?.("Please input a message before publishing.", "error");
     return;
@@ -233,6 +239,8 @@ function publishToFeed() {
     authorUid: user.uid,
     authorName: window.currentUserProfile?.displayName || user.email || 'Fellowship Member',
     authorRole: window.currentUserRole || 'Member',
+    imageUrl: imageUrlVal || null,
+    videoUrl: videoUrlVal || null,
     likesCount: 0,
     likes: {},
     comments: [],
@@ -242,6 +250,24 @@ function publishToFeed() {
       window.showToast?.("Feed post published successfully.");
       document.getElementById('feed-composer-text').value = '';
       if (isAnnCheckbox) isAnnCheckbox.checked = false;
+
+      // Trigger feed post streak increase
+      setTimeout(() => {
+        window.incrementUserStreak?.(`sharing a ${finalType} with the cohort`);
+      }, 1000);
+
+      // Reset attachment elements
+      window.clearAttachment?.('image');
+      window.clearAttachment?.('video');
+      document.getElementById('attachment-image-box')?.classList.add('hidden');
+      document.getElementById('attachment-video-box')?.classList.add('hidden');
+
+      // Trigger standard background push notification
+      if (window.sendPushNotification) {
+        const titleStr = finalType === 'announcement' ? '📢 Official Announcement' : `🙏 New Testimony from ${window.currentUserProfile?.displayName || user.email}`;
+        const snippet = textVal.length > 80 ? textVal.substring(0, 80) + '...' : textVal;
+        window.sendPushNotification(titleStr, snippet, '/?tab=feed');
+      }
     })
     .catch(err => window.handleFirestoreError(err, 'write', 'community_feed'));
 }
@@ -331,6 +357,114 @@ function deleteFeedPost(postId) {
     .catch(err => window.handleFirestoreError(err, 'write', `community_feed/${postId}`));
 }
 
+// Helper to render picture and video attachments safely
+function getMediaHTML(imageUrl, videoUrl) {
+  let html = '';
+  if (imageUrl) {
+    html += `
+      <div class="rounded-2xl overflow-hidden max-h-[450px] border border-slate-100 dark:border-zinc-800 shadow-sm mt-3 bg-slate-50 dark:bg-zinc-950 flex items-center justify-center">
+        <img src="${imageUrl}" class="w-full h-auto max-h-[450px] object-contain" alt="Attached picture" referrerPolicy="no-referrer" />
+      </div>
+    `;
+  }
+  if (videoUrl) {
+    let isYoutube = false;
+    let embedUrl = '';
+    try {
+      if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
+        isYoutube = true;
+        let videoId = '';
+        if (videoUrl.includes('youtu.be/')) {
+          videoId = videoUrl.split('youtu.be/')[1].split('?')[0];
+        } else if (videoUrl.includes('v=')) {
+          videoId = videoUrl.split('v=')[1].split('&')[0];
+        } else if (videoUrl.includes('embed/')) {
+          videoId = videoUrl.split('embed/')[1].split('?')[0];
+        }
+        if (videoId) {
+          embedUrl = `https://www.youtube.com/embed/${videoId}`;
+        }
+      }
+    } catch (e) {
+      console.warn("Failed parsing YT link:", e);
+    }
+
+    if (isYoutube && embedUrl) {
+      html += `
+        <div class="rounded-2xl overflow-hidden border border-slate-100 dark:border-zinc-800 shadow-sm mt-3 aspect-video">
+          <iframe src="${embedUrl}" class="w-full h-full" frameborder="0" allowfullscreen></iframe>
+        </div>
+      `;
+    } else {
+      html += `
+        <div class="rounded-2xl overflow-hidden max-h-[450px] border border-slate-100 dark:border-zinc-800 shadow-sm mt-3 bg-black flex items-center justify-center">
+          <video src="${videoUrl}" class="w-full h-auto max-h-[450px]" controls></video>
+        </div>
+      `;
+    }
+  }
+  return html;
+}
+
+// Media uploads & attachments controllers
+window.attachedImageBase64 = null;
+window.attachedVideoBase64 = null;
+
+window.toggleAttachmentInput = function(type) {
+  const box = document.getElementById(`attachment-${type}-box`);
+  if (box) {
+    box.classList.toggle('hidden');
+  }
+};
+
+window.handleFileAttachment = function(type) {
+  const fileInput = document.getElementById(`feed-${type}-file`);
+  const previewBox = document.getElementById(`attachment-${type}-preview`);
+  const previewMedia = document.getElementById(`${type}-preview-${type === 'image' ? 'img' : 'vid'}`);
+
+  if (!fileInput || !fileInput.files || fileInput.files.length === 0) return;
+
+  const file = fileInput.files[0];
+  if (file.size > 4 * 1024 * 1024) {
+    window.showToast?.("File too large. Choose a file smaller than 4MB.", "error");
+    fileInput.value = '';
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const base64Data = e.target.result;
+    if (type === 'image') {
+      window.attachedImageBase64 = base64Data;
+      if (previewMedia) previewMedia.src = base64Data;
+    } else {
+      window.attachedVideoBase64 = base64Data;
+      if (previewMedia) {
+        previewMedia.src = base64Data;
+        previewMedia.load();
+      }
+    }
+    if (previewBox) previewBox.classList.remove('hidden');
+  };
+  reader.readAsDataURL(file);
+};
+
+window.clearAttachment = function(type) {
+  const fileInput = document.getElementById(`feed-${type}-file`);
+  const urlInput = document.getElementById(`feed-${type}-url`);
+  const previewBox = document.getElementById(`attachment-${type}-preview`);
+  
+  if (fileInput) fileInput.value = '';
+  if (urlInput) urlInput.value = '';
+  if (previewBox) previewBox.classList.add('hidden');
+
+  if (type === 'image') {
+    window.attachedImageBase64 = null;
+  } else {
+    window.attachedVideoBase64 = null;
+  }
+};
+
 // Expose globally
 window.initFeedEngine = initFeedEngine;
 window.publishToFeed = publishToFeed;
@@ -338,3 +472,4 @@ window.toggleLikePost = toggleLikePost;
 window.toggleCommentsSection = toggleCommentsSection;
 window.submitPostComment = submitPostComment;
 window.deleteFeedPost = deleteFeedPost;
+window.getMediaHTML = getMediaHTML;

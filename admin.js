@@ -644,6 +644,58 @@ function closeChangeLeaderModal() {
   if (modal) modal.classList.add('hidden');
 }
 
+// Support for off-app push notifications nudges
+function applyNudgePreset() {
+  const select = document.getElementById('nudge-preset-select');
+  const titleInput = document.getElementById('admin-nudge-title');
+  const bodyInput = document.getElementById('admin-nudge-body');
+  const targetSelect = document.getElementById('admin-nudge-target');
+
+  if (!select || !titleInput || !bodyInput) return;
+
+  const choice = select.value;
+  if (choice === 'devotion') {
+    titleInput.value = "☀️ Keep Your Streak Alive!";
+    bodyInput.value = "Your personal devotion streak is a beautiful testimony of your faith. Complete today's daily devotional check-in now to maintain it!";
+    if (targetSelect) targetSelect.value = "/?tab=dashboard";
+  } else if (choice === 'trivia') {
+    titleInput.value = "🔥 Live Trivia Active Now!";
+    bodyInput.value = "The Pentecost Trivia arena is buzzing! Come test your bible knowledge in real-time with fellow members of the assembly!";
+    if (targetSelect) targetSelect.value = "/?tab=bible";
+  } else if (choice === 'testimony') {
+    titleInput.value = "🙏 Power-packed Testimony Shared!";
+    bodyInput.value = "A member of the cohort just shared a magnificent testimony of God's grace. Read it, support them, and get encouraged!";
+    if (targetSelect) targetSelect.value = "/?tab=feed";
+  } else if (choice === 'stream') {
+    titleInput.value = "📹 Live Fellowship Broadcast Active!";
+    bodyInput.value = "We are gathering online right now. Come tune into the live broadcast stream to connect, share, and grow together!";
+    if (targetSelect) targetSelect.value = "/?tab=dashboard";
+  }
+}
+
+function sendAdminNudge(event) {
+  event.preventDefault();
+  const title = document.getElementById('admin-nudge-title').value.trim();
+  const body = document.getElementById('admin-nudge-body').value.trim();
+  const target = document.getElementById('admin-nudge-target').value;
+
+  if (!title || !body) return;
+
+  // Utilize our real push notification helper!
+  if (window.sendPushNotification) {
+    window.sendPushNotification(title, body, target);
+    window.showToast?.("Push notification nudge successfully broadcasted off-app to all members!", "success");
+    
+    // Clear form
+    const form = document.getElementById('admin-push-nudge-form');
+    if (form) form.reset();
+    const select = document.getElementById('nudge-preset-select');
+    if (select) select.value = "";
+  } else {
+    window.showToast?.("Push Notification engine is currently initializing, please wait.", "error");
+  }
+}
+
 // Expose globally
 window.initAdminModule = initAdminModule;
 window.updateUserRole = updateUserRole;
@@ -660,3 +712,5 @@ window.updateStreamDesk = updateStreamDesk;
 window.setAdminSubTab = setAdminSubTab;
 window.openChangeCellLeaderModal = openChangeCellLeaderModal;
 window.closeChangeLeaderModal = closeChangeLeaderModal;
+window.applyNudgePreset = applyNudgePreset;
+window.sendAdminNudge = sendAdminNudge;

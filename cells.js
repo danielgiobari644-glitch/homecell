@@ -108,6 +108,9 @@ function syncActiveUserCellState() {
 
   const noCellNotice = document.getElementById('no-cell-notice');
   const activeCellCard = document.getElementById('active-cell-card');
+  const chatNoCellNotice = document.getElementById('chat-no-cell-notice');
+  const chatActiveBox = document.getElementById('chat-active-box');
+  const chatActiveCellName = document.getElementById('chat-active-cell-name');
 
   // Watch current user profile's cellId
   window.db.collection('users').doc(uid).onSnapshot(userDoc => {
@@ -119,6 +122,8 @@ function syncActiveUserCellState() {
     if (!cellId || cellId === 'none') {
       if (noCellNotice) noCellNotice.classList.remove('hidden');
       if (activeCellCard) activeCellCard.classList.add('hidden');
+      if (chatNoCellNotice) chatNoCellNotice.classList.remove('hidden');
+      if (chatActiveBox) chatActiveBox.classList.add('hidden');
       return;
     }
 
@@ -136,6 +141,8 @@ function syncActiveUserCellState() {
 
       if (noCellNotice) noCellNotice.classList.add('hidden');
       if (activeCellCard) activeCellCard.classList.remove('hidden');
+      if (chatNoCellNotice) chatNoCellNotice.classList.add('hidden');
+      if (chatActiveBox) chatActiveBox.classList.remove('hidden');
 
       // Update active cell UI elements
       const nameEl = document.getElementById('active-cell-name');
@@ -145,6 +152,7 @@ function syncActiveUserCellState() {
       if (nameEl) nameEl.innerText = cell.name;
       if (cityEl) cityEl.innerText = cell.city;
       if (descEl) descEl.innerText = cell.description;
+      if (chatActiveCellName) chatActiveCellName.innerText = `${cell.name} Chat Lounge`;
 
       // Check co-leader permission
       const isPrimaryLeader = cell.leaderUid === uid;
@@ -267,7 +275,17 @@ function sendCellChatMessage(text) {
     senderName: profile.displayName || user.email,
     text: text,
     createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
-  }).catch(err => window.handleFirestoreError(err, 'create', `cells/${profile.cellId}/messages`));
+  })
+  .then(() => {
+    if (window.sendPushNotification) {
+      window.sendPushNotification(
+        `💬 Chat Lounge: ${profile.displayName || user.email}`,
+        text,
+        '/?tab=chat'
+      );
+    }
+  })
+  .catch(err => window.handleFirestoreError(err, 'create', `cells/${profile.cellId}/messages`));
 }
 
 function deleteChatMessage(cellId, msgId) {

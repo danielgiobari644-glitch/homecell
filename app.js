@@ -34,7 +34,7 @@ function switchTab(tabId) {
   activeTab = tabId;
 
   // List of all navigation tabs
-  const tabIds = ['feed', 'dashboard', 'bible', 'cells', 'prayers', 'calendar', 'downloads', 'admin'];
+  const tabIds = ['feed', 'dashboard', 'bible', 'cells', 'chat', 'prayers', 'calendar', 'downloads', 'admin'];
 
   tabIds.forEach(id => {
     const pane = document.getElementById(`tab-${id}`);
@@ -64,6 +64,7 @@ function switchTab(tabId) {
   if (tabId === 'dashboard' && window.initDashboard) window.initDashboard();
   if (tabId === 'bible' && window.initBibleEngine) window.initBibleEngine();
   if (tabId === 'cells' && window.initCellsModule) window.initCellsModule();
+  if (tabId === 'chat' && window.initCellsModule) window.initCellsModule();
   if (tabId === 'prayers' && window.initPrayersModule) window.initPrayersModule();
   if (tabId === 'calendar' && window.initCalendarModule) window.initCalendarModule();
   if (tabId === 'downloads' && window.initDownloadsModule) window.initDownloadsModule();
@@ -386,6 +387,10 @@ document.addEventListener("DOMContentLoaded", () => {
           .then(() => {
             window.showToast?.("Onboarding successfully completed!");
             closeOnboardingModal();
+            // Trigger first daily streak
+            setTimeout(() => {
+              window.incrementUserStreak?.("onboarding signup");
+            }, 1000);
           })
           .catch(err => window.handleFirestoreError(err, 'write', 'onboarding'));
       }
@@ -412,11 +417,115 @@ document.addEventListener("DOMContentLoaded", () => {
         .then(() => {
           window.showToast?.("Soul testimony details updated successfully.");
           closeProfileModal();
+          // Trigger profile streak increase
+          setTimeout(() => {
+            window.incrementUserStreak?.("updating soul testimony profile details");
+          }, 1000);
         })
         .catch(err => window.handleFirestoreError(err, 'write', `users/${user.uid}`));
     });
   }
 });
+
+// Global User Streak Tracker Engine
+window.incrementUserStreak = function(reason) {
+  const user = window.auth.currentUser;
+  if (!user) return;
+
+  const docRef = window.db.collection('users').doc(user.uid);
+  docRef.get().then(doc => {
+    let currentStreak = 0;
+    let lastCheckinDate = "";
+    
+    if (doc.exists) {
+      const data = doc.data();
+      currentStreak = data.streak || 0;
+      lastCheckinDate = data.lastCheckinDate || "";
+    }
+
+    const todayStr = new Date().toDateString();
+    
+    // Check if they already did check-in today
+    if (lastCheckinDate === todayStr) {
+      // Just update reason to show they did more things
+      docRef.update({
+        lastStreakReason: reason
+      }).then(() => {
+        window.showToast?.(`Activity logged: ${reason}! Keep it up.`, "info");
+      }).catch(err => console.error("Streak log update error: ", err));
+      return;
+    }
+
+    // Determine if streak is consecutive (yesterday) or reset
+    let newStreak = currentStreak + 1;
+    if (lastCheckinDate) {
+      const lastDate = new Date(lastCheckinDate);
+      const todayDate = new Date(todayStr);
+      const diffTime = Math.abs(todayDate - lastDate);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      if (diffDays > 1) {
+        // Streak broken, reset to 1
+        newStreak = 1;
+        window.showToast?.("Daily streak was reset, starting fresh today!", "info");
+      }
+    }
+
+    // Update Firestore
+    docRef.update({
+      streak: newStreak,
+      lastCheckinDate: todayStr,
+      lastStreakReason: reason
+    }).then(() => {
+      window.showToast?.(`🔥 Daily Streak updated to ${newStreak} days! (Reason: ${reason})`, "success");
+      
+      // Check if new streak triggers highest streak congratulatory milestone!
+      checkNewHighStreakMilestone(newStreak, user.uid);
+    }).catch(err => console.error("Streak increment update error: ", err));
+
+  }).catch(err => console.error("Streak query error: ", err));
+};
+
+function checkNewHighStreakMilestone(newStreak, myUid) {
+  // Query other users' maximum streaks (excluding current user)
+  window.db.collection('users').orderBy('streak', 'desc').limit(2).get().then(snap => {
+    let highestOtherStreak = 0;
+    snap.forEach(doc => {
+      if (doc.id !== myUid) {
+        highestOtherStreak = Math.max(highestOtherStreak, doc.data().streak || 0);
+      }
+    });
+
+    // If new streak is strictly greater than the highest other streak, celebrate!
+    if (newStreak > highestOtherStreak && newStreak > 1) {
+      const displayName = window.currentUserProfile?.displayName || "A dedicated member";
+      
+      // Trigger confetti & celebration!
+      window.triggerConfetti?.();
+      
+      // Trigger off-app background push notifications!
+      window.sendPushNotification?.(
+        "🏆 NEW REIGNING CHAMPION!",
+        `Congratulations to ${displayName} for achieving the new highest spiritual streak of ${newStreak} days! Can you beat them?`,
+        "/?tab=dashboard"
+      );
+
+      // Automated community post on the feed celebrating this milestone!
+      const docId = window.db.collection('feed_posts').doc().id;
+      window.db.collection('feed_posts').doc(docId).set({
+        id: docId,
+        text: `👑 High-Streak Milestone Celebration! Let us rejoice as ${displayName} sets a brand new highest streak of ${newStreak} consecutive days in devotion, prayer, and study! Keep shining your light! 🌟✨`,
+        authorUid: myUid,
+        authorName: displayName,
+        authorRole: window.currentUserRole,
+        likesCount: 0,
+        likes: {},
+        commentsCount: 0,
+        createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
+      }).catch(err => console.warn("Leaderboard automatic post failed: ", err));
+    }
+  }).catch(err => console.warn("Streak leaderboard validation query limit: ", err));
+}
 
 // Expose globally
 window.switchTab = switchTab;
