@@ -229,6 +229,16 @@ function syncStreakChampionship() {
       const congratsTitleEl = document.getElementById('champ-congrats-title');
       const congratsDescEl = document.getElementById('champ-congrats-desc');
       const arenaEl = document.getElementById('streak-championship-arena');
+      
+      const champSubHeaderEl = document.getElementById('champ-sub-header');
+      const champStreakDescEl = document.getElementById('champ-streak-desc');
+      const champCongratsCardEl = document.getElementById('champ-congrats-card');
+      const champCongratsIconBoxEl = document.getElementById('champ-congrats-icon-box');
+      const champMultipliersTitleEl = document.getElementById('champ-multipliers-title');
+      const champMultiplierCard1 = document.getElementById('champ-multiplier-card-1');
+      const champMultiplierCard2 = document.getElementById('champ-multiplier-card-2');
+      const champMultiplierCard3 = document.getElementById('champ-multiplier-card-3');
+      const btnCheerChamp = document.getElementById('btn-cheer-champ');
 
       if (champNameEl) champNameEl.innerText = champData.displayName || champData.email;
       if (champStreakValEl) champStreakValEl.innerText = `${champData.streak || 0} days`;
@@ -236,28 +246,88 @@ function syncStreakChampionship() {
       // If the current logged in user IS the reigning champion
       if (champDoc.id === user.uid) {
         if (arenaEl) {
-          arenaEl.className = "lg:col-span-2 bg-gradient-to-br from-amber-400/90 to-orange-500/95 text-white border border-orange-300 rounded-[2.5rem] p-8 shadow-md flex flex-col justify-between space-y-6 relative overflow-hidden";
+          arenaEl.className = "lg:col-span-2 bg-gradient-to-tr from-amber-500 via-orange-600 to-rose-600 text-white border border-amber-300/40 rounded-[2.5rem] p-8 shadow-2xl flex flex-col justify-between space-y-6 relative overflow-hidden glow-amber-active animate-fade-in";
+        }
+        if (champSubHeaderEl) {
+          champSubHeaderEl.className = "flex items-center gap-2 text-xs font-black uppercase tracking-widest text-amber-100 transition-colors duration-300";
+        }
+        if (champNameEl) {
+          champNameEl.className = "text-3xl sm:text-4xl font-black font-display tracking-tight text-white drop-shadow-sm transition-all duration-300 animate-bounce-slow";
+        }
+        if (champStreakDescEl) {
+          champStreakDescEl.className = "text-sm text-amber-50 font-medium mt-1 transition-colors duration-300";
+        }
+        if (champStreakValEl) {
+          champStreakValEl.className = "font-black text-white underline decoration-amber-300 decoration-2 underline-offset-4 transition-all duration-300";
+        }
+        if (champCongratsCardEl) {
+          champCongratsCardEl.className = "bg-white/10 backdrop-blur-md border border-white/20 rounded-3xl p-5 flex items-center gap-4 shadow-lg ring-1 ring-white/10 transition-all duration-500 relative z-10";
+        }
+        if (champCongratsIconBoxEl) {
+          champCongratsIconBoxEl.className = "w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center text-white font-bold text-xl shadow-inner transition-all duration-300";
         }
         if (congratsTitleEl) {
           congratsTitleEl.innerText = "👑 YOU are the reigning Fellowship Streak Champion!";
-          congratsTitleEl.className = "text-xs font-bold text-white uppercase tracking-wider";
+          congratsTitleEl.className = "text-sm font-bold text-white uppercase tracking-wider transition-all duration-300";
         }
         if (congratsDescEl) {
           congratsDescEl.innerText = "Outstanding! Your constant spiritual devotion shines as a beautiful beacon of hope for the entire cohort! Keep pushing!";
-          congratsDescEl.className = "text-[11px] text-orange-50 mt-1";
+          congratsDescEl.className = "text-xs text-amber-50 mt-1 leading-relaxed transition-all duration-300";
+        }
+        if (champMultipliersTitleEl) {
+          champMultipliersTitleEl.className = "text-[10px] font-bold text-amber-200 uppercase tracking-widest block transition-colors duration-300";
+        }
+        const mCards = [champMultiplierCard1, champMultiplierCard2, champMultiplierCard3];
+        mCards.forEach(c => {
+          if (c) c.className = "p-3 bg-white/10 backdrop-blur-sm rounded-2xl border border-white/10 text-center space-y-1 transition-all duration-300 hover:-translate-y-0.5";
+        });
+        if (btnCheerChamp) {
+          btnCheerChamp.innerText = "✨ Rejoice in Victory";
+          btnCheerChamp.setAttribute('onclick', 'window.triggerConfetti ? window.triggerConfetti() : null');
+          btnCheerChamp.className = "bg-gradient-to-r from-amber-300 to-yellow-500 hover:from-amber-400 hover:to-yellow-600 text-slate-950 font-extrabold text-xs uppercase tracking-wider px-6 py-3.5 rounded-2xl transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer shadow-lg shadow-yellow-500/30 flex items-center gap-2 relative z-10";
         }
       } else {
         // Render regular card design for other users
         if (arenaEl) {
-          arenaEl.className = "lg:col-span-2 bg-gradient-to-br from-amber-50 to-orange-100 dark:from-zinc-950/40 dark:to-orange-950/20 border border-orange-200 dark:border-orange-900/50 rounded-[2.5rem] p-8 shadow-sm flex flex-col justify-between space-y-6 relative overflow-hidden";
+          arenaEl.className = "lg:col-span-2 bg-gradient-to-br from-amber-50 to-orange-100 dark:from-zinc-950/40 dark:to-orange-950/20 border border-orange-200 dark:border-orange-900/50 rounded-[2.5rem] p-8 shadow-sm flex flex-col justify-between space-y-6 relative overflow-hidden glow-subtle-warm transition-all duration-500";
+        }
+        if (champSubHeaderEl) {
+          champSubHeaderEl.className = "flex items-center gap-2 text-xs font-black uppercase tracking-widest text-orange-600 dark:text-orange-400 transition-colors duration-300";
+        }
+        if (champNameEl) {
+          champNameEl.className = "text-3xl sm:text-4xl font-black font-display tracking-tight text-slate-900 dark:text-zinc-50 transition-all duration-300";
+        }
+        if (champStreakDescEl) {
+          champStreakDescEl.className = "text-sm text-slate-600 dark:text-zinc-300 mt-1 transition-colors duration-300";
+        }
+        if (champStreakValEl) {
+          champStreakValEl.className = "font-extrabold text-orange-600 dark:text-orange-400 transition-all duration-300";
+        }
+        if (champCongratsCardEl) {
+          champCongratsCardEl.className = "bg-white/85 dark:bg-zinc-900/80 backdrop-blur border border-orange-100 dark:border-orange-900/30 rounded-3xl p-5 flex items-center gap-4 transition-all duration-500 relative z-10";
+        }
+        if (champCongratsIconBoxEl) {
+          champCongratsIconBoxEl.className = "w-12 h-12 rounded-2xl bg-orange-100 dark:bg-orange-950/60 flex items-center justify-center text-orange-600 dark:text-orange-400 font-bold text-xl shadow-inner transition-all duration-300";
         }
         if (congratsTitleEl) {
           congratsTitleEl.innerText = "Congratulations Screen & Special Rewards";
-          congratsTitleEl.className = "text-xs font-bold text-slate-900 dark:text-zinc-100";
+          congratsTitleEl.className = "text-sm font-bold text-slate-900 dark:text-zinc-100 transition-all duration-300";
         }
         if (congratsDescEl) {
           congratsDescEl.innerText = "This champion has unlocked the sacred Hall of Faith and is featured on the main community feed!";
-          congratsDescEl.className = "text-[11px] text-slate-500 dark:text-zinc-400 mt-1";
+          congratsDescEl.className = "text-xs text-slate-500 dark:text-zinc-400 mt-1 transition-colors duration-300 leading-relaxed";
+        }
+        if (champMultipliersTitleEl) {
+          champMultipliersTitleEl.className = "text-[10px] font-bold text-slate-400 uppercase tracking-widest block transition-colors duration-300";
+        }
+        const mCards = [champMultiplierCard1, champMultiplierCard2, champMultiplierCard3];
+        mCards.forEach(c => {
+          if (c) c.className = "p-3 bg-white/60 dark:bg-zinc-900/40 backdrop-blur-sm rounded-2xl border border-slate-100 dark:border-zinc-800 text-center space-y-1 transition-all duration-300 hover:-translate-y-0.5";
+        });
+        if (btnCheerChamp) {
+          btnCheerChamp.innerText = "🎉 Cheer Champion";
+          btnCheerChamp.setAttribute('onclick', 'cheerStreakChampion()');
+          btnCheerChamp.className = "bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-xs uppercase tracking-wider px-6 py-3.5 rounded-2xl transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer shadow-md hover:shadow-orange-500/20 flex items-center gap-2 relative z-10";
         }
       }
     } else {

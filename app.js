@@ -70,9 +70,38 @@ function switchTab(tabId) {
   if (tabId === 'downloads' && window.initDownloadsModule) window.initDownloadsModule();
   if (tabId === 'admin' && window.initAdminModule) window.initAdminModule();
 
+  // Close mobile sidebar if active
+  if (window.toggleMobileSidebar) {
+    window.toggleMobileSidebar(false);
+  }
+
   // Highlight active sidebar links and recreate Lucide Icons
   if (window.lucide) {
     window.lucide.createIcons();
+  }
+}
+
+// Mobile sidebar navigation drawer toggle controls
+function toggleMobileSidebar(isOpen) {
+  const sidebar = document.getElementById('app-sidebar');
+  const backdrop = document.getElementById('sidebar-backdrop');
+  if (!sidebar || !backdrop) return;
+  if (isOpen) {
+    sidebar.classList.remove('-translate-x-full');
+    sidebar.classList.add('translate-x-0');
+    backdrop.classList.remove('hidden');
+    setTimeout(() => {
+      backdrop.classList.remove('opacity-0');
+      backdrop.classList.add('opacity-100');
+    }, 50);
+  } else {
+    sidebar.classList.remove('translate-x-0');
+    sidebar.classList.add('-translate-x-full');
+    backdrop.classList.remove('opacity-100');
+    backdrop.classList.add('opacity-0');
+    setTimeout(() => {
+      backdrop.classList.add('hidden');
+    }, 300);
   }
 }
 
@@ -82,6 +111,13 @@ let isAuthListenerAttached = false;
 function listenToAuthState() {
   if (isAuthListenerAttached) return;
   isAuthListenerAttached = true;
+
+  if (!window.auth) {
+    console.warn("Firebase Auth is not ready yet, retrying in 100ms...");
+    isAuthListenerAttached = false;
+    setTimeout(listenToAuthState, 100);
+    return;
+  }
 
   window.auth.onAuthStateChanged(user => {
     const authModal = document.getElementById('auth-modal');
@@ -130,6 +166,24 @@ function listenToAuthState() {
             } else {
               roleEl.className = "text-[9px] uppercase font-bold text-slate-400 bg-slate-200 dark:bg-zinc-700 px-1.5 py-0.5 rounded tracking-widest";
             }
+          }
+
+          // Update mobile sidebar badges
+          const mobNameEl = document.getElementById('mobile-sidebar-user-name');
+          const mobRoleEl = document.getElementById('mobile-sidebar-user-role');
+          const mobAvatarEl = document.getElementById('mobile-user-avatar');
+          const nameValue = profile.displayName || user.email;
+          if (mobNameEl) mobNameEl.innerText = nameValue;
+          if (mobRoleEl) {
+            mobRoleEl.innerText = window.currentUserRole.toUpperCase();
+            if (window.currentUserRole === 'Super Admin') {
+              mobRoleEl.className = "text-[9px] uppercase font-bold text-purple-700 bg-purple-100 dark:text-purple-300 dark:bg-purple-950/40 px-1.5 py-0.5 rounded tracking-widest";
+            } else {
+              mobRoleEl.className = "text-[9px] uppercase font-bold text-slate-400 bg-slate-200 dark:bg-zinc-700 px-1.5 py-0.5 rounded tracking-widest";
+            }
+          }
+          if (mobAvatarEl) {
+            mobAvatarEl.innerText = nameValue.charAt(0).toUpperCase();
           }
 
           if (badge) badge.classList.remove('hidden');
@@ -269,6 +323,14 @@ function setAuthTab(mode) {
 document.addEventListener("DOMContentLoaded", () => {
   initTheme();
   listenToAuthState();
+
+  // Apply dismissed states for widgets
+  ['quick-help-box', 'member-journeys-box'].forEach(id => {
+    if (localStorage.getItem(`dismissed-${id}`) === 'true') {
+      const el = document.getElementById(id);
+      if (el) el.classList.add('hidden');
+    }
+  });
 
   // Sidebar navigation handlers
   const navs = ['portfolio', 'dashboard', 'bible', 'cells', 'prayers', 'calendar', 'downloads', 'admin'];
@@ -527,6 +589,15 @@ function checkNewHighStreakMilestone(newStreak, myUid) {
   }).catch(err => console.warn("Streak leaderboard validation query limit: ", err));
 }
 
+function dismissWidget(id) {
+  const el = document.getElementById(id);
+  if (el) {
+    el.classList.add('hidden');
+    localStorage.setItem(`dismissed-${id}`, 'true');
+    window.showToast?.("Widget dismissed.");
+  }
+}
+
 // Expose globally
 window.switchTab = switchTab;
 window.toggleTheme = toggleTheme;
@@ -537,3 +608,5 @@ window.openOnboardingModal = openOnboardingModal;
 window.closeOnboardingModal = closeOnboardingModal;
 window.openProfileEditModal = openProfileEditModal;
 window.closeProfileModal = closeProfileModal;
+window.toggleMobileSidebar = toggleMobileSidebar;
+window.dismissWidget = dismissWidget;

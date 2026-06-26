@@ -20,9 +20,21 @@ if (!window.firebase) {
 
 const app = firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
-db.settings({
-  experimentalForceLongPolling: true
-});
+try {
+  db.settings({
+    experimentalForceLongPolling: true,
+    merge: true
+  });
+} catch (e) {
+  console.warn("Firestore settings apply failed, retrying with fallback:", e);
+  try {
+    db.settings({
+      experimentalForceLongPolling: true
+    });
+  } catch (err) {
+    console.warn("Firestore fallback settings failed as well:", err);
+  }
+}
 const auth = firebase.auth();
 
 const OperationType = {
