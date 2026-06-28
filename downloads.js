@@ -3,26 +3,8 @@
 
 function initDownloadsModule() {
   const navBtn = document.getElementById('nav-downloads');
-  const role = window.currentUserRole;
-
-  if (role === 'Super Admin') {
-    // Hide downloads completely for Super Admin
-    if (navBtn) navBtn.classList.add('hidden');
-    
-    const container = document.getElementById('download-bundles-grid');
-    if (container) {
-      container.innerHTML = `
-        <div class="col-span-full text-center py-12 text-slate-400">
-          <i data-lucide="shield-alert" class="w-12 h-12 mx-auto mb-3 opacity-50"></i>
-          <p class="font-bold">Super Admin Exclusivity Rules Active.</p>
-          <p class="text-xs mt-1">The Downloads Hub is configured as Non-Admin Exclusive and is hidden from your view.</p>
-        </div>
-      `;
-    }
-  } else {
-    if (navBtn) navBtn.classList.remove('hidden');
-    loadDownloadBundles();
-  }
+  if (navBtn) navBtn.classList.remove('hidden');
+  loadDownloadBundles();
 }
 
 function loadDownloadBundles() {

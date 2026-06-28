@@ -127,12 +127,15 @@ function listenToAuthState() {
       // User logged out: display Login modal frame
       if (authModal) authModal.classList.remove('hidden');
       if (badge) badge.classList.add('hidden');
+      document.documentElement.classList.add('unauthenticated');
       
       window.currentUserRole = 'Guest';
       window.currentUserProfile = null;
       switchTab('feed');
       return;
     }
+
+    document.documentElement.classList.remove('unauthenticated');
 
     // User logged in, check profile document
     window.db.collection('users').doc(user.uid).get()
@@ -188,6 +191,10 @@ function listenToAuthState() {
 
           if (badge) badge.classList.remove('hidden');
           if (authModal) authModal.classList.add('hidden');
+
+          if (window.startDownloadPromoBanner) {
+            window.startDownloadPromoBanner();
+          }
 
           // Initialize Dashboard
           if (activeTab === 'feed') {
@@ -323,6 +330,13 @@ function setAuthTab(mode) {
 document.addEventListener("DOMContentLoaded", () => {
   initTheme();
   listenToAuthState();
+
+  // General Service Worker Registration for PWA installability on all devices
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js', { scope: '/' })
+      .then(reg => console.log('PWA Service Worker registered with scope: ', reg.scope))
+      .catch(err => console.error('PWA Service Worker registration failed: ', err));
+  }
 
   // Apply dismissed states for widgets
   ['quick-help-box', 'member-journeys-box'].forEach(id => {
@@ -573,16 +587,17 @@ function checkNewHighStreakMilestone(newStreak, myUid) {
       );
 
       // Automated community post on the feed celebrating this milestone!
-      const docId = window.db.collection('feed_posts').doc().id;
-      window.db.collection('feed_posts').doc(docId).set({
+      const docId = window.db.collection('community_feed').doc().id;
+      window.db.collection('community_feed').doc(docId).set({
         id: docId,
         text: `👑 High-Streak Milestone Celebration! Let us rejoice as ${displayName} sets a brand new highest streak of ${newStreak} consecutive days in devotion, prayer, and study! Keep shining your light! 🌟✨`,
+        type: 'announcement',
         authorUid: myUid,
         authorName: displayName,
-        authorRole: window.currentUserRole,
+        authorRole: window.currentUserRole || 'Member',
         likesCount: 0,
         likes: {},
-        commentsCount: 0,
+        comments: [],
         createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
       }).catch(err => console.warn("Leaderboard automatic post failed: ", err));
     }

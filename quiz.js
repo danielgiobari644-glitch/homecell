@@ -507,23 +507,29 @@ function exitTrivia() {
 
 // Broadcast trivia triumph to community feed & off-app push notifications!
 function broadcastTriviaTriumph(correct, total, title, medal) {
-  const user = window.firebase.auth().currentUser;
-  if (!user) return;
+  const user = window.auth?.currentUser || window.firebase?.auth()?.currentUser;
+  if (!user) {
+    window.showToast?.("Authentication error: Please sign in to broadcast achievements.", "error");
+    return;
+  }
 
-  const displayName = window.currentUserProfile?.displayName || user.email;
+  const displayName = window.currentUserProfile?.displayName || user.email || 'Fellowship Member';
   const textMsg = `🏆 Sunday Trivia Triumph! ${displayName} has conquered the '${title}' live session scoring ${correct}/${total} correct and achieving the ${medal} medal! Can you top their scores? ⚡`;
 
   // Write to Community Feed
-  const docId = window.db.collection('feed_posts').doc().id;
-  window.db.collection('feed_posts').doc(docId).set({
+  const docId = window.db.collection('community_feed').doc().id;
+  window.db.collection('community_feed').doc(docId).set({
     id: docId,
     text: textMsg,
+    type: 'testimony',
     authorUid: user.uid,
     authorName: displayName,
-    authorRole: window.currentUserRole,
+    authorRole: window.currentUserRole || 'Member',
+    imageUrl: null,
+    videoUrl: null,
     likesCount: 0,
     likes: {},
-    commentsCount: 0,
+    comments: [],
     createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
   }).then(() => {
     window.showToast?.("Broadcast posted to fellowship feed successfully!", "success");
@@ -536,7 +542,7 @@ function broadcastTriviaTriumph(correct, total, title, medal) {
     );
 
     exitTrivia();
-  }).catch(err => window.handleFirestoreError(err, 'write', `feed_posts/${docId}`));
+  }).catch(err => window.handleFirestoreError(err, 'write', `community_feed/${docId}`));
 }
 
 // Sparkly Confetti Animation
