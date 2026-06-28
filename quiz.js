@@ -43,7 +43,7 @@ const PREMIUM_QUIZZES = [
     title: "Wisdom of Solomon & Proverbs",
     topic: "Old Testament Wisdom Literature",
     difficulty: "Hard",
-    coverGradient: "from-amber-500 to-orange-700",
+    coverGradient: "from-blue-500 to-indigo-700",
     coverEmoji: "👑",
     description: "Challenge your mind with the Proverbs, Ecclesiastes, and the legendary wisdom of King Solomon.",
     questions: [
@@ -119,6 +119,8 @@ let userScore = 0;
 let triviaTimer = null;
 let secondsRemaining = 15;
 let hasAnsweredCurrent = false;
+let triviaTimerLimit = 15;
+let pointsPerQuestion = 100;
 
 // Simulated online participants for the "live trivia" experience
 let liveParticipants = [
@@ -152,7 +154,7 @@ function renderQuizSelectionGrid() {
         </div>
         <div>
           <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400">${quiz.topic}</span>
-          <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-orange-100 text-orange-700 dark:bg-orange-950/50 dark:text-orange-400 ml-1.5">${quiz.difficulty}</span>
+          <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400 ml-1.5">${quiz.difficulty}</span>
           <h4 class="text-lg font-black text-slate-900 dark:text-zinc-50 font-display mt-2 leading-tight">${quiz.title}</h4>
           <p class="text-xs text-slate-500 dark:text-zinc-400 mt-1.5 leading-relaxed">${quiz.description}</p>
         </div>
@@ -248,42 +250,57 @@ function setupTriviaLounge(quiz) {
   userScore = 0;
   hasAnsweredCurrent = false;
 
+  // Set default values in case Firestore has none
+  triviaTimerLimit = 15;
+  pointsPerQuestion = 100;
+
   // Reset live cohort scores
   liveParticipants.forEach(p => p.score = 0);
 
-  // Show active session container, hide grid
-  document.getElementById('quiz-intro-deck').classList.add('hidden');
-  document.getElementById('live-trivia-session-board').classList.remove('hidden');
-
-  // Trigger countdown transition
-  const lobby = document.getElementById('trivia-waiting-lobby');
-  const arena = document.getElementById('trivia-active-arena');
-  const countdownText = document.getElementById('lobby-countdown-timer');
-
-  lobby.classList.remove('hidden');
-  arena.classList.add('hidden');
-
-  let cnt = 3;
-  countdownText.innerText = `Connecting with other believers... Session starts in ${cnt}...`;
-  
-  const loader = setInterval(() => {
-    cnt--;
-    if (cnt > 0) {
-      countdownText.innerText = `Connecting with other believers... Session starts in ${cnt}...`;
-    } else {
-      clearInterval(loader);
-      lobby.classList.add('hidden');
-      arena.classList.remove('hidden');
-      loadTriviaQuestion();
+  // Fetch from DB
+  window.db.collection('system_configs').doc('trivia').get().then(doc => {
+    if (doc.exists) {
+      const d = doc.data();
+      triviaTimerLimit = d.timerLimit || 15;
+      pointsPerQuestion = d.pointsPerQuestion || 100;
     }
-  }, 1000);
+  }).catch(err => {
+    console.warn("Could not load trivia configs from DB, using defaults:", err);
+  }).finally(() => {
+    // Show active session container, hide grid
+    document.getElementById('quiz-intro-deck').classList.add('hidden');
+    document.getElementById('live-trivia-session-board').classList.remove('hidden');
+
+    // Trigger countdown transition
+    const lobby = document.getElementById('trivia-waiting-lobby');
+    const arena = document.getElementById('trivia-active-arena');
+    const countdownText = document.getElementById('lobby-countdown-timer');
+
+    lobby.classList.remove('hidden');
+    arena.classList.add('hidden');
+
+    let cnt = 3;
+    countdownText.innerText = `Connecting with other believers... Session starts in ${cnt}...`;
+    
+    const loader = setInterval(() => {
+      cnt--;
+      if (cnt > 0) {
+        countdownText.innerText = `Connecting with other believers... Session starts in ${cnt}...`;
+      } else {
+        clearInterval(loader);
+        lobby.classList.add('hidden');
+        arena.classList.remove('hidden');
+        loadTriviaQuestion();
+      }
+    }, 1000);
+  });
 }
 
 function loadTriviaQuestion() {
   if (!currentQuiz) return;
   
   hasAnsweredCurrent = false;
-  secondsRemaining = 15;
+  secondsRemaining = triviaTimerLimit;
 
   const q = currentQuiz.questions[currentQuestionIdx];
   
@@ -332,7 +349,7 @@ function startQuestionCountdown() {
     if (timerText) timerText.innerText = `${secondsRemaining}s`;
     
     if (timerBar) {
-      const pct = (secondsRemaining / 15) * 100;
+      const pct = (secondsRemaining / triviaTimerLimit) * 100;
       timerBar.style.width = `${pct}%`;
       if (secondsRemaining <= 5) {
         timerBar.className = 'h-full bg-rose-500 rounded-full transition-all duration-300 animate-pulse';
@@ -359,10 +376,10 @@ function submitTriviaAnswer(selectedIdx) {
 
   // Highlight choices
   if (selectedIdx === correctIdx) {
-    userScore += 100; // Add points
+    userScore += pointsPerQuestion; // Add points
     if (selectedBtn) {
       selectedBtn.className = "w-full text-left p-4 rounded-2xl border-2 border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20 font-bold text-xs text-emerald-800 dark:text-emerald-400 transition-all flex justify-between items-center";
-      selectedBtn.innerHTML += `<span class="text-emerald-600">✅ +100 PTS</span>`;
+      selectedBtn.innerHTML += `<span class="text-emerald-600">✅ +${pointsPerQuestion} PTS</span>`;
     }
     window.showToast?.("Amen! Correct Answer!", "success");
   } else {
@@ -409,7 +426,7 @@ function simulateCohortActivity(correctIdx) {
   liveParticipants.forEach(p => {
     const isCorrect = Math.random() < p.accuracy;
     if (isCorrect) {
-      p.score += 100;
+      p.score += pointsPerQuestion;
     }
   });
   renderCohortScoreboard();
@@ -472,13 +489,13 @@ function completeTriviaSession() {
 
   const userRankIdx = finalLeaderboard.findIndex(p => p.isUser);
   const userRank = userRankIdx + 1;
-  const userScorePct = Math.round((userScore / (currentQuiz.questions.length * 100)) * 100);
+  const userScorePct = Math.round((userScore / (currentQuiz.questions.length * pointsPerQuestion)) * 100);
 
   let medal = "🥉 Bronze";
   if (userRank === 1) medal = "🥇 Gold Champion";
   else if (userRank === 2) medal = "🥈 Silver";
 
-  document.getElementById('res-score').innerText = `${userScorePct}% (${userScore / 100}/${currentQuiz.questions.length} Correct)`;
+  document.getElementById('res-score').innerText = `${userScorePct}% (${Math.round(userScore / pointsPerQuestion)}/${currentQuiz.questions.length} Correct)`;
   document.getElementById('res-rank').innerText = `#${userRank} (${medal} Medal)`;
   document.getElementById('res-pts').innerText = `${userScore} PTS`;
 
@@ -493,7 +510,7 @@ function completeTriviaSession() {
   // Setup broadcast button click
   const broadcastBtn = document.getElementById('btn-trivia-broadcast');
   if (broadcastBtn) {
-    broadcastBtn.onclick = () => broadcastTriviaTriumph(userScore / 100, currentQuiz.questions.length, currentQuiz.title, medal);
+    broadcastBtn.onclick = () => broadcastTriviaTriumph(Math.round(userScore / pointsPerQuestion), currentQuiz.questions.length, currentQuiz.title, medal);
   }
 }
 
@@ -555,7 +572,7 @@ function triggerConfetti() {
     const confetti = document.createElement('div');
     confetti.className = 'absolute w-2 h-2 rounded-full pointer-events-none opacity-80';
     
-    const colors = ['bg-amber-400', 'bg-blue-500', 'bg-rose-500', 'bg-emerald-500', 'bg-purple-500'];
+    const colors = ['bg-sky-400', 'bg-blue-500', 'bg-rose-500', 'bg-emerald-500', 'bg-purple-500'];
     confetti.classList.add(colors[Math.floor(Math.random() * colors.length)]);
 
     confetti.style.left = `${Math.random() * 100}%`;

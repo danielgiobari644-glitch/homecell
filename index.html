@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="unauthenticated">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -64,14 +64,14 @@
       }
 
       /* Glow & Glassmorphism helpers */
-      .glow-amber-active {
-        box-shadow: 0 15px 45px -5px rgba(212, 175, 55, 0.35), 0 0 30px 2px rgba(245, 158, 11, 0.15);
+      .glow-blue-active {
+        box-shadow: 0 15px 45px -5px rgba(37, 99, 235, 0.35), 0 0 30px 2px rgba(59, 130, 246, 0.15);
       }
-      .glow-subtle-warm {
-        box-shadow: 0 10px 30px -8px rgba(245, 158, 11, 0.1);
+      .glow-subtle-blue {
+        box-shadow: 0 10px 30px -8px rgba(37, 99, 235, 0.1);
       }
-      .dark .glow-subtle-warm {
-        box-shadow: 0 10px 40px -12px rgba(212, 175, 55, 0.18);
+      .dark .glow-subtle-blue {
+        box-shadow: 0 10px 40px -12px rgba(59, 130, 246, 0.18);
       }
 
       /* High Contrast Scrollbar */
@@ -399,7 +399,7 @@
           </button>
         </div>
 
-        <div class="bg-white dark:bg-zinc-900 border-none lg:border lg:border-slate-200 lg:dark:border-zinc-800 lg:rounded-3xl p-0 lg:p-5 lg:sticky lg:top-24 space-y-1.5 lg:shadow-sm overflow-y-auto flex-1 lg:flex-none lg:h-[calc(100vh-8rem)] lg:max-h-[calc(100vh-8rem)] flex flex-col justify-between lg:justify-start">
+        <div class="bg-white dark:bg-zinc-900 border-none lg:border lg:border-slate-200 lg:dark:border-zinc-800 lg:rounded-[2rem] p-0 lg:p-5 lg:sticky lg:top-24 space-y-1.5 lg:shadow-sm overflow-y-auto custom-scrollbar flex-1 lg:flex-none lg:max-h-[calc(100vh-6rem)] flex flex-col justify-between lg:justify-start">
           
           <div>
             <div class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2.5 px-3">Connect Portal</div>
@@ -461,7 +461,7 @@
                 <i data-lucide="compass" class="w-4 h-4"></i>
                 Start App Tour 🧭
               </button>
-              <button onclick="window.openDownloadModal()" class="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer">
+              <button onclick="window.openDownloadModal()" class="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer">
                 <i data-lucide="download" class="w-4 h-4"></i>
                 Download Native App 📲
               </button>
@@ -667,32 +667,32 @@
           <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
             
             <!-- Streak Champion / Congrats Page -->
-            <div id="streak-championship-arena" class="xl:col-span-2 bg-gradient-to-br from-amber-50 to-orange-100 dark:from-zinc-950/40 dark:to-orange-950/20 border border-orange-200 dark:border-orange-900/50 rounded-[2.5rem] p-8 shadow-sm flex flex-col justify-between space-y-6 relative overflow-hidden glow-subtle-warm transition-all duration-500">
+            <div id="streak-championship-arena" class="xl:col-span-2 bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-zinc-950/40 dark:to-indigo-950/20 border border-blue-200 dark:border-blue-900/50 rounded-[2.5rem] p-8 shadow-sm flex flex-col justify-between space-y-6 relative overflow-hidden glow-subtle-blue transition-all duration-500">
               <!-- Animated background glows -->
-              <div class="absolute -right-12 -bottom-12 w-48 h-48 bg-amber-400/20 dark:bg-amber-500/10 rounded-full blur-2xl animate-pulse"></div>
-              <div class="absolute -left-12 -top-12 w-48 h-48 bg-orange-400/10 dark:bg-rose-500/5 rounded-full blur-2xl animate-pulse"></div>
+              <div class="absolute -right-12 -bottom-12 w-48 h-48 bg-blue-400/20 dark:bg-blue-500/10 rounded-full blur-2xl animate-pulse"></div>
+              <div class="absolute -left-12 -top-12 w-48 h-48 bg-blue-400/10 dark:bg-indigo-500/5 rounded-full blur-2xl animate-pulse"></div>
               
               <!-- Celebration Header -->
               <div class="space-y-3 relative z-10">
-                <div id="champ-sub-header" class="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-orange-600 dark:text-orange-400 transition-colors duration-300">
-                  <span class="w-2.5 h-2.5 rounded-full bg-orange-500 animate-pulse"></span>
+                <div id="champ-sub-header" class="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-blue-600 dark:text-blue-400 transition-colors duration-300">
+                  <span class="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse"></span>
                   🏆 Fellowship Streak Champion of the Week
                 </div>
                 <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <div>
                     <h2 id="champ-name" class="text-3xl sm:text-4xl font-black font-display tracking-tight text-slate-900 dark:text-zinc-50 transition-all duration-300">Loading Champion...</h2>
-                    <p id="champ-streak-desc" class="text-sm text-slate-600 dark:text-zinc-300 mt-1 transition-colors duration-300">Sustaining an incredible streak of <span id="champ-streak-val" class="font-extrabold text-orange-600 dark:text-orange-400 transition-colors duration-300">... days</span> through active faith!</p>
+                    <p id="champ-streak-desc" class="text-sm text-slate-600 dark:text-zinc-300 mt-1 transition-colors duration-300">Sustaining an incredible streak of <span id="champ-streak-val" class="font-extrabold text-blue-600 dark:text-blue-400 transition-colors duration-300">... days</span> through active faith!</p>
                   </div>
                   <!-- Celebrate button -->
-                  <button id="btn-cheer-champ" onclick="cheerStreakChampion()" class="bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-xs uppercase tracking-wider px-6 py-3.5 rounded-2xl transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer shadow-md hover:shadow-orange-500/20 flex items-center gap-2 relative z-10">
+                  <button id="btn-cheer-champ" onclick="cheerStreakChampion()" class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs uppercase tracking-wider px-6 py-3.5 rounded-2xl transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer shadow-md hover:shadow-blue-500/20 flex items-center gap-2 relative z-10">
                     🎉 Cheer Champion
                   </button>
                 </div>
               </div>
 
               <!-- Interactive Congrats Message from cohort -->
-              <div id="champ-congrats-card" class="bg-white/85 dark:bg-zinc-900/80 backdrop-blur border border-orange-100 dark:border-orange-900/30 rounded-3xl p-5 flex items-center gap-4 transition-all duration-500 relative z-10">
-                <div id="champ-congrats-icon-box" class="w-12 h-12 rounded-2xl bg-orange-100 dark:bg-orange-950/60 flex items-center justify-center text-orange-600 dark:text-orange-400 font-bold text-xl shadow-inner transition-all duration-300">
+              <div id="champ-congrats-card" class="bg-white/85 dark:bg-zinc-900/80 backdrop-blur border border-blue-100 dark:border-blue-900/30 rounded-3xl p-5 flex items-center gap-4 transition-all duration-500 relative z-10">
+                <div id="champ-congrats-icon-box" class="w-12 h-12 rounded-2xl bg-blue-100 dark:bg-blue-950/60 flex items-center justify-center text-blue-600 dark:text-blue-400 font-bold text-xl shadow-inner transition-all duration-300">
                   👑
                 </div>
                 <div class="flex-1">
@@ -820,9 +820,9 @@
           </div>
 
           <!-- PWA Native Download Promotion Card -->
-          <div class="bg-gradient-to-r from-blue-500/10 via-amber-500/5 to-orange-500/10 border-2 border-dashed border-blue-500/25 dark:border-blue-400/20 rounded-[2.5rem] p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden shadow-sm hover:border-blue-500/40 transition-all duration-300">
+          <div class="bg-gradient-to-r from-blue-500/10 via-indigo-500/5 to-blue-500/10 border-2 border-dashed border-blue-500/25 dark:border-blue-400/20 rounded-[2.5rem] p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden shadow-sm hover:border-blue-500/40 transition-all duration-300">
             <div class="absolute -right-24 -top-24 w-48 h-48 bg-blue-500/10 rounded-full blur-2xl"></div>
-            <div class="absolute -left-24 -bottom-24 w-48 h-48 bg-orange-500/10 rounded-full blur-2xl"></div>
+            <div class="absolute -left-24 -bottom-24 w-48 h-48 bg-blue-500/10 rounded-full blur-2xl"></div>
             
             <div class="flex items-center gap-4 relative z-10 text-center md:text-left flex-col md:flex-row">
               <div class="w-14 h-14 rounded-3xl bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center text-3xl shadow-inner shrink-0 animate-pulse">
@@ -972,10 +972,10 @@
               
               <!-- Quiz Intro / Grid selection deck -->
               <div id="quiz-intro-deck" class="space-y-6">
-                <div class="bg-gradient-to-r from-orange-500 to-amber-600 text-white p-6 rounded-3xl space-y-2 shadow relative overflow-hidden">
+                <div class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6 rounded-3xl space-y-2 shadow relative overflow-hidden">
                   <div class="absolute -right-8 -bottom-8 w-32 h-32 bg-white/10 rounded-full blur-xl"></div>
                   <h3 class="text-xl font-black font-display flex items-center gap-2">🏆 Bible Quizzes & Live Trivia Lounge</h3>
-                  <p class="text-xs text-orange-50 mt-1 max-w-xl">
+                  <p class="text-xs text-blue-50 mt-1 max-w-xl">
                     Challenge your scriptural wisdom, join simulated live trivia rooms with other members, level up your active faith streak, and broadcast your triumph medals to the community!
                   </p>
                 </div>
@@ -996,7 +996,7 @@
                   
                   <!-- Lobby waiting for others -->
                   <div id="trivia-waiting-lobby" class="flex flex-col items-center justify-center text-center py-16 space-y-4">
-                    <div class="w-12 h-12 rounded-full border-4 border-slate-200 border-t-orange-500 animate-spin"></div>
+                    <div class="w-12 h-12 rounded-full border-4 border-slate-200 border-t-blue-500 animate-spin"></div>
                     <p id="lobby-countdown-timer" class="text-sm font-semibold text-slate-600 dark:text-zinc-400">Connecting with other believers... Session starts in 3...</p>
                   </div>
 
@@ -1030,7 +1030,7 @@
 
                   <!-- Results Card (When complete) -->
                   <div id="trivia-results-card" class="hidden flex flex-col items-center justify-center text-center py-10 space-y-6">
-                    <div class="w-16 h-16 rounded-full bg-amber-100 dark:bg-amber-950 flex items-center justify-center text-3xl animate-bounce">
+                    <div class="w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-950 flex items-center justify-center text-3xl animate-bounce">
                       👑
                     </div>
                     
@@ -1091,12 +1091,12 @@
         <section id="tab-cells" class="app-tab hidden space-y-8 animate-fade-in">
           
           <!-- Not joined any cell warning -->
-          <div id="no-cell-notice" class="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/50 rounded-3xl p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div id="no-cell-notice" class="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/50 rounded-3xl p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div class="space-y-1">
-              <h3 class="text-lg font-bold text-amber-800 dark:text-amber-400">Fellowship Cell Missing</h3>
-              <p class="text-xs text-amber-700 dark:text-amber-500">You are currently not actively associated with any registered Fellowship Cell Group.</p>
+              <h3 class="text-lg font-bold text-blue-800 dark:text-blue-400">Fellowship Cell Missing</h3>
+              <p class="text-xs text-blue-700 dark:text-blue-500">You are currently not actively associated with any registered Fellowship Cell Group.</p>
             </div>
-            <button onclick="switchTab('cells')" class="bg-amber-600 hover:bg-amber-700 text-white font-bold px-5 py-2.5 rounded-xl text-xs uppercase tracking-wider transition-all cursor-pointer">
+            <button onclick="switchTab('cells')" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2.5 rounded-xl text-xs uppercase tracking-wider transition-all cursor-pointer">
               Explore Directory Below
             </button>
           </div>
@@ -1161,13 +1161,13 @@
         <section id="tab-chat" class="app-tab hidden space-y-8 animate-fade-in">
           
           <!-- Chat room missing group error notice -->
-          <div id="chat-no-cell-notice" class="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/50 rounded-3xl p-8 max-w-2xl mx-auto text-center space-y-4">
-            <div class="w-16 h-16 bg-amber-100 dark:bg-amber-950 text-amber-600 dark:text-amber-400 rounded-full flex items-center justify-center mx-auto shadow-inner">
+          <div id="chat-no-cell-notice" class="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/50 rounded-3xl p-8 max-w-2xl mx-auto text-center space-y-4">
+            <div class="w-16 h-16 bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center mx-auto shadow-inner">
               <i data-lucide="message-square" class="w-8 h-8"></i>
             </div>
             <div class="space-y-1">
-              <h3 class="text-xl font-bold text-amber-800 dark:text-amber-400 font-display">Join a Fellowship Cell First</h3>
-              <p class="text-xs text-amber-700 dark:text-amber-500 max-w-md mx-auto leading-relaxed">
+              <h3 class="text-xl font-bold text-blue-800 dark:text-blue-400 font-display">Join a Fellowship Cell First</h3>
+              <p class="text-xs text-blue-700 dark:text-blue-500 max-w-md mx-auto leading-relaxed">
                 You must join an active Home Fellowship Cell Group from the directory before you can enter the live Chat Lounge.
               </p>
             </div>
@@ -1456,6 +1456,31 @@
                   <input type="email" id="desk-form-email" required class="w-full px-4 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg" />
                 </div>
                 <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2.5 px-6 rounded-lg tracking-wider text-xs">Update Channels</button>
+              </form>
+            </div>
+
+            <!-- Trivia Rules & Settings Config (Super Admin) -->
+            <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm space-y-4">
+              <h3 class="text-lg font-bold font-display text-slate-900 dark:text-zinc-50">🔥 Live Bible Trivia Game Settings</h3>
+              <p class="text-xs text-slate-500 dark:text-zinc-400">
+                Configure global points rewards, countdown limits, and weekly streak bonuses for live Pentecost Q&A sessions.
+              </p>
+              <form id="admin-trivia-settings-form" class="space-y-4 text-sm">
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-1">Seconds Limit per Question</label>
+                    <input type="number" id="trivia-settings-timer" required min="5" max="60" class="w-full px-4 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg text-slate-900 dark:text-zinc-100 font-bold" value="15" />
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-1">Points per Correct Option</label>
+                    <input type="number" id="trivia-settings-points" required min="10" max="1000" class="w-full px-4 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg text-slate-900 dark:text-zinc-100 font-bold" value="100" />
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-400 mb-1">Weekly Active Trivia Chamber Topic / Theme</label>
+                  <input type="text" id="trivia-settings-theme" required class="w-full px-4 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg text-slate-900 dark:text-zinc-100" placeholder="e.g. Pentecost & Miracles of Apostles" value="The Pentecost Acts" />
+                </div>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-lg tracking-wider text-xs">Save Trivia Settings</button>
               </form>
             </div>
 

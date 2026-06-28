@@ -469,6 +469,19 @@ function loadGlobalDeskSettings() {
       if (url) url.value = d.streamUrl || '';
     }
   });
+
+  const triviaTimerInput = document.getElementById('trivia-settings-timer');
+  const triviaPointsInput = document.getElementById('trivia-settings-points');
+  const triviaThemeInput = document.getElementById('trivia-settings-theme');
+
+  window.db.collection('system_configs').doc('trivia').get().then(doc => {
+    if (doc.exists) {
+      const d = doc.data();
+      if (triviaTimerInput) triviaTimerInput.value = d.timerLimit || 15;
+      if (triviaPointsInput) triviaPointsInput.value = d.pointsPerQuestion || 100;
+      if (triviaThemeInput) triviaThemeInput.value = d.weeklyTheme || 'The Pentecost Acts';
+    }
+  });
 }
 
 function updateSupportDesk() {
@@ -563,6 +576,24 @@ document.addEventListener("DOMContentLoaded", () => {
     cForm.addEventListener('submit', (e) => {
       e.preventDefault();
       updateSupportDesk();
+    });
+  }
+
+  const tsForm = document.getElementById('admin-trivia-settings-form');
+  if (tsForm) {
+    tsForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const timerLimit = parseInt(document.getElementById('trivia-settings-timer').value) || 15;
+      const pointsPerQuestion = parseInt(document.getElementById('trivia-settings-points').value) || 100;
+      const weeklyTheme = document.getElementById('trivia-settings-theme').value.trim() || 'The Pentecost Acts';
+
+      window.db.collection('system_configs').doc('trivia').set({
+        timerLimit,
+        pointsPerQuestion,
+        weeklyTheme
+      })
+        .then(() => window.showToast?.("Trivia engine rules updated successfully!"))
+        .catch(err => window.handleFirestoreError(err, 'write', 'system_configs/trivia'));
     });
   }
 
