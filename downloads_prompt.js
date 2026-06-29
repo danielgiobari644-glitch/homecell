@@ -173,6 +173,7 @@
 
     injectInstallCSS();
 
+    const isIframe = window.self !== window.top;
     const modal = document.createElement('div');
     modal.id = 'download-hub-modal';
     modal.className = 'fixed inset-0 z-[150] flex items-center justify-center p-3 sm:p-4 bg-slate-950/60 backdrop-blur-sm opacity-0 pointer-events-none transition-all duration-300';
@@ -199,6 +200,25 @@
         <!-- Content Area -->
         <div class="flex-1 overflow-y-auto p-4 space-y-4">
           
+          <!-- IFRAME DETECTED WARNING notice -->
+          <div id="iframe-download-notice" class="${isIframe ? '' : 'hidden'} p-3.5 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/30 text-amber-800 dark:text-amber-300 rounded-2xl text-[11px] leading-relaxed space-y-2 relative overflow-hidden">
+            <div class="flex items-center gap-1.5 font-bold text-amber-700 dark:text-amber-400">
+              <span class="text-sm">⚠️</span>
+              <span>Running inside Preview Frame</span>
+            </div>
+            <p class="text-slate-600 dark:text-zinc-300">
+              Browser security policies block native downloads and hide the <strong>PWA Install Icon (💻⬇️)</strong> while inside preview frames.
+            </p>
+            <p class="font-semibold text-amber-800 dark:text-amber-200">
+              Please open the app in a full browser tab to download launchers and install properly!
+            </p>
+            <div class="pt-1">
+              <a href="${window.location.href}" target="_blank" rel="noopener noreferrer" class="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-sm flex items-center justify-center gap-1.5 text-center no-underline decoration-transparent">
+                <i data-lucide="external-link" class="w-3.5 h-3.5"></i> Open in New Tab & Download
+              </a>
+            </div>
+          </div>
+
           <!-- Fast Action installer -->
           <div class="p-4 bg-gradient-to-tr from-blue-600 to-indigo-600 dark:from-blue-700 dark:to-indigo-800 text-white rounded-2xl space-y-3 shadow-md relative overflow-hidden">
             <div class="absolute -right-8 -bottom-8 w-20 h-20 bg-white/5 rounded-full blur-xl"></div>
