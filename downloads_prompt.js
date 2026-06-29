@@ -5,7 +5,7 @@
   let deferredPrompt = null;
 
   // Track if prompt banner has been dismissed this session
-  const isDismissed = localStorage.getItem('homecell_install_prompt_dismissed');
+  const isDismissed = sessionStorage.getItem('homecell_install_prompt_dismissed');
 
   // Listen to standard PWA beforeinstallprompt
   window.addEventListener('beforeinstallprompt', (e) => {
@@ -25,11 +25,11 @@
     style.id = 'install-prompt-styles';
     style.innerHTML = `
       @keyframes slideUpBanner {
-        from { transform: translateY(100px); opacity: 0; }
+        from { transform: translateY(120px); opacity: 0; }
         to { transform: translateY(0); opacity: 1; }
       }
-      .animate-slide-up-banner {
-        animation: slideUpBanner 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      #homecell-install-banner {
+        animation: slideUpBanner 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
       }
       .glow-border-blue {
         box-shadow: 0 0 15px rgba(37, 99, 235, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.1);
@@ -103,15 +103,11 @@
     if (isDismissed === 'true') return;
     if (document.getElementById('homecell-install-banner')) return;
 
-    // Do NOT show prompt/install banner on the login screen
-    const user = window.auth?.currentUser || window.firebase?.auth?.()?.currentUser;
-    if (!user) return;
-
     injectInstallCSS();
 
     const banner = document.createElement('div');
     banner.id = 'homecell-install-banner';
-    banner.className = 'fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:max-w-sm bg-slate-900/95 dark:bg-zinc-950/95 backdrop-blur-xl border border-blue-500/30 text-white rounded-2xl p-4 shadow-2xl z-[80] pointer-events-auto transition-all duration-300 transform translate-y-20 opacity-0 animate-slide-up-banner flex flex-col gap-3 glow-border-blue ring-1 ring-blue-500/10';
+    banner.className = 'fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:max-w-md bg-slate-900/95 dark:bg-zinc-950/95 backdrop-blur-xl border border-blue-500/30 text-white rounded-2xl p-5 shadow-2xl z-[200] pointer-events-auto flex flex-col gap-3.5 glow-border-blue ring-1 ring-blue-500/10';
 
     const platform = getDevicePlatform();
     let platformBadge = `<span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-blue-500/20 text-blue-300 border border-blue-500/30">🎯 Recommended for ${platform}</span>`;
@@ -158,7 +154,7 @@
       b.className = 'fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:max-w-sm bg-slate-900/95 dark:bg-zinc-950/95 backdrop-blur-xl border border-blue-500/30 text-white rounded-2xl p-4 shadow-2xl z-[80] pointer-events-auto transition-all duration-300 transform translate-y-20 opacity-0';
       setTimeout(() => b.remove(), 400);
     }
-    localStorage.setItem('homecell_install_prompt_dismissed', 'true');
+    sessionStorage.setItem('homecell_install_prompt_dismissed', 'true');
   };
 
   // Helper function to update install button states
@@ -301,31 +297,31 @@
               </div>
               <div>
                 <h5 class="font-bold text-slate-900 dark:text-zinc-50 text-xs">Download for Windows, Mac & Linux</h5>
-                <p class="text-[10px] text-slate-400">Native Desktop Applications</p>
+                <p class="text-[10px] text-slate-400">Desktop Web Launcher Applications</p>
               </div>
             </div>
 
             <div class="space-y-2.5 text-[11px] text-slate-600 dark:text-zinc-300 leading-normal pl-1">
               <div class="flex gap-2 items-start">
                 <span class="w-4 h-4 rounded-full bg-slate-200 dark:bg-zinc-800 font-bold text-[9px] flex items-center justify-center shrink-0 mt-0.5">1</span>
-                <p>Click the desktop trigger below to download the native computer installer package.</p>
+                <p>Click below to download the secure <strong>HomeCell Desktop Launcher (.html)</strong> for your system. No virus warning blocks!</p>
               </div>
               <div class="flex gap-2 items-start">
                 <span class="w-4 h-4 rounded-full bg-slate-200 dark:bg-zinc-800 font-bold text-[9px] flex items-center justify-center shrink-0 mt-0.5">2</span>
-                <p>Alternatively, click the <strong>Install Icon</strong> (represented by a computer/arrow 💻⬇️) inside the address bar at the top-right of your browser window.</p>
+                <p>Alternatively, click the <strong>Install Icon</strong> (computer with arrow 💻⬇️) in your browser's address bar to install it as a native PWA app on Windows 11.</p>
               </div>
               <div class="flex gap-2 items-start">
                 <span class="w-4 h-4 rounded-full bg-slate-200 dark:bg-zinc-800 font-bold text-[9px] flex items-center justify-center shrink-0 mt-0.5">3</span>
-                <p>Click <strong>"Install"</strong> in the browser popup confirmation to unlock full computer desktop framing!</p>
+                <p>Double-click the downloaded Launcher file to open your HomeCell fellowship portal in a clean desktop frame.</p>
               </div>
             </div>
 
             <div class="grid grid-cols-2 gap-2">
               <button onclick="window.triggerDirectFileDownload('windows')" class="py-1.5 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-700 dark:text-zinc-300 font-bold text-[9px] uppercase rounded-lg transition-all hover:bg-slate-50 flex items-center justify-center gap-1 cursor-pointer">
-                🖥️ Windows Setup (.exe)
+                🖥️ Windows Launcher (.html)
               </button>
               <button onclick="window.triggerDirectFileDownload('macos')" class="py-1.5 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-700 dark:text-zinc-300 font-bold text-[9px] uppercase rounded-lg transition-all hover:bg-slate-50 flex items-center justify-center gap-1 cursor-pointer">
-                🍎 macOS Setup (.dmg)
+                🍎 macOS Launcher (.html)
               </button>
             </div>
           </div>
@@ -452,26 +448,132 @@
     const nameMap = {
       'android': 'HomeCell_Mobile_App_Installer.apk',
       'ios': 'HomeCell_iOS_Shortcut.mobileconfig',
-      'windows': 'HomeCell_Desktop_Setup.exe',
-      'macos': 'HomeCell_macOS_Installer.dmg',
+      'windows': 'HomeCell_Windows_Launcher.html',
+      'macos': 'HomeCell_macOS_Launcher.html',
       'pwa': 'HomeCell_PWA_Launcher_Bundle.zip'
     };
 
     const fileName = nameMap[platform] || 'HomeCell_PWA_Package.zip';
-    
-    // Create direct mock installer payload
-    const dummyBytes = new TextEncoder().encode(
-      `--- HOME.CELL NATIVE APP INSTALLER CONFIGURATION --- \n` +
-      `Platform: ${platform.toUpperCase()}\n` +
-      `Build: STABLE_RELEASE_V1.4.2\n` +
-      `Sync Server Protocol: SECURE_WS\n` +
-      `Database Link: FIRESTORE_ACTIVE\n` +
-      `URL: ${window.location.origin}\n` +
-      `---------------------------------------------------- \n` +
-      `Initializing installation on your ${platform} device...`
-    );
+    let blob;
 
-    const blob = new Blob([dummyBytes], { type: 'application/octet-stream' });
+    if (platform === 'windows' || platform === 'macos') {
+      const appUrl = window.location.origin;
+      const htmlContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HomeCell Connect - Desktop Launcher</title>
+  <style>
+    body {
+      background-color: #09090b;
+      color: #f4f4f5;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      text-align: center;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+    .card {
+      background: #18181b;
+      border: 1px solid #27272a;
+      border-radius: 24px;
+      padding: 40px;
+      max-width: 440px;
+      width: 100%;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      box-sizing: border-box;
+    }
+    .card:hover {
+      transform: translateY(-4px);
+    }
+    .icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+      animation: pulse 2s infinite ease-in-out;
+    }
+    h1 {
+      margin-top: 0;
+      font-size: 26px;
+      color: #3b82f6;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+    }
+    p {
+      font-size: 14px;
+      color: #a1a1aa;
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+    .btn {
+      display: inline-block;
+      background: #2563eb;
+      color: white;
+      text-decoration: none;
+      padding: 14px 28px;
+      border-radius: 14px;
+      font-weight: bold;
+      transition: all 0.2s;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+      cursor: pointer;
+    }
+    .btn:hover {
+      background: #1d4ed8;
+      box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4);
+    }
+    .tip {
+      font-size: 11px;
+      color: #71717a;
+      margin-top: 24px;
+      border-top: 1px solid #27272a;
+      padding-top: 16px;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.08); }
+    }
+  </style>
+  <script>
+    window.onload = function() {
+      // Redirect after a tiny delay to allow visual load
+      setTimeout(function() {
+        window.location.href = "${appUrl}";
+      }, 1000);
+    }
+  <\/script>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">⛪</div>
+    <h1>HomeCell Connect</h1>
+    <p>Opening your cell fellowship and daily scriptures portal in your default browser...</p>
+    <a href="${appUrl}" class="btn">Open Portal Immediately</a>
+    <div class="tip">Tip: Save this file to your Desktop or pin it to your taskbar to launch HomeCell with a single click anytime!</div>
+  </div>
+</body>
+</html>`;
+      blob = new Blob([htmlContent], { type: 'text/html' });
+    } else {
+      // Create direct mock installer payload for other legacy formats
+      const dummyBytes = new TextEncoder().encode(
+        `--- HOME.CELL NATIVE APP INSTALLER CONFIGURATION --- \n` +
+        `Platform: ${platform.toUpperCase()}\n` +
+        `Build: STABLE_RELEASE_V1.4.2\n` +
+        `Sync Server Protocol: SECURE_WS\n` +
+        `Database Link: FIRESTORE_ACTIVE\n` +
+        `URL: ${window.location.origin}\n` +
+        `---------------------------------------------------- \n` +
+        `Initializing installation on your ${platform} device...`
+      );
+      blob = new Blob([dummyBytes], { type: 'application/octet-stream' });
+    }
+
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
     link.download = fileName;

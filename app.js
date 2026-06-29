@@ -269,7 +269,15 @@ function handleAuthSubmit(email, password, isSignUpMode) {
       })
       .catch(err => {
         console.error("Signup failed:", err);
-        window.showToast?.(err.message, 'error');
+        let friendlyMsg = err.message;
+        if (err.code === 'auth/email-already-in-use') {
+          friendlyMsg = "An account with this email already exists. Please use the 'Sign In' tab.";
+        } else if (err.code === 'auth/weak-password') {
+          friendlyMsg = "The password is too weak. Please use at least 6 characters.";
+        } else if (err.code === 'auth/invalid-email') {
+          friendlyMsg = "Please enter a valid email address.";
+        }
+        window.showToast?.(friendlyMsg, 'error');
       });
   } else {
     window.auth.signInWithEmailAndPassword(email, password)
@@ -278,7 +286,11 @@ function handleAuthSubmit(email, password, isSignUpMode) {
       })
       .catch(err => {
         console.error("Sign-in failed:", err);
-        window.showToast?.(err.message, 'error');
+        let friendlyMsg = err.message;
+        if (err.code === 'auth/invalid-credential' || (err.message && err.message.includes('invalid-credential'))) {
+          friendlyMsg = "Incorrect password or no account found. If you are a new member, please tap the 'Sign Up' tab first!";
+        }
+        window.showToast?.(friendlyMsg, 'error');
       });
   }
 }
@@ -373,7 +385,14 @@ document.addEventListener("DOMContentLoaded", () => {
       const provider = new window.firebase.auth.GoogleAuthProvider();
       window.auth.signInWithPopup(provider)
         .then(() => window.showToast?.("Google authentication successful."))
-        .catch(err => window.showToast?.("Google authentication failed: " + err.message, 'error'));
+        .catch(err => {
+          console.error("Google authentication failed:", err);
+          let friendlyMsg = "Google authentication failed: " + err.message;
+          if (window.self !== window.top) {
+            friendlyMsg += " Hint: If the popup is blocked or cookies are restricted in the iframe, try opening the application in a new window using the 'Open in New Tab' button on the top right, or use Email/Password sign up.";
+          }
+          window.showToast?.(friendlyMsg, 'error');
+        });
     });
   }
 
