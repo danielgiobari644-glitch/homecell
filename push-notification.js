@@ -64,11 +64,51 @@ window.requestNotificationPermission = async function() {
       });
     }
 
+    // Safely extract subscription keys and endpoint to prevent circular structure issues
+    let subRaw = null;
+    try {
+      if (subscription && typeof subscription.toJSON === 'function') {
+        const parsed = subscription.toJSON();
+        subRaw = {
+          endpoint: parsed.endpoint,
+          keys: {
+            p256dh: parsed.keys?.p256dh || null,
+            auth: parsed.keys?.auth || null
+          }
+        };
+      }
+    } catch (e) {
+      console.warn("Failed to call subscription.toJSON(), falling back to manual extraction:", e);
+    }
+
+    if (!subRaw && subscription) {
+      let p256dh = null;
+      let auth = null;
+      try {
+        if (typeof subscription.getKey === 'function') {
+          const p256dhBuffer = subscription.getKey('p256dh');
+          if (p256dhBuffer) {
+            p256dh = btoa(String.fromCharCode.apply(null, new Uint8Array(p256dhBuffer)));
+          }
+          const authBuffer = subscription.getKey('auth');
+          if (authBuffer) {
+            auth = btoa(String.fromCharCode.apply(null, new Uint8Array(authBuffer)));
+          }
+        }
+      } catch (keyErr) {
+        console.warn("Could not retrieve subscription keys:", keyErr);
+      }
+      subRaw = {
+        endpoint: subscription.endpoint,
+        keys: { p256dh, auth }
+      };
+    }
+
     // Send subscription to server
     const subRes = await fetch(SUBSCRIBE_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ subscription })
+      body: JSON.stringify({ subscription: subRaw })
     });
 
     if (subRes.ok) {

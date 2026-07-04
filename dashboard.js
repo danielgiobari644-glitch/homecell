@@ -246,7 +246,7 @@ function syncStreakChampionship() {
       // If the current logged in user IS the reigning champion
       if (champDoc.id === user.uid) {
         if (arenaEl) {
-          arenaEl.className = "lg:col-span-2 bg-gradient-to-tr from-amber-500 via-orange-600 to-rose-600 text-white border border-amber-300/40 rounded-[2.5rem] p-8 shadow-2xl flex flex-col justify-between space-y-6 relative overflow-hidden glow-amber-active animate-fade-in";
+          arenaEl.className = "xl:col-span-2 bg-gradient-to-tr from-amber-500 via-orange-600 to-rose-600 text-white border border-amber-300/40 rounded-[2.5rem] p-8 shadow-2xl flex flex-col justify-between space-y-6 relative overflow-hidden glow-amber-active animate-fade-in";
         }
         if (champSubHeaderEl) {
           champSubHeaderEl.className = "flex items-center gap-2 text-xs font-black uppercase tracking-widest text-amber-100 transition-colors duration-300";
@@ -289,7 +289,7 @@ function syncStreakChampionship() {
       } else {
         // Render regular card design for other users
         if (arenaEl) {
-          arenaEl.className = "lg:col-span-2 bg-gradient-to-br from-amber-50 to-orange-100 dark:from-zinc-950/40 dark:to-orange-950/20 border border-orange-200 dark:border-orange-900/50 rounded-[2.5rem] p-8 shadow-sm flex flex-col justify-between space-y-6 relative overflow-hidden glow-subtle-warm transition-all duration-500";
+          arenaEl.className = "xl:col-span-2 bg-gradient-to-br from-amber-50 to-orange-100 dark:from-zinc-950/40 dark:to-orange-950/20 border border-orange-200 dark:border-orange-900/50 rounded-[2.5rem] p-8 shadow-sm flex flex-col justify-between space-y-6 relative overflow-hidden glow-subtle-warm transition-all duration-500";
         }
         if (champSubHeaderEl) {
           champSubHeaderEl.className = "flex items-center gap-2 text-xs font-black uppercase tracking-widest text-orange-600 dark:text-orange-400 transition-colors duration-300";

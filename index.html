@@ -402,7 +402,7 @@
           </button>
         </div>
 
-        <div class="bg-transparent dark:bg-transparent border-none lg:border lg:border-slate-200/50 lg:dark:border-zinc-800/50 lg:bg-white/80 lg:dark:bg-zinc-900/80 lg:backdrop-blur-md lg:rounded-[2rem] p-0 lg:p-5 lg:sticky lg:top-24 space-y-1.5 lg:shadow-md flex flex-col justify-between lg:justify-start flex-1 lg:flex-none max-h-[calc(100vh-140px)] lg:max-h-[calc(100vh-14rem)] overflow-y-auto lg:overflow-y-auto custom-scrollbar">
+        <div class="bg-transparent dark:bg-transparent border-none lg:border lg:border-slate-200/50 lg:dark:border-zinc-800/50 lg:bg-white/80 lg:dark:bg-zinc-900/80 lg:backdrop-blur-md lg:rounded-[2rem] p-0 lg:p-5 lg:sticky lg:top-24 space-y-1.5 lg:shadow-md flex flex-col justify-between lg:justify-start flex-1 min-h-0 lg:flex-none max-h-[calc(100vh-140px)] lg:max-h-[calc(100vh-12rem)] overflow-y-auto custom-scrollbar lg:w-full">
           
           <div>
             <div class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2.5 px-3">Connect Portal</div>
@@ -464,7 +464,7 @@
                 <i data-lucide="compass" class="w-4 h-4"></i>
                 Start App Tour 🧭
               </button>
-              <button onclick="window.openDownloadModal()" class="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer">
+              <button id="btn-pwa-install" onclick="window.triggerAutoInstallerDownload()" class="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer">
                 <i data-lucide="download" class="w-4 h-4"></i>
                 Download Native App 📲
               </button>

@@ -162,8 +162,11 @@
     const installBtn = document.getElementById('btn-pwa-install');
     if (installBtn) {
       if (hasPrompt) {
-        installBtn.innerHTML = `🌟 Install Native App <i data-lucide="sparkles" class="w-4 h-4 ml-1"></i>`;
+        installBtn.innerHTML = `<i data-lucide="sparkles" class="w-4 h-4 text-amber-500"></i> 🌟 Install Native App`;
+      } else {
+        installBtn.innerHTML = `<i data-lucide="download" class="w-4 h-4"></i> Download Native App 📲`;
       }
+      if (window.lucide) window.lucide.createIcons();
     }
   }
 

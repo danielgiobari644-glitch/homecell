@@ -46,6 +46,24 @@ const OperationType = {
   WRITE: 'write',
 };
 
+// Safe stringifier to handle potential circular structures
+function safeStringify(obj) {
+  try {
+    const cache = new Set();
+    return JSON.stringify(obj, (key, value) => {
+      if (typeof value === 'object' && value !== null) {
+        if (cache.has(value)) {
+          return '[Circular]';
+        }
+        cache.add(value);
+      }
+      return value;
+    });
+  } catch (e) {
+    return "[Serialization Error: " + e.message + "]";
+  }
+}
+
 // Standard Firestore Error Handler as specified by the system skill
 function handleFirestoreError(error, operationType, path) {
   const errInfo = {
@@ -60,12 +78,12 @@ function handleFirestoreError(error, operationType, path) {
         email: provider.email,
       })) || []
     },
-    operationType,
-    path
+    operationType: String(operationType || ''),
+    path: String(path || '')
   };
-  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  console.error('Firestore Error: ', safeStringify(errInfo));
   window.showToast?.(error.message || 'Operation failed due to lack of permissions.', 'error');
-  throw new Error(JSON.stringify(errInfo));
+  throw new Error(safeStringify(errInfo));
 }
 
 // Test Connection
