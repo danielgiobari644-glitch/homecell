@@ -1217,6 +1217,66 @@
               <!-- Loaded dynamically -->
             </div>
 
+            <!-- Permanent Desktop Shortcut & Pinning Assistant Card -->
+            <div class="bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800/80 rounded-3xl p-6 space-y-6 mt-6">
+              <div class="flex items-center gap-3">
+                <div class="p-2.5 bg-blue-100 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded-2xl shrink-0">
+                  <i data-lucide="pin" class="w-6 h-6"></i>
+                </div>
+                <div>
+                  <h3 class="text-lg font-black font-display text-slate-900 dark:text-zinc-50">Desktop Pinning & Shortcut Assistant</h3>
+                  <p class="text-xs text-slate-400 mt-0.5">If the automatic PWA browser installation is blocked, use these robust alternatives to pin HomeCell directly to your desktop.</p>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Method 1: Instant Shortcut File -->
+                <div class="bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800/60 rounded-2xl p-5 space-y-4">
+                  <div>
+                    <span class="px-2 py-0.5 text-[8px] font-black uppercase tracking-wider bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400 rounded">Option A</span>
+                    <h4 class="font-bold text-slate-900 dark:text-zinc-50 text-sm mt-1">Instant Desktop Pinning Shortcut</h4>
+                    <p class="text-[11px] text-slate-500 dark:text-zinc-400 mt-1">Download a native web link file and drag it onto your Desktop for one-click access anytime.</p>
+                  </div>
+                  
+                  <div class="space-y-2 text-[11px] text-slate-600 dark:text-zinc-300 leading-normal">
+                    <p class="flex items-start gap-1.5"><span class="font-black text-blue-500">1.</span> Download the shortcut file matching your computer OS below.</p>
+                    <p class="flex items-start gap-1.5"><span class="font-black text-blue-500">2.</span> Drag the downloaded file from your Downloads folder straight onto your Desktop.</p>
+                    <p class="flex items-start gap-1.5"><span class="font-black text-blue-500">3.</span> Pin it to your Taskbar or Dock for a pristine permanent launcher.</p>
+                  </div>
+
+                  <div class="grid grid-cols-2 gap-2 pt-2">
+                    <button onclick="window.triggerDirectFileDownload('windows-shortcut')" class="py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 font-extrabold text-[10px] uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1">
+                      🖥️ Windows Pin (.url)
+                    </button>
+                    <button onclick="window.triggerDirectFileDownload('macos-shortcut')" class="py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 font-extrabold text-[10px] uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1">
+                      🍎 macOS Pin (.webloc)
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Method 2: Create Native-feeling Window Shortcut -->
+                <div class="bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800/60 rounded-2xl p-5 space-y-4">
+                  <div>
+                    <span class="px-2 py-0.5 text-[8px] font-black uppercase tracking-wider bg-purple-100 text-purple-700 dark:bg-purple-950/40 dark:text-purple-400 rounded">Option B</span>
+                    <h4 class="font-bold text-slate-900 dark:text-zinc-50 text-sm mt-1">Chrome/Edge App wrapper</h4>
+                    <p class="text-[11px] text-slate-500 dark:text-zinc-400 mt-1">Run HomeCell in a standalone window frame without standard browser borders.</p>
+                  </div>
+
+                  <div class="space-y-2 text-[11px] text-slate-600 dark:text-zinc-300 leading-normal">
+                    <p class="flex items-start gap-1.5"><span class="font-black text-purple-500">1.</span> Open this application in a new dedicated browser tab.</p>
+                    <p class="flex items-start gap-1.5"><span class="font-black text-purple-500">2.</span> Open Chrome/Edge menu (3 dots) ➔ <strong class="text-purple-600 dark:text-purple-400">Save and share ➔ Create shortcut...</strong> (or More tools ➔ Create shortcut).</p>
+                    <p class="flex items-start gap-1.5"><span class="font-black text-purple-500">3.</span> Check <strong class="font-bold text-slate-900 dark:text-zinc-100">"Open as window"</strong> and click Create to instantly pin it!</p>
+                  </div>
+
+                  <div class="pt-2">
+                    <a href="https://danielgiobari644-glitch.github.io/homecell" target="_blank" rel="noopener noreferrer" class="w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-sm flex items-center justify-center gap-1.5 text-center no-underline decoration-transparent">
+                      <i data-lucide="external-link" class="w-3.5 h-3.5"></i> Open in New Tab to Create Pin
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+
           </div>
         </section>
 
