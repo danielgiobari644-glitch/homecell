@@ -152,9 +152,28 @@ window.sendPushNotification = async function(title, body, targetUrl = '/') {
 function updatePushUIState() {
   const btn = document.getElementById('btn-enable-push');
   const statusIndicator = document.getElementById('push-status-text');
-  if (!btn || !statusIndicator) return;
+  const settingsStatus = document.getElementById('settings-push-status');
 
   const state = window.getNotificationPermissionState();
+
+  if (settingsStatus) {
+    if (state === 'granted') {
+      settingsStatus.innerText = "🟢 Push Notifications Enabled";
+      settingsStatus.className = "text-xs font-semibold text-emerald-600 dark:text-emerald-400 block text-center uppercase tracking-wider";
+    } else if (state === 'denied') {
+      settingsStatus.innerText = "🔴 Push Blocked in Browser";
+      settingsStatus.className = "text-xs font-semibold text-rose-500 block text-center uppercase tracking-wider";
+    } else if (state === 'unsupported') {
+      settingsStatus.innerText = "⚠️ Push Unsupported in Browser";
+      settingsStatus.className = "text-xs font-semibold text-slate-400 block text-center uppercase tracking-wider";
+    } else {
+      settingsStatus.innerText = "⚪ Offline push inactive";
+      settingsStatus.className = "text-xs text-slate-500 dark:text-zinc-400 block text-center uppercase tracking-wider";
+    }
+  }
+
+  if (!btn || !statusIndicator) return;
+
   if (state === 'granted') {
     btn.classList.add('hidden');
     statusIndicator.innerText = "🟢 Push Notifications Enabled";

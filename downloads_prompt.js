@@ -439,7 +439,7 @@
 
   // Copy Download link
   window.copyAppDownloadLink = function() {
-    const url = window.location.origin;
+    const url = "https://danielgiobari644-glitch.github.io/homecell";
     navigator.clipboard.writeText(url).then(() => {
       window.showToast?.("App installer sync link copied to clipboard!", "success");
     }).catch(() => {
@@ -480,7 +480,7 @@
     let blob;
 
     if (platform === 'windows' || platform === 'macos') {
-      const appUrl = window.location.origin;
+      const appUrl = "https://danielgiobari644-glitch.github.io/homecell";
       const htmlContent = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -590,7 +590,7 @@
         `Build: STABLE_RELEASE_V1.4.2\n` +
         `Sync Server Protocol: SECURE_WS\n` +
         `Database Link: FIRESTORE_ACTIVE\n` +
-        `URL: ${window.location.origin}\n` +
+        `URL: https://danielgiobari644-glitch.github.io/homecell\n` +
         `---------------------------------------------------- \n` +
         `Initializing installation on your ${platform} device...`
       );

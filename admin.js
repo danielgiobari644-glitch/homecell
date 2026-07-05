@@ -28,6 +28,7 @@ function initAdminModule() {
   syncAdminCells();
   syncAdminEvents();
   syncAdminTrivia();
+  syncAdminQuizzes();
   syncAdminBundles();
   loadGlobalDeskSettings();
 }
@@ -450,6 +451,7 @@ function loadGlobalDeskSettings() {
   const title = document.getElementById('admin-stream-title');
   const desc = document.getElementById('admin-stream-desc');
   const url = document.getElementById('admin-stream-url');
+  const type = document.getElementById('admin-stream-type');
 
   window.db.collection('system_configs').doc('contacts').get().then(doc => {
     if (doc.exists) {
@@ -467,6 +469,7 @@ function loadGlobalDeskSettings() {
       if (title) title.value = d.streamTitle || '';
       if (desc) desc.value = d.streamDesc || '';
       if (url) url.value = d.streamUrl || '';
+      if (type) type.value = d.streamType || 'hls';
     }
   });
 
@@ -503,12 +506,14 @@ function updateStreamDesk() {
   const title = document.getElementById('admin-stream-title').value.trim();
   const desc = document.getElementById('admin-stream-desc').value.trim();
   const url = document.getElementById('admin-stream-url').value.trim();
+  const type = document.getElementById('admin-stream-type').value;
 
   window.db.collection('system_configs').doc('stream').set({
     streamActive: active,
     streamTitle: title,
     streamDesc: desc,
-    streamUrl: url
+    streamUrl: url,
+    streamType: type
   })
     .then(() => window.showToast?.("Broadcast stream configuration refreshed."))
     .catch(err => window.handleFirestoreError(err, 'write', 'system_configs/stream'));
@@ -727,8 +732,313 @@ function sendAdminNudge(event) {
   }
 }
 
+// ==========================================
+// 5. ULTIMATE INTERACTIVE QUIZ BUILDER CONSOLE
+// ==========================================
+let activeQuizQuestions = [];
+let editingQuestionIdx = null;
+
+function toggleAdminQuestionFormat() {
+  const qType = document.getElementById('admin-q-type').value;
+  const mcGroup = document.getElementById('admin-mc-group');
+  const ansSelect = document.getElementById('admin-q-correct');
+
+  if (qType === 'tf') {
+    if (mcGroup) mcGroup.classList.add('hidden');
+    if (ansSelect) {
+      ansSelect.innerHTML = `
+        <option value="0">True</option>
+        <option value="1">False</option>
+      `;
+    }
+  } else {
+    if (mcGroup) mcGroup.classList.remove('hidden');
+    if (ansSelect) {
+      ansSelect.innerHTML = `
+        <option value="0">Option A</option>
+        <option value="1">Option B</option>
+        <option value="2">Option C</option>
+        <option value="3">Option D</option>
+      `;
+    }
+  }
+}
+
+function addQuestionToActiveQuiz() {
+  const promptEl = document.getElementById('admin-q-prompt');
+  if (!promptEl) return;
+  const prompt = promptEl.value.trim();
+  if (!prompt) {
+    window.showToast?.("Question prompt cannot be empty!", "error");
+    return;
+  }
+
+  const qType = document.getElementById('admin-q-type').value;
+  let options = [];
+  let answerIdx = parseInt(document.getElementById('admin-q-correct').value);
+
+  if (qType === 'tf') {
+    options = ["True", "False"];
+    if (answerIdx > 1) answerIdx = 0;
+  } else {
+    const o0 = document.getElementById('admin-q-o0').value.trim();
+    const o1 = document.getElementById('admin-q-o1').value.trim();
+    const o2 = document.getElementById('admin-q-o2').value.trim();
+    const o3 = document.getElementById('admin-q-o3').value.trim();
+
+    if (!o0 || !o1 || !o2 || !o3) {
+      window.showToast?.("All 4 options must be supplied for Multiple Choice questions!", "error");
+      return;
+    }
+    options = [o0, o1, o2, o3];
+  }
+
+  const newQ = { question: prompt, options, answerIdx, type: qType };
+
+  if (editingQuestionIdx !== null) {
+    activeQuizQuestions[editingQuestionIdx] = newQ;
+    editingQuestionIdx = null;
+    window.showToast?.("Question updated in builder queue.");
+  } else {
+    activeQuizQuestions.push(newQ);
+    window.showToast?.("Question added to builder queue.");
+  }
+
+  // Reset question form
+  promptEl.value = '';
+  const o0 = document.getElementById('admin-q-o0'); if (o0) o0.value = '';
+  const o1 = document.getElementById('admin-q-o1'); if (o1) o1.value = '';
+  const o2 = document.getElementById('admin-q-o2'); if (o2) o2.value = '';
+  const o3 = document.getElementById('admin-q-o3'); if (o3) o3.value = '';
+  const correct = document.getElementById('admin-q-correct'); if (correct) correct.value = '0';
+
+  renderActiveQuestionsQueue();
+}
+
+function renderActiveQuestionsQueue() {
+  const queueContainer = document.getElementById('admin-questions-queue');
+  const countEl = document.getElementById('admin-builder-count');
+  if (!queueContainer) return;
+
+  if (countEl) countEl.innerText = `${activeQuizQuestions.length} Questions Added`;
+
+  if (activeQuizQuestions.length === 0) {
+    queueContainer.innerHTML = `<p class="text-xs text-slate-400 text-center py-8">Add questions on the left to begin building this quiz.</p>`;
+    return;
+  }
+
+  queueContainer.innerHTML = '';
+  activeQuizQuestions.forEach((q, idx) => {
+    const card = document.createElement('div');
+    card.className = "p-3 bg-slate-50 dark:bg-zinc-800/50 border border-slate-200 dark:border-zinc-800 rounded-xl space-y-1 text-xs relative group flex items-start justify-between gap-4";
+    card.innerHTML = `
+      <div class="space-y-1 flex-1">
+        <div class="font-bold text-slate-800 dark:text-zinc-200">
+          <span class="text-blue-600 dark:text-blue-400 font-extrabold pr-1">Q${idx + 1}.</span> ${q.question}
+        </div>
+        <div class="text-[10px] text-slate-400 flex items-center gap-2 pt-1">
+          <span class="uppercase tracking-wider font-black text-[8px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400">${q.type === 'tf' ? 'True/False' : 'Multi Choice'}</span>
+          <span>Correct: ${q.options[q.answerIdx]}</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-1 shrink-0">
+        <button onclick="window.reorderBuilderQuestion(${idx}, -1)" class="p-1 hover:bg-slate-200 dark:hover:bg-zinc-700 rounded text-slate-500 cursor-pointer" title="Move Up">
+          <i data-lucide="chevron-up" class="w-3.5 h-3.5"></i>
+        </button>
+        <button onclick="window.reorderBuilderQuestion(${idx}, 1)" class="p-1 hover:bg-slate-200 dark:hover:bg-zinc-700 rounded text-slate-500 cursor-pointer" title="Move Down">
+          <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
+        </button>
+        <button onclick="window.editBuilderQuestion(${idx})" class="p-1 hover:bg-blue-100 dark:hover:bg-blue-950/40 rounded text-blue-600 cursor-pointer" title="Edit Question">
+          <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+        </button>
+        <button onclick="window.deleteBuilderQuestion(${idx})" class="p-1 hover:bg-rose-100 dark:hover:bg-rose-950/40 rounded text-rose-500 cursor-pointer" title="Delete Question">
+          <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+        </button>
+      </div>
+    `;
+    queueContainer.appendChild(card);
+  });
+
+  if (window.lucide) window.lucide.createIcons();
+}
+
+function reorderBuilderQuestion(index, direction) {
+  const newIndex = index + direction;
+  if (newIndex < 0 || newIndex >= activeQuizQuestions.length) return;
+  const temp = activeQuizQuestions[index];
+  activeQuizQuestions[index] = activeQuizQuestions[newIndex];
+  activeQuizQuestions[newIndex] = temp;
+  renderActiveQuestionsQueue();
+}
+
+function editBuilderQuestion(index) {
+  const q = activeQuizQuestions[index];
+  editingQuestionIdx = index;
+
+  document.getElementById('admin-q-prompt').value = q.question;
+  document.getElementById('admin-q-type').value = q.type || 'mc';
+  toggleAdminQuestionFormat();
+
+  if (q.type !== 'tf') {
+    document.getElementById('admin-q-o0').value = q.options[0] || '';
+    document.getElementById('admin-q-o1').value = q.options[1] || '';
+    document.getElementById('admin-q-o2').value = q.options[2] || '';
+    document.getElementById('admin-q-o3').value = q.options[3] || '';
+  }
+
+  document.getElementById('admin-q-correct').value = q.answerIdx;
+}
+
+function deleteBuilderQuestion(index) {
+  activeQuizQuestions.splice(index, 1);
+  if (editingQuestionIdx === index) editingQuestionIdx = null;
+  renderActiveQuestionsQueue();
+}
+
+function clearActiveQuizBuilder() {
+  activeQuizQuestions = [];
+  editingQuestionIdx = null;
+  const editId = document.getElementById('admin-quiz-edit-id'); if (editId) editId.value = '';
+  const title = document.getElementById('admin-quiz-title'); if (title) title.value = '';
+  const topic = document.getElementById('admin-quiz-topic'); if (topic) topic.value = '';
+  const diff = document.getElementById('admin-quiz-difficulty'); if (diff) diff.value = 'Beginner';
+  const emoji = document.getElementById('admin-quiz-emoji'); if (emoji) emoji.value = '📖';
+  const grad = document.getElementById('admin-quiz-gradient'); if (grad) grad.value = 'from-blue-600 to-indigo-700';
+  const desc = document.getElementById('admin-quiz-desc'); if (desc) desc.value = '';
+  renderActiveQuestionsQueue();
+}
+
+function publishQuizToCloud() {
+  const editId = document.getElementById('admin-quiz-edit-id').value;
+  const title = document.getElementById('admin-quiz-title').value.trim();
+  const topic = document.getElementById('admin-quiz-topic').value.trim();
+  const difficulty = document.getElementById('admin-quiz-difficulty').value;
+  const coverEmoji = document.getElementById('admin-quiz-emoji').value.trim();
+  const coverGradient = document.getElementById('admin-quiz-gradient').value;
+  const description = document.getElementById('admin-quiz-desc').value.trim();
+
+  if (!title || !topic || !description) {
+    window.showToast?.("Quiz Title, Topic Category, and Description are required!", "error");
+    return;
+  }
+
+  if (activeQuizQuestions.length === 0) {
+    window.showToast?.("Please add at least one question to the builder queue!", "error");
+    return;
+  }
+
+  const docId = editId || window.db.collection('quizzes').doc().id;
+
+  window.db.collection('quizzes').doc(docId).set({
+    id: docId,
+    title,
+    topic,
+    difficulty,
+    coverEmoji,
+    coverGradient,
+    description,
+    questions: activeQuizQuestions,
+    createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
+  })
+  .then(() => {
+    window.showToast?.("Sunday Congregational Quiz published successfully!", "success");
+    clearActiveQuizBuilder();
+    syncAdminQuizzes();
+    if (window.renderQuizSelectionGrid) window.renderQuizSelectionGrid();
+  })
+  .catch(err => window.handleFirestoreError(err, 'create', `quizzes/${docId}`));
+}
+
+let adminQuizzesListener = null;
+function syncAdminQuizzes() {
+  const catalogContainer = document.getElementById('admin-quizzes-catalog');
+  if (!catalogContainer) return;
+
+  if (adminQuizzesListener) adminQuizzesListener();
+
+  adminQuizzesListener = window.db.collection('quizzes').orderBy('createdAt', 'desc').onSnapshot(snap => {
+    catalogContainer.innerHTML = '';
+
+    if (snap.empty) {
+      catalogContainer.innerHTML = `<p class="text-xs text-slate-400 text-center py-6">No custom quizzes published to the catalog yet.</p>`;
+      return;
+    }
+
+    snap.forEach(doc => {
+      const q = doc.data();
+      const card = document.createElement('div');
+      card.className = "p-4 bg-slate-50 dark:bg-zinc-800/40 border border-slate-200 dark:border-zinc-800 rounded-2xl flex flex-col justify-between space-y-4 text-xs";
+      card.innerHTML = `
+        <div class="space-y-2">
+          <div class="flex items-center gap-2">
+            <span class="text-xl shrink-0">${q.coverEmoji || '📖'}</span>
+            <div class="leading-tight">
+              <h5 class="font-extrabold text-slate-900 dark:text-zinc-50 line-clamp-1">${q.title}</h5>
+              <span class="text-[9px] uppercase tracking-wider text-slate-400">${q.topic} • ${q.difficulty}</span>
+            </div>
+          </div>
+          <p class="text-[11px] text-slate-500 dark:text-zinc-400 line-clamp-2">${q.description}</p>
+          <div class="text-[10px] text-slate-400 font-bold">${q.questions ? q.questions.length : 0} Questions published</div>
+        </div>
+        <div class="flex items-center gap-2 pt-2 border-t border-slate-100 dark:border-zinc-800/50">
+          <button onclick="window.editQuizFromCatalog('${q.id}')" class="flex-1 py-1.5 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/20 dark:hover:bg-blue-950/40 text-blue-600 font-bold rounded-lg transition-all cursor-pointer text-center">
+            Edit
+          </button>
+          <button onclick="window.deleteQuizFromCatalog('${q.id}')" class="py-1.5 px-3 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 dark:hover:bg-rose-950/40 text-rose-500 font-bold rounded-lg transition-all cursor-pointer text-center">
+            Delete
+          </button>
+        </div>
+      `;
+      catalogContainer.appendChild(card);
+    });
+  }, err => console.warn("Published quizzes catalog stream failed:", err));
+}
+
+function editQuizFromCatalog(quizId) {
+  window.db.collection('quizzes').doc(quizId).get().then(doc => {
+    if (!doc.exists) return;
+    const q = doc.data();
+
+    document.getElementById('admin-quiz-edit-id').value = q.id;
+    document.getElementById('admin-quiz-title').value = q.title || '';
+    document.getElementById('admin-quiz-topic').value = q.topic || '';
+    document.getElementById('admin-quiz-difficulty').value = q.difficulty || 'Beginner';
+    document.getElementById('admin-quiz-emoji').value = q.coverEmoji || '📖';
+    document.getElementById('admin-quiz-gradient').value = q.coverGradient || 'from-blue-600 to-indigo-700';
+    document.getElementById('admin-quiz-desc').value = q.description || '';
+
+    activeQuizQuestions = q.questions || [];
+    editingQuestionIdx = null;
+
+    renderActiveQuestionsQueue();
+    window.showToast?.("Loaded quiz into builder queue! Scroll up to edit.");
+  }).catch(err => window.handleFirestoreError(err, 'get', `quizzes/${quizId}`));
+}
+
+function deleteQuizFromCatalog(quizId) {
+  const isConfirmed = confirm("Are you sure you want to delete this Custom Quiz from the assembly database?");
+  if (!isConfirmed) return;
+
+  window.db.collection('quizzes').doc(quizId).delete()
+    .then(() => {
+      window.showToast?.("Custom quiz deleted from catalog successfully.");
+      if (window.renderQuizSelectionGrid) window.renderQuizSelectionGrid();
+    })
+    .catch(err => window.handleFirestoreError(err, 'delete', `quizzes/${quizId}`));
+}
+
 // Expose globally
 window.initAdminModule = initAdminModule;
+window.toggleAdminQuestionFormat = toggleAdminQuestionFormat;
+window.addQuestionToActiveQuiz = addQuestionToActiveQuiz;
+window.reorderBuilderQuestion = reorderBuilderQuestion;
+window.editBuilderQuestion = editBuilderQuestion;
+window.deleteBuilderQuestion = deleteBuilderQuestion;
+window.clearActiveQuizBuilder = clearActiveQuizBuilder;
+window.publishQuizToCloud = publishQuizToCloud;
+window.syncAdminQuizzes = syncAdminQuizzes;
+window.editQuizFromCatalog = editQuizFromCatalog;
+window.deleteQuizFromCatalog = deleteQuizFromCatalog;
 window.updateUserRole = updateUserRole;
 window.updateUserCellAssignment = updateUserCellAssignment;
 window.evictUser = evictUser;

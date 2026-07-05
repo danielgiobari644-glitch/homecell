@@ -34,7 +34,7 @@ function switchTab(tabId) {
   activeTab = tabId;
 
   // List of all navigation tabs
-  const tabIds = ['feed', 'dashboard', 'bible', 'cells', 'chat', 'prayers', 'calendar', 'downloads', 'admin'];
+  const tabIds = ['feed', 'dashboard', 'bible', 'cells', 'chat', 'prayers', 'calendar', 'downloads', 'admin', 'settings'];
 
   tabIds.forEach(id => {
     const pane = document.getElementById(`tab-${id}`);
@@ -52,9 +52,18 @@ function switchTab(tabId) {
 
     if (btn) {
       if (id === tabId) {
-        btn.className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition-all text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-blue-950/40 border border-transparent";
+        if (id === 'admin') {
+          btn.className = `nav-btn-${id} flex-1 flex flex-col items-center justify-center gap-1 py-1.5 px-3 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all duration-300 text-purple-600 bg-purple-50/80 dark:text-purple-400 dark:bg-purple-950/40 border border-purple-200/20 dark:border-purple-900/20 shadow-sm shrink-0 select-none cursor-pointer snap-center scale-102`;
+        } else {
+          btn.className = `nav-btn-${id} flex-1 flex flex-col items-center justify-center gap-1 py-1.5 px-3 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all duration-300 text-blue-600 bg-blue-50/80 dark:text-blue-400 dark:bg-blue-950/50 border border-blue-200/20 dark:border-blue-900/20 shadow-sm shrink-0 select-none cursor-pointer snap-center scale-102`;
+        }
+        btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
       } else {
-        btn.className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-all text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 border border-transparent";
+        if (id === 'admin') {
+          btn.className = `nav-btn-${id} flex-1 flex flex-col items-center justify-center gap-1 py-1.5 px-3 rounded-2xl text-[10px] font-semibold uppercase tracking-wider transition-all duration-300 text-purple-500/70 hover:text-purple-600 dark:text-purple-400/70 dark:hover:text-purple-300 hover:bg-purple-50/30 dark:hover:bg-purple-950/10 border border-transparent shrink-0 select-none cursor-pointer snap-center`;
+        } else {
+          btn.className = `nav-btn-${id} flex-1 flex flex-col items-center justify-center gap-1 py-1.5 px-3 rounded-2xl text-[10px] font-semibold uppercase tracking-wider transition-all duration-300 text-slate-500 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-slate-100/50 dark:hover:bg-zinc-800/30 border border-transparent shrink-0 select-none cursor-pointer snap-center`;
+        }
       }
     }
   });
@@ -155,7 +164,17 @@ function listenToAuthState() {
               .then(() => {
                 window.currentUserRole = 'Super Admin';
                 window.showToast?.("Super Admin credentials unlocked.");
+                const adminBtn = document.getElementById('nav-admin');
+                if (adminBtn) adminBtn.classList.remove('hidden');
               });
+          }
+
+          if (window.currentUserRole === 'Super Admin') {
+            const adminBtn = document.getElementById('nav-admin');
+            if (adminBtn) adminBtn.classList.remove('hidden');
+          } else {
+            const adminBtn = document.getElementById('nav-admin');
+            if (adminBtn) adminBtn.classList.add('hidden');
           }
 
           // Update header badges

@@ -133,13 +133,113 @@ function syncSystemConfigs() {
     }
   }, err => console.warn("Desk setup config read limit:", err));
 
+// Universal Stream Player Setup Engine
+window.setupStreamPlayer = function(url, type) {
+  const container = document.getElementById('stream-player-container');
+  if (!container) return;
+  container.innerHTML = '';
+
+  if (!url) {
+    container.innerHTML = `
+      <div class="flex flex-col items-center justify-center p-8 text-center text-slate-500 space-y-2">
+        <i data-lucide="video-off" class="w-10 h-10 text-slate-400"></i>
+        <p class="text-xs font-bold">Broadcast Offline</p>
+        <p class="text-[10px] text-slate-400">No active stream URL configured.</p>
+      </div>
+    `;
+    if (window.lucide) window.lucide.createIcons();
+    return;
+  }
+
+  const isHls = type === 'hls' || url.includes('.m3u8') || url.includes('/hls/');
+
+  if (isHls) {
+    const video = document.createElement('video');
+    video.id = 'universal-stream-player';
+    video.controls = true;
+    video.autoplay = true;
+    video.playsInline = true;
+    video.className = 'w-full h-full rounded-2xl bg-slate-950 focus:outline-none';
+    container.appendChild(video);
+
+    if (window.Hls && window.Hls.isSupported()) {
+      const hls = new window.Hls();
+      hls.loadSource(url);
+      hls.attachMedia(video);
+      hls.on(window.Hls.Events.MANIFEST_PARSED, function() {
+        video.play().catch(e => console.log("Auto-play blocked: ", e));
+      });
+    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      video.src = url;
+      video.addEventListener('loadedmetadata', function() {
+        video.play().catch(e => console.log("Auto-play blocked: ", e));
+      });
+    } else {
+      container.innerHTML = `
+        <div class="flex flex-col items-center justify-center p-8 text-center text-amber-500 space-y-2">
+          <i data-lucide="alert-triangle" class="w-10 h-10"></i>
+          <p class="text-xs font-bold">HLS Stream Unsupported</p>
+          <p class="text-[10px] text-slate-400">Your browser does not support HLS video playback natively.</p>
+        </div>
+      `;
+      if (window.lucide) window.lucide.createIcons();
+    }
+  } else if (type === 'rtmp') {
+    container.innerHTML = `
+      <div class="flex flex-col items-center justify-center p-8 text-center text-purple-400 space-y-3">
+        <div class="p-3 bg-purple-500/10 rounded-full">
+          <i data-lucide="hard-drive" class="w-8 h-8"></i>
+        </div>
+        <div>
+          <p class="text-xs font-bold">RTMP Broadcast Active</p>
+          <p class="text-[10px] text-slate-400 max-w-sm mt-1">To watch this feed, connect your media client (VLC, OBS) directly to our RTMP ingestion link below.</p>
+        </div>
+        <div class="flex items-center gap-2 bg-slate-900 border border-zinc-800 rounded-xl px-3 py-1.5 w-full max-w-md">
+          <input type="text" readonly value="${url}" class="bg-transparent text-slate-300 text-[10px] focus:outline-none flex-grow" />
+          <button onclick="navigator.clipboard.writeText('${url}'); window.showToast?.('RTMP link copied!');" class="p-1 text-purple-400 hover:text-purple-300 cursor-pointer">
+            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+      </div>
+    `;
+    if (window.lucide) window.lucide.createIcons();
+  } else if (type === 'webrtc') {
+    container.innerHTML = `
+      <div class="flex flex-col items-center justify-center p-8 text-center text-blue-400 space-y-3">
+        <div class="p-3 bg-blue-500/10 rounded-full">
+          <i data-lucide="zap" class="w-8 h-8"></i>
+        </div>
+        <div>
+          <p class="text-xs font-bold">WebRTC Ultra-Low Latency Active</p>
+          <p class="text-[10px] text-slate-400 max-w-sm mt-1">Whip/Whep client broadcast is running. You can stream this feed with low latency.</p>
+        </div>
+        <div class="flex items-center gap-2 bg-slate-900 border border-zinc-800 rounded-xl px-3 py-1.5 w-full max-w-md">
+          <input type="text" readonly value="${url}" class="bg-transparent text-slate-300 text-[10px] focus:outline-none flex-grow" />
+          <button onclick="navigator.clipboard.writeText('${url}'); window.showToast?.('WebRTC stream URL copied!');" class="p-1 text-blue-400 hover:text-blue-300 cursor-pointer">
+            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+      </div>
+    `;
+    if (window.lucide) window.lucide.createIcons();
+  } else {
+    // Treat as iframe / embed
+    const iframe = document.createElement('iframe');
+    iframe.id = 'stream-iframe';
+    iframe.className = 'w-full h-full rounded-2xl overflow-hidden bg-slate-950 border-none';
+    iframe.src = url;
+    iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture";
+    iframe.allowFullscreen = true;
+    container.appendChild(iframe);
+  }
+};
+
   // Sync Live stream broadcast banner & live stream dashboard pane
   const streamBanner = document.getElementById('live-broadcast-banner');
   const bannerTitle = document.getElementById('broadcast-banner-title');
   const streamPane = document.getElementById('live-stream-pane');
   const paneTitle = document.getElementById('stream-pane-title');
   const paneDesc = document.getElementById('stream-pane-desc');
-  const streamIframe = document.getElementById('stream-iframe');
 
   window.db.collection('system_configs').doc('stream').onSnapshot(doc => {
     if (doc.exists) {
@@ -153,14 +253,13 @@ function syncSystemConfigs() {
           streamPane.classList.remove('hidden');
           if (paneTitle) paneTitle.innerText = data.streamTitle || '';
           if (paneDesc) paneDesc.innerText = data.streamDesc || '';
-          if (streamIframe && streamIframe.src !== data.streamUrl) {
-            streamIframe.src = data.streamUrl || '';
-          }
+          window.setupStreamPlayer(data.streamUrl, data.streamType || 'hls');
         }
       } else {
         if (streamBanner) streamBanner.classList.add('hidden');
         if (streamPane) streamPane.classList.add('hidden');
-        if (streamIframe) streamIframe.src = '';
+        const container = document.getElementById('stream-player-container');
+        if (container) container.innerHTML = '';
       }
     } else {
       if (window.currentUserRole === 'Super Admin') {
@@ -168,7 +267,8 @@ function syncSystemConfigs() {
           streamActive: false,
           streamTitle: 'Saturday Live Fellowship',
           streamDesc: 'Gathering together live to share, connect, and grow.',
-          streamUrl: ''
+          streamUrl: '',
+          streamType: 'hls'
         }).catch(err => console.error("Error seeding stream config: ", err));
       }
     }

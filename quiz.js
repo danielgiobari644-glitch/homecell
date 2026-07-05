@@ -166,7 +166,35 @@ function renderQuizSelectionGrid() {
     grid.appendChild(card);
   });
 
-  // Load Admin Created Custom Quiz as a special Sunday Special Live Challenge
+  // Load Custom Admin Created Quizzes from FireStore
+  window.db.collection('quizzes').get().then(snap => {
+    snap.forEach(doc => {
+      const quiz = doc.data();
+      const card = document.createElement('div');
+      card.className = "bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4 relative overflow-hidden group hover:-translate-y-1 duration-300";
+      card.innerHTML = `
+        <div class="space-y-3">
+          <!-- Cover Art Gradient -->
+          <div class="h-32 w-full rounded-2xl bg-gradient-to-br ${quiz.coverGradient || 'from-indigo-600 to-purple-800'} flex items-center justify-center text-4xl shadow-sm relative overflow-hidden">
+            <div class="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <span>${quiz.coverEmoji || '✨'}</span>
+          </div>
+          <div>
+            <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-purple-100 text-purple-700 dark:bg-purple-950/50 dark:text-purple-400">${quiz.topic || 'Custom Study'}</span>
+            <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-400 ml-1.5">${quiz.difficulty || 'Intermediate'}</span>
+            <h4 class="text-lg font-black text-slate-900 dark:text-zinc-50 font-display mt-2 leading-tight">${quiz.title}</h4>
+            <p class="text-xs text-slate-500 dark:text-zinc-400 mt-1.5 leading-relaxed">${quiz.description}</p>
+          </div>
+        </div>
+        <button onclick="window.startCustomQuizSession('${quiz.id}')" class="w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 shadow-sm">
+          ⚡ Join Live Trivia Session (${quiz.questions ? quiz.questions.length : 0} Qs)
+        </button>
+      `;
+      grid.appendChild(card);
+    });
+  }).catch(err => console.warn("Published quizzes fetch failed:", err));
+
+  // Load Admin Created Custom Questions (Legacy fallback) as a special Sunday Special Live Challenge
   window.db.collection('trivia_questions').get().then(snap => {
     if (!snap.empty) {
       const qList = [];
@@ -202,6 +230,23 @@ function renderQuizSelectionGrid() {
     }
   }).catch(err => console.warn("Custom trivia fetch:", err));
 }
+
+// Start custom quiz session
+function startCustomQuizSession(quizId) {
+  window.db.collection('quizzes').doc(quizId).get().then(doc => {
+    if (!doc.exists) {
+      window.showToast?.("This quiz is no longer available in the assembly.", "error");
+      return;
+    }
+    const quiz = doc.data();
+    setupTriviaLounge(quiz);
+  }).catch(err => {
+    window.showToast?.("Could not join quiz: " + err.message, "error");
+  });
+}
+
+window.startCustomQuizSession = startCustomQuizSession;
+window.renderQuizSelectionGrid = renderQuizSelectionGrid;
 
 // Start a simulated Live Trivia Session
 function startLiveTriviaSession(quizId) {
