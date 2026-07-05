@@ -199,6 +199,9 @@ function syncStreakChampionship() {
       
       // Check if they completed devotional check-in today
       const todayStr = new Date().toDateString();
+      const warningBox = document.getElementById('streak-loss-warning-box');
+      const warningCount = document.getElementById('warning-streak-count');
+
       if (data.lastCheckinDate === todayStr) {
         if (checkinBtn) {
           checkinBtn.innerText = "☀️ Today's Devotional Complete ✅";
@@ -206,12 +209,29 @@ function syncStreakChampionship() {
           checkinBtn.classList.add('bg-zinc-200', 'dark:bg-zinc-800', 'text-slate-400', 'cursor-not-allowed');
           checkinBtn.disabled = true;
         }
+        if (warningBox) warningBox.classList.add('hidden');
       } else {
         if (checkinBtn) {
           checkinBtn.innerText = "☀️ Complete Daily Devotional Check-in";
           checkinBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
           checkinBtn.classList.remove('bg-zinc-200', 'dark:bg-zinc-800', 'text-slate-400', 'cursor-not-allowed');
           checkinBtn.disabled = false;
+        }
+        
+        // Remind user their streak is being lost if they have a streak (> 0) to protect
+        if (currentStreak > 0) {
+          if (warningBox) warningBox.classList.remove('hidden');
+          if (warningCount) warningCount.innerText = currentStreak;
+          
+          // Trigger a polite warning toast to grab attention
+          if (!window.hasShownStreakWarningToday) {
+            window.hasShownStreakWarningToday = true;
+            setTimeout(() => {
+              window.showToast?.(`⚠️ Alert: Complete your devotion to preserve your ${currentStreak}-day fire streak!`, "warning");
+            }, 1000);
+          }
+        } else {
+          if (warningBox) warningBox.classList.add('hidden');
         }
       }
     }
@@ -246,7 +266,7 @@ function syncStreakChampionship() {
       // If the current logged in user IS the reigning champion
       if (champDoc.id === user.uid) {
         if (arenaEl) {
-          arenaEl.className = "xl:col-span-2 bg-gradient-to-tr from-amber-500 via-orange-600 to-rose-600 text-white border border-amber-300/40 rounded-[2.5rem] p-8 shadow-2xl flex flex-col justify-between space-y-6 relative overflow-hidden glow-amber-active animate-fade-in";
+          arenaEl.className = "lg:col-span-2 bg-gradient-to-tr from-amber-500 via-orange-600 to-rose-600 text-white border border-amber-300/40 rounded-[2.5rem] p-8 shadow-2xl flex flex-col justify-between space-y-6 relative overflow-hidden glow-amber-active animate-fade-in";
         }
         if (champSubHeaderEl) {
           champSubHeaderEl.className = "flex items-center gap-2 text-xs font-black uppercase tracking-widest text-amber-100 transition-colors duration-300";
@@ -289,7 +309,7 @@ function syncStreakChampionship() {
       } else {
         // Render regular card design for other users
         if (arenaEl) {
-          arenaEl.className = "xl:col-span-2 bg-gradient-to-br from-amber-50 to-orange-100 dark:from-zinc-950/40 dark:to-orange-950/20 border border-orange-200 dark:border-orange-900/50 rounded-[2.5rem] p-8 shadow-sm flex flex-col justify-between space-y-6 relative overflow-hidden glow-subtle-warm transition-all duration-500";
+          arenaEl.className = "lg:col-span-2 bg-gradient-to-br from-amber-50 to-orange-100 dark:from-zinc-950/40 dark:to-orange-950/20 border border-orange-200 dark:border-orange-900/50 rounded-[2.5rem] p-8 shadow-sm flex flex-col justify-between space-y-6 relative overflow-hidden glow-subtle-warm transition-all duration-500";
         }
         if (champSubHeaderEl) {
           champSubHeaderEl.className = "flex items-center gap-2 text-xs font-black uppercase tracking-widest text-orange-600 dark:text-orange-400 transition-colors duration-300";
