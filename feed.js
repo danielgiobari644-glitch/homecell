@@ -2,6 +2,7 @@
 // Real-time Community Fellowship Feed & Social Stream
 
 let feedListener = null;
+window.currentFeedFilter = 'all';
 
 function initFeedEngine() {
   const user = window.auth.currentUser;
@@ -28,12 +29,46 @@ function initFeedEngine() {
     }
   }
 
+  // Set up smart placeholders for testimony / post types
+  const postTypeSelect = document.getElementById('feed-post-type');
+  const composerTextarea = document.getElementById('feed-composer-text');
+  if (postTypeSelect && composerTextarea) {
+    postTypeSelect.addEventListener('change', () => {
+      if (postTypeSelect.value === 'testimony') {
+        composerTextarea.placeholder = "Share how God is moving in your life today. Let your testimony inspire, encourage, and uplift others! 🙏✨";
+      } else {
+        composerTextarea.placeholder = "What is God doing in your life today? Share a testimony or praise...";
+      }
+    });
+  }
+
+  // Set up initial filter styles
+  window.setFeedFilter(window.currentFeedFilter || 'all');
+
   // Load Feed Stream
   loadFeedStream();
 
   // Load Member Journeys in Sidebar
   loadSidebarJourneys();
 }
+
+window.setFeedFilter = function(filter) {
+  window.currentFeedFilter = filter;
+  
+  const filters = ['all', 'testimony', 'announcement'];
+  filters.forEach(f => {
+    const btn = document.getElementById(`feed-filter-${f}`);
+    if (btn) {
+      if (f === filter) {
+        btn.className = "px-4 py-2 text-xs font-black rounded-2xl transition-all cursor-pointer bg-blue-600 text-white shadow-sm flex items-center gap-1.5";
+      } else {
+        btn.className = "px-4 py-2 text-xs font-black rounded-2xl transition-all cursor-pointer text-slate-500 hover:text-slate-800 dark:hover:text-zinc-200 flex items-center gap-1.5";
+      }
+    }
+  });
+
+  loadFeedStream();
+};
 
 function loadFeedStream() {
   const container = document.getElementById('community-posts-stream');
@@ -45,6 +80,7 @@ function loadFeedStream() {
     .orderBy('createdAt', 'desc')
     .onSnapshot(snap => {
       container.innerHTML = '';
+      
       if (snap.empty) {
         container.innerHTML = `
           <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-8 text-center text-slate-400 space-y-2">
@@ -52,13 +88,24 @@ function loadFeedStream() {
             <p class="text-xs">Be the first to share a testimony or a praise report of God's goodness!</p>
           </div>
         `;
+        const badge = document.getElementById('feed-items-count-badge');
+        if (badge) badge.innerHTML = `<span class="w-1.5 h-1.5 bg-slate-300 rounded-full"></span> Empty Feed`;
         return;
       }
 
+      let visibleCount = 0;
       snap.forEach(doc => {
         const post = doc.data();
         const postId = doc.id;
         const currentUser = window.auth.currentUser;
+
+        // Apply dynamic local filter
+        if (window.currentFeedFilter && window.currentFeedFilter !== 'all') {
+          if (post.type !== window.currentFeedFilter) {
+            return; // Skip this post
+          }
+        }
+        visibleCount++;
 
         const isLiked = currentUser && post.likes && post.likes[currentUser.uid] === true;
         const likesCount = post.likesCount || 0;
@@ -76,9 +123,14 @@ function loadFeedStream() {
         const canDelete = currentUser && (post.authorUid === currentUser.uid || window.currentUserRole === 'Super Admin');
 
         const postCard = document.createElement('div');
-        postCard.className = `bg-white dark:bg-zinc-900 border rounded-3xl p-6 shadow-sm space-y-4 transition-all hover:border-slate-300 dark:hover:border-zinc-700 ${
-          isAnnouncement ? 'border-purple-200 dark:border-purple-950 bg-purple-50/5 dark:bg-purple-950/5' : 'border-slate-200 dark:border-zinc-800'
-        }`;
+        if (isTestimony) {
+          // Unique parchment layout with gold gradient border for testimony cards
+          postCard.className = "bg-gradient-to-br from-amber-50/50 via-white to-amber-50/10 dark:from-zinc-900 dark:to-zinc-900/60 border border-amber-200 dark:border-amber-950/40 rounded-[2.2rem] p-7 shadow-sm space-y-5 transition-all hover:border-amber-300 dark:hover:border-amber-900/60 hover:shadow-md relative overflow-hidden border-l-4 border-l-amber-500 dark:border-l-amber-600";
+        } else if (isAnnouncement) {
+          postCard.className = "bg-white dark:bg-zinc-900 border border-purple-200 dark:border-purple-950 bg-purple-50/5 dark:bg-purple-950/5 rounded-3xl p-6 shadow-sm space-y-4 transition-all hover:border-purple-300 dark:hover:border-purple-900";
+        } else {
+          postCard.className = "bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm space-y-4 transition-all hover:border-slate-300 dark:hover:border-zinc-700";
+        }
 
         // Comments list HTML
         const commentsHTML = comments.map(c => `
@@ -95,13 +147,18 @@ function loadFeedStream() {
         postCard.innerHTML = `
           <!-- Header -->
           <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 font-bold flex items-center justify-center text-sm font-display shadow-inner">
+            <div class="w-10 h-10 rounded-full text-slate-700 dark:text-zinc-300 font-bold flex items-center justify-center text-sm font-display shadow-inner ${
+              isTestimony 
+                ? 'bg-amber-100 dark:bg-amber-950/60 border-2 border-amber-400 ring-2 ring-amber-100 dark:ring-amber-950/40 text-amber-800 dark:text-amber-300' 
+                : 'bg-slate-100 dark:bg-zinc-800'
+            }">
               ${(post.authorName || '?').charAt(0).toUpperCase()}
             </div>
             <div>
               <div class="flex items-center gap-1.5">
                 <span class="font-black text-sm text-slate-900 dark:text-zinc-100">${post.authorName}</span>
                 <span class="text-[9px] uppercase font-bold tracking-widest text-slate-400 bg-slate-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">${post.authorRole}</span>
+                ${isTestimony ? `<span class="text-[10px] animate-bounce">🕊️</span>` : ''}
               </div>
               <div class="text-[10px] text-slate-400 font-medium">${dateStr}</div>
             </div>
@@ -113,8 +170,8 @@ function loadFeedStream() {
                 </span>
               ` : ''}
               ${isTestimony ? `
-                <span class="text-[10px] font-black uppercase tracking-widest text-emerald-700 bg-emerald-100 dark:text-emerald-300 dark:bg-emerald-950/60 px-2.5 py-1 rounded-full flex items-center gap-1">
-                  🙏 Testimony
+                <span class="text-[10px] font-black uppercase tracking-widest text-amber-800 bg-amber-100 dark:text-amber-300 dark:bg-amber-950/40 px-3 py-1.5 rounded-full flex items-center gap-1.5 border border-amber-200 dark:border-amber-800/40 shadow-sm animate-pulse">
+                  ✨ Praise Testimony 🙏
                 </span>
               ` : ''}
 
@@ -127,19 +184,42 @@ function loadFeedStream() {
           </div>
 
           <!-- Content Body -->
-          <div class="text-sm text-slate-700 dark:text-zinc-100 whitespace-pre-wrap leading-relaxed">${post.text}</div>
+          ${isTestimony ? `
+            <div class="relative bg-amber-50/20 dark:bg-amber-950/10 rounded-2xl p-5 border border-amber-100/30 dark:border-amber-900/10">
+              <!-- Quote watermark decoration -->
+              <div class="absolute -top-3 left-2 text-4xl text-amber-300/40 dark:text-amber-700/30 font-serif leading-none select-none">“</div>
+              <div class="text-[15px] font-serif italic text-slate-800 dark:text-zinc-100 whitespace-pre-wrap leading-relaxed pl-5 pr-2">
+                ${post.text}
+              </div>
+              <div class="absolute right-6 top-6 opacity-[0.06] text-amber-600 dark:text-amber-400 pointer-events-none">
+                <i data-lucide="sparkles" class="w-16 h-16"></i>
+              </div>
+            </div>
+          ` : `
+            <div class="text-sm text-slate-700 dark:text-zinc-100 whitespace-pre-wrap leading-relaxed">${post.text}</div>
+          `}
 
           <!-- Attachments -->
           ${getMediaHTML(post.imageUrl, post.videoUrl)}
 
           <!-- Actions Footer bar -->
           <div class="flex items-center gap-6 pt-3 border-t border-slate-100 dark:border-zinc-800/60">
-            <button onclick="toggleLikePost('${postId}')" class="flex items-center gap-2 text-xs font-bold transition-colors cursor-pointer ${
-              isLiked ? 'text-rose-600 dark:text-rose-400' : 'text-slate-500 hover:text-rose-600 dark:text-zinc-400 dark:hover:text-rose-400'
-            }">
-              <i data-lucide="heart" class="w-4 h-4 ${isLiked ? 'fill-current' : ''}"></i>
-              <span>${likesCount} Likes</span>
-            </button>
+            ${isTestimony ? `
+              <!-- High fidelity special spiritual reaction for praise testimonies -->
+              <button onclick="toggleLikePost('${postId}')" class="flex items-center gap-2 text-xs font-black transition-all hover:scale-105 active:scale-95 cursor-pointer ${
+                isLiked ? 'text-amber-600 dark:text-amber-400' : 'text-slate-500 hover:text-amber-600 dark:text-zinc-400 dark:hover:text-amber-400'
+              }">
+                <span class="text-base">${isLiked ? '🙌' : '🙏'}</span>
+                <span>${isLiked ? 'Hallelujah!' : 'Amen'} (${likesCount})</span>
+              </button>
+            ` : `
+              <button onclick="toggleLikePost('${postId}')" class="flex items-center gap-2 text-xs font-bold transition-all hover:scale-105 active:scale-95 cursor-pointer ${
+                isLiked ? 'text-rose-600 dark:text-rose-400' : 'text-slate-500 hover:text-rose-600 dark:text-zinc-400 dark:hover:text-rose-400'
+              }">
+                <i data-lucide="heart" class="w-4 h-4 ${isLiked ? 'fill-current' : ''}"></i>
+                <span>${likesCount} Likes</span>
+              </button>
+            `}
 
             <button onclick="toggleCommentsSection('${postId}')" class="flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-blue-600 dark:text-zinc-400 dark:hover:text-blue-400 cursor-pointer">
               <i data-lucide="message-circle" class="w-4 h-4"></i>
@@ -166,6 +246,31 @@ function loadFeedStream() {
 
         container.appendChild(postCard);
       });
+
+      // Update active items count badge
+      const badge = document.getElementById('feed-items-count-badge');
+      if (badge) {
+        let typeLabel = "items";
+        if (window.currentFeedFilter === 'testimony') typeLabel = "testimonies";
+        else if (window.currentFeedFilter === 'announcement') typeLabel = "announcements";
+        badge.innerHTML = `<span class="w-1.5 h-1.5 bg-blue-500 rounded-full animate-ping"></span> ${visibleCount} ${typeLabel} filtered`;
+      }
+
+      if (visibleCount === 0) {
+        let emptyMessage = "No updates found.";
+        if (window.currentFeedFilter === 'testimony') {
+          emptyMessage = "No testimonies shared here yet. Be the first to share your testimony using the composer above!";
+        } else if (window.currentFeedFilter === 'announcement') {
+          emptyMessage = "No official announcements have been broadcasted yet.";
+        }
+        container.innerHTML = `
+          <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-12 text-center text-slate-400 space-y-3">
+            <span class="text-3xl">🕊️</span>
+            <p class="font-bold text-slate-700 dark:text-zinc-300">Peace be with you.</p>
+            <p class="text-xs max-w-sm mx-auto leading-relaxed">${emptyMessage}</p>
+          </div>
+        `;
+      }
 
       if (window.lucide) window.lucide.createIcons();
     }, err => window.handleFirestoreError(err, 'list', 'community_feed'));

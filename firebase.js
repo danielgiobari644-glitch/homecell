@@ -1,6 +1,52 @@
 // firebase.js
 // Firebase configuration and auth services
 
+// Prevent circular JSON errors when logging objects (e.g., Firestore errors) to console in sandbox preview
+(function() {
+  const originalError = console.error;
+  const originalWarn = console.warn;
+  const originalLog = console.log;
+
+  function sanitizeArg(arg) {
+    if (arg instanceof Error) {
+      return arg.stack || arg.message || String(arg);
+    }
+    if (typeof arg === 'object' && arg !== null) {
+      try {
+        const cache = new Set();
+        JSON.stringify(arg, (key, value) => {
+          if (typeof value === 'object' && value !== null) {
+            if (cache.has(value)) {
+              throw new Error("circular");
+            }
+            cache.add(value);
+          }
+          return value;
+        });
+        return arg; // safe
+      } catch (e) {
+        try {
+          if (arg.message) return `[Circular Error/Object]: ${arg.message}`;
+          return `[Circular ${arg.constructor ? arg.constructor.name : 'Object'}]`;
+        } catch (err) {
+          return "[Circular Object]";
+        }
+      }
+    }
+    return arg;
+  }
+
+  console.error = function(...args) {
+    originalError.apply(console, args.map(sanitizeArg));
+  };
+  console.warn = function(...args) {
+    originalWarn.apply(console, args.map(sanitizeArg));
+  };
+  console.log = function(...args) {
+    originalLog.apply(console, args.map(sanitizeArg));
+  };
+})();
+
 const firebaseConfig = {
   "projectId": "hcell-f3797",
   "appId": "1:940294292200:web:45e38c21c2ea950ba7bf5d",

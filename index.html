@@ -482,6 +482,24 @@
                 </div>
               </div>
 
+              <!-- Feed Filter Segmented Tab Bar -->
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 p-2 rounded-3xl shadow-sm">
+                <div class="flex flex-wrap items-center gap-1">
+                  <button onclick="window.setFeedFilter('all')" id="feed-filter-all" class="px-4 py-2 text-xs font-black rounded-2xl transition-all cursor-pointer bg-blue-600 text-white shadow-sm flex items-center gap-1.5">
+                    ✨ All Updates
+                  </button>
+                  <button onclick="window.setFeedFilter('testimony')" id="feed-filter-testimony" class="px-4 py-2 text-xs font-black rounded-2xl transition-all cursor-pointer text-slate-500 hover:text-slate-800 dark:hover:text-zinc-200 flex items-center gap-1.5">
+                    🙏 Praise Testimonies
+                  </button>
+                  <button onclick="window.setFeedFilter('announcement')" id="feed-filter-announcement" class="px-4 py-2 text-xs font-black rounded-2xl transition-all cursor-pointer text-slate-500 hover:text-slate-800 dark:hover:text-zinc-200 flex items-center gap-1.5">
+                    📢 Announcements
+                  </button>
+                </div>
+                <div class="text-[10px] font-bold text-slate-400 dark:text-zinc-500 px-2 flex items-center gap-1.5" id="feed-items-count-badge">
+                  <span class="w-1.5 h-1.5 bg-blue-500 rounded-full animate-ping"></span> Live Connection
+                </div>
+              </div>
+
               <!-- Live Stream Feed Posts Container -->
               <div id="community-posts-stream" class="space-y-6">
                 <!-- Posts loaded via JS -->
