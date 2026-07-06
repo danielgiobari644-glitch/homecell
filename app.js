@@ -128,6 +128,18 @@ function listenToAuthState() {
     return;
   }
 
+  // Handle redirect result if user signed in via redirect (especially on mobile)
+  window.auth.getRedirectResult()
+    .then(result => {
+      if (result && result.user) {
+        window.showToast?.("Google authentication successful.");
+      }
+    })
+    .catch(err => {
+      console.error("Google redirect auth failed:", err);
+      window.showToast?.("Google redirect sign-in failed: " + err.message, 'error');
+    });
+
   window.auth.onAuthStateChanged(user => {
     const authModal = document.getElementById('auth-modal');
     const badge = document.getElementById('user-profile-badge');
@@ -402,16 +414,24 @@ document.addEventListener("DOMContentLoaded", () => {
   if (googleBtn) {
     googleBtn.addEventListener('click', () => {
       const provider = new window.firebase.auth.GoogleAuthProvider();
-      window.auth.signInWithPopup(provider)
-        .then(() => window.showToast?.("Google authentication successful."))
-        .catch(err => {
-          console.error("Google authentication failed:", err);
-          let friendlyMsg = "Google authentication failed: " + err.message;
-          if (window.self !== window.top) {
-            friendlyMsg += " Hint: If the popup is blocked or cookies are restricted in the iframe, try opening the application in a new window using the 'Open in New Tab' button on the top right, or use Email/Password sign up.";
-          }
-          window.showToast?.(friendlyMsg, 'error');
-        });
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const inIframe = window.self !== window.top;
+
+      if (isMobile && !inIframe) {
+        window.showToast?.("Redirecting to Google Sign-In...");
+        window.auth.signInWithRedirect(provider);
+      } else {
+        window.auth.signInWithPopup(provider)
+          .then(() => window.showToast?.("Google authentication successful."))
+          .catch(err => {
+            console.error("Google authentication failed:", err);
+            let friendlyMsg = "Google authentication failed: " + err.message;
+            if (window.self !== window.top) {
+              friendlyMsg += " Hint: If the popup is blocked or cookies are restricted in the iframe, try opening the application in a new window using the 'Open in New Tab' button on the top right, or use Email/Password sign up.";
+            }
+            window.showToast?.(friendlyMsg, 'error');
+          });
+      }
     });
   }
 

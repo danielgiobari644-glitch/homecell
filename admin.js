@@ -150,7 +150,12 @@ function syncAdminCells() {
       card.innerHTML = `
         <div>
           <span class="text-[10px] font-mono text-slate-400 uppercase tracking-widest">${cell.city}</span>
-          <h5 class="font-black font-display text-slate-900 dark:text-zinc-100">${cell.name}</h5>
+          <div class="flex items-center gap-2">
+            <h5 class="font-black font-display text-slate-900 dark:text-zinc-100">${cell.name}</h5>
+            <button onclick="window.renameCellGroup('${cellId}', \`${cell.name.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)" class="p-1 hover:text-blue-600 text-slate-400 dark:text-zinc-500 rounded transition-colors cursor-pointer" title="Rename Cell">
+              <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
           <p class="text-xs text-slate-500 mt-1">${cell.description}</p>
           <div class="text-[10px] text-slate-400 font-semibold mt-2">Leader: ${cell.leaderName} (${cell.leaderEmail})</div>
         </div>
@@ -197,6 +202,19 @@ function deleteCellGroup(cellId) {
   window.db.collection('cells').doc(cellId).delete()
     .then(() => window.showToast?.("Cell group deleted."))
     .catch(err => window.handleFirestoreError(err, 'delete', `cells/${cellId}`));
+}
+
+function renameCellGroup(cellId, currentName) {
+  const newName = prompt("Enter new name for the Fellowship Cell Group:", currentName);
+  if (newName === null) return;
+  const trimmed = newName.trim();
+  if (!trimmed) {
+    window.showToast?.("Cell name cannot be empty.", "error");
+    return;
+  }
+  window.db.collection('cells').doc(cellId).update({ name: trimmed })
+    .then(() => window.showToast?.("Cell renamed successfully."))
+    .catch(err => window.handleFirestoreError(err, 'write', `cells/${cellId}`));
 }
 
 // 3. Fellowship Gatherings Manager
@@ -1055,3 +1073,4 @@ window.openChangeCellLeaderModal = openChangeCellLeaderModal;
 window.closeChangeLeaderModal = closeChangeLeaderModal;
 window.applyNudgePreset = applyNudgePreset;
 window.sendAdminNudge = sendAdminNudge;
+window.renameCellGroup = renameCellGroup;
