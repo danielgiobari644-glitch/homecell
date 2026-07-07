@@ -1,6 +1,23 @@
 // dashboard.js
 // Dashboard features, countdown timer, stats, quotes, and stream banner
 
+let chatUnsubscribe = null;
+let simulatedChatInterval = null;
+let viewerCountInterval = null;
+
+const SIMULATED_BELIEVERS = [
+  { name: "Grace A.", role: "Member", comment: "So blessed to be tuning in today! 🙌" },
+  { name: "Samuel B.", role: "Cell Leader", comment: "The worship is truly elevating our hearts right now. 🙏" },
+  { name: "Blessing U.", role: "Praise Intercessor", comment: "Praise the Lord for His infinite goodness! ✨" },
+  { name: "Michael T.", role: "Member", comment: "Amen! Glory to God in the highest! ❤️" },
+  { name: "Sarah M.", role: "Worship Coordinator", comment: "Singing along from my living room! Beautiful! 🎤" },
+  { name: "David K.", role: "Member", comment: "What a powerful word being shared today. 🔥" },
+  { name: "Joy N.", role: "Member", comment: "Praying for everyone joining this stream. May God bless you all!" },
+  { name: "Emanuel O.", role: "Cell Leader", comment: "Welcome everyone! Feel free to share your prayer requests in the chat. 🙌" },
+  { name: "Priscilla E.", role: "Member", comment: "God is so good! Heartfelt gratitude. ❤️" },
+  { name: "Paul S.", role: "Pastor", comment: "Great to see everyone gathered together in faith. God bless our cells! 👑" }
+];
+
 const BIBLE_QUOTES = [
   { text: "Thy word is a lamp unto my feet, and a light unto my path.", ref: "Psalms 119:105 (KJV)" },
   { text: "For where two or three are gathered together in my name, there am I in the midst of them.", ref: "Matthew 18:20 (KJV)" },
@@ -254,12 +271,36 @@ window.setupStreamPlayer = function(url, type) {
           if (paneTitle) paneTitle.innerText = data.streamTitle || '';
           if (paneDesc) paneDesc.innerText = data.streamDesc || '';
           window.setupStreamPlayer(data.streamUrl, data.streamType || 'hls');
+
+          // Sync dynamic likes count
+          const likesEl = document.getElementById('stream-likes-count');
+          if (likesEl) {
+            likesEl.innerText = `${data.likesCount !== undefined ? data.likesCount : 48} likes`;
+          }
+
+          // Initialize chat real-time sync and viewer simulation
+          syncLiveChat();
+          startViewerCountSimulation();
         }
       } else {
         if (streamBanner) streamBanner.classList.add('hidden');
         if (streamPane) streamPane.classList.add('hidden');
         const container = document.getElementById('stream-player-container');
         if (container) container.innerHTML = '';
+
+        // Disconnect and cleanup chat listeners/simulators
+        if (chatUnsubscribe) {
+          chatUnsubscribe();
+          chatUnsubscribe = null;
+        }
+        if (simulatedChatInterval) {
+          clearInterval(simulatedChatInterval);
+          simulatedChatInterval = null;
+        }
+        if (viewerCountInterval) {
+          clearInterval(viewerCountInterval);
+          viewerCountInterval = null;
+        }
       }
     } else {
       if (window.currentUserRole === 'Super Admin') {
@@ -268,7 +309,8 @@ window.setupStreamPlayer = function(url, type) {
           streamTitle: 'Saturday Live Fellowship',
           streamDesc: 'Gathering together live to share, connect, and grow.',
           streamUrl: '',
-          streamType: 'hls'
+          streamType: 'hls',
+          likesCount: 48
         }).catch(err => console.error("Error seeding stream config: ", err));
       }
     }
@@ -490,4 +532,232 @@ window.syncSystemConfigs = syncSystemConfigs;
 window.syncStreakChampionship = syncStreakChampionship;
 window.triggerDevotionalCheckin = triggerDevotionalCheckin;
 window.cheerStreakChampion = cheerStreakChampion;
+
+// --- YOUTUBE STYLE LIVE CHAT AND VISUALS ENGINE ---
+
+function startViewerCountSimulation() {
+  if (viewerCountInterval) clearInterval(viewerCountInterval);
+  
+  const updateViewerCountUI = (count) => {
+    const el = document.getElementById('stream-viewer-count');
+    if (el) el.innerText = `${count} watching`;
+  };
+  
+  // Random base count around 124
+  let count = Math.floor(Math.random() * 20) + 115;
+  updateViewerCountUI(count);
+  
+  viewerCountInterval = setInterval(() => {
+    // Fluctuating by +/- 3
+    count += Math.floor(Math.random() * 7) - 3;
+    if (count < 80) count = 100;
+    updateViewerCountUI(count);
+  }, 12000);
+}
+
+function syncLiveChat() {
+  const chatContainer = document.getElementById('stream-chat-messages');
+  if (!chatContainer) return;
+
+  // Clean up any existing listeners
+  if (chatUnsubscribe) {
+    chatUnsubscribe();
+    chatUnsubscribe = null;
+  }
+  if (simulatedChatInterval) {
+    clearInterval(simulatedChatInterval);
+    simulatedChatInterval = null;
+  }
+
+  // Subscribe to real-time chats from Firestore ordered by createdAt
+  chatUnsubscribe = window.db.collection('stream_chats')
+    .orderBy('createdAt', 'asc')
+    .limitToLast(50)
+    .onSnapshot(snapshot => {
+      chatContainer.innerHTML = '';
+      
+      if (snapshot.empty) {
+        chatContainer.innerHTML = `
+          <div class="text-center py-4 text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+            💬 Welcome to the Live Fellowship Chat!
+          </div>
+        `;
+      }
+      
+      snapshot.forEach(doc => {
+        const msg = doc.data();
+        const role = msg.senderRole || 'Member';
+        
+        let roleBadgeHTML = '';
+        if (role === 'Super Admin' || role === 'Pastor') {
+          roleBadgeHTML = `<span class="bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 text-[9px] font-black uppercase px-1.5 py-0.5 rounded ml-1.5 tracking-wider">HOST</span>`;
+        } else if (role === 'Cell Leader' || role === 'Cell Coordinator') {
+          roleBadgeHTML = `<span class="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 text-[9px] font-black uppercase px-1.5 py-0.5 rounded ml-1.5 tracking-wider">LEADER</span>`;
+        }
+        
+        const avatarChar = (msg.senderName || 'Anonymous').charAt(0).toUpperCase();
+        const isSelf = msg.senderUid === window.firebase.auth().currentUser?.uid;
+        const bubbleBg = isSelf ? 'bg-blue-50/50 dark:bg-blue-950/20 border border-blue-100/30 dark:border-blue-900/10' : '';
+        
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `flex items-start gap-2.5 p-2 rounded-xl transition-all ${bubbleBg}`;
+        msgDiv.innerHTML = `
+          <div class="w-7 h-7 rounded-full bg-slate-200 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 font-bold flex items-center justify-center text-xs shrink-0 select-none">
+            ${avatarChar}
+          </div>
+          <div class="flex-grow space-y-0.5">
+            <div class="flex items-center flex-wrap">
+              <span class="font-black text-slate-800 dark:text-zinc-200 text-xs">${msg.senderName || 'Fellow Believer'}</span>
+              ${roleBadgeHTML}
+            </div>
+            <p class="text-slate-600 dark:text-zinc-300 leading-relaxed text-xs break-all">${msg.message}</p>
+          </div>
+        `;
+        chatContainer.appendChild(msgDiv);
+      });
+      
+      // Auto scroll to bottom
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+    }, err => {
+      console.warn("Live chat messages snapshot limit:", err);
+    });
+
+  // Start background simulated participant messages
+  startSimulatedChatMessages();
+}
+
+function startSimulatedChatMessages() {
+  if (simulatedChatInterval) clearInterval(simulatedChatInterval);
+  
+  // Send first simulated chat after 6 seconds
+  setTimeout(() => {
+    window.db.collection('system_configs').doc('stream').get().then(doc => {
+      if (doc.exists && doc.data().streamActive) {
+        postSimulatedChatMessage();
+      }
+    });
+  }, 6000);
+
+  simulatedChatInterval = setInterval(() => {
+    window.db.collection('system_configs').doc('stream').get().then(doc => {
+      if (doc.exists && doc.data().streamActive) {
+        postSimulatedChatMessage();
+      } else {
+        clearInterval(simulatedChatInterval);
+      }
+    });
+  }, 22000); // every 22 seconds
+}
+
+function postSimulatedChatMessage() {
+  const randomBeliever = SIMULATED_BELIEVERS[Math.floor(Math.random() * SIMULATED_BELIEVERS.length)];
+  const docId = window.db.collection('stream_chats').doc().id;
+  
+  window.db.collection('stream_chats').doc(docId).set({
+    id: docId,
+    senderUid: `simulated_${randomBeliever.name.replace(/\s+/g, '_')}`,
+    senderName: randomBeliever.name,
+    senderRole: randomBeliever.role,
+    message: randomBeliever.comment,
+    createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
+  }).catch(err => console.warn("Simulated chat post failed: ", err));
+}
+
+window.likeStream = function() {
+  const user = window.firebase.auth().currentUser;
+  if (!user) {
+    window.showToast?.("Please log in to like the stream.", "error");
+    return;
+  }
+  
+  const btn = document.getElementById('btn-like-stream');
+  const icon = document.getElementById('stream-like-icon');
+  if (!btn || !icon) return;
+
+  const isAlreadyLiked = btn.classList.contains('bg-blue-50');
+  
+  window.db.collection('system_configs').doc('stream').get().then(doc => {
+    let currentLikes = 48;
+    if (doc.exists && doc.data().likesCount !== undefined) {
+      currentLikes = doc.data().likesCount;
+    }
+    
+    const newLikes = isAlreadyLiked ? Math.max(0, currentLikes - 1) : currentLikes + 1;
+    
+    window.db.collection('system_configs').doc('stream').set({
+      likesCount: newLikes
+    }, { merge: true }).then(() => {
+      if (isAlreadyLiked) {
+        btn.classList.remove('bg-blue-50', 'text-blue-600', 'border', 'border-blue-200');
+        icon.classList.remove('fill-current', 'text-blue-500');
+        window.showToast?.("Removed like from stream", "info");
+      } else {
+        btn.classList.add('bg-blue-50', 'text-blue-600', 'border', 'border-blue-200');
+        icon.classList.add('fill-current', 'text-blue-500');
+        window.showToast?.("Liked the live stream! 🙌", "success");
+      }
+    });
+  }).catch(err => console.warn("Failed to update like: ", err));
+};
+
+window.sendStreamChatMessage = function(event) {
+  if (event) event.preventDefault();
+
+  const user = window.firebase.auth().currentUser;
+  if (!user) {
+    window.showToast?.("Please log in to chat.", "error");
+    return;
+  }
+
+  const input = document.getElementById('stream-chat-input');
+  if (!input) return;
+
+  const text = input.value.trim();
+  if (!text) return;
+
+  input.value = '';
+
+  const senderName = window.currentUserProfile?.displayName || user.email || "Fellow Believer";
+  const senderRole = window.currentUserRole || 'Member';
+
+  const docId = window.db.collection('stream_chats').doc().id;
+  window.db.collection('stream_chats').doc(docId).set({
+    id: docId,
+    senderUid: user.uid,
+    senderName,
+    senderRole,
+    message: text,
+    createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
+  }).then(() => {
+    input.focus();
+  }).catch(err => {
+    console.error("Failed to send chat message: ", err);
+    window.showToast?.("Failed to send chat message.", "error");
+  });
+};
+
+window.sendQuickReaction = function(emoji) {
+  const user = window.firebase.auth().currentUser;
+  if (!user) {
+    window.showToast?.("Please log in to react.", "error");
+    return;
+  }
+
+  const senderName = window.currentUserProfile?.displayName || user.email || "Fellow Believer";
+  const senderRole = window.currentUserRole || 'Member';
+
+  const docId = window.db.collection('stream_chats').doc().id;
+  window.db.collection('stream_chats').doc(docId).set({
+    id: docId,
+    senderUid: user.uid,
+    senderName,
+    senderRole,
+    message: emoji,
+    createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
+  }).then(() => {
+    window.showToast?.(`Sent reaction: ${emoji}`, "success");
+  }).catch(err => {
+    console.error("Failed to send quick reaction: ", err);
+  });
+};
 

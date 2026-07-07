@@ -166,8 +166,16 @@
       .unauthenticated header,
       .unauthenticated footer,
       .unauthenticated #main-workspace-frame,
-      .unauthenticated #sidebar-backdrop {
+      .unauthenticated #sidebar-backdrop,
+      .unauthenticated nav {
         display: none !important;
+      }
+
+      #portfolio-view {
+        display: none;
+      }
+      .unauthenticated #portfolio-view {
+        display: block !important;
       }
       
       /* Performant, smooth native CSS animations and keyframes */
@@ -277,8 +285,12 @@
     </div>
 
     <!-- Login / Registration Modal overlay -->
-    <div id="auth-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-lg z-40 flex items-center justify-center p-4">
+    <div id="auth-modal" class="hidden fixed inset-0 bg-slate-950/90 backdrop-blur-lg z-50 flex items-center justify-center p-4">
       <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl w-full max-w-md p-8 shadow-2xl relative">
+        <!-- Close button to go back to reading the portfolio landing page -->
+        <button onclick="window.closeAuthModal()" class="absolute top-5 right-5 p-2 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-full cursor-pointer transition-all">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
         <div class="text-center mb-8">
           <div class="inline-flex p-3.5 bg-blue-100 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 rounded-2xl mb-3">
             <i data-lucide="home" class="w-8 h-8"></i>
@@ -328,6 +340,899 @@
           </button>
         </form>
       </div>
+    </div>
+
+    <!-- Public Portfolio Website (Visible when unauthenticated) -->
+    <div id="portfolio-view" class="relative bg-slate-50 dark:bg-[#0c0e12] min-h-screen overflow-x-hidden font-sans transition-colors duration-300">
+      
+      <!-- Top decorative glass mesh spotlights -->
+      <div class="absolute top-0 left-1/4 w-[500px] h-[500px] bg-gradient-to-tr from-blue-500/10 to-indigo-500/10 dark:from-blue-600/5 dark:to-indigo-600/5 rounded-full blur-[120px] pointer-events-none -z-10 animate-pulse-slow"></div>
+      <div class="absolute top-[20%] right-1/4 w-[600px] h-[600px] bg-gradient-to-br from-emerald-500/5 to-blue-500/5 dark:from-emerald-600/5 dark:to-blue-600/5 rounded-full blur-[140px] pointer-events-none -z-10"></div>
+
+      <!-- Portfolio Navbar -->
+      <nav class="sticky top-0 z-50 bg-white/70 dark:bg-[#0c0e12]/75 backdrop-blur-xl border-b border-slate-200/50 dark:border-zinc-800/40 transition-all">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="p-2.5 bg-blue-600 text-white rounded-2xl shadow-xl shadow-blue-500/20 flex items-center justify-center transform hover:scale-105 transition-transform">
+              <i data-lucide="home" class="w-5.5 h-5.5"></i>
+            </div>
+            <span class="text-xl font-black font-display tracking-tight text-slate-950 dark:text-zinc-50 flex items-center gap-1.5">
+              home<span class="text-blue-600 dark:text-blue-500">.cell</span>
+            </span>
+          </div>
+          
+          <!-- Desktop Navigation -->
+          <div class="hidden lg:flex items-center gap-8 text-sm font-semibold text-slate-600 dark:text-zinc-300">
+            <a href="#pf-features" class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Features</a>
+            <a href="#pf-screenshots" class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">App Tour</a>
+            <a href="#pf-demo" class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Live Preview</a>
+            <a href="#pf-testimonies-reviews" class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Testimonies & Reviews</a>
+            <a href="#pf-faq" class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">FAQs</a>
+            <a href="#pf-contact" class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Support</a>
+          </div>
+          
+          <div class="flex items-center gap-3">
+            <!-- Light/Dark Contrast Theme Switcher for unauth -->
+            <button onclick="toggleTheme()" class="p-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 border border-slate-200/60 dark:border-zinc-800/80 text-slate-700 dark:text-zinc-200 rounded-xl hover:scale-105 active:scale-95 transition-all cursor-pointer" title="Switch Theme">
+              <i data-lucide="sun" class="w-4.5 h-4.5 block dark:hidden"></i>
+              <i data-lucide="moon" class="w-4.5 h-4.5 hidden dark:block"></i>
+            </button>
+            <button onclick="window.openAuthModal('signin')" class="px-4 py-2.5 text-slate-600 dark:text-zinc-300 font-bold hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-sm">Sign In</button>
+            <button onclick="window.openAuthModal('signup')" class="px-5 py-2.5 bg-blue-600 text-white font-bold hover:bg-blue-700 rounded-xl text-sm transition-all shadow-lg shadow-blue-500/10 hover:shadow-blue-500/20 hover:scale-[1.02] active:scale-[0.98] cursor-pointer">Get Started</button>
+            
+            <!-- Mobile Menu Toggle -->
+            <button onclick="document.getElementById('pf-mobile-menu').classList.toggle('hidden')" class="lg:hidden p-2 text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-900 rounded-xl transition-all">
+              <i data-lucide="menu" class="w-6 h-6"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Mobile Slide Down Menu -->
+        <div id="pf-mobile-menu" class="hidden lg:hidden bg-white/95 dark:bg-[#0c0e12]/95 border-b border-slate-200 dark:border-zinc-800/80 px-4 py-4 space-y-2.5 text-sm font-semibold text-slate-700 dark:text-zinc-300 backdrop-blur-xl">
+          <a href="#pf-features" onclick="document.getElementById('pf-mobile-menu').classList.add('hidden')" class="block px-3 py-2.5 hover:bg-slate-50 dark:hover:bg-zinc-900 rounded-xl hover:text-blue-600 transition-colors">Features</a>
+          <a href="#pf-screenshots" onclick="document.getElementById('pf-mobile-menu').classList.add('hidden')" class="block px-3 py-2.5 hover:bg-slate-50 dark:hover:bg-zinc-900 rounded-xl hover:text-blue-600 transition-colors">App Tour</a>
+          <a href="#pf-demo" onclick="document.getElementById('pf-mobile-menu').classList.add('hidden')" class="block px-3 py-2.5 hover:bg-slate-50 dark:hover:bg-zinc-900 rounded-xl hover:text-blue-600 transition-colors">Live Preview</a>
+          <a href="#pf-testimonies-reviews" onclick="document.getElementById('pf-mobile-menu').classList.add('hidden')" class="block px-3 py-2.5 hover:bg-slate-50 dark:hover:bg-zinc-900 rounded-xl hover:text-blue-600 transition-colors">Testimonies & Reviews</a>
+          <a href="#pf-faq" onclick="document.getElementById('pf-mobile-menu').classList.add('hidden')" class="block px-3 py-2.5 hover:bg-slate-50 dark:hover:bg-zinc-900 rounded-xl hover:text-blue-600 transition-colors">FAQs</a>
+          <a href="#pf-contact" onclick="document.getElementById('pf-mobile-menu').classList.add('hidden')" class="block px-3 py-2.5 hover:bg-slate-50 dark:hover:bg-zinc-900 rounded-xl hover:text-blue-600 transition-colors">Support Desk</a>
+        </div>
+      </nav>
+
+      <!-- Hero Section -->
+      <header class="relative py-16 md:py-24 lg:py-32 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
+          
+          <!-- Hero Left Column -->
+          <div class="lg:col-span-7 space-y-8 text-center lg:text-left relative z-10">
+            <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-500/10 border border-blue-500/20 dark:border-blue-400/30 rounded-full text-xs font-black text-blue-700 dark:text-blue-400 uppercase tracking-widest animate-fade-in mx-auto lg:mx-0">
+              <span class="w-2 h-2 bg-blue-500 rounded-full animate-ping"></span> Connection & Revival Portal
+            </div>
+            
+            <h1 class="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black font-display tracking-tight text-slate-950 dark:text-zinc-50 leading-none">
+              Home.cell,<br><span class="bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 bg-clip-text text-transparent">community,</span> & faith.
+            </h1>
+            
+            <p class="text-base sm:text-lg md:text-xl text-slate-500 dark:text-zinc-400 leading-relaxed max-w-2xl mx-auto lg:mx-0">
+              home.cell is your all-in-one platform for live services, powerful testimonies, prayer requests, and everything that helps you grow in faith — together, from anywhere.
+            </p>
+            
+            <!-- CTA Buttons -->
+            <div class="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
+              <button onclick="window.openDownloadModal()" class="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-extrabold text-sm uppercase tracking-wider rounded-xl transition-all shadow-xl shadow-blue-500/15 hover:shadow-blue-500/25 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2.5 cursor-pointer">
+                Download home.cell <i data-lucide="download" class="w-4.5 h-4.5"></i>
+              </button>
+              <button onclick="window.openAuthModal('signup')" class="w-full sm:w-auto px-8 py-4 bg-white hover:bg-slate-50 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-slate-800 dark:text-zinc-150 font-black text-sm uppercase tracking-wider rounded-xl border border-slate-200 dark:border-zinc-800/80 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer text-center flex items-center justify-center gap-2 shadow-sm">
+                Open home.cell <i data-lucide="arrow-right" class="w-4 h-4"></i>
+              </button>
+            </div>
+
+            <!-- Dynamic Rating Indicator and trust badges -->
+            <div class="pt-8 border-t border-slate-200/50 dark:border-zinc-800/40 flex flex-wrap items-center justify-center lg:justify-start gap-x-8 gap-y-4">
+              <div class="flex items-center gap-3">
+                <div class="flex text-amber-500" id="pf-hero-stars">
+                  <i data-lucide="star" class="w-4.5 h-4.5 fill-current"></i>
+                  <i data-lucide="star" class="w-4.5 h-4.5 fill-current"></i>
+                  <i data-lucide="star" class="w-4.5 h-4.5 fill-current"></i>
+                  <i data-lucide="star" class="w-4.5 h-4.5 fill-current"></i>
+                  <i data-lucide="star" class="w-4.5 h-4.5 fill-current"></i>
+                </div>
+                <span class="text-sm font-black text-slate-900 dark:text-zinc-100" id="pf-hero-avg-rating">4.9 / 5</span>
+              </div>
+              <div class="h-4 w-px bg-slate-200 dark:bg-zinc-800 hidden sm:block"></div>
+              <div class="text-xs text-slate-500 dark:text-zinc-400 font-semibold" id="pf-hero-reviews-count">
+                Based on <span class="font-extrabold text-blue-600 dark:text-blue-400" id="pf-hero-reviews-val">...</span> verified reviews
+              </div>
+              <div class="h-4 w-px bg-slate-200 dark:bg-zinc-800 hidden sm:block"></div>
+              <div class="text-xs text-slate-500 dark:text-zinc-400 font-semibold" id="pf-hero-users-count">
+                <span class="font-extrabold text-emerald-600 dark:text-emerald-400" id="pf-hero-users-val">...</span> active believers
+              </div>
+            </div>
+
+            <!-- Security Trust Badges -->
+            <div class="flex items-center justify-center lg:justify-start gap-4 pt-1 text-slate-400 dark:text-zinc-500 text-xs font-semibold">
+              <div class="flex items-center gap-1.5">
+                <i data-lucide="shield-check" class="w-4 h-4 text-emerald-500"></i> Firebase Secured
+              </div>
+              <div class="h-3 w-px bg-slate-200 dark:bg-zinc-800"></div>
+              <div class="flex items-center gap-1.5">
+                <i data-lucide="wifi-off" class="w-4 h-4 text-blue-500"></i> PWA Offline Caching
+              </div>
+            </div>
+          </div>
+          
+          <!-- Hero Right Column (3D Layered Mockups + Glow backdrop) -->
+          <div class="lg:col-span-5 relative mt-8 lg:mt-0 flex justify-center items-center h-[500px]">
+            <!-- Soft backing glow blob -->
+            <div class="absolute w-80 h-80 bg-gradient-to-tr from-blue-500/20 via-indigo-500/20 to-purple-500/10 rounded-full blur-[80px] animate-pulse pointer-events-none"></div>
+            
+            <!-- Left iPhone (Rotated & Layered behind) -->
+            <div class="absolute left-4 sm:left-12 lg:left-0 transform -rotate-12 translate-y-8 scale-90 opacity-40 hover:opacity-100 hover:scale-95 hover:translate-x-4 transition-all duration-500 z-10 cursor-pointer hidden sm:block">
+              <div class="border-4 border-slate-900/80 dark:border-zinc-800/80 rounded-[2.2rem] h-[400px] w-[210px] shadow-2xl overflow-hidden bg-slate-50 dark:bg-zinc-950 flex flex-col pointer-events-none">
+                <!-- Notch -->
+                <div class="h-3.5 w-20 bg-slate-900 dark:bg-zinc-800 rounded-b-lg mx-auto"></div>
+                <!-- Mock Screen Content -->
+                <div class="p-3 space-y-3 flex-grow overflow-hidden text-left text-[9px] text-slate-500 dark:text-zinc-400">
+                  <div class="flex items-center gap-2 pb-1.5 border-b border-slate-200/50 dark:border-zinc-800">
+                    <span class="font-extrabold text-[10px] text-slate-800 dark:text-zinc-200">Featured Praise</span>
+                  </div>
+                  <div class="bg-amber-500/10 p-2.5 rounded-xl border border-amber-500/20 space-y-1">
+                    <span class="font-black text-amber-700 dark:text-amber-400 block">Healing Testimony</span>
+                    <p class="leading-relaxed">Persistent back pain completely vanished during cell vigil prayers. I am walking in absolute healing and glory!</p>
+                    <span class="font-bold text-slate-800 dark:text-zinc-200 block text-[8px] mt-1">— Sis. Eunice G.</span>
+                  </div>
+                  <div class="bg-slate-100 dark:bg-zinc-900 p-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 space-y-1">
+                    <span class="font-black text-slate-800 dark:text-zinc-200 block">Cell Open Door</span>
+                    <p class="leading-relaxed">Offered executive role after nine months search! Prayers of agreement answered.</p>
+                    <span class="font-bold text-slate-800 dark:text-zinc-200 block text-[8px] mt-1">— Bro. Kenneth U.</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right iPhone (Rotated & Layered behind) -->
+            <div class="absolute right-4 sm:right-12 lg:right-0 transform rotate-12 translate-y-8 scale-90 opacity-40 hover:opacity-100 hover:scale-95 hover:-translate-x-4 transition-all duration-500 z-10 cursor-pointer hidden sm:block">
+              <div class="border-4 border-slate-900/80 dark:border-zinc-800/80 rounded-[2.2rem] h-[400px] w-[210px] shadow-2xl overflow-hidden bg-slate-50 dark:bg-zinc-950 flex flex-col pointer-events-none">
+                <!-- Notch -->
+                <div class="h-3.5 w-20 bg-slate-900 dark:bg-zinc-800 rounded-b-lg mx-auto"></div>
+                <!-- Mock Screen Content -->
+                <div class="p-3 space-y-3 flex-grow overflow-hidden text-left text-[9px] text-slate-500 dark:text-zinc-400">
+                  <div class="flex items-center justify-between pb-1.5 border-b border-slate-200/50 dark:border-zinc-800">
+                    <span class="font-extrabold text-[10px] text-slate-800 dark:text-zinc-200">Community Feed</span>
+                    <span class="text-[7px] font-black bg-rose-100 text-rose-700 px-1 py-0.2 rounded">LIVE</span>
+                  </div>
+                  <div class="p-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl space-y-1">
+                    <div class="flex items-center justify-between font-bold text-[8px]">
+                      <span class="text-slate-800 dark:text-zinc-200">Stephen (Admin)</span>
+                      <span class="text-slate-400">Today</span>
+                    </div>
+                    <p class="leading-relaxed">All parish coordinators are meeting tonight for spiritual alignment and planning.</p>
+                  </div>
+                  <div class="p-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl space-y-1">
+                    <div class="flex items-center justify-between font-bold text-[8px]">
+                      <span class="text-slate-800 dark:text-zinc-200">Blessing U.</span>
+                      <span class="text-slate-400">Yesterday</span>
+                    </div>
+                    <p class="leading-relaxed">Grateful for the offline bible study engine. Truly keeps me rooted in scripture!</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Middle iPhone (Main Centered Mockup) -->
+            <div class="relative transform hover:scale-[1.03] transition-all duration-500 z-20 group">
+              <!-- Glow backer for the primary device -->
+              <div class="absolute -inset-1.5 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-[2.5rem] blur opacity-35 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-tilt"></div>
+              
+              <div class="border-5 border-slate-950 dark:border-zinc-850 rounded-[2.5rem] h-[460px] w-[235px] shadow-2xl overflow-hidden bg-slate-50 dark:bg-zinc-950 flex flex-col relative">
+                <!-- Notch -->
+                <div class="h-4 w-24 bg-slate-950 dark:bg-zinc-850 rounded-b-xl mx-auto z-30 flex items-center justify-center gap-1">
+                  <span class="w-1.5 h-1.5 rounded-full bg-slate-800"></span>
+                  <span class="w-3.5 h-1 rounded-full bg-slate-800"></span>
+                </div>
+                
+                <!-- Screen Content -->
+                <div class="p-4 space-y-3.5 flex-grow overflow-hidden text-left relative text-xs">
+                  <div class="flex items-center justify-between pb-2 border-b border-slate-200/50 dark:border-zinc-800/80">
+                    <div class="flex items-center gap-1.5">
+                      <div class="w-2.5 h-2.5 bg-blue-600 rounded-full"></div>
+                      <span class="font-extrabold text-[11px] text-slate-800 dark:text-zinc-100 tracking-tight">home.cell App</span>
+                    </div>
+                    <span class="text-[8px] font-black uppercase text-blue-600 bg-blue-100 dark:text-blue-400 dark:bg-blue-950/40 px-1.5 py-0.5 rounded">Active</span>
+                  </div>
+                  
+                  <!-- Simulated Live Service Streaming Card -->
+                  <div class="bg-slate-900 text-white rounded-2xl overflow-hidden shadow-md relative group/stream h-36 flex flex-col justify-end p-3">
+                    <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/30 to-slate-950/10 pointer-events-none z-10"></div>
+                    
+                    <!-- Pulsing Glow/Video simulation -->
+                    <div class="absolute inset-0 bg-gradient-to-tr from-blue-600/30 via-indigo-600/10 to-transparent pointer-events-none z-0"></div>
+                    
+                    <!-- Live overlay -->
+                    <div class="absolute top-2.5 left-2.5 bg-rose-600 text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full flex items-center gap-1 z-20">
+                      <span class="w-1.5 h-1.5 bg-white rounded-full animate-ping"></span> Live Broadcast
+                    </div>
+                    
+                    <div class="relative z-10 space-y-1">
+                      <h4 class="font-black text-[11px] tracking-tight text-white leading-tight">Sunday Divine Service</h4>
+                      <p class="text-[9px] text-slate-300">Worship, Word & Manifestation</p>
+                      
+                      <!-- Play Button icon representation -->
+                      <div class="absolute -top-12 left-1/2 transform -translate-x-1/2 p-2.5 bg-blue-600 text-white rounded-full shadow-lg z-20">
+                        <i data-lucide="play" class="w-4 h-4 fill-current"></i>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Quick Stats/Streak Indicator Card -->
+                  <div class="bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 p-3 rounded-2xl flex items-center justify-between gap-2 shadow-xs">
+                    <div class="space-y-0.5">
+                      <span class="text-[9px] text-slate-400 font-extrabold uppercase tracking-wider block">Daily Devotional</span>
+                      <span class="font-black text-slate-800 dark:text-zinc-100 text-[10px]">Acts Chapter 2 Study</span>
+                    </div>
+                    <div class="px-2.5 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 rounded-xl flex items-center gap-1 text-[10px] font-black">
+                      7 Day <i data-lucide="flame" class="w-3.5 h-3.5 fill-current"></i>
+                    </div>
+                  </div>
+
+                  <!-- Mini Prayer Wall element -->
+                  <div class="bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 p-3 rounded-2xl space-y-2 shadow-xs">
+                    <div class="flex items-center justify-between text-[9px] font-bold text-slate-400">
+                      <span>Prayer Request</span>
+                      <span class="text-rose-500 flex items-center gap-0.5"><i data-lucide="heart" class="w-3 h-3 fill-current"></i> Urgent</span>
+                    </div>
+                    <p class="text-[9px] leading-relaxed text-slate-500 dark:text-zinc-400 italic">"Healing prayer for my mother scheduled for diagnostics..."</p>
+                    <div class="flex items-center justify-between pt-1 border-t border-slate-100 dark:border-zinc-800/60 text-[9px]">
+                      <span class="text-blue-600 font-bold">14 Amens</span>
+                      <span class="text-slate-400">Tap to agree</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Floating Glassmorphism Badges -->
+            <div class="absolute -top-4 -right-2 sm:-right-8 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border border-slate-200/50 dark:border-zinc-800/50 px-3.5 py-2 rounded-2xl shadow-lg flex items-center gap-2 z-30 transform hover:scale-105 transition-transform">
+              <span class="text-lg">🏆</span>
+              <div class="text-left leading-none">
+                <span class="text-[9px] text-slate-400 block font-bold">Trivia Chamber</span>
+                <span class="text-xs font-black text-slate-800 dark:text-zinc-50">Active Trivia</span>
+              </div>
+            </div>
+
+            <div class="absolute bottom-8 -left-4 sm:-left-12 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border border-slate-200/50 dark:border-zinc-800/50 px-3.5 py-2 rounded-2xl shadow-lg flex items-center gap-2 z-30 transform hover:scale-105 transition-transform">
+              <span class="text-lg">🔥</span>
+              <div class="text-left leading-none">
+                <span class="text-[9px] text-slate-400 block font-bold">Consecrated Habit</span>
+                <span class="text-xs font-black text-slate-800 dark:text-zinc-50">7 Day Streaks</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Bento-style Features Section -->
+      <!-- Bento-style Features Section -->
+      <section id="pf-features" class="py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-16">
+        <div class="text-center max-w-3xl mx-auto space-y-4">
+          <span class="px-3 py-1 bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 rounded-full text-[10px] font-black uppercase tracking-widest">Architectural Craft</span>
+          <h2 class="text-3xl sm:text-4xl md:text-5xl font-black font-display tracking-tight text-slate-950 dark:text-zinc-50 leading-none">
+            Fully Loaded Spiritual Tech Suite
+          </h2>
+          <p class="text-base text-slate-500 dark:text-zinc-400 max-w-2xl mx-auto">
+            Everything you need to sustain deep fellowship, maintain daily devotion, check-in scriptures, and grow in the word daily.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+          
+          <!-- Card 1: Daily Devotionals (Span 2) -->
+          <div class="md:col-span-2 bg-white/60 dark:bg-zinc-900/30 backdrop-blur-md border border-slate-200/60 dark:border-zinc-800/40 rounded-[2rem] p-8 hover:shadow-xl hover:shadow-blue-500/5 transition-all hover:scale-[1.01] group relative overflow-hidden flex flex-col justify-between h-[320px]">
+            <div class="absolute -right-16 -bottom-16 w-48 h-48 bg-blue-500/5 dark:bg-blue-500/10 rounded-full blur-2xl group-hover:scale-110 transition-transform"></div>
+            <div class="space-y-4 max-w-md">
+              <div class="p-3 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-2xl w-max">
+                <i data-lucide="book-open" class="w-6 h-6"></i>
+              </div>
+              <h3 class="text-xl sm:text-2xl font-extrabold font-display text-slate-950 dark:text-zinc-50">Daily Consecrated Devotionals</h3>
+              <p class="text-sm text-slate-500 dark:text-zinc-400 leading-relaxed">
+                Study customized spiritual instructions, check-in to confirm daily readings, and grow consecutive streak counters to identify weekly streak champions of our assembly.
+              </p>
+            </div>
+            <div class="flex items-center gap-2 pt-4 text-xs font-bold text-blue-600 dark:text-blue-400">
+              <span>Read Offline & Sync Realtime</span> <i data-lucide="arrow-right" class="w-4 h-4"></i>
+            </div>
+          </div>
+
+          <!-- Card 2: Live In-Feed Streams (Span 1) -->
+          <div class="bg-white/60 dark:bg-zinc-900/30 backdrop-blur-md border border-slate-200/60 dark:border-zinc-800/40 rounded-[2rem] p-8 hover:shadow-xl hover:shadow-blue-500/5 transition-all hover:scale-[1.01] group relative overflow-hidden flex flex-col justify-between h-[320px]">
+            <div class="absolute -right-12 -bottom-12 w-36 h-36 bg-purple-500/5 dark:bg-purple-500/10 rounded-full blur-2xl group-hover:scale-110 transition-transform"></div>
+            <div class="space-y-4">
+              <div class="p-3 bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-2xl w-max">
+                <i data-lucide="video" class="w-6 h-6"></i>
+              </div>
+              <h3 class="text-xl font-extrabold font-display text-slate-950 dark:text-zinc-50">Live In-Feed Streams</h3>
+              <p class="text-sm text-slate-500 dark:text-zinc-400 leading-relaxed">
+                Believers can watch live RTMP or HLS stream broadcasts directly inside the main feed with zero latency.
+              </p>
+            </div>
+            <div class="flex items-center gap-2 pt-4 text-xs font-bold text-purple-600 dark:text-purple-400">
+              <span>Watch instantly</span> <i data-lucide="arrow-right" class="w-4 h-4"></i>
+            </div>
+          </div>
+
+          <!-- Card 3: Home Fellowship Cells (Span 1) -->
+          <div class="bg-white/60 dark:bg-zinc-900/30 backdrop-blur-md border border-slate-200/60 dark:border-zinc-800/40 rounded-[2rem] p-8 hover:shadow-xl hover:shadow-blue-500/5 transition-all hover:scale-[1.01] group relative overflow-hidden flex flex-col justify-between h-[320px]">
+            <div class="absolute -right-12 -bottom-12 w-36 h-36 bg-emerald-500/5 dark:bg-emerald-500/10 rounded-full blur-2xl group-hover:scale-110 transition-transform"></div>
+            <div class="space-y-4">
+              <div class="p-3 bg-emerald-50/10 text-emerald-600 dark:text-emerald-400 rounded-2xl w-max">
+                <i data-lucide="users" class="w-6 h-6"></i>
+              </div>
+              <h3 class="text-xl font-extrabold font-display text-slate-950 dark:text-zinc-50">Home Fellowship Cells</h3>
+              <p class="text-sm text-slate-500 dark:text-zinc-400 leading-relaxed">
+                Join a neighborhood cell group near you, interact in dedicated cell lounges, and view leader contact rosters.
+              </p>
+            </div>
+            <div class="flex items-center gap-2 pt-4 text-xs font-bold text-emerald-600 dark:text-emerald-400">
+              <span>Find neighboring cells</span> <i data-lucide="arrow-right" class="w-4 h-4"></i>
+            </div>
+          </div>
+
+          <!-- Card 4: Intercession Chambers (Span 2) -->
+          <div class="md:col-span-2 bg-white/60 dark:bg-zinc-900/30 backdrop-blur-md border border-slate-200/60 dark:border-zinc-800/40 rounded-[2rem] p-8 hover:shadow-xl hover:shadow-blue-500/5 transition-all hover:scale-[1.01] group relative overflow-hidden flex flex-col justify-between h-[320px]">
+            <div class="absolute -right-16 -bottom-16 w-48 h-48 bg-rose-500/5 dark:bg-rose-500/10 rounded-full blur-2xl group-hover:scale-110 transition-transform"></div>
+            <div class="space-y-4 max-w-md">
+              <div class="p-3 bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-2xl w-max">
+                <i data-lucide="flame" class="w-6 h-6"></i>
+              </div>
+              <h3 class="text-xl sm:text-2xl font-extrabold font-display text-slate-950 dark:text-zinc-50">Intercession Chambers</h3>
+              <p class="text-sm text-slate-500 dark:text-zinc-400 leading-relaxed">
+                Submit prayer agreement petitions, and join your faith with others. Toggle amen triggers in real-time and see live agreement counts update instantly to fuel active spiritual alignment.
+              </p>
+            </div>
+            <div class="flex items-center gap-2 pt-4 text-xs font-bold text-rose-600 dark:text-rose-400">
+              <span>Lift requests together</span> <i data-lucide="arrow-right" class="w-4 h-4"></i>
+            </div>
+          </div>
+
+          <!-- Card 5: Bible Trivia (Span 3) -->
+          <div class="md:col-span-3 bg-white/60 dark:bg-zinc-900/30 backdrop-blur-md border border-slate-200/60 dark:border-zinc-800/40 rounded-[2rem] p-8 hover:shadow-xl hover:shadow-blue-500/5 transition-all hover:scale-[1.01] group relative overflow-hidden flex flex-col justify-between min-h-[220px]">
+            <div class="absolute -right-16 -bottom-16 w-48 h-48 bg-amber-500/5 dark:bg-amber-500/10 rounded-full blur-2xl group-hover:scale-110 transition-transform"></div>
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+              <div class="lg:col-span-8 space-y-4">
+                <div class="p-3 bg-amber-500/10 text-amber-600 dark:text-amber-500 rounded-2xl w-max">
+                  <i data-lucide="trophy" class="w-6 h-6"></i>
+                </div>
+                <h3 class="text-xl sm:text-2xl font-extrabold font-display text-slate-950 dark:text-zinc-50">Bible Trivia Game Chambers</h3>
+                <p class="text-sm text-slate-500 dark:text-zinc-400 leading-relaxed">
+                  Challenge your knowledge in weekly congregational Bible trivia games. Features live countdown timers, randomized options, real points rewards, and a global leader scoreboard to celebrate scriptural fluency.
+                </p>
+              </div>
+              <div class="lg:col-span-4 flex justify-end">
+                <div class="px-5 py-3.5 bg-amber-500/10 dark:bg-amber-500/5 border border-amber-500/20 rounded-2xl text-amber-700 dark:text-amber-400 font-extrabold text-sm flex items-center gap-2 shadow-xs">
+                  🏆 Global Scoreboard Enabled
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- App Tour / Screenshots Section -->
+      <section id="pf-screenshots" class="py-24 bg-slate-100/30 dark:bg-[#0c0e12]/10 border-t border-b border-slate-200/50 dark:border-zinc-800/40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
+          <div class="text-center max-w-3xl mx-auto space-y-4">
+            <span class="px-3 py-1 bg-indigo-100 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 rounded-full text-[10px] font-black uppercase tracking-widest">Native Tour</span>
+            <h2 class="text-3xl sm:text-4xl md:text-5xl font-black font-display tracking-tight text-slate-950 dark:text-zinc-50 leading-none">
+              Explore the Experience
+            </h2>
+            <p class="text-base text-slate-500 dark:text-zinc-400 max-w-2xl mx-auto">
+              Swipe or scroll through our premium app tour. A beautifully polished and touch-friendly interface, fully responsive on every device.
+            </p>
+          </div>
+
+          <!-- Carousel Container (Swipeable Snap Scroll layout for mobile) -->
+          <div class="flex overflow-x-auto gap-8 pb-8 snap-x snap-mandatory scroll-smooth custom-scrollbar px-4 sm:px-0">
+            
+            <!-- Screen 1: Feed -->
+            <div class="flex-none w-[280px] snap-center space-y-4 text-center">
+              <div class="border-5 border-slate-900 dark:border-zinc-800 rounded-[2.5rem] h-[520px] w-[270px] shadow-2xl overflow-hidden bg-white dark:bg-zinc-950 flex flex-col mx-auto">
+                <div class="h-4 w-24 bg-slate-900 dark:border-zinc-800 rounded-b-xl mx-auto z-20"></div>
+                <div class="p-4 pt-6 space-y-3 flex-grow overflow-hidden text-left text-xs text-slate-500 dark:text-zinc-400 relative">
+                  <div class="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-white dark:from-zinc-950 to-transparent pointer-events-none"></div>
+                  <div class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-zinc-850">
+                    <span class="font-extrabold text-[11px] text-slate-800 dark:text-zinc-100">Community Feed</span>
+                    <i data-lucide="message-square" class="w-4 h-4 text-blue-500"></i>
+                  </div>
+                  <div class="p-3 bg-slate-50 dark:bg-zinc-900 rounded-xl space-y-1.5 border border-slate-100 dark:border-zinc-800">
+                    <div class="flex items-center gap-2">
+                      <div class="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-[8px]">LU</div>
+                      <span class="font-extrabold text-[9px] text-slate-800 dark:text-zinc-200">Luke G.</span>
+                    </div>
+                    <p class="text-[9px] leading-relaxed">God is faithful! Our cell fellowship in Ikeja has grown past 15 regular active believers. Real revival is here.</p>
+                  </div>
+                  <div class="p-3 bg-slate-50 dark:bg-zinc-900 rounded-xl space-y-1.5 border border-slate-100 dark:border-zinc-800">
+                    <div class="flex items-center gap-2">
+                      <div class="w-5 h-5 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-[8px]">AD</div>
+                      <span class="font-extrabold text-[9px] text-slate-800 dark:text-zinc-200">Admin Staff</span>
+                    </div>
+                    <p class="text-[9px] leading-relaxed">Announcement: Combined assembly night scheduled for Friday, 6:00 PM GMT.</p>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <h4 class="font-extrabold text-slate-900 dark:text-zinc-100 text-sm">Community Praise Feed</h4>
+                <p class="text-xs text-slate-400">Share faith reports and official parish updates</p>
+              </div>
+            </div>
+
+            <!-- Screen 2: Devotionals -->
+            <div class="flex-none w-[280px] snap-center space-y-4 text-center">
+              <div class="border-5 border-slate-900 dark:border-zinc-800 rounded-[2.5rem] h-[520px] w-[270px] shadow-2xl overflow-hidden bg-white dark:bg-zinc-950 flex flex-col mx-auto">
+                <div class="h-4 w-24 bg-slate-900 dark:border-zinc-800 rounded-b-xl mx-auto z-20"></div>
+                <div class="p-4 pt-6 space-y-3.5 flex-grow overflow-hidden text-left text-xs text-slate-500 dark:text-zinc-400 relative">
+                  <div class="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-white dark:from-zinc-950 to-transparent pointer-events-none"></div>
+                  <div class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-zinc-850">
+                    <span class="font-extrabold text-[11px] text-slate-800 dark:text-zinc-100">Consecrated Streak</span>
+                    <i data-lucide="flame" class="w-4 h-4 text-amber-500 fill-current"></i>
+                  </div>
+                  <div class="bg-gradient-to-br from-amber-50/10 to-transparent p-3.5 rounded-2xl border border-amber-50/20 text-center space-y-2">
+                    <span class="text-xs font-black text-amber-800 dark:text-amber-400 block">Devotional Streak</span>
+                    <div class="text-3xl font-black text-slate-900 dark:text-zinc-50 flex items-center justify-center gap-1.5 leading-none">
+                      12 <span class="text-xl">🔥</span>
+                    </div>
+                    <p class="text-[9px] leading-normal text-slate-500 dark:text-zinc-400">You read consecutive days! Maintain study habit to spark fire.</p>
+                  </div>
+                  <button class="w-full py-2.5 bg-blue-600 text-white rounded-xl text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1 cursor-pointer">
+                    Check-in Daily Study <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                  </button>
+                </div>
+              </div>
+              <div>
+                <h4 class="font-extrabold text-slate-900 dark:text-zinc-100 text-sm">Habit Streak Engine</h4>
+                <p class="text-xs text-slate-400">Lock study milestones and celebrate consistency</p>
+              </div>
+            </div>
+
+            <!-- Screen 3: Scripture -->
+            <div class="flex-none w-[280px] snap-center space-y-4 text-center">
+              <div class="border-5 border-slate-900 dark:border-zinc-800 rounded-[2.5rem] h-[520px] w-[270px] shadow-2xl overflow-hidden bg-white dark:bg-zinc-950 flex flex-col mx-auto">
+                <div class="h-4 w-24 bg-slate-900 dark:border-zinc-800 rounded-b-xl mx-auto z-20"></div>
+                <div class="p-4 pt-6 space-y-3.5 flex-grow overflow-hidden text-left text-xs text-slate-500 dark:text-zinc-400 relative">
+                  <div class="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-white dark:from-zinc-950 to-transparent pointer-events-none"></div>
+                  <div class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-zinc-850">
+                    <span class="font-extrabold text-[11px] text-slate-800 dark:text-zinc-100">Study Bible</span>
+                    <span class="text-[9px] font-bold text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded">KJV</span>
+                  </div>
+                  <div class="p-3 bg-slate-50 dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 rounded-xl space-y-2">
+                    <p class="font-black text-[9px] text-blue-600">John 1:1</p>
+                    <p class="text-[9px] leading-relaxed">In the beginning was the Word, and the Word was with God, and the Word was God.</p>
+                  </div>
+                  <div class="p-3 bg-slate-50 dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 rounded-xl space-y-2">
+                    <p class="font-black text-[9px] text-blue-600">John 1:2</p>
+                    <p class="text-[9px] leading-relaxed">The same was in the beginning with God.</p>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <h4 class="font-extrabold text-slate-900 dark:text-zinc-100 text-sm">Interactive Holy Scriptures</h4>
+                <p class="text-xs text-slate-400">Search translations, bookmarks & offline studies</p>
+              </div>
+            </div>
+
+            <!-- Screen 4: Cell Groups -->
+            <div class="flex-none w-[280px] snap-center space-y-4 text-center">
+              <div class="border-5 border-slate-900 dark:border-zinc-800 rounded-[2.5rem] h-[520px] w-[270px] shadow-2xl overflow-hidden bg-white dark:bg-zinc-950 flex flex-col mx-auto">
+                <div class="h-4 w-24 bg-slate-900 dark:border-zinc-800 rounded-b-xl mx-auto z-20"></div>
+                <div class="p-4 pt-6 space-y-3 flex-grow overflow-hidden text-left text-xs text-slate-500 dark:text-zinc-400 relative">
+                  <div class="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-white dark:from-zinc-950 to-transparent pointer-events-none"></div>
+                  <div class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-zinc-850">
+                    <span class="font-extrabold text-[11px] text-slate-800 dark:text-zinc-100">Fellowship Cells</span>
+                    <i data-lucide="map-pin" class="w-4 h-4 text-emerald-500"></i>
+                  </div>
+                  <div class="p-3 bg-slate-50 dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 rounded-2xl space-y-2">
+                    <span class="font-black text-[10px] text-slate-800 dark:text-zinc-100 block">Lekki Phase 1 Cell Group</span>
+                    <div class="space-y-1 text-[8px] font-bold text-slate-400">
+                      <p>Leader: Bro. Stephen</p>
+                      <p>Meeting: Wednesdays, 6:00 PM</p>
+                    </div>
+                    <button class="w-full py-1.5 bg-emerald-600 text-white rounded-lg text-[8px] font-bold uppercase tracking-wider cursor-pointer">
+                      Enter Cell Lounge
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <h4 class="font-extrabold text-slate-900 dark:text-zinc-100 text-sm">Neighborhood Cells</h4>
+                <p class="text-xs text-slate-400">Discover groups nearby and sync chat lounges</p>
+              </div>
+            </div>
+
+            <!-- Screen 5: Prayers -->
+            <div class="flex-none w-[280px] snap-center space-y-4 text-center">
+              <div class="border-5 border-slate-900 dark:border-zinc-800 rounded-[2.5rem] h-[520px] w-[270px] shadow-2xl overflow-hidden bg-white dark:bg-zinc-950 flex flex-col mx-auto">
+                <div class="h-4 w-24 bg-slate-900 dark:border-zinc-800 rounded-b-xl mx-auto z-20"></div>
+                <div class="p-4 pt-6 space-y-3.5 flex-grow overflow-hidden text-left text-xs text-slate-500 dark:text-zinc-400 relative">
+                  <div class="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-white dark:from-zinc-950 to-transparent pointer-events-none"></div>
+                  <div class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-zinc-850">
+                    <span class="font-extrabold text-[11px] text-slate-800 dark:text-zinc-100">Intercessions</span>
+                    <i data-lucide="flame" class="w-4 h-4 text-rose-500"></i>
+                  </div>
+                  <div class="p-3 bg-rose-500/5 border border-rose-500/10 rounded-2xl space-y-2">
+                    <p class="font-black text-[9px] text-rose-700">Financial Open Door</p>
+                    <p class="text-[9px] leading-relaxed italic">"Brothers join me in agreement for corporate employment interviews scheduled..."</p>
+                    <div class="flex items-center justify-between border-t border-rose-100 pt-1 text-[8px] text-slate-400">
+                      <span class="font-bold text-rose-600">32 Amens</span>
+                      <span class="text-rose-500 font-bold flex items-center gap-0.5"><i data-lucide="check" class="w-3 h-3"></i> Tapped Amen</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <h4 class="font-extrabold text-slate-900 dark:text-zinc-100 text-sm">Prayer Agreement Wall</h4>
+                <p class="text-xs text-slate-400">Lift up petitions and trigger agreement tags</p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <!-- Interactive Live App Preview/Demo Section -->
+      <section id="pf-demo" class="py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-16">
+        <div class="text-center max-w-3xl mx-auto space-y-4">
+          <span class="px-3 py-1 bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 rounded-full text-[10px] font-black uppercase tracking-widest">Real-time Sandbox</span>
+          <h2 class="text-3xl sm:text-4xl md:text-5xl font-black font-display tracking-tight text-slate-950 dark:text-zinc-50 leading-none">
+            Fully Functional Live Preview
+          </h2>
+          <p class="text-base text-slate-500 dark:text-zinc-400 max-w-2xl mx-auto">
+            Experience the real, working application right now. This interactive preview is connected to our live, real-time assemblies.
+          </p>
+        </div>
+        
+        <!-- Workstation Window container styled like macOS -->
+        <div class="bg-white/80 dark:bg-zinc-950/80 backdrop-blur-xl border border-slate-200/60 dark:border-zinc-850 rounded-[2rem] overflow-hidden shadow-2xl flex flex-col md:flex-row h-[600px] max-w-5xl mx-auto">
+          
+          <!-- Sidebar Navigation for Demo -->
+          <div class="w-full md:w-60 bg-slate-50/50 dark:bg-zinc-900/40 border-b md:border-b-0 md:border-r border-slate-200/60 dark:border-zinc-850 p-6 flex flex-row md:flex-col gap-2.5 shrink-0 overflow-x-auto custom-scrollbar">
+            <!-- macOS Red, Yellow, Green Window controls -->
+            <div class="hidden md:flex gap-1.5 mb-6">
+              <span class="w-3 h-3 rounded-full bg-rose-500"></span>
+              <span class="w-3 h-3 rounded-full bg-amber-500"></span>
+              <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+            </div>
+            
+            <button onclick="setDemoTab('feed')" id="demo-nav-feed" class="flex items-center gap-2.5 px-3 py-2.5 text-xs font-bold rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 w-full shrink-0 text-left transition-all cursor-pointer">
+              <i data-lucide="message-square" class="w-4.5 h-4.5"></i> Live Praise Feed
+            </button>
+            <button onclick="setDemoTab('scripture')" id="demo-nav-scripture" class="flex items-center gap-2.5 px-3 py-2.5 text-xs font-bold rounded-xl text-slate-500 hover:bg-slate-100 dark:text-zinc-400 dark:hover:bg-zinc-800 w-full shrink-0 text-left transition-all cursor-pointer">
+              <i data-lucide="book-open" class="w-4.5 h-4.5"></i> Interactive Scripture
+            </button>
+            <button onclick="setDemoTab('cells')" id="demo-nav-cells" class="flex items-center gap-2.5 px-3 py-2.5 text-xs font-bold rounded-xl text-slate-500 hover:bg-slate-100 dark:text-zinc-400 dark:hover:bg-zinc-800 w-full shrink-0 text-left transition-all cursor-pointer">
+              <i data-lucide="users" class="w-4.5 h-4.5"></i> Fellowship Cells
+            </button>
+            <button onclick="setDemoTab('prayers')" id="demo-nav-prayers" class="flex items-center gap-2.5 px-3 py-2.5 text-xs font-bold rounded-xl text-slate-500 hover:bg-slate-100 dark:text-zinc-400 dark:hover:bg-zinc-800 w-full shrink-0 text-left transition-all cursor-pointer">
+              <i data-lucide="flame" class="w-4.5 h-4.5"></i> Real-time Prayers
+            </button>
+          </div>
+          
+          <!-- Content Area for Demo -->
+          <div class="flex-grow p-8 overflow-y-auto custom-scrollbar bg-slate-50/20 dark:bg-zinc-950/40">
+            
+            <!-- Demo Tab 1: Live Community Feed -->
+            <div id="demo-tab-feed" class="demo-pane space-y-6">
+              <div class="flex items-center justify-between border-b border-slate-200/50 dark:border-zinc-850 pb-4">
+                <h4 class="font-extrabold text-sm text-slate-800 dark:text-zinc-100">Praise Testimonies & Announcements</h4>
+                <span class="text-[9px] font-black bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400 px-2 py-0.5 rounded-full uppercase tracking-wider">LIVE DATA</span>
+              </div>
+              <div id="demo-posts-list" class="space-y-4">
+                <!-- Loaded via JS -->
+              </div>
+            </div>
+            
+            <!-- Demo Tab 2: Interactive Scripture -->
+            <div id="demo-tab-scripture" class="demo-pane hidden space-y-6">
+              <div class="flex items-center justify-between border-b border-slate-200/50 dark:border-zinc-850 pb-4">
+                <h4 class="font-extrabold text-sm text-slate-800 dark:text-zinc-100">Read & Study Scriptures</h4>
+                <select id="demo-bible-book" onchange="loadDemoChapter()" class="text-xs bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg px-2 py-1 font-bold">
+                  <option value="John">John</option>
+                  <option value="Genesis">Genesis</option>
+                  <option value="Romans">Romans</option>
+                  <option value="Psalms">Psalms</option>
+                </select>
+              </div>
+              <div class="p-6 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-850 rounded-2xl max-h-[380px] overflow-y-auto">
+                <p class="text-xs font-bold text-blue-600 mb-3">John Chapter 1</p>
+                <div id="demo-bible-verses" class="text-xs text-slate-700 dark:text-zinc-300 space-y-3 leading-relaxed">
+                  <!-- Loaded via JS -->
+                </div>
+              </div>
+            </div>
+            
+            <!-- Demo Tab 3: Fellowship Cells -->
+            <div id="demo-tab-cells" class="demo-pane hidden space-y-6">
+              <div class="flex items-center justify-between border-b border-slate-200/50 dark:border-zinc-850 pb-4">
+                <h4 class="font-extrabold text-sm text-slate-800 dark:text-zinc-100">Fellowship Cell Groups</h4>
+                <span class="text-[9px] font-black bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400 px-2 py-0.5 rounded-full uppercase">REAL TIME</span>
+              </div>
+              <div id="demo-cells-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <!-- Loaded via JS -->
+              </div>
+            </div>
+            
+            <!-- Demo Tab 4: Real-time Prayers -->
+            <div id="demo-tab-prayers" class="demo-pane hidden space-y-6">
+              <div class="flex items-center justify-between border-b border-slate-200/50 dark:border-zinc-850 pb-4">
+                <h4 class="font-extrabold text-sm text-slate-800 dark:text-zinc-100">Intercession Requests</h4>
+                <span class="text-[9px] font-black bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400 px-2 py-0.5 rounded-full uppercase">AGREEMENT WALL</span>
+              </div>
+              <div id="demo-prayers-list" class="space-y-4">
+                <!-- Loaded via JS -->
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="text-center pt-4">
+          <button onclick="window.openAuthModal('signup')" class="px-7 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-lg hover:shadow-blue-500/25 hover:scale-[1.02] active:scale-[0.98] cursor-pointer">
+            Sign Up to Access Complete App 🚀
+          </button>
+        </div>
+      </section>
+
+      <!-- Testimonies & Reviews Section (Matches the provided image exactly, no gradients or white borders) -->
+      <section id="pf-testimonies-reviews" class="py-20 bg-slate-50 dark:bg-zinc-950 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12">
+          
+          <!-- Left Column: Testimonies Slideshow -->
+          <div class="lg:col-span-6 space-y-8 flex flex-col justify-between">
+            <div>
+              <div class="flex items-end justify-between border-b border-slate-200 dark:border-zinc-800 pb-4 mb-6">
+                <div>
+                  <h2 class="text-2xl sm:text-3xl font-black font-display text-slate-950 dark:text-zinc-50 tracking-tight leading-none">Testimonies</h2>
+                  <p class="text-sm text-slate-500 dark:text-zinc-400 mt-1">Real stories. Real impact.</p>
+                </div>
+                <div class="flex items-center gap-2">
+                  <button onclick="window.prevTestimony()" class="p-2 text-slate-600 dark:text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-zinc-900 rounded-lg transition-colors cursor-pointer" title="Previous Testimony">
+                    <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                  </button>
+                  <button onclick="window.nextTestimony()" class="p-2 text-slate-600 dark:text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-zinc-900 rounded-lg transition-colors cursor-pointer" title="Next Testimony">
+                    <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                  </button>
+                </div>
+              </div>
+              
+              <div id="pf-testimony-carousel-box" class="relative overflow-hidden min-h-[220px] flex flex-col justify-center">
+                <!-- Statically loaded / fallback items, then updated dynamically via JS -->
+                <div class="space-y-4 animate-fade-in py-2">
+                  <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-full bg-violet-100 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400 flex items-center justify-center font-black text-sm shrink-0">BU</div>
+                    <div class="space-y-2">
+                      <h3 class="text-sm font-extrabold text-slate-900 dark:text-zinc-50">Faithful Walking</h3>
+                      <p class="text-sm text-slate-600 dark:text-zinc-300 italic font-medium leading-relaxed">"home.cell has helped me grow spiritually and connected me with amazing people."</p>
+                      <span class="text-xs font-extrabold text-slate-950 dark:text-zinc-100 block">— Blessing U.</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between border-t border-slate-100 dark:border-zinc-900 pt-4">
+              <span id="pf-testimony-indicator" class="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Testimony 1 of 3</span>
+              <a href="#" onclick="window.openAuthModal('signup'); return false;" class="text-xs font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400">View all testimonies</a>
+            </div>
+          </div>
+          
+          <!-- Right Column: What People Are Saying / Reviews -->
+          <div class="lg:col-span-6 space-y-8">
+            <div class="flex items-end justify-between border-b border-slate-200 dark:border-zinc-800 pb-4">
+              <div>
+                <h2 class="text-2xl sm:text-3xl font-black font-display text-slate-950 dark:text-zinc-50 tracking-tight leading-none">What People Are Saying</h2>
+                <p class="text-sm text-slate-500 dark:text-zinc-400 mt-1">Reviews from our amazing community</p>
+              </div>
+              <a href="#" onclick="window.openAuthModal('signup'); return false;" class="text-xs font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400">View all</a>
+            </div>
+
+            <!-- Rating Block -->
+            <div class="bg-white dark:bg-zinc-900 p-6 rounded-2xl flex items-center justify-between border-0 shadow-sm">
+              <div class="flex items-center gap-6">
+                <div class="text-center shrink-0">
+                  <span class="text-4xl font-black font-display text-slate-950 dark:text-zinc-50" id="pf-reviews-average-val">4.9</span>
+                  <div class="flex text-amber-500 mt-1 justify-center" id="pf-reviews-stars-container">
+                    <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                    <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                    <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                    <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                    <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                  </div>
+                </div>
+                <div>
+                  <p class="text-xs font-bold text-slate-700 dark:text-zinc-300">Based on real reviews</p>
+                  <p class="text-[10px] text-slate-500 dark:text-zinc-400 mt-0.5" id="pf-reviews-label-val">from home.cell users globally</p>
+                </div>
+              </div>
+              
+              <button onclick="window.openReviewModal()" class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2 cursor-pointer shadow-sm">
+                <i data-lucide="edit-3" class="w-3.5 h-3.5"></i> Write a Review
+              </button>
+            </div>
+
+            <div class="space-y-4" id="pf-reviews-list-container">
+              <!-- Statically loaded / fallback items, then updated dynamically via JS -->
+              <div class="bg-white dark:bg-zinc-900 p-5 rounded-2xl space-y-2 border-0 transition-all hover:scale-[1.01]">
+                <div class="flex items-center justify-between">
+                  <span class="font-extrabold text-xs text-slate-950 dark:text-zinc-100">Daniel O.</span>
+                  <div class="flex text-amber-500">
+                    <i data-lucide="star" class="w-3.5 h-3.5 fill-current"></i>
+                    <i data-lucide="star" class="w-3.5 h-3.5 fill-current"></i>
+                    <i data-lucide="star" class="w-3.5 h-3.5 fill-current"></i>
+                    <i data-lucide="star" class="w-3.5 h-3.5 fill-current"></i>
+                    <i data-lucide="star" class="w-3.5 h-3.5 fill-current"></i>
+                  </div>
+                </div>
+                <p class="text-xs text-slate-600 dark:text-zinc-300 italic">"home.cell has brought my church closer together. Love it!"</p>
+              </div>
+
+              <div class="bg-white dark:bg-zinc-900 p-5 rounded-2xl space-y-2 border-0 transition-all hover:scale-[1.01]">
+                <div class="flex items-center justify-between">
+                  <span class="font-extrabold text-xs text-slate-950 dark:text-zinc-100">Grace A.</span>
+                  <div class="flex text-amber-500">
+                    <i data-lucide="star" class="w-3.5 h-3.5 fill-current"></i>
+                    <i data-lucide="star" class="w-3.5 h-3.5 fill-current"></i>
+                    <i data-lucide="star" class="w-3.5 h-3.5 fill-current"></i>
+                    <i data-lucide="star" class="w-3.5 h-3.5 fill-current"></i>
+                    <i data-lucide="star" class="w-3.5 h-3.5 fill-current"></i>
+                  </div>
+                </div>
+                <p class="text-xs text-slate-600 dark:text-zinc-300 italic">"Best app for staying connected in faith. Highly recommend!"</p>
+              </div>
+
+              <div class="bg-white dark:bg-zinc-900 p-5 rounded-2xl space-y-2 border-0 transition-all hover:scale-[1.01]">
+                <div class="flex items-center justify-between">
+                  <span class="font-extrabold text-xs text-slate-950 dark:text-zinc-100">Samuel B.</span>
+                  <div class="flex text-amber-500">
+                    <i data-lucide="star" class="w-3.5 h-3.5 fill-current"></i>
+                    <i data-lucide="star" class="w-3.5 h-3.5 fill-current"></i>
+                    <i data-lucide="star" class="w-3.5 h-3.5 fill-current"></i>
+                    <i data-lucide="star" class="w-3.5 h-3.5 fill-current"></i>
+                    <i data-lucide="star" class="w-3.5 h-3.5 fill-current"></i>
+                  </div>
+                </div>
+                <p class="text-xs text-slate-600 dark:text-zinc-300 italic">"The live service quality is excellent!"</p>
+              </div>
+            </div>
+          </div>
+          
+        </div>
+      </section>
+
+      <!-- FAQ Section -->
+      <section id="pf-faq" class="py-24 bg-slate-100/50 dark:bg-[#0c0e12]/15 px-4 sm:px-6 lg:px-8 border-t border-b border-slate-200/50 dark:border-zinc-800/40">
+        <div class="max-w-4xl mx-auto space-y-16">
+          <div class="text-center space-y-4 max-w-2xl mx-auto">
+            <span class="px-3 py-1 bg-indigo-100 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 rounded-full text-[10px] font-black uppercase tracking-widest">Assembly Guide</span>
+            <h2 class="text-3xl sm:text-4xl font-black font-display tracking-tight text-slate-950 dark:text-zinc-50 leading-none">
+              Frequently Asked Questions
+            </h2>
+            <p class="text-base text-slate-500 dark:text-zinc-400">
+              Everything you need to know about the Home.cell fellowship application.
+            </p>
+          </div>
+          
+          <div class="space-y-4 max-w-3xl mx-auto">
+            <div class="bg-white dark:bg-zinc-950 border border-slate-200/80 dark:border-zinc-850 rounded-2xl overflow-hidden shadow-sm transition-all">
+              <button onclick="toggleFaq(1)" class="w-full p-6 text-left font-extrabold text-sm text-slate-800 dark:text-zinc-100 flex items-center justify-between focus:outline-none hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                <span>What is Home.cell?</span>
+                <i data-lucide="chevron-down" id="faq-icon-1" class="w-4.5 h-4.5 text-slate-400 transition-transform"></i>
+              </button>
+              <div id="faq-ans-1" class="hidden p-6 pt-0 text-xs text-slate-500 dark:text-zinc-400 leading-relaxed border-t border-slate-50 dark:border-zinc-900">
+                Home.cell is a comprehensive connection portal designed to help members of our assembly stay connected to neighborhood cell groups, study daily scripture devotionals, participate in Bible trivia games, watch live services, and lift each other up in prayer.
+              </div>
+            </div>
+            
+            <div class="bg-white dark:bg-zinc-950 border border-slate-200/80 dark:border-zinc-850 rounded-2xl overflow-hidden shadow-sm transition-all">
+              <button onclick="toggleFaq(2)" class="w-full p-6 text-left font-extrabold text-sm text-slate-800 dark:text-zinc-100 flex items-center justify-between focus:outline-none hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                <span>How do I find and join a fellowship cell group?</span>
+                <i data-lucide="chevron-down" id="faq-icon-2" class="w-4.5 h-4.5 text-slate-400 transition-transform"></i>
+              </button>
+              <div id="faq-ans-2" class="hidden p-6 pt-0 text-xs text-slate-500 dark:text-zinc-400 leading-relaxed border-t border-slate-50 dark:border-zinc-900">
+                Once logged in, navigate to the "Cells" tab. You'll see a complete map or roster of neighborhood cell fellowships with their meeting times, locations, and lead coordinators. Simply select one and join to gain access to their dedicated lounge and events.
+              </div>
+            </div>
+            
+            <div class="bg-white dark:bg-zinc-950 border border-slate-200/80 dark:border-zinc-850 rounded-2xl overflow-hidden shadow-sm transition-all">
+              <button onclick="toggleFaq(3)" class="w-full p-6 text-left font-extrabold text-sm text-slate-800 dark:text-zinc-100 flex items-center justify-between focus:outline-none hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                <span>Can I use the app offline?</span>
+                <i data-lucide="chevron-down" id="faq-icon-3" class="w-4.5 h-4.5 text-slate-400 transition-transform"></i>
+              </button>
+              <div id="faq-ans-3" class="hidden p-6 pt-0 text-xs text-slate-500 dark:text-zinc-400 leading-relaxed border-t border-slate-50 dark:border-zinc-900">
+                Yes! Home.cell is built as a highly optimized Progressive Web App (PWA). It automatically caches your local scripture translations, devotionals, and cell lounge profiles so you can read, pray, and review even when completely offline.
+              </div>
+            </div>
+
+            <div class="bg-white dark:bg-zinc-950 border border-slate-200/80 dark:border-zinc-850 rounded-2xl overflow-hidden shadow-sm transition-all">
+              <button onclick="toggleFaq(4)" class="w-full p-6 text-left font-extrabold text-sm text-slate-800 dark:text-zinc-100 flex items-center justify-between focus:outline-none hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                <span>How does the Daily Devotional streak work?</span>
+                <i data-lucide="chevron-down" id="faq-icon-4" class="w-4.5 h-4.5 text-slate-400 transition-transform"></i>
+              </button>
+              <div id="faq-ans-4" class="hidden p-6 pt-0 text-xs text-slate-500 dark:text-zinc-400 leading-relaxed border-t border-slate-50 dark:border-zinc-900">
+                To encourage steady spiritual habits, the app tracks consecutive days of reading. Click the "Complete Daily Devotional Check-in" button on your dashboard once you finish your daily study. The member with the highest streak is celebrated globally on our homepage as the Streak Champion of the Week!
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Contact Support Desk Section -->
+      <section id="pf-contact" class="py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-16">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center max-w-5xl mx-auto">
+          <div class="lg:col-span-5 space-y-6">
+            <span class="px-3 py-1 bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 rounded-full text-[10px] font-black uppercase tracking-widest">Connect Today</span>
+            <h2 class="text-3xl sm:text-4xl font-black font-display tracking-tight text-slate-950 dark:text-zinc-50">Reach Our Support Desk</h2>
+            <p class="text-sm text-slate-500 dark:text-zinc-400 leading-relaxed">
+              Have questions about setting up a new home fellowship or getting connected? Our parish coordinators are here to assist you 24/7.
+            </p>
+            
+            <div class="space-y-4 text-sm font-semibold text-slate-700 dark:text-zinc-300 pt-4">
+              <div class="flex items-center gap-3.5">
+                <div class="p-2.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-xl"><i data-lucide="phone" class="w-5 h-5"></i></div>
+                <span id="pf-contact-phone">+234 (0) 800-HOME-CELL</span>
+              </div>
+              <div class="flex items-center gap-3.5">
+                <div class="p-2.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-xl"><i data-lucide="message-circle" class="w-5 h-5"></i></div>
+                <a id="pf-contact-whatsapp" href="#" target="_blank" class="text-emerald-600 dark:text-emerald-400 hover:underline">Chat on WhatsApp</a>
+              </div>
+              <div class="flex items-center gap-3.5">
+                <div class="p-2.5 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-xl"><i data-lucide="mail" class="w-5 h-5"></i></div>
+                <span id="pf-contact-email">support@homecell.revival</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="lg:col-span-7 bg-white/60 dark:bg-zinc-900/30 backdrop-blur-md border border-slate-200/60 dark:border-zinc-800/40 rounded-3xl p-8 lg:p-10 shadow-lg">
+            <form id="pf-contact-form" onsubmit="window.submitContactForm(event)" class="space-y-5 text-sm">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div>
+                  <label class="block text-xs font-bold text-slate-400 dark:text-zinc-500 mb-2 uppercase tracking-wider">Your Name</label>
+                  <input type="text" id="pf-contact-name" required class="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-slate-200/60 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none dark:text-zinc-100" placeholder="Full Name" />
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-400 dark:text-zinc-500 mb-2 uppercase tracking-wider">Email Address</label>
+                  <input type="email" id="pf-contact-sender" required class="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-slate-200/60 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none dark:text-zinc-100" placeholder="email@address.com" />
+                </div>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-400 dark:text-zinc-500 mb-2 uppercase tracking-wider">Message</label>
+                <textarea id="pf-contact-msg" required rows="4" class="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-slate-200/60 dark:border-zinc-800 rounded-xl resize-none focus:ring-2 focus:ring-blue-500 focus:outline-none dark:text-zinc-100" placeholder="How can we help you get connected?"></textarea>
+              </div>
+              <button type="submit" class="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-extrabold rounded-xl uppercase tracking-wider text-xs transition-all shadow-lg hover:shadow-blue-500/20 hover:scale-[1.01] active:scale-[0.99] cursor-pointer">
+                Send Message
+              </button>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <!-- Portfolio Footer -->
+      <footer class="bg-white/80 dark:bg-zinc-950/80 border-t border-slate-200/50 dark:border-zinc-850 py-16 text-slate-400 dark:text-zinc-500 text-center px-4">
+        <div class="max-w-4xl mx-auto space-y-8">
+          <div class="flex items-center justify-center gap-3">
+            <div class="p-2.5 bg-blue-600 text-white rounded-xl shadow-lg flex items-center justify-center"><i data-lucide="home" class="w-5 h-5"></i></div>
+            <span class="text-xl font-black text-slate-950 dark:text-zinc-50 font-display tracking-tight">home<span class="text-blue-600 dark:text-blue-500">.cell</span></span>
+          </div>
+          <p class="text-sm text-slate-500 dark:text-zinc-400 max-w-md mx-auto">
+            Connecting neighborhood cells globally, building sustained consecrated scripture check-in streaks, and bringing real revival home.
+          </p>
+          <div class="flex items-center justify-center gap-6 text-xs font-semibold text-slate-400 dark:text-zinc-400">
+            <a href="#pf-features" class="hover:text-blue-600 transition-colors">Features</a>
+            <a href="#pf-screenshots" class="hover:text-blue-600 transition-colors">App Tour</a>
+            <a href="#pf-demo" class="hover:text-blue-600 transition-colors">Live Preview</a>
+            <a href="#pf-testimonies-reviews" class="hover:text-blue-600 transition-colors">Testimonies & Reviews</a>
+          </div>
+          <div class="text-[10px] text-slate-400 dark:text-zinc-500 border-t border-slate-200/40 dark:border-zinc-850 pt-8">
+            © 2026 home.cell Assembly. Real-time Firebase Firestore Synchronized. All rights reserved.
+          </div>
+        </div>
+      </footer>
     </div>
 
     <!-- Core Layout Header -->
@@ -500,6 +1405,27 @@
                 </div>
               </div>
 
+              <!-- Featured Testimonies Carousel -->
+              <div id="featured-testimonies-carousel-section" class="hidden bg-slate-50 dark:bg-zinc-900/60 rounded-3xl p-6 space-y-4">
+                <div class="flex items-center justify-between">
+                  <h4 class="text-xs font-black font-display text-amber-700 dark:text-amber-500 flex items-center gap-1.5 uppercase tracking-wider">
+                    ⭐ Featured Praise Testimonies
+                  </h4>
+                  <div class="flex items-center gap-1">
+                    <button onclick="window.prevFeaturedTestimony()" class="p-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-400 rounded-lg cursor-pointer transition-all">
+                      <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                    </button>
+                    <button onclick="window.nextFeaturedTestimony()" class="p-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-400 rounded-lg cursor-pointer transition-all">
+                      <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                    </button>
+                  </div>
+                </div>
+                <div id="featured-testimonies-carousel-container" class="relative overflow-hidden min-h-[140px] flex items-center">
+                  <!-- Auto playing items rendered here dynamically -->
+                  <p class="text-xs text-slate-400 italic">No pinned testimonies shared currently.</p>
+                </div>
+              </div>
+
               <!-- Live Stream Feed Posts Container -->
               <div id="community-posts-stream" class="space-y-6">
                 <!-- Posts loaded via JS -->
@@ -558,14 +1484,77 @@
           
           <!-- Universal Live Stream Broadcast Pane -->
           <div id="live-stream-pane" class="hidden bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-[2.5rem] p-6 shadow-md space-y-4">
-            <div class="flex items-center gap-2 text-rose-600 font-bold text-xs uppercase tracking-wider">
-              <span class="w-2.5 h-2.5 bg-rose-600 rounded-full animate-ping"></span>
-              Live Fellowship Stream Broadcast
+            
+            <!-- Header section of the stream -->
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 dark:border-zinc-800/60 pb-4">
+              <div>
+                <div class="flex items-center gap-2 text-rose-600 font-bold text-xs uppercase tracking-wider">
+                  <span class="w-2.5 h-2.5 bg-rose-600 rounded-full animate-ping"></span>
+                  Live Fellowship Stream Broadcast
+                </div>
+                <h2 id="stream-pane-title" class="text-2xl font-black font-display text-slate-900 dark:text-zinc-50 mt-1">Stream Title</h2>
+                <p id="stream-pane-desc" class="text-sm text-slate-500 dark:text-zinc-400 mt-1">Description</p>
+              </div>
+              <!-- Stats/Actions counter similar to YouTube -->
+              <div class="flex items-center gap-4 text-xs font-bold text-slate-500 dark:text-zinc-400">
+                <div class="flex items-center gap-1.5 bg-rose-50 dark:bg-rose-950/20 text-rose-600 px-3 py-1.5 rounded-full">
+                  <i data-lucide="eye" class="w-4 h-4"></i>
+                  <span id="stream-viewer-count">124 watching</span>
+                </div>
+                <button onclick="window.likeStream()" id="btn-like-stream" class="flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 px-3 py-1.5 rounded-full transition-all cursor-pointer">
+                  <i data-lucide="thumbs-up" id="stream-like-icon" class="w-4 h-4"></i>
+                  <span id="stream-likes-count">48 likes</span>
+                </button>
+              </div>
             </div>
-            <h2 id="stream-pane-title" class="text-2xl font-black font-display text-slate-900 dark:text-zinc-50">Stream Title</h2>
-            <p id="stream-pane-desc" class="text-sm text-slate-500 dark:text-zinc-400 -mt-2">Description</p>
-            <div id="stream-player-container" class="aspect-video w-full rounded-2xl overflow-hidden bg-slate-950 shadow-inner relative flex items-center justify-center">
-              <!-- Instantiated dynamically in dashboard.js -->
+
+            <!-- YouTube-style main column + chat column grid -->
+            <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-stretch">
+              
+              <!-- Video Player Column (Col span 8 on xl) -->
+              <div class="xl:col-span-8 flex flex-col justify-between">
+                <div id="stream-player-container" class="aspect-video w-full rounded-3xl overflow-hidden bg-slate-950 shadow-inner relative flex items-center justify-center">
+                  <!-- Instantiated dynamically in dashboard.js -->
+                </div>
+              </div>
+
+              <!-- Live Chat Column (Col span 4 on xl) -->
+              <div class="xl:col-span-4 flex flex-col h-[400px] xl:h-[420px] border border-slate-200 dark:border-zinc-800 rounded-3xl overflow-hidden bg-slate-50 dark:bg-zinc-950/40 shadow-sm">
+                <!-- Chat Header -->
+                <div class="px-4 py-3 border-b border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex items-center justify-between">
+                  <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 bg-rose-500 rounded-full animate-pulse"></span>
+                    <span class="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-zinc-200">Live Chat</span>
+                  </div>
+                  <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest" id="chat-status">Connected</span>
+                </div>
+
+                <!-- Chat Messages Scroll Container -->
+                <div id="stream-chat-messages" class="flex-grow overflow-y-auto p-4 space-y-3 text-xs">
+                  <!-- Messages loaded dynamically -->
+                </div>
+
+                <!-- Chat Quick Reactions -->
+                <div class="px-4 py-2 border-t border-slate-100 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/50 flex items-center justify-between gap-1">
+                  <button onclick="window.sendQuickReaction('🙏')" class="hover:scale-125 transition-transform cursor-pointer text-base">🙏</button>
+                  <button onclick="window.sendQuickReaction('🙌')" class="hover:scale-125 transition-transform cursor-pointer text-base">🙌</button>
+                  <button onclick="window.sendQuickReaction('❤️')" class="hover:scale-125 transition-transform cursor-pointer text-base">❤️</button>
+                  <button onclick="window.sendQuickReaction('🔥')" class="hover:scale-125 transition-transform cursor-pointer text-base">🔥</button>
+                  <button onclick="window.sendQuickReaction('👑')" class="hover:scale-125 transition-transform cursor-pointer text-base">👑</button>
+                  <button onclick="window.sendQuickReaction('✨')" class="hover:scale-125 transition-transform cursor-pointer text-base">✨</button>
+                  <button onclick="window.sendQuickReaction('😭')" class="hover:scale-125 transition-transform cursor-pointer text-base">😭</button>
+                  <button onclick="window.sendQuickReaction('💯')" class="hover:scale-125 transition-transform cursor-pointer text-base">💯</button>
+                </div>
+
+                <!-- Chat Input area -->
+                <form id="stream-chat-form" onsubmit="window.sendStreamChatMessage(event)" class="p-3 border-t border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex items-center gap-2">
+                  <input type="text" id="stream-chat-input" required placeholder="Say something in Fellowship Chat..." class="flex-grow px-3 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 text-slate-800 dark:text-zinc-100" />
+                  <button type="submit" class="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-all hover:scale-105 active:scale-95 cursor-pointer flex items-center justify-center">
+                    <i data-lucide="send" class="w-3.5 h-3.5"></i>
+                  </button>
+                </form>
+              </div>
+
             </div>
           </div>
 
@@ -1713,25 +2702,63 @@
           <!-- Admin Sub Tab 6: Universal Livestream Setup -->
           <div id="atab-stream" class="admin-sub-tab hidden space-y-6">
             <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm space-y-4">
-              <h3 class="text-lg font-bold font-display">Live Fellowship Stream Settings</h3>
+              <div class="flex items-center justify-between">
+                <h3 class="text-lg font-bold font-display">Live Fellowship Stream Settings</h3>
+                <button onclick="window.resetStreamForm()" class="px-2.5 py-1 text-[10px] uppercase font-black tracking-wider bg-slate-100 dark:bg-zinc-800 text-slate-500 rounded-lg hover:bg-slate-200">New Stream</button>
+              </div>
               <form id="admin-stream-form" class="space-y-4 text-sm">
-                <div>
-                  <label class="block text-xs font-bold text-slate-400 mb-1">Stream Broadcast Protocol / Type</label>
-                  <select id="admin-stream-type" class="w-full px-4 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg text-slate-800 dark:text-zinc-100 font-bold">
-                    <option value="hls">🎥 HLS (.m3u8) - MediaMTX, self-hosted, or premium CDN</option>
-                    <option value="rtmp">🔌 RTMP / RTMPS (Custom Media server URL)</option>
-                    <option value="webrtc">⚡ WebRTC (Whip / Whep low latency feed)</option>
-                    <option value="embed">📺 standard Embed / Iframe (YouTube, Twitch, Custom player)</option>
-                  </select>
+                <input type="hidden" id="admin-stream-id" value="" />
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-1">Stream Broadcast Protocol / Type</label>
+                    <select id="admin-stream-type" class="w-full px-4 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg text-slate-800 dark:text-zinc-100 font-bold">
+                      <option value="hls">🎥 HLS (.m3u8) - MediaMTX, self-hosted, or premium CDN</option>
+                      <option value="rtmp">🔌 RTMP / RTMPS (Custom Media server URL)</option>
+                      <option value="webrtc">⚡ WebRTC (Whip / Whep low latency feed)</option>
+                      <option value="embed">📺 standard Embed / Iframe (YouTube, Twitch, Custom player)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-1">Broadcast Position Placement</label>
+                    <select id="admin-stream-position" class="w-full px-4 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg text-slate-800 dark:text-zinc-100 font-bold">
+                      <option value="top">⭐ Top of feed stream (Sticky Highlight)</option>
+                      <option value="featured">📰 Featured feed post block</option>
+                    </select>
+                  </div>
                 </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-1">Scheduled Broadcast Time</label>
+                    <input type="datetime-local" id="admin-stream-schedule" class="w-full px-4 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg" />
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-1">Livestream Status</label>
+                    <select id="admin-stream-status" class="w-full px-4 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg text-slate-800 dark:text-zinc-100 font-bold">
+                      <option value="scheduled">⏳ Scheduled / Upcoming</option>
+                      <option value="live">🔴 Live Now</option>
+                      <option value="offline">⚫ Offline / Ended</option>
+                    </select>
+                  </div>
+                </div>
+
                 <div>
                   <label class="block text-xs font-bold text-slate-400 mb-1">Stream Source URL / Iframe Link</label>
                   <input type="text" id="admin-stream-url" required class="w-full px-4 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg" placeholder="e.g. https://domain.com/live/stream.m3u8 OR https://youtube.com/embed/..." />
                 </div>
-                <div>
-                  <label class="block text-xs font-bold text-slate-400 mb-1">Broadcast Title</label>
-                  <input type="text" id="admin-stream-title" required class="w-full px-4 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg" placeholder="e.g. Mid-Week Revival Service" />
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-1">Broadcast Title</label>
+                    <input type="text" id="admin-stream-title" required class="w-full px-4 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg" placeholder="e.g. Mid-Week Revival Service" />
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-1">Thumbnail Preview URL (Optional)</label>
+                    <input type="url" id="admin-stream-thumbnail" class="w-full px-4 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg" placeholder="https://images.unsplash.com/photo-..." />
+                  </div>
                 </div>
+
                 <div>
                   <label class="block text-xs font-bold text-slate-400 mb-1">Broadcast Description</label>
                   <input type="text" id="admin-stream-desc" required class="w-full px-4 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg" placeholder="Gather with believers globally..." />
@@ -1742,8 +2769,17 @@
                   <label for="admin-stream-active" class="text-sm font-bold text-purple-600 cursor-pointer">Activate livestream broadcast banner on member dashboards</label>
                 </div>
                 
-                <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2.5 px-6 rounded-lg tracking-wider text-xs cursor-pointer">Save Settings & Sync Banner</button>
+                <button type="submit" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-xl tracking-wider text-xs cursor-pointer shadow-sm">Save Stream Configuration 🚀</button>
               </form>
+            </div>
+
+            <!-- Active Streams catalog list -->
+            <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm space-y-4">
+              <h4 class="text-sm font-bold uppercase tracking-wider text-slate-400">Configured Livestream Broadcasts</h4>
+              <div id="admin-streams-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Loaded dynamically -->
+                <p class="text-xs text-slate-400 italic">No custom broadcasts registered yet.</p>
+              </div>
             </div>
           </div>
 
@@ -1899,6 +2935,45 @@
       </div>
     </footer>
 
+    <!-- Write a Review Modal -->
+    <div id="pf-review-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+      <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl w-full max-w-md p-8 shadow-2xl relative">
+        <button onclick="window.closeReviewModal()" class="absolute top-6 right-6 text-slate-400 hover:text-slate-600 cursor-pointer">
+          <i data-lucide="x" class="w-6 h-6"></i>
+        </button>
+        <h3 class="text-2xl font-black font-display tracking-tight text-slate-900 dark:text-zinc-100 mb-2">Write a Review</h3>
+        <p class="text-xs text-slate-500 mb-6 font-medium">Share your honest experience and feedback with our global community in real time.</p>
+        
+        <form id="pf-review-submit-form" onsubmit="window.submitUserReview(event)" class="space-y-4 text-sm">
+          <div>
+            <label class="block text-xs font-bold text-slate-400 mb-1.5">Your Name</label>
+            <input type="text" id="pf-review-author-name" required class="w-full px-4 py-2.5 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl font-medium text-slate-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. Daniel O." />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-400 mb-1.5">Rating</label>
+            <div class="flex items-center gap-2">
+              <input type="hidden" id="pf-review-rating-val" value="5" />
+              <div class="flex gap-1 text-slate-300 dark:text-zinc-700">
+                <button type="button" onclick="window.setReviewRatingForm(1)" class="pf-star-btn text-2xl cursor-pointer hover:scale-110 transition-transform"><i data-lucide="star" class="w-6 h-6 pf-star-icon"></i></button>
+                <button type="button" onclick="window.setReviewRatingForm(2)" class="pf-star-btn text-2xl cursor-pointer hover:scale-110 transition-transform"><i data-lucide="star" class="w-6 h-6 pf-star-icon"></i></button>
+                <button type="button" onclick="window.setReviewRatingForm(3)" class="pf-star-btn text-2xl cursor-pointer hover:scale-110 transition-transform"><i data-lucide="star" class="w-6 h-6 pf-star-icon"></i></button>
+                <button type="button" onclick="window.setReviewRatingForm(4)" class="pf-star-btn text-2xl cursor-pointer hover:scale-110 transition-transform"><i data-lucide="star" class="w-6 h-6 pf-star-icon"></i></button>
+                <button type="button" onclick="window.setReviewRatingForm(5)" class="pf-star-btn text-2xl cursor-pointer hover:scale-110 transition-transform text-amber-500 fill-current"><i data-lucide="star" class="w-6 h-6 pf-star-icon fill-current"></i></button>
+              </div>
+              <span id="pf-review-rating-label" class="text-xs font-black text-amber-500 ml-2">Excellent (5/5)</span>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-400 mb-1.5">Your Feedback</label>
+            <textarea id="pf-review-comment" required rows="3" class="w-full px-4 py-2.5 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl resize-none font-medium text-slate-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Write your honest comments..."></textarea>
+          </div>
+          <button type="submit" class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-md shadow-blue-500/10">
+            Submit Review
+          </button>
+        </form>
+      </div>
+    </div>
+
     <!-- Core App logic scripts link -->
     <script src="firebase.js"></script>
     <script src="push-notification.js"></script>
@@ -1912,6 +2987,7 @@
     <script src="downloads.js"></script>
     <script src="admin.js"></script>
     <script src="feed.js"></script>
+    <script src="portfolio.js"></script>
     <script src="app.js"></script>
     <script src="tutorial.js"></script>
     <script src="downloads_prompt.js"></script>

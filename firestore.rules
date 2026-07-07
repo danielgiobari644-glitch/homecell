@@ -225,5 +225,28 @@ service cloudfire.firestore {
         existing().authorUid == request.auth.uid || isAdmin()
       );
     }
+
+    // --- User Reviews ---
+    match /user_reviews/{reviewId} {
+      allow read: if true; // Public reviews can be seen by anyone
+      allow create, update: if isVerified() && request.auth.uid == reviewId
+                            && incoming().uid == request.auth.uid
+                            && incoming().displayName is string
+                            && incoming().rating is number && incoming().rating >= 1 && incoming().rating <= 5
+                            && incoming().comment is string && incoming().comment.size() <= 2000;
+      allow delete: if isVerified() && (request.auth.uid == reviewId || isAdmin());
+    }
+
+    // --- Featured Testimonies ---
+    match /featured_testimonies/{testimonyId} {
+      allow read: if true; // Public testimonies seen by anyone
+      allow write: if isAdmin();
+    }
+
+    // --- Live Streams ---
+    match /live_streams/{streamId} {
+      allow read: if true; // Anyone can see current live stream status
+      allow write: if isAdmin();
+    }
   }
 }

@@ -30,6 +30,7 @@ function initAdminModule() {
   syncAdminTrivia();
   syncAdminQuizzes();
   syncAdminBundles();
+  syncAdminStreams();
   loadGlobalDeskSettings();
 }
 
@@ -520,21 +521,169 @@ function updateSupportDesk() {
 }
 
 function updateStreamDesk() {
+  const streamId = document.getElementById('admin-stream-id').value.trim();
   const active = document.getElementById('admin-stream-active').checked;
   const title = document.getElementById('admin-stream-title').value.trim();
   const desc = document.getElementById('admin-stream-desc').value.trim();
   const url = document.getElementById('admin-stream-url').value.trim();
   const type = document.getElementById('admin-stream-type').value;
+  const position = document.getElementById('admin-stream-position').value || 'top';
+  const schedule = document.getElementById('admin-stream-schedule').value || '';
+  const status = document.getElementById('admin-stream-status').value || 'scheduled';
+  const thumbnail = document.getElementById('admin-stream-thumbnail').value.trim() || '';
 
-  window.db.collection('system_configs').doc('stream').set({
+  const docId = streamId || window.db.collection('live_streams').doc().id;
+
+  const streamObj = {
+    id: docId,
     streamActive: active,
     streamTitle: title,
     streamDesc: desc,
     streamUrl: url,
-    streamType: type
+    streamType: type,
+    position: position,
+    schedule: schedule,
+    status: status,
+    thumbnail: thumbnail,
+    updatedAt: window.firebase.firestore.FieldValue.serverTimestamp()
+  };
+
+  window.db.collection('live_streams').doc(docId).set(streamObj)
+    .then(() => {
+      // If active stream is Live, sync legacy system_configs/stream so the dashboard banner lights up
+      if (status === 'live' || active) {
+        window.db.collection('system_configs').doc('stream').set({
+          streamActive: active,
+          streamTitle: title,
+          streamDesc: desc,
+          streamUrl: url,
+          streamType: type
+        }).catch(err => console.error("Legacy stream config sync failed:", err));
+      }
+
+      window.showToast?.("Livestream broadcast successfully updated and synchronized!", "success");
+      resetStreamForm();
+    })
+    .catch(err => window.handleFirestoreError(err, 'write', `live_streams/${docId}`));
+}
+
+let adminStreamsListener = null;
+function syncAdminStreams() {
+  const container = document.getElementById('admin-streams-list');
+  if (!container) return;
+
+  if (adminStreamsListener) adminStreamsListener();
+
+  adminStreamsListener = window.db.collection('live_streams').orderBy('updatedAt', 'desc').onSnapshot(snap => {
+    container.innerHTML = '';
+    
+    if (snap.empty) {
+      container.innerHTML = `<p class="text-xs text-slate-400 italic">No custom broadcasts registered yet.</p>`;
+      return;
+    }
+
+    snap.forEach(doc => {
+      const s = doc.data();
+      const card = document.createElement('div');
+      card.className = "p-4 bg-slate-50 dark:bg-zinc-850 border border-slate-200 dark:border-zinc-700 rounded-2xl flex flex-col justify-between space-y-4 text-xs";
+      
+      let badgeHTML = '';
+      if (s.status === 'live') {
+        badgeHTML = `<span class="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider bg-rose-100 text-rose-700 animate-pulse rounded-md">🔴 Live Now</span>`;
+      } else if (s.status === 'scheduled') {
+        badgeHTML = `<span class="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-700 rounded-md">⏳ Scheduled</span>`;
+      } else {
+        badgeHTML = `<span class="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider bg-slate-200 text-slate-600 rounded-md">⚫ Offline</span>`;
+      }
+
+      card.innerHTML = `
+        <div class="space-y-2">
+          <div class="flex items-center justify-between gap-2">
+            <h5 class="font-extrabold text-slate-900 dark:text-zinc-50 line-clamp-1">${s.streamTitle}</h5>
+            ${badgeHTML}
+          </div>
+          <p class="text-[11px] text-slate-500 dark:text-zinc-400 line-clamp-2">${s.streamDesc}</p>
+          <div class="text-[10px] text-slate-400 font-bold space-y-1">
+            <p>Placement: <span class="text-blue-500 capitalize">${s.position}</span></p>
+            ${s.schedule ? `<p>Scheduled: <span class="text-purple-500 font-mono">${new Date(s.schedule).toLocaleString()}</span></p>` : ''}
+            <p class="truncate">Source: <span class="font-mono text-[9px]">${s.streamUrl}</span></p>
+          </div>
+        </div>
+        <div class="flex flex-col gap-2 pt-2 border-t border-slate-100 dark:border-zinc-800/50">
+          ${s.status === 'live' ? `
+            <button onclick="window.endLiveStream('${s.id}')" class="w-full py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-lg transition-all cursor-pointer text-center">
+              End Live Broadcast
+            </button>
+          ` : ''}
+          <div class="flex items-center gap-2 w-full">
+            <button onclick="window.editStream('${s.id}')" class="flex-1 py-1.5 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/20 dark:hover:bg-blue-950/40 text-blue-600 font-bold rounded-lg transition-all cursor-pointer text-center">
+              Edit
+            </button>
+            <button onclick="window.deleteStream('${s.id}')" class="py-1.5 px-3 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 dark:hover:bg-rose-950/40 text-rose-500 font-bold rounded-lg transition-all cursor-pointer text-center">
+              Delete
+            </button>
+          </div>
+        </div>
+      `;
+      container.appendChild(card);
+    });
+  }, err => console.error("Admin streams sync failed:", err));
+}
+
+function editStream(streamId) {
+  window.db.collection('live_streams').doc(streamId).get().then(doc => {
+    if (!doc.exists) return;
+    const s = doc.data();
+
+    document.getElementById('admin-stream-id').value = s.id;
+    document.getElementById('admin-stream-active').checked = s.streamActive || false;
+    document.getElementById('admin-stream-title').value = s.streamTitle || '';
+    document.getElementById('admin-stream-desc').value = s.streamDesc || '';
+    document.getElementById('admin-stream-url').value = s.streamUrl || '';
+    document.getElementById('admin-stream-type').value = s.streamType || 'hls';
+    document.getElementById('admin-stream-position').value = s.position || 'top';
+    document.getElementById('admin-stream-schedule').value = s.schedule || '';
+    document.getElementById('admin-stream-status').value = s.status || 'scheduled';
+    document.getElementById('admin-stream-thumbnail').value = s.thumbnail || '';
+
+    window.showToast?.("Loaded livestream settings into editing form!", "info");
+  }).catch(err => window.handleFirestoreError(err, 'get', `live_streams/${streamId}`));
+}
+
+function deleteStream(streamId) {
+  const isConfirmed = confirm("Are you sure you want to permanently delete this broadcast configuration?");
+  if (!isConfirmed) return;
+
+  window.db.collection('live_streams').doc(streamId).delete()
+    .then(() => {
+      window.showToast?.("Broadcast configuration successfully deleted.");
+    })
+    .catch(err => window.handleFirestoreError(err, 'delete', `live_streams/${streamId}`));
+}
+
+function endLiveStream(streamId) {
+  const isConfirmed = confirm("Are you sure you want to end this live broadcast?");
+  if (!isConfirmed) return;
+
+  window.db.collection('live_streams').doc(streamId).set({
+    status: 'offline',
+    streamActive: false,
+    updatedAt: window.firebase.firestore.FieldValue.serverTimestamp()
+  }, { merge: true })
+  .then(() => {
+    return window.db.collection('system_configs').doc('stream').set({
+      streamActive: false
+    }, { merge: true }).catch(err => console.warn("Failed to update legacy stream config:", err));
   })
-    .then(() => window.showToast?.("Broadcast stream configuration refreshed."))
-    .catch(err => window.handleFirestoreError(err, 'write', 'system_configs/stream'));
+  .then(() => {
+    window.showToast?.("Live broadcast ended successfully!", "success");
+  })
+  .catch(err => window.handleFirestoreError(err, 'write', `live_streams/${streamId}`));
+}
+
+function resetStreamForm() {
+  document.getElementById('admin-stream-form').reset();
+  document.getElementById('admin-stream-id').value = '';
 }
 
 // Admin Panel Sub Tab switches
@@ -1068,6 +1217,11 @@ window.deleteDownloadBundle = deleteDownloadBundle;
 window.checkTriviaAnswer = checkTriviaAnswer;
 window.updateSupportDesk = updateSupportDesk;
 window.updateStreamDesk = updateStreamDesk;
+window.syncAdminStreams = syncAdminStreams;
+window.editStream = editStream;
+window.deleteStream = deleteStream;
+window.endLiveStream = endLiveStream;
+window.resetStreamForm = resetStreamForm;
 window.setAdminSubTab = setAdminSubTab;
 window.openChangeCellLeaderModal = openChangeCellLeaderModal;
 window.closeChangeLeaderModal = closeChangeLeaderModal;

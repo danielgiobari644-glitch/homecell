@@ -145,8 +145,8 @@ function listenToAuthState() {
     const badge = document.getElementById('user-profile-badge');
 
     if (!user) {
-      // User logged out: display Login modal frame
-      if (authModal) authModal.classList.remove('hidden');
+      // User logged out: keep authModal hidden by default so they can view the portfolio
+      if (authModal) authModal.classList.add('hidden');
       if (badge) badge.classList.add('hidden');
       document.documentElement.classList.add('unauthenticated');
       
@@ -157,6 +157,10 @@ function listenToAuthState() {
     }
 
     document.documentElement.classList.remove('unauthenticated');
+    if (authModal) {
+      authModal.classList.add('hidden');
+      authModal.classList.remove('flex');
+    }
 
     // User logged in, check profile document
     window.db.collection('users').doc(user.uid).get()
@@ -414,24 +418,32 @@ document.addEventListener("DOMContentLoaded", () => {
   if (googleBtn) {
     googleBtn.addEventListener('click', () => {
       const provider = new window.firebase.auth.GoogleAuthProvider();
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      provider.addScope('profile');
+      provider.addScope('email');
       const inIframe = window.self !== window.top;
 
-      if (isMobile && !inIframe) {
-        window.showToast?.("Redirecting to Google Sign-In...");
-        window.auth.signInWithRedirect(provider);
-      } else {
-        window.auth.signInWithPopup(provider)
-          .then(() => window.showToast?.("Google authentication successful."))
-          .catch(err => {
+      window.showToast?.("Opening Google Sign-In...", "info");
+
+      // Try Popup first on all devices for fastest execution (no full page reload)
+      window.auth.signInWithPopup(provider)
+        .then(() => {
+          window.showToast?.("Google authentication successful.", "success");
+        })
+        .catch(err => {
+          console.warn("Google Popup failed/blocked, trying redirect fallback:", err);
+          
+          if (!inIframe) {
+            window.showToast?.("Redirecting to Google Sign-In...");
+            window.auth.signInWithRedirect(provider);
+          } else {
             console.error("Google authentication failed:", err);
             let friendlyMsg = "Google authentication failed: " + err.message;
-            if (window.self !== window.top) {
+            if (inIframe) {
               friendlyMsg += " Hint: If the popup is blocked or cookies are restricted in the iframe, try opening the application in a new window using the 'Open in New Tab' button on the top right, or use Email/Password sign up.";
             }
             window.showToast?.(friendlyMsg, 'error');
-          });
-      }
+          }
+        });
     });
   }
 

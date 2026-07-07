@@ -132,6 +132,51 @@
         "streamActive": { "type": "boolean" }
       },
       "required": ["id"]
+    },
+    "UserReview": {
+      "title": "UserReview",
+      "description": "Star ratings and feedback written by users.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "displayName": { "type": "string" },
+        "rating": { "type": "number" },
+        "comment": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "displayName", "rating", "comment", "createdAt"]
+    },
+    "FeaturedTestimony": {
+      "title": "FeaturedTestimony",
+      "description": "Elegant testimony displayed in featured carousel.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "authorName": { "type": "string" },
+        "text": { "type": "string" },
+        "order": { "type": "number" },
+        "pinned": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "authorName", "text", "order", "pinned", "createdAt"]
+    },
+    "LiveStream": {
+      "title": "LiveStream",
+      "description": "Broadcasting rtmp or hls live stream.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "thumbnail": { "type": "string" },
+        "type": { "type": "string" },
+        "streamUrl": { "type": "string" },
+        "status": { "type": "string" },
+        "scheduledAt": { "type": "string" },
+        "appearance": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "title", "description", "type", "streamUrl", "status", "appearance", "createdAt"]
     }
   },
   "firestore": {
@@ -170,6 +215,18 @@
     "system_configs/{configId}": {
       "schema": "SystemConfig",
       "description": "Primary live support channels and livestream broadcast flag."
+    },
+    "user_reviews/{reviewId}": {
+      "schema": "UserReview",
+      "description": "Real-time user feedback."
+    },
+    "featured_testimonies/{testimonyId}": {
+      "schema": "FeaturedTestimony",
+      "description": "Pinned testimonies for slides."
+    },
+    "live_streams/{streamId}": {
+      "schema": "LiveStream",
+      "description": "Scheduling and managing streams."
     }
   }
 }

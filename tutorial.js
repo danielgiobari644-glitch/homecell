@@ -138,47 +138,47 @@
     // Floating glassmorphism card
     const card = document.createElement('div');
     card.id = 'tutorial-card';
-    card.className = 'absolute pointer-events-auto bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl border border-amber-200/50 dark:border-zinc-800 rounded-3xl p-6 sm:p-7 shadow-2xl w-full max-w-sm sm:max-w-md transition-all duration-500 opacity-0 transform translate-y-4 flex flex-col justify-between space-y-6 tutorial-card-float ring-1 ring-amber-500/10';
-    card.style.boxShadow = '0 20px 50px -12px rgba(245, 158, 11, 0.25), 0 0 40px -5px rgba(245, 158, 11, 0.1)';
+    card.className = 'absolute pointer-events-auto bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl border border-amber-200/50 dark:border-zinc-800 rounded-2xl p-4 sm:p-5 shadow-2xl w-[calc(100vw-32px)] xs:w-full max-w-[320px] sm:max-w-[350px] transition-all duration-500 opacity-0 transform translate-y-4 flex flex-col justify-between space-y-4 tutorial-card-float ring-1 ring-amber-500/10';
+    card.style.boxShadow = '0 15px 35px -10px rgba(245, 158, 11, 0.2), 0 0 30px -5px rgba(245, 158, 11, 0.08)';
     
     card.innerHTML = `
       <!-- Top header info -->
       <div>
-        <div class="flex items-center justify-between gap-4 mb-2.5">
-          <span id="tutorial-step-indicator" class="text-[10px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-950/40 px-2.5 py-1 rounded-full">
+        <div class="flex items-center justify-between gap-4 mb-2">
+          <span id="tutorial-step-indicator" class="text-[9px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-950/40 px-2.5 py-0.5 rounded-full">
             Step 1 of 7
           </span>
           <button onclick="window.closeAppTutorial()" class="text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 transition-colors cursor-pointer">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
           </button>
         </div>
-        <h3 id="tutorial-title" class="text-xl sm:text-2xl font-black font-display tracking-tight text-slate-900 dark:text-zinc-50 leading-snug">
+        <h3 id="tutorial-title" class="text-base sm:text-lg font-black font-display tracking-tight text-slate-900 dark:text-zinc-50 leading-snug">
           Welcome to Home.cell
         </h3>
-        <p id="tutorial-content" class="text-xs sm:text-sm text-slate-600 dark:text-zinc-300 mt-3 leading-relaxed">
+        <p id="tutorial-content" class="text-[11px] sm:text-xs text-slate-600 dark:text-zinc-300 mt-2 leading-relaxed">
           Welcome to your digital Home Fellowship Connection Portal!
         </p>
       </div>
 
       <!-- Action buttons & permission triggers -->
-      <div id="tutorial-action-area" class="hidden flex flex-col gap-3 pt-1 border-t border-slate-100 dark:border-zinc-800">
-        <button id="btn-tutorial-push" onclick="window.triggerTutorialPushPermission()" class="w-full flex items-center justify-center gap-2.5 px-5 py-3.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-extrabold text-xs uppercase tracking-wider rounded-2xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] shadow-md shadow-orange-500/20 cursor-pointer">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="animate-bounce"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+      <div id="tutorial-action-area" class="hidden flex flex-col gap-2 pt-1 border-t border-slate-100 dark:border-zinc-800">
+        <button id="btn-tutorial-push" onclick="window.triggerTutorialPushPermission()" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] shadow-md shadow-orange-500/20 cursor-pointer">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="animate-bounce"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
           Grant Push Permission Now
         </button>
-        <span class="text-[10px] text-center text-slate-400 dark:text-zinc-500 block">Requires your web browser notification consent.</span>
+        <span class="text-[9px] text-center text-slate-400 dark:text-zinc-500 block">Requires your web browser notification consent.</span>
       </div>
 
       <!-- Bottom controls -->
-      <div class="flex items-center justify-between gap-4 pt-3 border-t border-slate-100 dark:border-zinc-800">
-        <button id="btn-tutorial-back" onclick="window.prevTutorialStep()" class="px-4 py-2.5 border border-slate-200 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-800 text-slate-500 dark:text-zinc-400 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer">
+      <div class="flex items-center justify-between gap-4 pt-2.5 border-t border-slate-100 dark:border-zinc-800">
+        <button id="btn-tutorial-back" onclick="window.prevTutorialStep()" class="px-3 py-2 border border-slate-200 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-800 text-slate-500 dark:text-zinc-400 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer">
           Back
         </button>
         <div class="flex items-center gap-2">
-          <button onclick="window.closeAppTutorial()" class="px-4 py-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer">
+          <button onclick="window.closeAppTutorial()" class="px-3 py-2 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer">
             Skip
           </button>
-          <button id="btn-tutorial-next" onclick="window.nextTutorialStep()" class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-950 rounded-xl text-xs font-bold uppercase tracking-wider transition-all hover:scale-105 cursor-pointer">
+          <button id="btn-tutorial-next" onclick="window.nextTutorialStep()" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-950 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all hover:scale-105 cursor-pointer">
             Next
           </button>
         </div>
@@ -300,10 +300,10 @@
 
       if (stepIndex === steps.length - 1) {
         nextBtn.innerText = "Begin Journey";
-        nextBtn.className = "px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black rounded-xl text-xs uppercase tracking-wider transition-all hover:scale-105 cursor-pointer shadow-md";
+        nextBtn.className = "px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black rounded-xl text-[10px] uppercase tracking-wider transition-all hover:scale-105 cursor-pointer shadow-md";
       } else {
         nextBtn.innerText = "Next";
-        nextBtn.className = "px-5 py-2.5 bg-slate-900 hover:bg-slate-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-950 rounded-xl text-xs font-bold uppercase tracking-wider transition-all hover:scale-105 cursor-pointer";
+        nextBtn.className = "px-4 py-2 bg-slate-900 hover:bg-slate-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-950 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all hover:scale-105 cursor-pointer";
       }
 
       // Configure Push Permission button on push step
@@ -316,7 +316,7 @@
           if (pushBtn) {
             pushBtn.innerText = "🟢 Push Notifications Granted!";
             pushBtn.disabled = true;
-            pushBtn.className = "w-full flex items-center justify-center gap-2 px-5 py-3.5 bg-emerald-100 text-emerald-700 font-extrabold text-xs uppercase tracking-wider rounded-2xl transition-all cursor-default";
+            pushBtn.className = "w-full flex items-center justify-center gap-2 px-4 py-2 bg-emerald-100 text-emerald-700 font-extrabold text-[10px] uppercase tracking-wider rounded-xl transition-all cursor-default";
           }
         }
       } else {
@@ -341,26 +341,33 @@
         const targetRect = targetEl.getBoundingClientRect();
         
         if (window.innerWidth < 768) {
-          // Mobile: Place card fixed at the bottom
+          // Mobile: Dynamically position card to avoid overlapping bottom navigation elements
           card.style.left = '50%';
-          card.style.bottom = '20px';
-          card.style.top = 'auto';
+          if (targetRect.top > window.innerHeight / 2) {
+            // Target is in bottom half, put card near the top (out of the way)
+            card.style.top = '72px';
+            card.style.bottom = 'auto';
+          } else {
+            // Target is in top half, put card near the bottom (above bottom nav)
+            card.style.bottom = '100px';
+            card.style.top = 'auto';
+          }
           card.style.transform = 'translateX(-50%) scale(1)';
         } else {
           // Desktop: Position card relative to target
           const spaceOnRight = window.innerWidth - targetRect.right;
-          const cardWidth = 380;
-          const cardHeight = card.offsetHeight || 250;
+          const cardWidth = 350;
+          const cardHeight = card.offsetHeight || 200;
 
           let cardLeft, cardTop;
 
           if (spaceOnRight > cardWidth + 40) {
             // Place on the right of target
-            cardLeft = targetRect.right + 24;
+            cardLeft = targetRect.right + 20;
             cardTop = targetRect.top + (targetRect.height - cardHeight) / 2;
           } else {
             // Place on the left of target
-            cardLeft = targetRect.left - cardWidth - 24;
+            cardLeft = targetRect.left - cardWidth - 20;
             cardTop = targetRect.top + (targetRect.height - cardHeight) / 2;
           }
 

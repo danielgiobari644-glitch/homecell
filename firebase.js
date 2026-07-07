@@ -11,25 +11,31 @@
     if (arg instanceof Error) {
       return arg.stack || arg.message || String(arg);
     }
+    if (typeof HTMLElement !== 'undefined' && arg instanceof HTMLElement) {
+      return `[HTML ${arg.tagName} Element - ID: ${arg.id || 'none'}]`;
+    }
     if (typeof arg === 'object' && arg !== null) {
       try {
         const cache = new Set();
-        JSON.stringify(arg, (key, value) => {
+        const str = JSON.stringify(arg, (key, value) => {
+          if (typeof HTMLElement !== 'undefined' && value instanceof HTMLElement) {
+            return `[HTML ${value.tagName} Element]`;
+          }
           if (typeof value === 'object' && value !== null) {
             if (cache.has(value)) {
-              throw new Error("circular");
+              return '[Circular]';
             }
             cache.add(value);
           }
           return value;
         });
-        return arg; // safe
+        return JSON.parse(str);
       } catch (e) {
         try {
-          if (arg.message) return `[Circular Error/Object]: ${arg.message}`;
-          return `[Circular ${arg.constructor ? arg.constructor.name : 'Object'}]`;
+          if (arg.message) return `[Unsafe Object]: ${arg.message}`;
+          return `[Unsafe ${arg.constructor ? arg.constructor.name : 'Object'}]`;
         } catch (err) {
-          return "[Circular Object]";
+          return "[Unsafe Object]";
         }
       }
     }
@@ -69,13 +75,15 @@ const db = firebase.firestore();
 try {
   db.settings({
     experimentalForceLongPolling: true,
+    experimentalAutoDetectLongPolling: false,
     merge: true
   });
 } catch (e) {
   console.warn("Firestore settings apply failed, retrying with fallback:", e);
   try {
     db.settings({
-      experimentalForceLongPolling: true
+      experimentalForceLongPolling: true,
+      experimentalAutoDetectLongPolling: false
     });
   } catch (err) {
     console.warn("Firestore fallback settings failed as well:", err);
