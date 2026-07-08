@@ -1457,19 +1457,29 @@
                 </div>
               </div>
 
-              <!-- Side Widget: Featured Stories & Testimonies (Syncs dynamically with members' profiles) -->
+              <!-- Side Widget: Community Praise Testimonies Slideshow -->
               <div id="member-journeys-box" class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm space-y-4 relative">
                 <button onclick="dismissWidget('member-journeys-box')" class="absolute top-4 right-4 p-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-zinc-800 dark:hover:text-zinc-200 transition-colors cursor-pointer" title="Dismiss">
                   <i data-lucide="x" class="w-4 h-4"></i>
                 </button>
-                <h4 class="font-black font-display text-slate-900 dark:text-zinc-100 flex items-center gap-2 text-sm uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-                  <i data-lucide="sparkles" class="w-4 h-4"></i> Member Journeys
-                </h4>
+                <div class="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800/60 pb-2">
+                  <h4 class="font-black font-display text-slate-900 dark:text-zinc-100 flex items-center gap-2 text-sm uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                    <i data-lucide="sparkles" class="w-4 h-4"></i> Praise Testimonies
+                  </h4>
+                  <div id="sidebar-journeys-nav" class="hidden flex items-center gap-1">
+                    <button onclick="window.prevSidebarJourney()" class="p-1 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-slate-50 dark:hover:bg-zinc-800 rounded transition-colors cursor-pointer">
+                      <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i>
+                    </button>
+                    <button onclick="window.nextSidebarJourney()" class="p-1 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-slate-50 dark:hover:bg-zinc-800 rounded transition-colors cursor-pointer">
+                      <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                    </button>
+                  </div>
+                </div>
                 <p class="text-xs text-slate-500 dark:text-zinc-400 leading-relaxed">
-                  Read about how God is moving in the lives of our fellowship members. Modify your testimony using the profile settings in the menu below.
+                  Read real-time testimonies of God's power, goodness, and active moves in our fellowship community.
                 </p>
                 <div id="sidebar-testimonies-list" class="space-y-3">
-                  <!-- Loaded dynamically from user profiles with active testimonies -->
+                  <!-- Loaded dynamically from real community praise testimonies as a slideshow -->
                 </div>
               </div>
 
@@ -1497,9 +1507,17 @@
               </div>
               <!-- Stats/Actions counter similar to YouTube -->
               <div class="flex items-center gap-4 text-xs font-bold text-slate-500 dark:text-zinc-400">
+                <!-- Stop Stream Button (Visible only to Super Admin, managed via JS) -->
+                <div id="superadmin-stop-stream-container" class="hidden">
+                  <button onclick="window.stopLiveStream()" class="flex items-center gap-1.5 bg-rose-100 hover:bg-rose-200 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400 px-3 py-1.5 rounded-full transition-all cursor-pointer">
+                    <i data-lucide="stop-circle" class="w-4 h-4 text-rose-600"></i>
+                    <span>Stop Broadcast</span>
+                  </button>
+                </div>
+                
                 <div class="flex items-center gap-1.5 bg-rose-50 dark:bg-rose-950/20 text-rose-600 px-3 py-1.5 rounded-full">
-                  <i data-lucide="eye" class="w-4 h-4"></i>
-                  <span id="stream-viewer-count">124 watching</span>
+                  <span class="w-1.5 h-1.5 bg-rose-600 rounded-full animate-ping"></span>
+                  <span id="stream-viewer-count">Live</span>
                 </div>
                 <button onclick="window.likeStream()" id="btn-like-stream" class="flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 px-3 py-1.5 rounded-full transition-all cursor-pointer">
                   <i data-lucide="thumbs-up" id="stream-like-icon" class="w-4 h-4"></i>

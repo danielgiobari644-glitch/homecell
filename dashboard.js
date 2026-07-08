@@ -5,19 +5,6 @@ let chatUnsubscribe = null;
 let simulatedChatInterval = null;
 let viewerCountInterval = null;
 
-const SIMULATED_BELIEVERS = [
-  { name: "Grace A.", role: "Member", comment: "So blessed to be tuning in today! 🙌" },
-  { name: "Samuel B.", role: "Cell Leader", comment: "The worship is truly elevating our hearts right now. 🙏" },
-  { name: "Blessing U.", role: "Praise Intercessor", comment: "Praise the Lord for His infinite goodness! ✨" },
-  { name: "Michael T.", role: "Member", comment: "Amen! Glory to God in the highest! ❤️" },
-  { name: "Sarah M.", role: "Worship Coordinator", comment: "Singing along from my living room! Beautiful! 🎤" },
-  { name: "David K.", role: "Member", comment: "What a powerful word being shared today. 🔥" },
-  { name: "Joy N.", role: "Member", comment: "Praying for everyone joining this stream. May God bless you all!" },
-  { name: "Emanuel O.", role: "Cell Leader", comment: "Welcome everyone! Feel free to share your prayer requests in the chat. 🙌" },
-  { name: "Priscilla E.", role: "Member", comment: "God is so good! Heartfelt gratitude. ❤️" },
-  { name: "Paul S.", role: "Pastor", comment: "Great to see everyone gathered together in faith. God bless our cells! 👑" }
-];
-
 const BIBLE_QUOTES = [
   { text: "Thy word is a lamp unto my feet, and a light unto my path.", ref: "Psalms 119:105 (KJV)" },
   { text: "For where two or three are gathered together in my name, there am I in the midst of them.", ref: "Matthew 18:20 (KJV)" },
@@ -275,12 +262,21 @@ window.setupStreamPlayer = function(url, type) {
           // Sync dynamic likes count
           const likesEl = document.getElementById('stream-likes-count');
           if (likesEl) {
-            likesEl.innerText = `${data.likesCount !== undefined ? data.likesCount : 48} likes`;
+            likesEl.innerText = `${data.likesCount !== undefined ? data.likesCount : 0} likes`;
           }
 
-          // Initialize chat real-time sync and viewer simulation
+          // Show or hide Super Admin stop button
+          const stopContainer = document.getElementById('superadmin-stop-stream-container');
+          if (stopContainer) {
+            if (window.currentUserRole === 'Super Admin') {
+              stopContainer.classList.remove('hidden');
+            } else {
+              stopContainer.classList.add('hidden');
+            }
+          }
+
+          // Initialize chat real-time sync with no mock simulators
           syncLiveChat();
-          startViewerCountSimulation();
         }
       } else {
         if (streamBanner) streamBanner.classList.add('hidden');
@@ -288,7 +284,7 @@ window.setupStreamPlayer = function(url, type) {
         const container = document.getElementById('stream-player-container');
         if (container) container.innerHTML = '';
 
-        // Disconnect and cleanup chat listeners/simulators
+        // Disconnect and cleanup chat listeners
         if (chatUnsubscribe) {
           chatUnsubscribe();
           chatUnsubscribe = null;
@@ -310,7 +306,7 @@ window.setupStreamPlayer = function(url, type) {
           streamDesc: 'Gathering together live to share, connect, and grow.',
           streamUrl: '',
           streamType: 'hls',
-          likesCount: 48
+          likesCount: 0
         }).catch(err => console.error("Error seeding stream config: ", err));
       }
     }
@@ -535,26 +531,6 @@ window.cheerStreakChampion = cheerStreakChampion;
 
 // --- YOUTUBE STYLE LIVE CHAT AND VISUALS ENGINE ---
 
-function startViewerCountSimulation() {
-  if (viewerCountInterval) clearInterval(viewerCountInterval);
-  
-  const updateViewerCountUI = (count) => {
-    const el = document.getElementById('stream-viewer-count');
-    if (el) el.innerText = `${count} watching`;
-  };
-  
-  // Random base count around 124
-  let count = Math.floor(Math.random() * 20) + 115;
-  updateViewerCountUI(count);
-  
-  viewerCountInterval = setInterval(() => {
-    // Fluctuating by +/- 3
-    count += Math.floor(Math.random() * 7) - 3;
-    if (count < 80) count = 100;
-    updateViewerCountUI(count);
-  }, 12000);
-}
-
 function syncLiveChat() {
   const chatContainer = document.getElementById('stream-chat-messages');
   if (!chatContainer) return;
@@ -621,46 +597,6 @@ function syncLiveChat() {
     }, err => {
       console.warn("Live chat messages snapshot limit:", err);
     });
-
-  // Start background simulated participant messages
-  startSimulatedChatMessages();
-}
-
-function startSimulatedChatMessages() {
-  if (simulatedChatInterval) clearInterval(simulatedChatInterval);
-  
-  // Send first simulated chat after 6 seconds
-  setTimeout(() => {
-    window.db.collection('system_configs').doc('stream').get().then(doc => {
-      if (doc.exists && doc.data().streamActive) {
-        postSimulatedChatMessage();
-      }
-    });
-  }, 6000);
-
-  simulatedChatInterval = setInterval(() => {
-    window.db.collection('system_configs').doc('stream').get().then(doc => {
-      if (doc.exists && doc.data().streamActive) {
-        postSimulatedChatMessage();
-      } else {
-        clearInterval(simulatedChatInterval);
-      }
-    });
-  }, 22000); // every 22 seconds
-}
-
-function postSimulatedChatMessage() {
-  const randomBeliever = SIMULATED_BELIEVERS[Math.floor(Math.random() * SIMULATED_BELIEVERS.length)];
-  const docId = window.db.collection('stream_chats').doc().id;
-  
-  window.db.collection('stream_chats').doc(docId).set({
-    id: docId,
-    senderUid: `simulated_${randomBeliever.name.replace(/\s+/g, '_')}`,
-    senderName: randomBeliever.name,
-    senderRole: randomBeliever.role,
-    message: randomBeliever.comment,
-    createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
-  }).catch(err => console.warn("Simulated chat post failed: ", err));
 }
 
 window.likeStream = function() {
@@ -677,7 +613,7 @@ window.likeStream = function() {
   const isAlreadyLiked = btn.classList.contains('bg-blue-50');
   
   window.db.collection('system_configs').doc('stream').get().then(doc => {
-    let currentLikes = 48;
+    let currentLikes = 0;
     if (doc.exists && doc.data().likesCount !== undefined) {
       currentLikes = doc.data().likesCount;
     }
@@ -759,5 +695,43 @@ window.sendQuickReaction = function(emoji) {
   }).catch(err => {
     console.error("Failed to send quick reaction: ", err);
   });
+};
+
+window.stopLiveStream = function() {
+  if (window.currentUserRole !== 'Super Admin') {
+    window.showToast?.("Only Super Admins can stop a livestream broadcast.", "error");
+    return;
+  }
+
+  if (confirm("Are you sure you want to stop this live broadcast and take it offline?")) {
+    window.db.collection('system_configs').doc('stream').update({
+      streamActive: false
+    }).then(() => {
+      // Also set any active stream documents inside 'live_streams' collection to offline/inactive
+      window.db.collection('live_streams')
+        .where('streamActive', '==', true)
+        .get()
+        .then(snap => {
+          const batch = window.db.batch();
+          snap.forEach(doc => {
+            batch.update(doc.ref, {
+              streamActive: false,
+              status: 'offline'
+            });
+          });
+          return batch.commit();
+        })
+        .then(() => {
+          window.showToast?.("Livestream broadcast successfully stopped.", "success");
+        })
+        .catch(err => {
+          console.error("Error setting live_streams to offline:", err);
+          window.showToast?.("Broadcast stopped, but failed to sync all records.", "info");
+        });
+    }).catch(err => {
+      console.error("Error stopping livestream:", err);
+      window.showToast?.("Failed to stop livestream.", "error");
+    });
+  }
 };
 

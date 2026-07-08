@@ -122,13 +122,8 @@ let hasAnsweredCurrent = false;
 let triviaTimerLimit = 15;
 let pointsPerQuestion = 100;
 
-// Simulated online participants for the "live trivia" experience
-let liveParticipants = [
-  { name: "Pastor David 🛡️", score: 0, accuracy: 0.8 },
-  { name: "Sister Mercy ✨", score: 0, accuracy: 0.7 },
-  { name: "Brother Elijah 🔥", score: 0, accuracy: 0.6 },
-  { name: "Deacon John 📖", score: 0, accuracy: 0.75 }
-];
+// Real-time participants (Empty for local play mode, zero simulated participants)
+let liveParticipants = [];
 
 function initQuizLounge() {
   renderQuizSelectionGrid();

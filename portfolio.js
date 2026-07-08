@@ -48,101 +48,8 @@
 
   // Seeder helper to populate initial real data in Firestore if empty
   function seedDefaultDataIfEmpty() {
-    window.db.collection('user_reviews').limit(1).get().then(snap => {
-      if (snap.empty) {
-        console.log("Seeding initial authentic community reviews...");
-        const defaultReviews = [
-          {
-            userName: "Daniel O.",
-            rating: 5,
-            comment: "home.cell has brought my church closer together. Love it!",
-            createdAt: window.firebase.firestore.Timestamp.fromDate(new Date(Date.now() - 10 * 24 * 60 * 60 * 1000))
-          },
-          {
-            userName: "Grace A.",
-            rating: 5,
-            comment: "Best app for staying connected in faith. Highly recommend!",
-            createdAt: window.firebase.firestore.Timestamp.fromDate(new Date(Date.now() - 5 * 24 * 60 * 60 * 1000))
-          },
-          {
-            userName: "Samuel B.",
-            rating: 5,
-            comment: "The live service quality is excellent!",
-            createdAt: window.firebase.firestore.Timestamp.fromDate(new Date(Date.now() - 2 * 24 * 60 * 60 * 1000))
-          }
-        ];
-        defaultReviews.forEach(rev => {
-          const id = window.db.collection('user_reviews').doc().id;
-          window.db.collection('user_reviews').doc(id).set({ id, ...rev });
-        });
-      }
-    }).catch(err => console.warn("Seeding reviews config read failed:", err));
-
-    window.db.collection('featured_testimonies').limit(1).get().then(snap => {
-      if (snap.empty) {
-        console.log("Seeding initial authentic testimonies...");
-        const defaultTestimonies = [
-          {
-            title: "Faithful Walking",
-            text: "home.cell has helped me grow spiritually and connected me with amazing people.",
-            authorName: "Blessing U.",
-            role: "Praise Intercessor",
-            pinnedAt: window.firebase.firestore.Timestamp.now()
-          },
-          {
-            title: "Answered Prayers",
-            text: "I found a community that prays with me and encourages me daily.",
-            authorName: "Michael T.",
-            role: "Cell Leader",
-            pinnedAt: window.firebase.firestore.Timestamp.fromDate(new Date(Date.now() - 24 * 60 * 60 * 1000))
-          },
-          {
-            title: "Strengthened Faith",
-            text: "The testimonies strengthen my faith every single day.",
-            authorName: "Sarah M.",
-            role: "Worship Coordinator",
-            pinnedAt: window.firebase.firestore.Timestamp.fromDate(new Date(Date.now() - 2 * 24 * 60 * 60 * 1000))
-          }
-        ];
-        defaultTestimonies.forEach(test => {
-          const id = window.db.collection('featured_testimonies').doc().id;
-          window.db.collection('featured_testimonies').doc(id).set({ id, ...test });
-        });
-      }
-    }).catch(err => console.warn("Seeding testimonies config read failed:", err));
-
-    window.db.collection('stream_chats').limit(1).get().then(snap => {
-      if (snap.empty) {
-        console.log("Seeding initial stream chat messages...");
-        const initialChats = [
-          {
-            senderUid: "simulated_Grace_A",
-            senderName: "Grace A.",
-            senderRole: "Member",
-            message: "So excited for today's live stream! Glory to God! 🙌",
-            createdAt: window.firebase.firestore.Timestamp.fromDate(new Date(Date.now() - 3 * 60 * 1000))
-          },
-          {
-            senderUid: "simulated_Samuel_B",
-            senderName: "Samuel B.",
-            senderRole: "Cell Leader",
-            message: "Greetings everyone! Welcome to Saturday Fellowship! 🙏",
-            createdAt: window.firebase.firestore.Timestamp.fromDate(new Date(Date.now() - 2 * 60 * 1000))
-          },
-          {
-            senderUid: "simulated_Paul_S",
-            senderName: "Paul S.",
-            senderRole: "Pastor",
-            message: "Great to see everyone logging in. Get ready for a wonderful blessing today! ✨",
-            createdAt: window.firebase.firestore.Timestamp.fromDate(new Date(Date.now() - 1 * 60 * 1000))
-          }
-        ];
-        initialChats.forEach(chat => {
-          const id = window.db.collection('stream_chats').doc().id;
-          window.db.collection('stream_chats').doc(id).set({ id, ...chat });
-        });
-      }
-    }).catch(err => console.warn("Seeding stream chat failed:", err));
+    // No mock data or simulation seeds per strict user instructions
+    console.log("Mock data seeding is disabled to maintain zero fake records.");
   }
 
   // 1. Sync Parish Coordinates Support Info from Firestore Settings/Global Config
@@ -255,7 +162,16 @@
     if (!container) return;
 
     if (userReviews.length === 0) {
-      if (splitContainer) return; // Keep fallbacks
+      if (splitContainer) {
+        splitContainer.innerHTML = `
+          <div class="bg-white/50 dark:bg-zinc-900/25 p-6 rounded-2xl border border-dashed border-slate-200 dark:border-zinc-800 text-center space-y-2">
+            <p class="text-xs font-bold text-slate-800 dark:text-zinc-200">No public reviews yet</p>
+            <p class="text-[10px] text-slate-500 dark:text-zinc-400">Join the congregation and be the first to share your experience!</p>
+          </div>
+        `;
+        if (window.lucide) window.lucide.createIcons();
+        return;
+      }
       container.innerHTML = `
         <div class="col-span-2 bg-white/75 dark:bg-zinc-900/40 border border-dashed border-slate-200 dark:border-zinc-850 rounded-[2rem] p-10 text-center flex flex-col items-center justify-center space-y-4">
           <div class="p-3 bg-blue-100 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded-full">

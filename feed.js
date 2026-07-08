@@ -638,41 +638,102 @@ function updateFeedBadge(visibleCount) {
   }
 }
 
+let sidebarJourneys = [];
+let activeSidebarJourneyIndex = 0;
+let sidebarJourneyInterval = null;
+
+function renderActiveSidebarJourney() {
+  const sidebar = document.getElementById('sidebar-testimonies-list');
+  const navPanel = document.getElementById('sidebar-journeys-nav');
+  if (!sidebar) return;
+
+  if (sidebarJourneys.length === 0) {
+    sidebar.innerHTML = `<p class="text-[11px] text-slate-400 text-center py-2">No praise testimonies published yet.</p>`;
+    if (navPanel) navPanel.classList.add('hidden');
+    return;
+  }
+
+  if (navPanel) {
+    if (sidebarJourneys.length > 1) {
+      navPanel.classList.remove('hidden');
+    } else {
+      navPanel.classList.add('hidden');
+    }
+  }
+
+  if (activeSidebarJourneyIndex >= sidebarJourneys.length) {
+    activeSidebarJourneyIndex = 0;
+  }
+
+  const u = sidebarJourneys[activeSidebarJourneyIndex];
+  const displayName = u.authorName || u.displayName || 'Fellowship Member';
+  const displayRole = u.authorRole || u.coordinates || 'Member';
+  const testimonyText = u.text || u.bio || '';
+  
+  sidebar.innerHTML = `
+    <div class="p-4 bg-slate-50 dark:bg-zinc-800/40 rounded-2xl border border-slate-100 dark:border-zinc-800/60 space-y-2 animate-fade-in transition-all">
+      <div class="flex items-center gap-2">
+        <div class="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold flex items-center justify-center font-display">
+          ${displayName.charAt(0).toUpperCase()}
+        </div>
+        <div>
+          <span class="text-xs font-bold text-slate-800 dark:text-zinc-200 block">${displayName}</span>
+          <span class="text-[9px] font-mono text-slate-400">${displayRole}</span>
+        </div>
+      </div>
+      <p class="text-xs text-slate-600 dark:text-zinc-300 italic font-medium leading-relaxed">"${testimonyText}"</p>
+    </div>
+  `;
+
+  // Stagger or refresh automatic slide rotation
+  if (sidebarJourneyInterval) clearInterval(sidebarJourneyInterval);
+  if (sidebarJourneys.length > 1) {
+    sidebarJourneyInterval = setInterval(() => {
+      window.nextSidebarJourney();
+    }, 8000);
+  }
+}
+
+window.nextSidebarJourney = function() {
+  if (sidebarJourneys.length === 0) return;
+  activeSidebarJourneyIndex = (activeSidebarJourneyIndex + 1) % sidebarJourneys.length;
+  renderActiveSidebarJourney();
+};
+
+window.prevSidebarJourney = function() {
+  if (sidebarJourneys.length === 0) return;
+  activeSidebarJourneyIndex = (activeSidebarJourneyIndex - 1 + sidebarJourneys.length) % sidebarJourneys.length;
+  renderActiveSidebarJourney();
+};
+
 function loadSidebarJourneys() {
   const sidebar = document.getElementById('sidebar-testimonies-list');
   if (!sidebar) return;
 
-  window.db.collection('users')
-    .orderBy('createdAt', 'desc')
+  window.db.collection('community_feed')
+    .where('type', '==', 'testimony')
     .get()
     .then(snap => {
-      sidebar.innerHTML = '';
-      let count = 0;
+      sidebarJourneys = [];
       snap.forEach(doc => {
         const u = doc.data();
-        if (u.bio && u.bio.trim() !== '' && count < 4) {
-          count++;
-          const item = document.createElement('div');
-          item.className = "p-3 bg-slate-50 dark:bg-zinc-800/40 rounded-2xl border border-slate-100 dark:border-zinc-800/60 space-y-1 transition-all hover:scale-[1.02]";
-          item.innerHTML = `
-            <div class="flex items-center gap-1.5">
-              <div class="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 text-[9px] font-bold flex items-center justify-center font-display">
-                ${(u.displayName || '?').charAt(0).toUpperCase()}
-              </div>
-              <span class="text-[11px] font-bold text-slate-800 dark:text-zinc-200">${u.displayName || 'Fellowship Member'}</span>
-              <span class="text-[9px] font-mono text-slate-400 ml-auto truncate max-w-[80px]">${u.coordinates || ''}</span>
-            </div>
-            <p class="text-[10px] text-slate-500 italic leading-relaxed">"${u.bio}"</p>
-          `;
-          sidebar.appendChild(item);
+        if (u.text && u.text.trim() !== '') {
+          sidebarJourneys.push(u);
         }
       });
-
-      if (count === 0) {
-        sidebar.innerHTML = `<p class="text-[11px] text-slate-400 text-center py-2">No soul testimonies published yet.</p>`;
-      }
+      // Sort client-side by createdAt descending to avoid composite index requirements
+      sidebarJourneys.sort((a, b) => {
+        const tA = (a.createdAt && a.createdAt.seconds) ? a.createdAt.seconds : 0;
+        const tB = (b.createdAt && b.createdAt.seconds) ? b.createdAt.seconds : 0;
+        return tB - tA;
+      });
+      activeSidebarJourneyIndex = 0;
+      renderActiveSidebarJourney();
     })
-    .catch(err => window.handleFirestoreError(err, 'get', 'users_testimonies'));
+    .catch(err => {
+      console.warn("Error loading sidebar testimonies:", err);
+      sidebar.innerHTML = `<p class="text-[11px] text-slate-400 text-center py-2">No praise testimonies published yet.</p>`;
+    });
 }
 
 function publishToFeed() {
