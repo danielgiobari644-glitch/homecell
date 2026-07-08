@@ -320,12 +320,12 @@ function setupTriviaLounge(quiz) {
     arena.classList.add('hidden');
 
     let cnt = 3;
-    countdownText.innerText = `Connecting with other believers... Session starts in ${cnt}...`;
+    countdownText.innerText = `Preparing your scripture challenge... Starts in ${cnt}...`;
     
     const loader = setInterval(() => {
       cnt--;
       if (cnt > 0) {
-        countdownText.innerText = `Connecting with other believers... Session starts in ${cnt}...`;
+        countdownText.innerText = `Preparing your scripture challenge... Starts in ${cnt}...`;
       } else {
         clearInterval(loader);
         lobby.classList.add('hidden');
@@ -595,7 +595,10 @@ function broadcastTriviaTriumph(correct, total, title, medal) {
     window.sendPushNotification(
       `🔥 Trivia Champion Alert!`,
       `Congratulations to ${displayName} for conquering the '${title}' live session! Tap to play.`,
-      `/?tab=bible`
+      `/?tab=bible`,
+      null, // targetRole
+      null, // targetUid
+      user.uid // excludeUid: exclude the trivia winner!
     );
 
     exitTrivia();

@@ -104,11 +104,17 @@ window.requestNotificationPermission = async function() {
       };
     }
 
-    // Send subscription to server
+    // Send subscription to server with user details if available
+    const currentUser = window.auth?.currentUser;
     const subRes = await fetch(SUBSCRIBE_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ subscription: subRaw })
+      body: JSON.stringify({ 
+        subscription: subRaw,
+        uid: currentUser ? currentUser.uid : null,
+        email: currentUser ? currentUser.email : null,
+        role: window.currentUserRole || null
+      })
     });
 
     if (subRes.ok) {
@@ -127,19 +133,75 @@ window.requestNotificationPermission = async function() {
   }
 };
 
-// Broadcasts push notification payload to the backend
-window.sendPushNotification = async function(title, body, targetUrl = '/') {
+// Update active subscription with logged in user profile and role
+window.updateSubscriptionOnServer = async function() {
+  if (!window.isNotificationSupported()) return;
+  try {
+    const registration = await navigator.serviceWorker.getRegistration();
+    if (!registration) return;
+    
+    const subscription = await registration.pushManager.getSubscription();
+    if (!subscription) return;
+    
+    // Extract subscription raw
+    let subRaw = null;
+    if (typeof subscription.toJSON === 'function') {
+      const parsed = subscription.toJSON();
+      subRaw = {
+        endpoint: parsed.endpoint,
+        keys: {
+          p256dh: parsed.keys?.p256dh || null,
+          auth: parsed.keys?.auth || null
+        }
+      };
+    }
+    
+    if (!subRaw) {
+      subRaw = {
+        endpoint: subscription.endpoint,
+        keys: { p256dh: null, auth: null }
+      };
+    }
+    
+    const currentUser = window.auth?.currentUser;
+    if (!currentUser) return;
+
+    await fetch(SUBSCRIBE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        subscription: subRaw,
+        uid: currentUser.uid,
+        email: currentUser.email,
+        role: window.currentUserRole || 'Member'
+      })
+    });
+    console.log("Updated background notification subscription for user:", currentUser.email, "as", window.currentUserRole);
+  } catch (error) {
+    console.warn("Failed updating user notification session metadata:", error);
+  }
+};
+
+// Broadcasts push notification payload to the backend with selective targeting
+window.sendPushNotification = async function(title, body, targetUrl = '/', targetRole = null, targetUid = null, excludeUid = null) {
   if (!title || !body) return;
 
   try {
     const res = await fetch(BROADCAST_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, body, url: targetUrl })
+      body: JSON.stringify({ 
+        title, 
+        body, 
+        url: targetUrl,
+        targetRole,
+        targetUid,
+        excludeUid
+      })
     });
     
     if (res.ok) {
-      console.log(`Push broadcast successful for: "${title}"`);
+      console.log(`Push broadcast successful for: "${title}" (Target role: ${targetRole || 'all'})`);
     } else {
       console.warn("Backend failed to broadcast push.");
     }

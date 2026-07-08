@@ -237,6 +237,11 @@ function listenToAuthState() {
           } else {
             switchTab(activeTab);
           }
+
+          // Sync notification metadata (such as role and uid) with server Web Push subscribers list
+          if (window.updateSubscriptionOnServer) {
+            window.updateSubscriptionOnServer();
+          }
         }
       })
       .catch(err => window.handleFirestoreError(err, 'get', `users/${user.uid}`));
@@ -515,6 +520,17 @@ document.addEventListener("DOMContentLoaded", () => {
           .then(() => {
             window.showToast?.("Fellowship cell established & profile fully onboarded!");
             closeOnboardingModal();
+            window.updateSubscriptionOnServer?.();
+
+            // Notify Super Admins offline/off-app of new cell registration
+            if (window.sendPushNotification) {
+              window.sendPushNotification(
+                "🏰 New Fellowship Cell Registered!",
+                `Cell "${cellName}" has been established in ${cellCity} by leader ${name}.`,
+                "/?tab=cells",
+                "Super Admin"
+              );
+            }
           })
           .catch(err => window.handleFirestoreError(err, 'write', 'onboarding'));
 
@@ -533,6 +549,7 @@ document.addEventListener("DOMContentLoaded", () => {
           .then(() => {
             window.showToast?.("Onboarding successfully completed!");
             closeOnboardingModal();
+            window.updateSubscriptionOnServer?.();
             // Trigger first daily streak
             setTimeout(() => {
               window.incrementUserStreak?.("onboarding signup");

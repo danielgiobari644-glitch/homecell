@@ -559,6 +559,15 @@ function updateStreamDesk() {
           streamUrl: url,
           streamType: type
         }).catch(err => console.error("Legacy stream config sync failed:", err));
+
+        // Trigger system-wide background notification off-app
+        if (window.sendPushNotification) {
+          window.sendPushNotification(
+            "📹 LIVE STREAM BROADCAST IS ACTIVE!",
+            `We are streaming: "${title || 'Holy Fellowship'}" live now! Tap to gather with us in prayer.`,
+            "/?tab=dashboard"
+          );
+        }
       }
 
       window.showToast?.("Livestream broadcast successfully updated and synchronized!", "success");
@@ -881,13 +890,19 @@ function sendAdminNudge(event) {
   const title = document.getElementById('admin-nudge-title').value.trim();
   const body = document.getElementById('admin-nudge-body').value.trim();
   const target = document.getElementById('admin-nudge-target').value;
+  const targetRoleSelect = document.getElementById('admin-nudge-role');
+  const targetRole = (targetRoleSelect && targetRoleSelect.value !== 'all') ? targetRoleSelect.value : null;
 
   if (!title || !body) return;
 
   // Utilize our real push notification helper!
   if (window.sendPushNotification) {
-    window.sendPushNotification(title, body, target);
-    window.showToast?.("Push notification nudge successfully broadcasted off-app to all members!", "success");
+    window.sendPushNotification(title, body, target, targetRole);
+    if (targetRole) {
+      window.showToast?.(`Push notification nudge successfully broadcasted off-app to all ${targetRole}s!`, "success");
+    } else {
+      window.showToast?.("Push notification nudge successfully broadcasted off-app to all members!", "success");
+    }
     
     // Clear form
     const form = document.getElementById('admin-push-nudge-form');

@@ -57,16 +57,26 @@ if (!fs.existsSync(subscriptionsFile)) {
   fs.writeFileSync(subscriptionsFile, '[]', 'utf8');
 }
 
-function saveSubscription(sub) {
+function saveSubscription(sub, uid, email, role) {
   try {
     const data = fs.readFileSync(subscriptionsFile, 'utf8');
     const subs = JSON.parse(data || '[]');
-    const exists = subs.some(s => s.endpoint === sub.endpoint);
-    if (!exists) {
-      subs.push(sub);
-      fs.writeFileSync(subscriptionsFile, JSON.stringify(subs, null, 2), 'utf8');
+    const index = subs.findIndex(s => s.endpoint === sub.endpoint);
+    const subWithMetadata = {
+      ...sub,
+      uid: uid || null,
+      email: email || null,
+      role: role || null,
+      updatedAt: new Date().toISOString()
+    };
+    if (index === -1) {
+      subs.push(subWithMetadata);
       logMsg(`Saved new subscription. Total subscribers: ${subs.length}`);
+    } else {
+      subs[index] = { ...subs[index], ...subWithMetadata };
+      logMsg(`Updated existing subscription metadata for ${email || 'unknown'}.`);
     }
+    fs.writeFileSync(subscriptionsFile, JSON.stringify(subs, null, 2), 'utf8');
   } catch (e) {
     logMsg(`Error saving subscription: ${e.message}`);
   }
@@ -90,24 +100,36 @@ app.get('/api/vapid-public-key', (req, res) => {
 });
 
 app.post('/api/subscribe', (req, res) => {
-  const { subscription } = req.body;
+  const { subscription, uid, email, role } = req.body;
   if (!subscription || !subscription.endpoint) {
     return res.status(400).json({ error: 'Invalid subscription object' });
   }
-  saveSubscription(subscription);
+  saveSubscription(subscription, uid, email, role);
   res.status(201).json({ success: true });
 });
 
 app.post('/api/broadcast-push', async (req, res) => {
-  const { title, body, url } = req.body;
+  const { title, body, url, targetRole, targetUid, excludeUid } = req.body;
   if (!title || !body) {
     return res.status(400).json({ error: 'Title and body are required' });
   }
 
   try {
     const data = fs.readFileSync(subscriptionsFile, 'utf8');
-    const subs = JSON.parse(data || '[]');
-    logMsg(`Broadcasting: "${title}" to ${subs.length} subscribers.`);
+    let subs = JSON.parse(data || '[]');
+    
+    // Filter subscribers based on criteria if provided
+    if (targetRole) {
+      subs = subs.filter(sub => sub.role === targetRole);
+    }
+    if (targetUid) {
+      subs = subs.filter(sub => sub.uid === targetUid);
+    }
+    if (excludeUid) {
+      subs = subs.filter(sub => sub.uid !== excludeUid);
+    }
+
+    logMsg(`Broadcasting: "${title}" to ${subs.length} filtered subscribers (role=${targetRole || 'all'}, uid=${targetUid || 'all'}, exclude=${excludeUid || 'none'}).`);
 
     const payload = JSON.stringify({ title, body, url: url || '/' });
 

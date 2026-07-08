@@ -514,11 +514,28 @@ function cheerStreakChampion() {
   window.showToast?.(`Sending congratulations and holy cheers to ${champName}!`, "success");
 
   // Evoke direct push notification to tell users to come to the app!
-  window.sendPushNotification?.(
-    "🙌 Holy Cheer Alert!",
-    `${senderName} sent a fellowship cheer celebrating Streak Champion ${champName} (${currentChampionDoc.streak || 0} Days)! Join the celebration now.`,
-    "/?tab=dashboard"
-  );
+  if (window.sendPushNotification) {
+    // Notify the champion directly if they are a different user
+    if (user && currentChampionDoc.uid && currentChampionDoc.uid !== user.uid) {
+      window.sendPushNotification(
+        "👑 You Have Been Cheered!",
+        `${senderName} sent a high-priority fellowship cheer to you! Keep your streak burning.`,
+        "/?tab=dashboard",
+        null, // targetRole
+        currentChampionDoc.uid // targetUid: target the champion!
+      );
+    }
+
+    // Broadcast globally to everyone else except the sender
+    window.sendPushNotification(
+      "🙌 Holy Cheer Alert!",
+      `${senderName} sent a fellowship cheer celebrating Streak Champion ${champName} (${currentChampionDoc.streak || 0} Days)! Join the celebration now.`,
+      "/?tab=dashboard",
+      null, // targetRole
+      null, // targetUid
+      user ? user.uid : null // excludeUid: exclude the sender!
+    );
+  }
 }
 
 // Expose functions globally

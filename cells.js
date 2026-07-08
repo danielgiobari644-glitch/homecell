@@ -281,7 +281,10 @@ function sendCellChatMessage(text) {
       window.sendPushNotification(
         `💬 Chat Lounge: ${profile.displayName || user.email}`,
         text,
-        '/?tab=chat'
+        '/?tab=chat',
+        null, // targetRole
+        null, // targetUid
+        user.uid // excludeUid: exclude the sender themselves!
       );
     }
   })

@@ -504,7 +504,7 @@ function createFeedPostCard(post) {
 
   const postCard = document.createElement('div');
   if (isTestimony) {
-    postCard.className = "bg-gradient-to-br from-amber-50/50 via-white to-amber-50/10 dark:from-zinc-900 dark:to-zinc-900/60 border border-amber-200 dark:border-amber-950/40 rounded-[2.2rem] p-7 shadow-sm space-y-5 transition-all hover:border-amber-300 dark:hover:border-amber-900/60 hover:shadow-md relative overflow-hidden border-l-4 border-l-amber-500 dark:border-l-amber-600";
+    postCard.className = "bg-white dark:bg-zinc-900 border border-emerald-100 dark:border-emerald-950/40 rounded-3xl p-6 shadow-sm space-y-4 transition-all hover:border-emerald-200 dark:hover:border-zinc-800 border-l-4 border-l-emerald-500 dark:border-l-emerald-600";
   } else if (isAnnouncement) {
     postCard.className = "bg-white dark:bg-zinc-900 border border-purple-200 dark:border-purple-950 bg-purple-50/5 dark:bg-purple-950/5 rounded-3xl p-6 shadow-sm space-y-4 transition-all hover:border-purple-300 dark:hover:border-purple-900";
   } else {
@@ -527,7 +527,7 @@ function createFeedPostCard(post) {
     <div class="flex items-center gap-3">
       <div class="w-10 h-10 rounded-full text-slate-700 dark:text-zinc-300 font-bold flex items-center justify-center text-sm font-display shadow-inner ${
         isTestimony 
-          ? 'bg-amber-100 dark:bg-amber-950/60 border-2 border-amber-400 ring-2 ring-amber-100 dark:ring-amber-950/40 text-amber-800 dark:text-amber-300' 
+          ? 'bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-900 text-emerald-800 dark:text-emerald-300' 
           : 'bg-slate-100 dark:bg-zinc-800'
       }">
         ${(post.authorName || '?').charAt(0).toUpperCase()}
@@ -548,13 +548,13 @@ function createFeedPostCard(post) {
           </span>
         ` : ''}
         ${isTestimony ? `
-          <span class="text-[10px] font-black uppercase tracking-widest text-amber-800 bg-amber-100 dark:text-amber-300 dark:bg-amber-950/40 px-3 py-1.5 rounded-full flex items-center gap-1.5 border border-amber-200 dark:border-amber-800/40 shadow-sm animate-pulse">
+          <span class="text-[10px] font-black uppercase tracking-widest text-emerald-800 bg-emerald-50 dark:text-emerald-300 dark:bg-emerald-950/40 px-3 py-1 rounded-full flex items-center gap-1 border border-emerald-100 dark:border-emerald-800/20">
             ✨ Praise Testimony 🙏
           </span>
         ` : ''}
 
         ${isTestimony && isSuperAdmin ? `
-          <button onclick="window.pinTestimonyToCarousel('${postId}')" class="text-amber-500 hover:text-amber-600 p-1.5 rounded-xl hover:bg-amber-50 dark:hover:bg-amber-950/20 transition-all cursor-pointer" title="Pin to Featured Testimonies">
+          <button onclick="window.pinTestimonyToCarousel('${postId}')" class="text-emerald-600 hover:text-emerald-700 p-1.5 rounded-xl hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition-all cursor-pointer" title="Pin to Featured Testimonies">
             <i data-lucide="star" class="w-4 h-4 fill-current"></i>
           </button>
         ` : ''}
@@ -569,13 +569,13 @@ function createFeedPostCard(post) {
 
     <!-- Content Body -->
     ${isTestimony ? `
-      <div class="relative bg-amber-50/20 dark:bg-amber-950/10 rounded-2xl p-5 border border-amber-100/30 dark:border-amber-900/10">
+      <div class="relative bg-slate-50/50 dark:bg-zinc-800/20 rounded-2xl p-5 border border-slate-100 dark:border-zinc-800/40">
         <!-- Quote watermark decoration -->
-        <div class="absolute -top-3 left-2 text-4xl text-amber-300/40 dark:text-amber-700/30 font-serif leading-none select-none">“</div>
+        <div class="absolute -top-3 left-2 text-4xl text-emerald-300/20 dark:text-emerald-700/20 font-serif leading-none select-none">“</div>
         <div class="text-[15px] font-serif italic text-slate-800 dark:text-zinc-100 whitespace-pre-wrap leading-relaxed pl-5 pr-2">
           ${post.text}
         </div>
-        <div class="absolute right-6 top-6 opacity-[0.06] text-amber-600 dark:text-amber-400 pointer-events-none">
+        <div class="absolute right-6 top-6 opacity-[0.03] text-emerald-600 dark:text-emerald-400 pointer-events-none">
           <i data-lucide="sparkles" class="w-16 h-16"></i>
         </div>
       </div>
@@ -590,7 +590,7 @@ function createFeedPostCard(post) {
     <div class="flex items-center gap-6 pt-3 border-t border-slate-100 dark:border-zinc-800/60">
       ${isTestimony ? `
         <button onclick="toggleLikePost('${postId}')" class="flex items-center gap-2 text-xs font-black transition-all hover:scale-105 active:scale-95 cursor-pointer ${
-          isLiked ? 'text-amber-600 dark:text-amber-400' : 'text-slate-500 hover:text-amber-600 dark:text-zinc-400 dark:hover:text-amber-400'
+          isLiked ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 hover:text-emerald-600 dark:text-zinc-400 dark:hover:text-emerald-400'
         }">
           <span class="text-base">${isLiked ? '🙌' : '🙏'}</span>
           <span>${isLiked ? 'Hallelujah!' : 'Amen'} (${likesCount})</span>
@@ -712,8 +712,7 @@ function loadSidebarJourneys() {
 
   window.db.collection('community_feed')
     .where('type', '==', 'testimony')
-    .get()
-    .then(snap => {
+    .onSnapshot(snap => {
       sidebarJourneys = [];
       snap.forEach(doc => {
         const u = doc.data();
@@ -727,10 +726,12 @@ function loadSidebarJourneys() {
         const tB = (b.createdAt && b.createdAt.seconds) ? b.createdAt.seconds : 0;
         return tB - tA;
       });
-      activeSidebarJourneyIndex = 0;
+      // Preserve current slide position if possible
+      if (activeSidebarJourneyIndex >= sidebarJourneys.length) {
+        activeSidebarJourneyIndex = 0;
+      }
       renderActiveSidebarJourney();
-    })
-    .catch(err => {
+    }, err => {
       console.warn("Error loading sidebar testimonies:", err);
       sidebar.innerHTML = `<p class="text-[11px] text-slate-400 text-center py-2">No praise testimonies published yet.</p>`;
     });
@@ -794,7 +795,26 @@ function publishToFeed() {
       if (window.sendPushNotification) {
         const titleStr = finalType === 'announcement' ? '📢 Official Announcement' : `🙏 New Testimony from ${window.currentUserProfile?.displayName || user.email}`;
         const snippet = textVal.length > 80 ? textVal.substring(0, 80) + '...' : textVal;
-        window.sendPushNotification(titleStr, snippet, '/?tab=feed');
+        
+        if (finalType === 'testimony') {
+          // Notify Super Admins offline/off-app of new testimonies to review/moderate
+          window.sendPushNotification(
+            "🙏 New Testimony Published!",
+            `Member ${window.currentUserProfile?.displayName || user.email} shared: "${snippet}"`,
+            '/?tab=feed',
+            "Super Admin"
+          );
+        }
+
+        // Broadcast to other members, excluding the author themselves
+        window.sendPushNotification(
+          titleStr,
+          snippet,
+          '/?tab=feed',
+          null, // targetRole
+          null, // targetUid
+          user.uid // excludeUid: exclude the author of the post!
+        );
       }
     })
     .catch(err => window.handleFirestoreError(err, 'write', 'community_feed'));
@@ -993,6 +1013,31 @@ window.clearAttachment = function(type) {
   }
 };
 
+window.scrollToComposerAndSelectTestimony = function() {
+  const composer = document.getElementById('feed-composer-box');
+  if (composer) {
+    composer.scrollIntoView({ behavior: 'smooth' });
+    const select = document.getElementById('feed-post-type');
+    if (select) {
+      select.value = 'testimony';
+    }
+    const txt = document.getElementById('feed-composer-text');
+    if (txt) {
+      txt.focus();
+      txt.placeholder = "Write your real, authentic praise testimony here to inspire the saints...";
+    }
+  } else {
+    // If we are not on the feed tab, switch to feed tab first!
+    const btn = document.getElementById('tab-feed-btn');
+    if (btn) {
+      btn.click();
+      setTimeout(() => {
+        window.scrollToComposerAndSelectTestimony();
+      }, 300);
+    }
+  }
+};
+
 // Expose globally
 window.initFeedEngine = initFeedEngine;
 window.publishToFeed = publishToFeed;
@@ -1001,3 +1046,4 @@ window.toggleCommentsSection = toggleCommentsSection;
 window.submitPostComment = submitPostComment;
 window.deleteFeedPost = deleteFeedPost;
 window.getMediaHTML = getMediaHTML;
+window.scrollToComposerAndSelectTestimony = window.scrollToComposerAndSelectTestimony;

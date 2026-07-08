@@ -389,6 +389,16 @@
     }).then(() => {
       window.showToast?.("Review posted successfully! Thank you for your feedback.", "success");
       window.closeReviewModal();
+
+      // Notify Super Admins offline/off-app of the new star review
+      if (window.sendPushNotification) {
+        window.sendPushNotification(
+          "⭐ New Member Review Posted!",
+          `Member ${userName} gave a ${rating}-star rating: "${comment.length > 60 ? comment.substring(0, 60) + '...' : comment}"`,
+          "/?tab=portfolio", // Redirect path
+          "Super Admin"      // Target Role
+        );
+      }
     }).catch(err => {
       console.error("Review posting failed:", err);
       window.showToast?.("Posting review failed: " + err.message, "error");

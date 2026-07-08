@@ -1481,6 +1481,15 @@
                 <div id="sidebar-testimonies-list" class="space-y-3">
                   <!-- Loaded dynamically from real community praise testimonies as a slideshow -->
                 </div>
+                
+                <div class="pt-3 border-t border-slate-100 dark:border-zinc-800/60 flex flex-col gap-2">
+                  <p class="text-[10px] text-slate-400 dark:text-zinc-500 italic">
+                    Has God done something wonderful in your life? We urge you to share your praise report and encourage the saints!
+                  </p>
+                  <button onclick="window.scrollToComposerAndSelectTestimony()" class="w-full py-2 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900 text-emerald-700 dark:text-emerald-400 font-bold text-[11px] uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1">
+                    <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> Share Your Testimony
+                  </button>
+                </div>
               </div>
 
             </div>
@@ -1900,7 +1909,7 @@
                   <div class="absolute -right-8 -bottom-8 w-32 h-32 bg-white/10 rounded-full blur-xl"></div>
                   <h3 class="text-xl font-black font-display flex items-center gap-2">🏆 Bible Quizzes & Live Trivia Lounge</h3>
                   <p class="text-xs text-blue-50 mt-1 max-w-xl">
-                    Challenge your scriptural wisdom, join simulated live trivia rooms with other members, level up your active faith streak, and broadcast your triumph medals to the community!
+                    Challenge your scriptural wisdom, join real-time trivia challenges, level up your active faith streak, and broadcast your triumph medals to the community!
                   </p>
                 </div>
 
@@ -2707,6 +2716,15 @@
                       <option value="/?tab=bible">Bible (Scriptures, Quizzes & Live Trivia)</option>
                       <option value="/?tab=feed">Community Feed (Testimonies & Announcements)</option>
                       <option value="/?tab=prayers">Intercession Room (Prayers)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-1">Target Audience (Offline Push Filtering)</label>
+                    <select id="admin-nudge-role" class="w-full px-4 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg text-xs font-semibold text-blue-600 dark:text-blue-400">
+                      <option value="all">🌍 All Members (Global Broadcast)</option>
+                      <option value="Super Admin">🛡️ Only Super Admins (Off-app testing/admin updates)</option>
+                      <option value="Cell Leader">👑 Only Cell Leaders</option>
+                      <option value="Pastor">🙏 Only Pastors</option>
                     </select>
                   </div>
                   <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-lg tracking-wider text-xs w-full sm:w-auto">

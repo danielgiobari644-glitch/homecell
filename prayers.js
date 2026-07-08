@@ -187,6 +187,41 @@ function submitPrayerPetition(category, urgency, text) {
   })
     .then(() => {
       window.showToast?.("Your intercession petition has been published globally.");
+
+      // Dispatch off-app and offline background notifications
+      if (window.sendPushNotification) {
+        const authorName = profile.displayName || user.email;
+        const textSnippet = text.length > 70 ? text.substring(0, 70) + '...' : text;
+        
+        if (urgency) {
+          // Send high-priority alert specifically to Super Admins offline/off-app
+          window.sendPushNotification(
+            "🚨 URGENT Intercession Alert",
+            `[${category.toUpperCase()}] ${authorName} requested urgent prayer: "${textSnippet}"`,
+            "/?tab=prayers",
+            "Super Admin"
+          );
+          // And broadcast to everyone else to stand in agreement
+          window.sendPushNotification(
+            "🙏 Urgent Prayer Needed",
+            `Stand with ${authorName} in prayer for ${category}: "${textSnippet}"`,
+            "/?tab=prayers",
+            null, // targetRole
+            null, // targetUid
+            user.uid // exclude the petitioner themselves!
+          );
+        } else {
+          // General broadcast to everyone else
+          window.sendPushNotification(
+            "🙏 New Prayer Request",
+            `${authorName} posted a prayer petition in ${category}. Click to join in agreement!`,
+            "/?tab=prayers",
+            null,
+            null,
+            user.uid // exclude the petitioner themselves!
+          );
+        }
+      }
     })
     .catch(err => window.handleFirestoreError(err, 'create', `prayer_petitions/${docId}`));
 }
