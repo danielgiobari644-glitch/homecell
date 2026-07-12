@@ -1,2297 +1,1245 @@
-// Admin Dashboard JavaScript - Salvation Ministries Ada George
-// Handles authentication, content management, and real-time updates
+// admin.js
+// Super Admin Controls Desk - membership registry, parish events, trivia factory, installer publisher, and system settings
 
-let currentUser = null;
+let usersListListener = null;
+let adminCellsListener = null;
+let adminEventsListener = null;
+let adminTriviaListener = null;
+let adminBundlesListener = null;
 
-// Wait for DOM and Firebase to be ready
-document.addEventListener('DOMContentLoaded', () => {
-  console.log('DOM loaded, waiting for Firebase...');
-  waitForFirebase().then(() => {
-    console.log('Firebase ready, initializing admin...');
-    initializeAdmin();
-    loadThemeSettings(); // Apply theme to admin dashboard
-  });
-});
-
-function initializeAdmin() {
-    setupLogin();
-    setupNavigation();
-    setupForms();
-    setupCustomSectionsAdmin();
+function initAdminModule() {
+  if (window.currentUserRole !== 'Super Admin') {
+    const adminBtn = document.getElementById('nav-admin');
+    if (adminBtn) adminBtn.classList.add('hidden');
     
-    // Initialize icons
-    if (window.lucide) {
-        lucide.createIcons();
-    }
+    const sec = document.getElementById('tab-admin');
+    if (sec) sec.innerHTML = `<div class="p-12 text-center text-slate-400">Unauthorized. This panel is reserved for the Super Admin.</div>`;
+    return;
+  }
+
+  // Show Admin pane sidebar button and separator if Super Admin
+  const adminBtn = document.getElementById('nav-admin');
+  if (adminBtn) adminBtn.classList.remove('hidden');
+
+  const adminSep = document.getElementById('admin-nav-separator');
+  if (adminSep) adminSep.classList.remove('hidden');
+
+  syncMembershipRegistry();
+  syncAdminCells();
+  syncAdminEvents();
+  syncAdminTrivia();
+  syncAdminQuizzes();
+  syncAdminBundles();
+  syncAdminStreams();
+  loadGlobalDeskSettings();
 }
 
-// ========================================
-// Theme Settings Application
-// ========================================
+// 1. Unified Membership Registry
+function syncMembershipRegistry() {
+  const container = document.getElementById('admin-users-rows');
+  if (!container) return;
 
-async function loadThemeSettings() {
-    try {
-        const doc = await safeGet(db.collection(Collections.SETTINGS).doc('theme'));
-        if (doc && doc.exists) {
-            const theme = doc.data();
-            
-            // Update CSS variables
-            if (theme.primaryColor) {
-                document.documentElement.style.setProperty('--primary-color', theme.primaryColor);
-            }
-            if (theme.secondaryColor) {
-                document.documentElement.style.setProperty('--secondary-color', theme.secondaryColor);
-            }
-            if (theme.accentColor) {
-                document.documentElement.style.setProperty('--accent-color', theme.accentColor);
-            }
+  if (usersListListener) usersListListener();
 
-            // Update logo
-            if (theme.logoUrl) {
-                const logos = document.querySelectorAll('.admin-logo img, .login-logo img');
-                logos.forEach(logo => {
-                    logo.src = theme.logoUrl;
-                });
-            }
-
-            // Update favicon
-            if (theme.faviconUrl) {
-                let link = document.querySelector("link[rel~='icon']");
-                if (!link) {
-                    link = document.createElement('link');
-                    link.rel = 'icon';
-                    document.getElementsByTagName('head')[0].appendChild(link);
-                }
-                link.href = theme.faviconUrl;
-            }
-            
-            // Apply dark mode if set
-            if (theme.mode === 'dark') {
-                document.body.classList.add('dark-mode');
-            } else {
-                document.body.classList.remove('dark-mode');
-            }
-        }
-    } catch (error) {
-        console.error('Error loading theme settings:', error.message || String(error));
-    }
-}
-
-// ========================================
-// Authentication
-// ========================================
-
-function setupLogin() {
-    const loginForm = document.getElementById('loginForm');
-    const googleLoginBtn = document.getElementById('googleLoginBtn');
-    const loginFeedback = document.getElementById('loginFeedback');
-    
-    // Check Firebase Auth state first
-    auth.onAuthStateChanged((user) => {
-        if (user && user.email === 'danielgiobari644@gmail.com' && user.emailVerified) {
-            console.log('Firebase Auth: Admin recognized');
-            sessionStorage.setItem('adminLoggedIn', 'true');
-            currentUser = user.displayName || user.email;
-            showDashboard();
-        } else {
-            console.log('Firebase Auth: No admin active');
-            // If they were "logged in" via legacy but no Auth, we might still allow local session
-            // but rules will fail. Better to stay on login screen if Auth is needed.
-            const loggedIn = sessionStorage.getItem('adminLoggedIn');
-            if (loggedIn === 'true') {
-                showDashboard();
-            }
-        }
+  // Fetch all cells first so we can map names and populate selects
+  window.db.collection('cells').get().then(cellsSnap => {
+    const cellsList = [];
+    cellsSnap.forEach(cdoc => {
+      cellsList.push({ id: cdoc.id, name: cdoc.data().name });
     });
 
-    googleLoginBtn?.addEventListener('click', async () => {
-        try {
-            console.log('Google login attempt...');
-            const provider = new firebase.auth.GoogleAuthProvider();
-            const result = await auth.signInWithPopup(provider);
-            const user = result.user;
-            
-            if (user.email === 'danielgiobari644@gmail.com') {
-                console.log('Google login successful');
-                sessionStorage.setItem('adminLoggedIn', 'true');
-                currentUser = user.displayName || user.email;
-                showDashboard();
-            } else {
-                console.warn('Unauthorized email:', user.email);
-                showFeedback(loginFeedback, 'Unauthorized access attempt. Access denied.', 'error');
-                await auth.signOut();
-            }
-        } catch (error) {
-            console.error('Google login error:', error.message || String(error));
-            showFeedback(loginFeedback, `Login error: ${error.message || 'Unknown error'}`, 'error');
-        }
-    });
-    
-    loginForm?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        const username = document.getElementById('loginUsername').value.trim();
-        const password = document.getElementById('loginPassword').value.trim();
-        
-        if (!username || !password) {
-            showFeedback(loginFeedback, 'Please enter both username and password', 'error');
-            return;
-        }
-        
-        try {
-            console.log('Attempting login...');
-            
-            // Wait for Firebase to be ready
-            await waitForFirebase();
-            
-            const doc = await safeGet(db.collection(Collections.ADMIN).doc('credentials'));
-            
-            if (!doc || !doc.exists) {
-                console.error('Credentials document does not exist');
-                showFeedback(loginFeedback, 'Admin credentials not found. Please check Firebase setup.', 'error');
-                return;
-            }
-            
-            const credentials = doc.data();
-            console.log('Credentials retrieved successfully');
-            
-            if (username === credentials.username && password === credentials.password) {
-                console.log('Login successful. Synchronizing Firebase Auth...');
-                try {
-                    // Try to sign in or sign up the admin email
-                    await auth.signInWithEmailAndPassword('danielgiobari644@gmail.com', password);
-                    console.log('Firebase Auth: Session established.');
-                } catch (authError) {
-                    console.warn('Firebase Auth email/password sign-in failed, trying registration:', authError.message);
-                    try {
-                        await auth.createUserWithEmailAndPassword('danielgiobari644@gmail.com', password);
-                        console.log('Firebase Auth: Registered and logged in successfully.');
-                    } catch (regError) {
-                        console.warn('Firebase Auth registration failed, falling back to anonymous login:', regError.message);
-                        try {
-                            await auth.signInAnonymously();
-                            console.log('Firebase Auth: Signed in anonymously as fallback.');
-                        } catch (anonError) {
-                            console.error('All Firebase Auth login attempts failed:', anonError.message);
-                        }
-                    }
-                }
-                sessionStorage.setItem('adminLoggedIn', 'true');
-                currentUser = username;
-                showDashboard();
-            } else {
-                console.log('Invalid credentials');
-                showFeedback(loginFeedback, 'Invalid username or password', 'error');
-            }
-        } catch (error) {
-            console.error('Login error:', error.message || String(error));
-            showFeedback(loginFeedback, `Error: ${error.message || 'Unknown error'}. Please try again.`, 'error');
-        }
-    });
-}
-
-function showDashboard() {
-    const loginScreen = document.getElementById('loginScreen');
-    const adminDashboard = document.getElementById('adminDashboard');
-    if (loginScreen) loginScreen.style.display = 'none';
-    if (adminDashboard) adminDashboard.style.display = 'flex';
-    loadAllData();
-}
-
-// ========================================
-// Navigation
-// ========================================
-
-function setupNavigation() {
-    const navItems = document.querySelectorAll('.admin-nav-item');
-    const panels = document.querySelectorAll('.admin-panel');
-    const logoutBtn = document.getElementById('logoutBtn');
-    
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', async () => {
-            if (confirm('Are you sure you want to logout?')) {
-                try {
-                    await auth.signOut();
-                    sessionStorage.removeItem('adminLoggedIn');
-                    window.location.reload();
-                } catch (error) {
-                    console.error('Logout error:', error.message || String(error));
-                    // Fallback: clear session anyway
-                    sessionStorage.removeItem('adminLoggedIn');
-                    window.location.reload();
-                }
-            }
-        });
-    }
-
-    navItems.forEach(item => {
-        item.addEventListener('click', () => {
-            const panelId = item.dataset.panel + 'Panel';
-            
-            // Update active states
-            navItems.forEach(nav => nav.classList.remove('active'));
-            panels.forEach(panel => panel.classList.remove('active'));
-            
-            item.classList.add('active');
-            document.getElementById(panelId)?.classList.add('active');
-        });
-    });
-}
-
-// ========================================
-// Load All Data
-// ========================================
-
-async function loadAllData() {
-    loadThemeData();
-    loadDesignData();
-    loadHeroData();
-    loadContentData();
-    loadServicesData();
-    loadContactData();
-    loadSermonsList();
-    loadEventsList();
-    loadTestimoniesList();
-    loadQuotesList();
-    loadMomentsList();
-    loadMessagesList();
-    loadCustomSectionsAdmin();
-}
-
-// ========================================
-// Theme Settings
-// ========================================
-
-async function loadDesignData() {
-    try {
-        const doc = await safeGet(db.collection(Collections.SETTINGS).doc('theme'));
-        if (doc && doc.exists) {
-            const data = doc.data();
-            const mode = document.getElementById('designThemeMode');
-            const primary = document.getElementById('designPrimaryColor');
-            const hover = document.getElementById('designPrimaryHover');
-            const radius = document.getElementById('designBorderRadius');
-            const spacing = document.getElementById('designSpacing');
-            const fontSize = document.getElementById('designFontSize');
-
-            if (mode) mode.value = data.mode || 'light';
-            if (primary) primary.value = data.primaryColor || '#2563eb';
-            if (hover) hover.value = data.primaryHover || '#1d4ed8';
-            if (radius) radius.value = data.borderRadius || 12;
-            if (spacing) spacing.value = data.sectionSpacing || 5;
-            if (fontSize) fontSize.value = data.fontSizeBase || 16;
-            
-            updateDesignValues();
-        }
-    } catch (error) {
-        console.error('Error loading design data:', error.message || String(error));
-    }
-}
-
-function updateDesignValues() {
-    const mode = document.getElementById('designThemeMode')?.value;
-    const radius = document.getElementById('designBorderRadius')?.value;
-    const spacing = document.getElementById('designSpacing')?.value;
-    const fontSize = document.getElementById('designFontSize')?.value;
-    const primary = document.getElementById('designPrimaryColor')?.value;
-
-    if (document.getElementById('borderRadiusVal')) document.getElementById('borderRadiusVal').textContent = radius + 'px';
-    if (document.getElementById('spacingVal')) document.getElementById('spacingVal').textContent = spacing + 'rem';
-    if (document.getElementById('fontSizeVal')) document.getElementById('fontSizeVal').textContent = fontSize + 'px';
-
-    // Live sync for admin preview
-    if (mode === 'dark') {
-        document.body.classList.add('dark-mode');
-    } else if (mode === 'light') {
-        document.body.classList.remove('dark-mode');
-    }
-    
-    document.documentElement.style.setProperty('--radius-md', radius + 'px');
-    document.documentElement.style.setProperty('--radius-lg', (radius * 1.5) + 'px');
-    document.documentElement.style.setProperty('--section-spacing', spacing + 'rem');
-    document.documentElement.style.setProperty('--font-size-base', fontSize + 'px');
-    if (primary) document.documentElement.style.setProperty('--primary-color', primary);
-}
-
-async function loadThemeData() {
-    try {
-        const doc = await safeGet(db.collection(Collections.SETTINGS).doc('theme'));
-        if (doc && doc.exists) {
-            const theme = doc.data();
-            const primaryColor = document.getElementById('primaryColor');
-            const secondaryColor = document.getElementById('secondaryColor');
-            const accentColor = document.getElementById('accentColor');
-            const logoUrl = document.getElementById('logoUrl');
-            const faviconUrl = document.getElementById('faviconUrl');
-            const livestreamUrl = document.getElementById('livestreamUrl');
-            const sermonBackgroundInput = document.getElementById('sermonBackgroundInput');
-            const testimonyBackgroundInput = document.getElementById('testimonyBackgroundInput');
-
-            if (primaryColor) primaryColor.value = theme.primaryColor || '#2563eb';
-            if (secondaryColor) secondaryColor.value = theme.secondaryColor || '#7c3aed';
-            if (accentColor) accentColor.value = theme.accentColor || '#f59e0b';
-            if (logoUrl) logoUrl.value = theme.logoUrl || '';
-            if (faviconUrl) faviconUrl.value = theme.faviconUrl || '';
-            if (livestreamUrl) livestreamUrl.value = theme.livestreamUrl || '';
-            if (sermonBackgroundInput) sermonBackgroundInput.value = theme.sermonBackground || '';
-            if (testimonyBackgroundInput) testimonyBackgroundInput.value = theme.testimonyBackground || '';
-
-            // New fields
-            const sermonBgType = document.getElementById('sermonBgType');
-            const sermonBgColor = document.getElementById('sermonBgColor');
-            const sermonBgGradient = document.getElementById('sermonBgGradient');
-            const socialFacebook = document.getElementById('socialFacebook');
-            const socialInstagram = document.getElementById('socialInstagram');
-            const socialTwitter = document.getElementById('socialTwitter');
-            const socialYoutube = document.getElementById('socialYoutube');
-            const joinFamilyBgType = document.getElementById('joinFamilyBgType');
-            const joinFamilyBgImage = document.getElementById('joinFamilyBgImage');
-            const joinFamilyBgColor = document.getElementById('joinFamilyBgColor');
-            const joinFamilyBgGradient = document.getElementById('joinFamilyBgGradient');
-            const joinFamilyFellowshipLink = document.getElementById('joinFamilyFellowshipLink');
-            const joinFamilyNextStepsLink = document.getElementById('joinFamilyNextStepsLink');
-            const joinFamilyServeLink = document.getElementById('joinFamilyServeLink');
-
-            if (sermonBgType) sermonBgType.value = theme.sermonBgType || 'image';
-            if (sermonBgColor) sermonBgColor.value = theme.sermonBgColor || '#0f172a';
-            if (sermonBgGradient) sermonBgGradient.value = theme.sermonBgGradient || 'linear-gradient(135deg, #0f172a, #1e293b)';
-            if (socialFacebook) socialFacebook.value = theme.socialFacebook || '';
-            if (socialInstagram) socialInstagram.value = theme.socialInstagram || '';
-            if (socialTwitter) socialTwitter.value = theme.socialTwitter || '';
-            if (socialYoutube) socialYoutube.value = theme.socialYoutube || '';
-            if (joinFamilyBgType) joinFamilyBgType.value = theme.joinFamilyBgType || 'color';
-            if (joinFamilyBgImage) joinFamilyBgImage.value = theme.joinFamilyBgImage || '';
-            if (joinFamilyBgColor) joinFamilyBgColor.value = theme.joinFamilyBgColor || '#0b1329';
-            if (joinFamilyBgGradient) joinFamilyBgGradient.value = theme.joinFamilyBgGradient || 'linear-gradient(135deg, #090d16, #111827)';
-            if (joinFamilyFellowshipLink) joinFamilyFellowshipLink.value = theme.joinFamilyFellowshipLink || '#contact';
-            if (joinFamilyNextStepsLink) joinFamilyNextStepsLink.value = theme.joinFamilyNextStepsLink || '#contact';
-            if (joinFamilyServeLink) joinFamilyServeLink.value = theme.joinFamilyServeLink || '#ministries-serve';
-        }
-    } catch (error) {
-        console.error('Error loading theme data:', error.message || String(error));
-    }
-}
-
-// ========================================
-// Hero Settings
-// ========================================
-
-async function loadHeroData() {
-    try {
-        const doc = await safeGet(db.collection(Collections.SETTINGS).doc('theme'));
-        if (doc && doc.exists) {
-            const theme = doc.data();
-            const heroModeSelect = document.getElementById('heroModeSelect');
-            const heroTitleInput = document.getElementById('heroTitleInput');
-            const heroSubtextInput = document.getElementById('heroSubtextInput');
-
-            if (heroModeSelect) heroModeSelect.value = theme.heroMode || 'single';
-            if (heroTitleInput) heroTitleInput.value = theme.heroText || '';
-            if (heroSubtextInput) heroSubtextInput.value = theme.heroSubtext || '';
-
-            const container = document.getElementById('heroImagesContainer');
-            if (container) {
-                container.innerHTML = '';
-                // Support both new singular heroImage and old heroImages array for compatibility during transition
-                const images = [];
-                if (theme.heroImage && (!theme.heroImages || theme.heroImages.length === 0)) {
-                    images.push({url: theme.heroImage, link: '#'});
-                } else if (theme.heroImages && theme.heroImages.length > 0) {
-                    theme.heroImages.forEach(img => images.push(img));
-                }
-                
-                images.forEach(img => addHeroImageRow(img));
-                
-                // If empty, add one default row
-                if (images.length === 0) {
-                    addHeroImageRow();
-                }
-
-                // Initialize Sortable
-                if (typeof Sortable !== 'undefined') {
-                    new Sortable(container, {
-                        animation: 150,
-                        ghostClass: 'sortable-ghost',
-                        handle: '.drag-handle'
-                    });
-                }
-            }
-        }
-    } catch (error) {
-        console.error('Error loading hero data:', error.message || String(error));
-    }
-}
-
-function addHeroImageRow(data = {}) {
-    const container = document.getElementById('heroImagesContainer');
-    if (!container) return;
-
-    const row = document.createElement('div');
-    row.className = 'hero-image-row admin-card';
-    row.style.marginBottom = '1.5rem';
-    row.style.background = 'rgba(0,0,0,0.02)';
-    row.style.padding = '1.5rem';
-    row.style.position = 'relative';
-
-    row.innerHTML = `
-        <div class="drag-handle" style="position: absolute; top: 1rem; left: 1rem;">
-            <i data-lucide="grip-vertical"></i>
-        </div>
-        <button type="button" class="remove-hero-img-btn" style="position: absolute; top: 1rem; right: 1rem; background: #fee2e2; color: #ef4444; border: none; padding: 0.5rem; border-radius: 8px; cursor: pointer;">
-            <i data-lucide="trash-2"></i>
-        </button>
-        <div class="form-row" style="padding: 0 2rem;">
-            <div class="form-group">
-                <label>Image URL</label>
-                <input type="url" class="hero-img-url" value="${data.url || ''}" required>
-            </div>
-            <div class="form-group">
-                <label>Link URL (Optional)</label>
-                <input type="url" class="hero-img-link" value="${data.link || '#'}">
-            </div>
-        </div>
-    `;
-
-    row.querySelector('.remove-hero-img-btn').addEventListener('click', () => {
-        row.remove();
-    });
-
-    container.appendChild(row);
-    if (window.lucide) lucide.createIcons();
-}
-
-// ========================================
-// Content Settings
-// ========================================
-
-async function loadContentData() {
-    try {
-        const doc = await safeGet(db.collection(Collections.CONTENT).doc('about'));
-        if (doc && doc.exists) {
-            const content = doc.data();
-            const missionInput = document.getElementById('missionInput');
-            const missionImageUrl = document.getElementById('missionImageUrl');
-            const visionInput = document.getElementById('visionInput');
-            const visionImageUrl = document.getElementById('visionImageUrl');
-            const welcomeInput = document.getElementById('welcomeInput');
-            const welcomeImageUrl = document.getElementById('welcomeImageUrl');
-
-            if (missionInput) missionInput.value = content.mission || '';
-            if (missionImageUrl) missionImageUrl.value = content.missionImage || '';
-            if (visionInput) visionInput.value = content.vision || '';
-            if (visionImageUrl) visionImageUrl.value = content.visionImage || '';
-            if (welcomeInput) welcomeInput.value = content.welcomeMessage || '';
-            if (welcomeImageUrl) welcomeImageUrl.value = content.welcomeImage || '';
-        }
-    } catch (error) {
-        console.error('Error loading content data:', error.message || String(error));
-    }
-}
-
-// ========================================
-// Services Settings
-// ========================================
-
-async function loadServicesData() {
-    try {
-        const doc = await safeGet(db.collection(Collections.SERVICES).doc('schedule'));
-        if (doc && doc.exists) {
-            const schedule = doc.data();
-            
-            for (let i = 1; i <= 4; i++) {
-                const key = `sunday${i}`;
-                if (schedule[key]) {
-                    const title = document.getElementById(`sunday${i}Title`);
-                    const time = document.getElementById(`sunday${i}Time`);
-                    const desc = document.getElementById(`sunday${i}Description`);
-                    if (title) title.value = schedule[key].title || '';
-                    if (time) time.value = schedule[key].time || '';
-                    if (desc) desc.value = schedule[key].description || '';
-                }
-            }
-            
-            if (schedule.midweek) {
-                const midweekTitle = document.getElementById('midweekTitle');
-                const midweekTime = document.getElementById('midweekTime');
-                const midweekDescription = document.getElementById('midweekDescription');
-                if (midweekTitle) midweekTitle.value = schedule.midweek.title || '';
-                if (midweekTime) midweekTime.value = schedule.midweek.time || '';
-                if (midweekDescription) midweekDescription.value = schedule.midweek.description || '';
-            }
-            
-            if (schedule.special) {
-                const specialTitle = document.getElementById('specialTitle');
-                const specialTime = document.getElementById('specialTime');
-                const specialDescription = document.getElementById('specialDescription');
-                if (specialTitle) specialTitle.value = schedule.special.title || '';
-                if (specialTime) specialTime.value = schedule.special.time || '';
-                if (specialDescription) specialDescription.value = schedule.special.description || '';
-            }
-        }
-    } catch (error) {
-        console.error('Error loading services data:', error.message || String(error));
-    }
-}
-
-// ========================================
-// Contact Settings
-// ========================================
-
-async function loadContactData() {
-    try {
-        const doc = await safeGet(db.collection(Collections.CONTENT).doc('contact'));
-        if (doc && doc.exists) {
-            const contact = doc.data();
-            
-            const contactEmailAdmin = document.getElementById('contactEmailAdmin');
-            const contactPhoneAdmin = document.getElementById('contactPhoneAdmin');
-            const contactAddressAdmin = document.getElementById('contactAddressAdmin');
-
-            if (contactEmailAdmin) contactEmailAdmin.value = contact.email || '';
-            if (contactPhoneAdmin) contactPhoneAdmin.value = contact.phone || '';
-            if (contactAddressAdmin) contactAddressAdmin.value = contact.address || '';
-            
-            const container = document.getElementById('bankAccountsList');
-            if (container) {
-                container.innerHTML = '';
-                const accounts = contact.offeringAccounts || (contact.offeringAccount ? [contact.offeringAccount] : []);
-                accounts.forEach(account => addBankAccountRow(account));
-
-                // Initialize Sortable for bank accounts
-                if (typeof Sortable !== 'undefined') {
-                    new Sortable(container, {
-                        animation: 150,
-                        ghostClass: 'sortable-ghost',
-                        handle: '.drag-handle'
-                    });
-                }
-            }
-        }
-    } catch (error) {
-        console.error('Error loading contact data:', error.message || String(error));
-    }
-}
-
-function addBankAccountRow(data = {}) {
-    const container = document.getElementById('bankAccountsList');
-    if (!container) return;
-
-    const row = document.createElement('div');
-    row.className = 'bank-account-row admin-card';
-    row.style.marginBottom = '1.5rem';
-    row.style.background = 'rgba(0,0,0,0.02)';
-    row.style.padding = '1.5rem';
-    row.style.position = 'relative';
-
-    row.innerHTML = `
-        <div class="drag-handle" style="position: absolute; top: 1rem; left: 1rem;">
-            <i data-lucide="grip-vertical"></i>
-        </div>
-        <button type="button" class="remove-bank-btn" style="position: absolute; top: 1rem; right: 1rem; background: #fee2e2; color: #ef4444; border: none; padding: 0.5rem; border-radius: 8px; cursor: pointer;">
-            <i data-lucide="trash-2"></i>
-        </button>
-        <div style="padding: 0 2rem;">
-            <div class="form-group">
-                <label>Account Title (Optional - e.g. General Offering, Tithe)</label>
-                <input type="text" class="bank-title" value="${data.title || ''}">
-            </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Bank Name</label>
-                    <input type="text" class="bank-name" value="${data.bank || ''}" required>
-                </div>
-                <div class="form-group">
-                    <label>Account Number</label>
-                    <input type="text" class="bank-number" value="${data.accountNumber || ''}" required>
-                </div>
-            </div>
-            <div class="form-group">
-                <label>Account Name</label>
-                <input type="text" class="bank-acc-name" value="${data.accountName || ''}" required>
-            </div>
-        </div>
-    `;
-
-    row.querySelector('.remove-bank-btn').addEventListener('click', () => {
-        row.remove();
-    });
-
-    container.appendChild(row);
-    if (window.lucide) lucide.createIcons();
-}
-
-// ========================================
-// Sermons Management
-// ========================================
-
-async function loadSermonsList() {
-    try {
-        const sermonsList = document.getElementById('sermonsList');
-        if (!sermonsList) return;
-        sermonsList.innerHTML = '';
-        
-        const snapshot = await safeList(db.collection(Collections.SERMONS)
-            .orderBy('date', 'desc'));
-        
-        if (!snapshot || snapshot.empty) {
-            sermonsList.innerHTML = '<p style="text-align: center; opacity: 0.6;">No sermons yet</p>';
-            return;
-        }
-        
-        snapshot.forEach(doc => {
-            const sermon = doc.data();
-            const card = createSermonAdminCard(doc.id, sermon);
-            sermonsList.appendChild(card);
-        });
-    } catch (error) {
-        console.error('Error loading sermons list:', error.message || String(error));
-    }
-}
-
-function createSermonAdminCard(id, sermon) {
-    const card = document.createElement('div');
-    card.className = 'item-card';
-    
-    const date = sermon.date.toDate ? sermon.date.toDate() : new Date(sermon.date);
-    
-    card.innerHTML = `
-        <div class="item-info">
-            <h3>${sermon.title}</h3>
-            <p style="color: var(--secondary-color); margin: 0.5rem 0;">${date.toLocaleDateString()}</p>
-            ${sermon.description ? `<p style="opacity: 0.7;">${sermon.description}</p>` : ''}
-        </div>
-        <div class="item-actions">
-            <button class="btn-admin" style="background: #ef4444;" onclick="deleteSermon('${id}')">Delete</button>
-        </div>
-    `;
-    
-    return card;
-}
-
-async function deleteSermon(id) {
-    if (confirm('Are you sure you want to delete this sermon?')) {
-        try {
-            await db.collection(Collections.SERMONS).doc(id).delete();
-            loadSermonsList();
-        } catch (error) {
-            console.error('Error deleting sermon:', error.message || String(error));
-            alert('Error deleting sermon');
-        }
-    }
-}
-
-// ========================================
-// Events Management
-// ========================================
-
-async function loadEventsList() {
-    try {
-        const eventsList = document.getElementById('eventsList');
-        if (!eventsList) return;
-        eventsList.innerHTML = '';
-        
-        const snapshot = await safeList(db.collection(Collections.EVENTS)
-            .orderBy('date', 'desc'));
-        
-        if (!snapshot || snapshot.empty) {
-            eventsList.innerHTML = '<p style="text-align: center; opacity: 0.6;">No events yet</p>';
-            return;
-        }
-        
-        snapshot.forEach(doc => {
-            const event = doc.data();
-            const card = createEventAdminCard(doc.id, event);
-            eventsList.appendChild(card);
-        });
-    } catch (error) {
-        console.error('Error loading events list:', error.message || String(error));
-    }
-}
-
-function createEventAdminCard(id, event) {
-    const card = document.createElement('div');
-    card.className = 'item-card';
-    
-    const date = event.date.toDate ? event.date.toDate() : new Date(event.date);
-    
-    card.innerHTML = `
-        <div class="item-info">
-            <h3>${event.title}</h3>
-            <p style="color: var(--secondary-color); margin: 0.5rem 0;">${date.toLocaleDateString()}</p>
-            <p style="opacity: 0.7;">${event.description}</p>
-        </div>
-        <div class="item-actions">
-            <button class="btn-admin" style="background: #ef4444;" onclick="deleteEvent('${id}')">Delete</button>
-        </div>
-    `;
-    
-    return card;
-}
-
-async function deleteEvent(id) {
-    if (confirm('Are you sure you want to delete this event?')) {
-        try {
-            await db.collection(Collections.EVENTS).doc(id).delete();
-            loadEventsList();
-        } catch (error) {
-            console.error('Error deleting event:', error.message || String(error));
-            alert('Error deleting event');
-        }
-    }
-}
-
-// ========================================
-// Testimonies Management
-// ========================================
-
-async function loadTestimoniesList() {
-    loadPendingTestimonies();
-    loadApprovedTestimonies();
-}
-
-async function loadPendingTestimonies() {
-    try {
-        const pendingList = document.getElementById('pendingTestimoniesList');
-        pendingList.innerHTML = '';
-        
-        // Fetch all testimonies ordered by date to avoid composite index requirement
-        const snapshot = await safeList(db.collection(Collections.TESTIMONIES)
-            .orderBy('submittedAt', 'desc'));
-        
-        const pendingTestimonies = [];
-        if (snapshot) {
-            snapshot.forEach(doc => {
-                const data = doc.data();
-                if (data.approved === false) {
-                    pendingTestimonies.push({ id: doc.id, ...data });
-                }
-            });
-        }
-
-        if (pendingTestimonies.length > 0) {
-            pendingTestimonies.forEach(testimony => {
-                const card = createTestimonyPendingCard(testimony.id, testimony);
-                pendingList.appendChild(card);
-            });
-        } else {
-            pendingList.innerHTML = '<p style="text-align: center; opacity: 0.6;">No pending testimonies</p>';
-        }
-    } catch (error) {
-        console.error('Error loading pending testimonies:', error.message || String(error));
-    }
-}
-
-async function loadApprovedTestimonies() {
-    try {
-        const approvedList = document.getElementById('approvedTestimoniesList');
-        approvedList.innerHTML = '';
-        
-        // Fetch all testimonies ordered by date to avoid composite index requirement
-        const snapshot = await safeList(db.collection(Collections.TESTIMONIES)
-            .orderBy('submittedAt', 'desc'));
-        
-        const approvedTestimonies = [];
-        if (snapshot) {
-            snapshot.forEach(doc => {
-                const data = doc.data();
-                if (data.approved === true) {
-                    approvedTestimonies.push({ id: doc.id, ...data });
-                }
-            });
-        }
-
-        if (approvedTestimonies.length > 0) {
-            approvedTestimonies.forEach(testimony => {
-                const card = createTestimonyApprovedCard(testimony.id, testimony);
-                approvedList.appendChild(card);
-            });
-        } else {
-            approvedList.innerHTML = '<p style="text-align: center; opacity: 0.6;">No approved testimonies</p>';
-        }
-    } catch (error) {
-        console.error('Error loading approved testimonies:', error.message || String(error));
-    }
-}
-
-function createTestimonyPendingCard(id, testimony) {
-    const card = document.createElement('div');
-    card.className = 'item-card';
-    
-    const date = testimony.submittedAt.toDate ? testimony.submittedAt.toDate() : new Date(testimony.submittedAt);
-    
-    card.innerHTML = `
-        <div class="item-info">
-            <h3>${testimony.name}</h3>
-            <p style="color: var(--secondary-color); margin: 0.5rem 0;">${date.toLocaleDateString()}</p>
-            <p style="opacity: 0.7; font-style: italic;">"${testimony.message}"</p>
-        </div>
-        <div class="item-actions">
-            <button class="btn-admin" style="background: #10b981; margin-right: 0.5rem;" onclick="approveTestimony('${id}')">Approve</button>
-            <button class="btn-admin" style="background: #ef4444;" onclick="rejectTestimony('${id}')">Reject</button>
-        </div>
-    `;
-    
-    return card;
-}
-
-function createTestimonyApprovedCard(id, testimony) {
-    const card = document.createElement('div');
-    card.className = 'item-card';
-    
-    const date = testimony.submittedAt.toDate ? testimony.submittedAt.toDate() : new Date(testimony.submittedAt);
-    
-    card.innerHTML = `
-        <div class="item-info">
-            <h3>${testimony.name}</h3>
-            <p style="color: var(--secondary-color); margin: 0.5rem 0;">${date.toLocaleDateString()}</p>
-            <p style="opacity: 0.7; font-style: italic;">"${testimony.message}"</p>
-        </div>
-        <div class="item-actions">
-            <button class="btn-admin" style="background: #ef4444;" onclick="deleteTestimony('${id}')">Delete</button>
-        </div>
-    `;
-    
-    return card;
-}
-
-async function approveTestimony(id) {
-    try {
-        await db.collection(Collections.TESTIMONIES).doc(id).update({
-            approved: true
-        });
-        loadTestimoniesList();
-    } catch (error) {
-        console.error('Error approving testimony:', error.message || String(error));
-        alert('Error approving testimony');
-    }
-}
-
-async function rejectTestimony(id) {
-    if (confirm('Are you sure you want to reject this testimony?')) {
-        try {
-            await db.collection(Collections.TESTIMONIES).doc(id).delete();
-            loadTestimoniesList();
-        } catch (error) {
-            console.error('Error rejecting testimony:', error.message || String(error));
-            alert('Error rejecting testimony');
-        }
-    }
-}
-
-async function deleteTestimony(id) {
-    if (confirm('Are you sure you want to delete this testimony?')) {
-        try {
-            await db.collection(Collections.TESTIMONIES).doc(id).delete();
-            loadTestimoniesList();
-        } catch (error) {
-            console.error('Error deleting testimony:', error.message || String(error));
-            alert('Error deleting testimony');
-        }
-    }
-}
-
-// ========================================
-// Quotes Management
-// ========================================
-
-async function loadQuotesList() {
-    try {
-        const list = document.getElementById('quotesList');
-        if (!list) return;
-        list.innerHTML = '';
- 
-        const snapshot = await safeList(db.collection(Collections.QUOTES)
-            .orderBy('createdAt', 'desc'));
- 
-        if (!snapshot || snapshot.empty) {
-            list.innerHTML = '<p class="empty-msg">No quotes added yet</p>';
-            return;
-        }
-
-        snapshot.forEach(doc => {
-            const quote = doc.data();
-            const card = document.createElement('div');
-            card.className = 'item-card';
-            
-            let contentHtml = '';
-            if (quote.type === 'image') {
-                contentHtml = `<img src="${quote.imageUrl}" style="max-width: 100px; max-height: 100px; border-radius: 8px;">`;
-            } else if (quote.type === 'both') {
-                contentHtml = `
-                    <div style="display: flex; gap: 1rem; align-items: center;">
-                        <img src="${quote.imageUrl}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;">
-                        <div>
-                            <p style="font-style: italic; font-size: 1rem;">"${quote.text}"</p>
-                            <p style="opacity: 0.7; font-size: 0.8rem;">— ${quote.author || 'Unknown'}</p>
-                        </div>
-                    </div>
-                `;
-            } else {
-                contentHtml = `
-                    <div>
-                        <p style="font-style: italic; font-size: 1.1rem;">"${quote.text}"</p>
-                        <p style="opacity: 0.7; margin-top: 0.5rem;">— ${quote.author || 'Unknown'}</p>
-                    </div>
-                `;
-            }
-
-            card.innerHTML = `
-                <div class="item-info">
-                    <span style="font-size: 0.7rem; background: var(--bg-card); padding: 2px 8px; border-radius: 10px; margin-bottom: 5px; display: inline-block;">${(quote.type || 'text').toUpperCase()}</span>
-                    ${contentHtml}
-                </div>
-                <div class="item-actions">
-                    <button class="btn-admin" style="background: #ef4444;" onclick="deleteQuote('${doc.id}')">Delete</button>
-                </div>
-            `;
-            list.appendChild(card);
-        });
-    } catch (error) {
-        console.error('Error loading quotes:', error.message || String(error));
-    }
-}
-
-async function deleteQuote(id) {
-    if (confirm('Are you sure you want to delete this quote?')) {
-        try {
-            await db.collection(Collections.QUOTES).doc(id).delete();
-            loadQuotesList();
-        } catch (error) {
-            console.error('Error deleting quote:', error.message || String(error));
-            alert('Error deleting quote');
-        }
-    }
-}
-
-// ========================================
-// Moments Management
-// ========================================
-
-async function loadMomentsList() {
-    try {
-        const list = document.getElementById('momentsList');
-        if (!list) return;
-        list.innerHTML = '';
- 
-        const snapshot = await safeList(db.collection(Collections.MOMENTS)
-            .orderBy('createdAt', 'desc'));
- 
-        if (!snapshot || snapshot.empty) {
-            list.innerHTML = '<p class="empty-msg">No moments added yet</p>';
-            return;
-        }
-
-        snapshot.forEach(doc => {
-            const moment = doc.data();
-            const card = document.createElement('div');
-            card.className = 'item-card';
-            card.innerHTML = `
-                <div class="item-info">
-                    <div style="display: flex; gap: 1rem; align-items: center;">
-                        ${moment.type === 'photo' ? 
-                            `<img src="${moment.url}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;">` :
-                            `<div style="width: 60px; height: 60px; background: #000; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white;"><i data-lucide="play"></i></div>`
-                        }
-                        <div>
-                            <h3>${moment.title || (moment.type === 'photo' ? 'Photo Moment' : 'Video Moment')}</h3>
-                            <p style="opacity: 0.7; font-size: 0.9rem;">${moment.type.toUpperCase()}</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="item-actions">
-                    <button class="btn-admin" style="background: #ef4444;" onclick="deleteMoment('${doc.id}')">Delete</button>
-                </div>
-            `;
-            list.appendChild(card);
-        });
-        if (window.lucide) lucide.createIcons();
-    } catch (error) {
-        console.error('Error loading moments:', error.message || String(error));
-    }
-}
-
-async function deleteMoment(id) {
-    if (confirm('Are you sure you want to delete this moment?')) {
-        try {
-            await db.collection(Collections.MOMENTS).doc(id).delete();
-            loadMomentsList();
-        } catch (error) {
-            console.error('Error deleting moment:', error.message || String(error));
-            alert('Error deleting moment');
-        }
-    }
-}
-
-function setupMomentsAdminTabs() {
-    const tabs = document.querySelectorAll('#momentsPanel .tab-btn');
-    tabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-            tabs.forEach(t => t.classList.remove('active'));
-            tab.classList.add('active');
-            
-            const target = tab.dataset.tab;
-            document.querySelectorAll('#momentsPanel .tab-content').forEach(c => c.classList.remove('active'));
-            document.getElementById(target).classList.add('active');
-        });
-    });
-}
-
-function setupForms() {
-    // Design System Form
-    const designForm = document.getElementById('designForm');
-    ['designBorderRadius', 'designSpacing', 'designFontSize', 'designPrimaryColor', 'designThemeMode'].forEach(id => {
-        document.getElementById(id)?.addEventListener('input', updateDesignValues);
-    });
-
-    designForm?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        try {
-            const updates = {
-                mode: document.getElementById('designThemeMode').value,
-                primaryColor: document.getElementById('designPrimaryColor').value,
-                primaryHover: document.getElementById('designPrimaryHover').value,
-                borderRadius: parseInt(document.getElementById('designBorderRadius').value),
-                sectionSpacing: parseFloat(document.getElementById('designSpacing').value),
-                fontSizeBase: parseInt(document.getElementById('designFontSize').value),
-                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-            };
-            
-            await db.collection(Collections.SETTINGS).doc('theme').update(updates);
-            alert('Design system updated successfully!');
-            // Apply immediately to current view
-            if (updates.mode === 'dark') document.body.classList.add('dark-mode');
-            else document.body.classList.remove('dark-mode');
-        } catch (error) {
-            console.error('Error saving design:', error.message || String(error));
-            alert('Error saving design system');
-        }
-    });
-
-    // Theme Form
-    document.getElementById('themeForm')?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        try {
-            const updates = {
-                primaryColor: document.getElementById('primaryColor').value,
-                secondaryColor: document.getElementById('secondaryColor').value,
-                accentColor: document.getElementById('accentColor').value,
-                sermonBgType: document.getElementById('sermonBgType').value,
-                sermonBgColor: document.getElementById('sermonBgColor').value,
-                sermonBgGradient: document.getElementById('sermonBgGradient').value.trim(),
-                socialFacebook: document.getElementById('socialFacebook').value.trim(),
-                socialInstagram: document.getElementById('socialInstagram').value.trim(),
-                socialTwitter: document.getElementById('socialTwitter').value.trim(),
-                socialYoutube: document.getElementById('socialYoutube').value.trim(),
-                joinFamilyBgType: document.getElementById('joinFamilyBgType').value,
-                joinFamilyBgImage: document.getElementById('joinFamilyBgImage').value.trim(),
-                joinFamilyBgColor: document.getElementById('joinFamilyBgColor').value,
-                joinFamilyBgGradient: document.getElementById('joinFamilyBgGradient').value.trim(),
-                joinFamilyFellowshipLink: document.getElementById('joinFamilyFellowshipLink').value.trim(),
-                joinFamilyNextStepsLink: document.getElementById('joinFamilyNextStepsLink').value.trim(),
-                joinFamilyServeLink: document.getElementById('joinFamilyServeLink').value.trim()
-            };
-            
-            const themeModeEl = document.getElementById('themeMode');
-            if (themeModeEl) {
-                updates.mode = themeModeEl.value;
-            }
-            
-            const logoUrl = document.getElementById('logoUrl').value.trim();
-            const faviconUrl = document.getElementById('faviconUrl').value.trim();
-            const livestreamUrl = document.getElementById('livestreamUrl').value.trim();
-            const sermonBackground = document.getElementById('sermonBackgroundInput').value.trim();
-            const testimonyBackground = document.getElementById('testimonyBackgroundInput').value.trim();
-            
-            if (logoUrl) updates.logoUrl = logoUrl;
-            if (faviconUrl) updates.faviconUrl = faviconUrl;
-            if (livestreamUrl) updates.livestreamUrl = livestreamUrl;
-            if (sermonBackground) updates.sermonBackground = sermonBackground;
-            if (testimonyBackground) updates.testimonyBackground = testimonyBackground;
-            
-            await db.collection(Collections.SETTINGS).doc('theme').update(updates);
-            
-            // Re-apply theme to dashboard immediately
-            loadThemeSettings();
-            
-            alert('Theme settings saved successfully!');
-        } catch (error) {
-            console.error('Error saving theme:', error.message || String(error));
-            alert('Error saving theme settings: ' + error.message);
-        }
-    });
-    
-    // Hero Form
-    document.getElementById('heroForm')?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        const heroMode = document.getElementById('heroModeSelect').value;
-        const heroTitle = document.getElementById('heroTitleInput').value;
-        const heroSubtext = document.getElementById('heroSubtextInput').value;
-        
-        const imageRows = document.querySelectorAll('.hero-image-row');
-        const heroImages = Array.from(imageRows).map(row => ({
-            url: row.querySelector('.hero-img-url').value.trim(),
-            link: row.querySelector('.hero-img-link').value.trim() || '#'
-        }));
-
-        try {
-            await db.collection(Collections.SETTINGS).doc('theme').update({
-                heroImage: heroImages.length > 0 ? heroImages[0].url : '',
-                heroText: heroTitle,
-                heroSubtext: heroSubtext,
-                // Keep these for backward compatibility if needed, but primary focus is heroImage
-                heroMode: heroMode,
-                heroImages: heroImages
-            });
-            alert('Hero settings saved successfully!');
-        } catch (error) {
-            console.error('Error saving hero:', error.message || String(error));
-            alert('Error saving hero settings');
-        }
-    });
-
-    // Add Hero Image Button
-    document.getElementById('addHeroImageBtn')?.addEventListener('click', () => addHeroImageRow());
-    
-    // Content Form
-    document.getElementById('contentForm')?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        try {
-            await db.collection(Collections.CONTENT).doc('about').update({
-                mission: document.getElementById('missionInput').value,
-                missionImage: document.getElementById('missionImageUrl').value,
-                vision: document.getElementById('visionInput').value,
-                visionImage: document.getElementById('visionImageUrl').value,
-                welcomeMessage: document.getElementById('welcomeInput').value,
-                welcomeImage: document.getElementById('welcomeImageUrl').value
-            });
-            alert('Content saved successfully!');
-        } catch (error) {
-            console.error('Error saving content:', error.message || String(error));
-            alert('Error saving content');
-        }
-    });
-
-    // Quote Type Toggle
-    document.getElementById('quoteType')?.addEventListener('change', (e) => {
-        const type = e.target.value;
-        const textInput = document.getElementById('quoteTextInput');
-        const authorInput = document.getElementById('quoteAuthorInput');
-        const imageInput = document.getElementById('quoteImageInput');
-
-        if (type === 'text') {
-            textInput.style.display = 'block';
-            authorInput.style.display = 'block';
-            imageInput.style.display = 'none';
-        } else if (type === 'image') {
-            textInput.style.display = 'none';
-            authorInput.style.display = 'none';
-            imageInput.style.display = 'block';
-        } else {
-            textInput.style.display = 'block';
-            authorInput.style.display = 'block';
-            imageInput.style.display = 'block';
-        }
-    });
-
-    // Quote Form
-    document.getElementById('quoteForm')?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        try {
-            const quoteData = {
-                type: document.getElementById('quoteType').value,
-                text: document.getElementById('quoteText').value,
-                author: document.getElementById('quoteAuthor').value,
-                imageUrl: document.getElementById('quoteImageUrl').value,
-                active: true,
-                createdAt: firebase.firestore.Timestamp.now()
-            };
-            await db.collection(Collections.QUOTES).add(quoteData);
-            e.target.reset();
-            // Reset visibility
-            document.getElementById('quoteTextInput').style.display = 'block';
-            document.getElementById('quoteAuthorInput').style.display = 'block';
-            document.getElementById('quoteImageInput').style.display = 'none';
-            
-            loadQuotesList();
-            alert('Quote added successfully!');
-        } catch (error) {
-            console.error('Error adding quote:', error.message || String(error));
-            alert('Error adding quote');
-        }
-    });
-
-    // Moment Photo Form
-    document.getElementById('momentPhotoForm')?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        try {
-            await db.collection(Collections.MOMENTS).add({
-                type: 'photo',
-                url: document.getElementById('momentPhotoUrl').value,
-                title: document.getElementById('momentPhotoTitle').value,
-                description: document.getElementById('momentPhotoDesc').value,
-                createdAt: firebase.firestore.Timestamp.now()
-            });
-            e.target.reset();
-            loadMomentsList();
-            alert('Photo moment added successfully!');
-        } catch (error) {
-            console.error('Error adding photo moment:', error.message || String(error));
-            alert('Error adding photo moment');
-        }
-    });
-
-    // Moment Video Form
-    document.getElementById('momentVideoForm')?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        try {
-            await db.collection(Collections.MOMENTS).add({
-                type: 'video',
-                url: document.getElementById('momentVideoUrl').value,
-                title: document.getElementById('momentVideoTitle').value,
-                createdAt: firebase.firestore.Timestamp.now()
-            });
-            e.target.reset();
-            loadMomentsList();
-            alert('Video moment added successfully!');
-        } catch (error) {
-            console.error('Error adding video moment:', error.message || String(error));
-            alert('Error adding video moment');
-        }
-    });
-
-    setupMomentsAdminTabs();
-    
-    // Services Form
-    document.getElementById('servicesForm')?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        try {
-            const updates = {};
-            for (let i = 1; i <= 4; i++) {
-                updates[`sunday${i}`] = {
-                    title: document.getElementById(`sunday${i}Title`).value,
-                    time: document.getElementById(`sunday${i}Time`).value,
-                    description: document.getElementById(`sunday${i}Description`).value
-                };
-            }
-            
-            updates.midweek = {
-                title: document.getElementById('midweekTitle').value,
-                time: document.getElementById('midweekTime').value,
-                description: document.getElementById('midweekDescription').value
-            };
-            
-            updates.special = {
-                title: document.getElementById('specialTitle').value,
-                time: document.getElementById('specialTime').value,
-                description: document.getElementById('specialDescription').value
-            };
-
-            await db.collection(Collections.SERVICES).doc('schedule').update(updates);
-            alert('Service times saved successfully!');
-        } catch (error) {
-            console.error('Error saving services:', error.message || String(error));
-            alert('Error saving service times');
-        }
-    });
-    
-    // Sermon Form
-    document.getElementById('sermonForm')?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        const title = document.getElementById('sermonTitle').value;
-        const videoUrl = document.getElementById('sermonVideoUrl').value;
-        const dateStr = document.getElementById('sermonDate').value;
-        const description = document.getElementById('sermonDescription').value;
-        
-        try {
-            await db.collection(Collections.SERMONS).add({
-                title: title,
-                videoUrl: videoUrl,
-                date: firebase.firestore.Timestamp.fromDate(new Date(dateStr)),
-                description: description
-            });
-            
-            e.target.reset();
-            loadSermonsList();
-            alert('Sermon added successfully!');
-        } catch (error) {
-            console.error('Error adding sermon:', error.message || String(error));
-            alert('Error adding sermon');
-        }
-    });
-    
-    // Event Form
-    document.getElementById('eventForm')?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        const title = document.getElementById('eventTitle').value;
-        const imageUrl = document.getElementById('eventImageUrl').value;
-        const dateStr = document.getElementById('eventDate').value;
-        const description = document.getElementById('eventDescription').value;
-        
-        try {
-            await db.collection(Collections.EVENTS).add({
-                title: title,
-                imageUrl: imageUrl,
-                date: firebase.firestore.Timestamp.fromDate(new Date(dateStr)),
-                description: description
-            });
-            
-            e.target.reset();
-            loadEventsList();
-            alert('Event added successfully!');
-        } catch (error) {
-            console.error('Error adding event:', error.message || String(error));
-            alert('Error adding event');
-        }
-    });
-    
-    // Manual Testimony Form
-    document.getElementById('testimonyManualForm')?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        const name = document.getElementById('testimonyManualName').value;
-        const message = document.getElementById('testimonyManualMessage').value;
-        
-        try {
-            await db.collection(Collections.TESTIMONIES).add({
-                name: name,
-                message: message,
-                approved: true,
-                submittedAt: firebase.firestore.Timestamp.now()
-            });
-            
-            e.target.reset();
-            loadTestimoniesList();
-            alert('Testimony added successfully!');
-        } catch (error) {
-            console.error('Error adding testimony:', error.message || String(error));
-            alert('Error adding testimony');
-        }
-    });
-    
-    // Contact Form
-    document.getElementById('contactForm')?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        const bankRows = document.querySelectorAll('.bank-account-row');
-        const offeringAccounts = Array.from(bankRows).map(row => ({
-            title: row.querySelector('.bank-title').value.trim(),
-            bank: row.querySelector('.bank-name').value.trim(),
-            accountNumber: row.querySelector('.bank-number').value.trim(),
-            accountName: row.querySelector('.bank-acc-name').value.trim()
-        }));
-
-        try {
-            await db.collection(Collections.CONTENT).doc('contact').update({
-                email: document.getElementById('contactEmailAdmin').value,
-                phone: document.getElementById('contactPhoneAdmin').value,
-                address: document.getElementById('contactAddressAdmin').value,
-                offeringAccounts: offeringAccounts
-            });
-            alert('Contact information saved successfully!');
-        } catch (error) {
-            console.error('Error saving contact info:', error.message || String(error));
-            alert('Error saving contact information');
-        }
-    });
-
-    // Add Bank Button
-    document.getElementById('addBankBtn')?.addEventListener('click', () => addBankAccountRow());
-}
-
-async function loadMessagesList() {
-    const list = document.getElementById('messagesList');
-    if (!list) return;
- 
-    try {
-        const snapshot = await safeList(db.collection(Collections.MESSAGES)
-            .orderBy('submittedAt', 'desc'));
- 
-        if (!snapshot || snapshot.empty) {
-            list.innerHTML = '<p class="empty-msg">No messages yet.</p>';
-            return;
-        }
-
-        list.innerHTML = snapshot.docs.map(doc => {
-            const msg = doc.data();
-            const date = msg.submittedAt ? msg.submittedAt.toDate().toLocaleString() : 'N/A';
-            return `
-                <div class="item-card">
-                    <div class="item-info">
-                        <h3>${msg.name}</h3>
-                        <p style="color: var(--secondary-color); margin: 0.5rem 0;">${msg.email}</p>
-                        <p style="opacity: 0.7;">${msg.message}</p>
-                        <small style="display: block; margin-top: 1rem; opacity: 0.5;">${date}</small>
-                    </div>
-                    <div class="item-actions">
-                        <button class="btn-admin" style="background: #ef4444;" onclick="deleteMessage('${doc.id}')">Delete</button>
-                    </div>
-                </div>
-            `;
-        }).join('');
-    } catch (error) {
-        console.error('Error loading messages:', error.message || String(error));
-        list.innerHTML = '<p class="error-msg">Error loading messages.</p>';
-    }
-}
-
-async function deleteMessage(id) {
-    if (!confirm('Are you sure you want to delete this message?')) return;
-    try {
-        await db.collection(Collections.MESSAGES).doc(id).delete();
-        loadMessagesList();
-    } catch (error) {
-        console.error('Error deleting message:', error.message || String(error));
-        alert('Error deleting message');
-    }
-}
-
-// ========================================
-// Utility Functions
-// ========================================
-
-function showFeedback(element, message, type) {
-    element.textContent = message;
-    element.className = `form-feedback ${type}`;
-    
-    setTimeout(() => {
-        element.className = 'form-feedback';
-    }, 5000);
-}
-
-// Make functions globally accessible
-window.deleteSermon = deleteSermon;
-window.deleteEvent = deleteEvent;
-window.approveTestimony = approveTestimony;
-window.rejectTestimony = rejectTestimony;
-window.deleteTestimony = deleteTestimony;
-window.deleteMessage = deleteMessage;
-window.deleteQuote = deleteQuote;
-window.deleteMoment = deleteMoment;
-window.deleteSection = deleteSection;
-window.editSection = editSection;
-window.moveSection = moveSection;
-window.toggleCustomIconInput = toggleCustomIconInput;
-window.updateSectionLivePreview = updateSectionLivePreview;
-
-// ========================================
-// Dynamic Custom Sections Admin Management
-// ========================================
-
-async function loadCustomSectionsAdmin() {
-    try {
-        const listContainer = document.getElementById('sectionsAdminList');
-        if (!listContainer) return;
-        listContainer.innerHTML = '';
-
-        const snapshot = await safeList(db.collection(Collections.SECTIONS).orderBy('order', 'asc'));
-
-        if (!snapshot || snapshot.empty) {
-            listContainer.innerHTML = `
-                <div style="text-align: center; padding: 3rem; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 12px; margin-top: 1rem;">
-                    <i data-lucide="layout" style="width: 48px; height: 48px; color: #94a3b8; margin-bottom: 1rem;"></i>
-                    <p style="color: #64748b; font-size: 1.1rem; font-weight: 500; margin: 0 0 0.5rem 0;">No dynamic custom sections added yet</p>
-                    <p style="color: #94a3b8; font-size: 0.9rem; margin: 0;">Add custom sections to dynamically spotlight ministries, missions, or special services!</p>
-                </div>
-            `;
-            if (window.lucide) lucide.createIcons();
-            return;
-        }
-
-        snapshot.forEach(doc => {
-            const data = doc.data();
-            const id = doc.id;
-            
-            const card = document.createElement('div');
-            card.className = 'item-card';
-            card.style = 'display: flex; justify-content: space-between; align-items: center; padding: 1.5rem; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);';
-
-            const countText = data.contentType === 'cards' ? `${data.cards ? data.cards.length : 0} Cards` : 'Text Block';
-            const bgText = data.bgType === 'color' ? `Color (${data.bgColor})` : data.bgType === 'gradient' ? 'Gradients' : 'Image';
-
-            card.innerHTML = `
-                <div class="item-info" style="display: flex; flex-direction: column; gap: 0.25rem;">
-                    <h4 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: #1e293b;">${data.title || 'Untitled'}</h4>
-                    <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; margin-top: 0.5rem;">
-                        <span style="font-size: 0.75rem; background: #eff6ff; color: #2563eb; font-weight: 600; padding: 2px 8px; border-radius: 6px;">Order: ${data.order || 0}</span>
-                        <span style="font-size: 0.75rem; background: #f0fdf4; color: #16a34a; font-weight: 600; padding: 2px 8px; border-radius: 6px;">Format: ${countText}</span>
-                        <span style="font-size: 0.75rem; background: #faf5ff; color: #7c3aed; font-weight: 600; padding: 2px 8px; border-radius: 6px;">Bg: ${bgText}</span>
-                    </div>
-                </div>
-                <div class="item-actions" style="display: flex; gap: 0.5rem; align-items: center;">
-                    <button class="btn-admin" style="background: #f1f5f9; color: #334155; padding: 0.4rem; min-width: auto; box-shadow: none;" onclick="moveSection('${id}', -1)" title="Move Up"><i data-lucide="chevron-up"></i></button>
-                    <button class="btn-admin" style="background: #f1f5f9; color: #334155; padding: 0.4rem; min-width: auto; box-shadow: none;" onclick="moveSection('${id}', 1)" title="Move Down"><i data-lucide="chevron-down"></i></button>
-                    <button class="btn-admin" style="background: var(--primary-color); padding: 0.5rem 1rem;" onclick="editSection('${id}')">Edit</button>
-                    <button class="btn-admin" style="background: #ef4444; padding: 0.5rem 1rem;" onclick="deleteSection('${id}')">Delete</button>
-                </div>
-            `;
-            listContainer.appendChild(card);
-        });
-
-        if (window.lucide) {
-            lucide.createIcons();
-        }
-    } catch (error) {
-        console.error('Error loading custom sections admin list:', error.message || String(error));
-    }
-}
-
-function setupCustomSectionsAdmin() {
-    const addNewBtn = document.getElementById('addNewSectionBtn');
-    const cancelBtn = document.getElementById('cancelSectionBtn');
-    const formContainer = document.getElementById('sectionFormContainer');
-    const form = document.getElementById('customSectionForm');
-    
-    // Background selection toggles
-    const bgTypeSelect = document.getElementById('sectionBgType');
-    const bgColGroup = document.getElementById('bgTypeColorGroup');
-    const bgGradGroup = document.getElementById('bgTypeGradientGroup');
-    const bgImgGroup = document.getElementById('bgTypeImageGroup');
-    
-    // Title selection toggles
-    const titleColorMode = document.getElementById('sectionTitleColorMode');
-    const titleColorGroup = document.getElementById('titleColorFormGroup');
-    const titleGradGroup = document.getElementById('titleGradientFormGroup');
-    const titleGradientSelect = document.getElementById('sectionTitleGradientSelect');
-    const titleGradientCustom = document.getElementById('sectionTitleGradientCustom');
-
-    // Layout content selectors
-    const bgGradientSelect = document.getElementById('sectionBgGradientSelect');
-    const bgGradientCustom = document.getElementById('sectionBgGradientCustom');
-    const contentTypeSelect = document.getElementById('sectionContentType');
-    const contentTypeTextDiv = document.getElementById('sectionContentTypeText');
-    const contentTypeCardsDiv = document.getElementById('sectionContentTypeCards');
-    const addCardBtn = document.getElementById('addNewCardBtn');
-
-    if (addNewBtn) {
-        addNewBtn.onclick = () => {
-            resetSectionForm();
-            document.getElementById('sectionFormTitle').textContent = 'Create New Custom Section';
-            formContainer.style.display = 'block';
-            formContainer.scrollIntoView({ behavior: 'smooth' });
-            updateSectionLivePreview();
-        };
-    }
-
-    if (cancelBtn) {
-        cancelBtn.onclick = () => {
-            formContainer.style.display = 'none';
-            resetSectionForm();
-        };
-    }
-
-    // Toggle Title color modes
-    if (titleColorMode) {
-        titleColorMode.onchange = () => {
-            if (titleColorMode.value === 'gradient') {
-                titleColorGroup.style.display = 'none';
-                titleGradGroup.style.display = 'block';
-            } else {
-                titleColorGroup.style.display = 'block';
-                titleGradGroup.style.display = 'none';
-            }
-            updateSectionLivePreview();
-        };
-    }
-
-    if (titleGradientSelect) {
-        titleGradientSelect.onchange = () => {
-            if (titleGradientSelect.value === 'custom') {
-                titleGradientCustom.style.display = 'block';
-            } else {
-                titleGradientCustom.style.display = 'none';
-            }
-            updateSectionLivePreview();
-        };
-    }
-
-    // Toggle background inputs
-    if (bgTypeSelect) {
-        bgTypeSelect.onchange = () => {
-            bgColGroup.style.display = 'none';
-            bgGradGroup.style.display = 'none';
-            bgImgGroup.style.display = 'none';
-
-            if (bgTypeSelect.value === 'color') {
-                bgColGroup.style.display = 'block';
-            } else if (bgTypeSelect.value === 'gradient') {
-                bgGradGroup.style.display = 'block';
-            } else if (bgTypeSelect.value === 'image') {
-                bgImgGroup.style.display = 'block';
-            }
-            updateSectionLivePreview();
-        };
-    }
-
-    if (bgGradientSelect) {
-        bgGradientSelect.onchange = () => {
-            if (bgGradientSelect.value === 'custom') {
-                bgGradientCustom.style.display = 'block';
-            } else {
-                bgGradientCustom.style.display = 'none';
-            }
-            updateSectionLivePreview();
-        };
-    }
-
-    // Toggle Content types
-    if (contentTypeSelect) {
-        contentTypeSelect.onchange = () => {
-            if (contentTypeSelect.value === 'text') {
-                contentTypeTextDiv.style.display = 'block';
-                contentTypeCardsDiv.style.display = 'none';
-            } else {
-                contentTypeTextDiv.style.display = 'none';
-                contentTypeCardsDiv.style.display = 'block';
-            }
-            updateSectionLivePreview();
-        };
-    }
-
-    // Dynamic Card Row Addition
-    if (addCardBtn) {
-        addCardBtn.onclick = () => {
-            addCardEditorRow();
-            updateSectionLivePreview();
-        };
-    }
-
-    // Hook up real-time live preview update using robust event delegation
-    if (form) {
-        form.addEventListener('input', () => {
-            updateSectionLivePreview();
-        });
-        form.addEventListener('change', () => {
-            updateSectionLivePreview();
-        });
-    }
-
-    // Form Submission
-    if (form) {
-        form.onsubmit = async (e) => {
-            e.preventDefault();
-            
-            try {
-                const docId = document.getElementById('sectionDocId').value;
-                const title = document.getElementById('sectionTitleVal').value.trim();
-                const order = parseInt(document.getElementById('sectionOrderVal').value || '0');
-                
-                // Title styles
-                const isGradientTitle = titleColorMode.value === 'gradient';
-                let finalTitleColor = document.getElementById('sectionTitleColor').value;
-                let finalTitleGradient = '';
-                if (isGradientTitle) {
-                    finalTitleGradient = titleGradientSelect.value === 'custom' 
-                        ? titleGradientCustom.value.trim() 
-                        : titleGradientSelect.value;
-                }
-
-                // Background settings
-                const bgType = bgTypeSelect.value;
-                const bgColor = document.getElementById('sectionBgColor').value;
-                let bgGradient = '';
-                if (bgType === 'gradient') {
-                    bgGradient = bgGradientSelect.value === 'custom'
-                        ? bgGradientCustom.value.trim()
-                        : bgGradientSelect.value;
-                }
-                const bgImage = document.getElementById('sectionBgImageUrl').value.trim();
-
-                // Content compilation
-                const contentType = contentTypeSelect.value;
-                const textHTML = document.getElementById('sectionTextHTMLVal').value;
-                
-                let cardsArray = [];
-                if (contentType === 'cards') {
-                    const rowNodes = document.querySelectorAll('.card-editor-row');
-                    rowNodes.forEach(row => {
-                        const titleInp = row.querySelector('.card-row-title').value.trim();
-                        const descInp = row.querySelector('.card-row-desc').value.trim();
-                        const iconSelect = row.querySelector('.card-row-icon-select').value;
-                        const iconCustom = row.querySelector('.card-row-icon-custom').value.trim();
-                        const iconSize = row.querySelector('.card-row-icon-size').value;
-                        const iconColor = row.querySelector('.card-row-icon-color').value;
-                        const iconPosition = row.querySelector('.card-row-icon-pos').value;
-
-                        const finalIcon = iconSelect === 'custom' ? iconCustom : iconSelect;
-
-                        cardsArray.push({
-                            title: titleInp,
-                            description: descInp,
-                            icon: finalIcon,
-                            iconSize: iconSize,
-                            iconColor: iconColor,
-                            iconPosition: iconPosition
-                        });
-                    });
-                }
-
-                const payload = {
-                    title,
-                    order,
-                    useGradient: isGradientTitle,
-                    titleColor: finalTitleColor,
-                    titleGradient: finalTitleGradient,
-                    bgType,
-                    bgColor,
-                    bgGradient,
-                    bgImage,
-                    contentType,
-                    textHTML,
-                    cards: cardsArray,
-                    createdAt: docId ? undefined : firebase.firestore.FieldValue.serverTimestamp()
-                };
-
-                // Clean undefined fields to avoid Firestore error
-                Object.keys(payload).forEach(key => {
-                    if (payload[key] === undefined) {
-                        delete payload[key];
-                    }
-                });
-
-                if (docId) {
-                    await db.collection(Collections.SECTIONS).doc(docId).update(payload);
-                    alert('Section updated successfully!');
-                } else {
-                    await db.collection(Collections.SECTIONS).add(payload);
-                    alert('Section created successfully!');
-                }
-
-                formContainer.style.display = 'none';
-                resetSectionForm();
-                loadCustomSectionsAdmin();
-            } catch (error) {
-                console.error('Error saving custom section:', error.message || String(error));
-                alert('Error saving custom section: ' + (error.message || String(error)));
-            }
-        };
-    }
-}
-
-function resetSectionForm() {
-    document.getElementById('sectionDocId').value = '';
-    document.getElementById('sectionTitleVal').value = '';
-    document.getElementById('sectionOrderVal').value = '0';
-    
-    // Reset title formatting
-    document.getElementById('sectionTitleColorMode').value = 'color';
-    document.getElementById('sectionTitleColor').value = '#1e293b';
-    const titleColorGroup = document.getElementById('titleColorFormGroup');
-    const titleGradGroup = document.getElementById('titleGradientFormGroup');
-    if (titleColorGroup) titleColorGroup.style.display = 'block';
-    if (titleGradGroup) titleGradGroup.style.display = 'none';
-
-    document.getElementById('sectionTitleGradientSelect').value = 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)';
-    document.getElementById('sectionTitleGradientCustom').value = '';
-    document.getElementById('sectionTitleGradientCustom').style.display = 'none';
-
-    // Reset backgrounds
-    document.getElementById('sectionBgType').value = 'color';
-    document.getElementById('bgTypeColorGroup').style.display = 'block';
-    document.getElementById('bgTypeGradientGroup').style.display = 'none';
-    document.getElementById('bgTypeImageGroup').style.display = 'none';
-    
-    document.getElementById('sectionBgColor').value = '#ffffff';
-    document.getElementById('sectionBgGradientSelect').value = 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)';
-    document.getElementById('sectionBgGradientCustom').value = '';
-    document.getElementById('sectionBgGradientCustom').style.display = 'none';
-    document.getElementById('sectionBgImageUrl').value = '';
-
-    // Reset content type
-    document.getElementById('sectionContentType').value = 'text';
-    document.getElementById('sectionContentTypeText').style.display = 'block';
-    document.getElementById('sectionContentTypeCards').style.display = 'none';
-    
-    document.getElementById('sectionTextHTMLVal').value = '';
-    document.getElementById('cardsListAdminContainer').innerHTML = '';
-}
-
-function addCardEditorRow(cardData = null) {
-    const list = document.getElementById('cardsListAdminContainer');
-    if (!list) return;
-
-    const row = document.createElement('div');
-    row.className = 'card-editor-row';
-    row.style = 'background: #fafafa; border: 1px solid #e2e8f0; border-radius: 10px; padding: 1.5rem; position: relative; margin-bottom: 0.5rem;';
-
-    const count = list.children.length + 1;
-
-    // Preset icons
-    const iconPresets = [
-        { val: 'heart', text: 'Heart (Hospitality/Care)' },
-        { val: 'users', text: 'Users (Community/Fellowship)' },
-        { val: 'book-open', text: 'Open Book (Scriptures/Sermons)' },
-        { val: 'sparkles', text: 'Sparkles (Grace/Miracles)' },
-        { val: 'flame', text: 'Flame (Holy Spirit/Fire)' },
-        { val: 'calendar', text: 'Calendar (Weeks/Schedules)' },
-        { val: 'music', text: 'Music (Worship/Choir)' },
-        { val: 'gift', text: 'Gift (Donations/Charity)' },
-        { val: 'mail', text: 'Mail (Contact/Connect)' },
-        { val: 'phone', text: 'Phone (Hotlines/Call)' },
-        { val: 'compass', text: 'Compass (Discipleship/Evangelism)' },
-        { val: 'star', text: 'Star (Faith/Blessing)' },
-        { val: 'custom', text: '— Use custom Lucide Icon name —' }
-    ];
-
-    const currentIcon = cardData?.icon || 'heart';
-    const isPreset = iconPresets.some(preset => preset.val === currentIcon);
-
-    const titleVal = cardData?.title || '';
-    const descVal = cardData?.description || '';
-    const iconSelectSelected = isPreset ? currentIcon : 'custom';
-    const iconCustomVal = isPreset ? '' : currentIcon;
-    const iconSizeVal = cardData?.iconSize || '28px';
-    const iconColorVal = cardData?.iconColor || '#2563eb';
-    const iconPositionVal = cardData?.iconPosition || 'top';
-
-    row.innerHTML = `
-        <button type="button" class="btn-delete-card" style="position: absolute; top: 1rem; right: 1rem; background: #fee2e2; color: #ef4444; border: none; border-radius: 6px; padding: 0.25rem 0.5rem; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; gap: 0.25rem;" onclick="this.closest('.card-editor-row').remove(); if(window.updateSectionLivePreview) window.updateSectionLivePreview();">
-            <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i> Remove
-        </button>
-        <h5 style="margin-top: 0; margin-bottom: 1rem; font-size: 0.95rem; color: var(--primary-color);">Card #${count}</h5>
-        
-        <div class="form-row">
-            <div class="form-group">
-                <label>Card Title</label>
-                <input type="text" class="card-row-title" value="${titleVal}" placeholder="e.g. Prayer Group" required>
-            </div>
-            <div class="form-group">
-                <label>Icon Selection</label>
-                <select class="card-row-icon-select" onchange="toggleCustomIconInput(this)">
-                    ${iconPresets.map(preset => `<option value="${preset.val}" ${preset.val === iconSelectSelected ? 'selected' : ''}>${preset.text}</option>`).join('')}
-                </select>
-                <input type="text" class="card-row-icon-custom" value="${iconCustomVal}" placeholder="Lucide icon name (e.g. cross, flame)" style="display: ${iconSelectSelected === 'custom' ? 'block' : 'none'}; margin-top: 0.5rem;">
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label>Card Description</label>
-            <textarea class="card-row-desc" rows="2" placeholder="Brief card details..." required>${descVal}</textarea>
-        </div>
-
-        <div class="form-row" style="margin-bottom: 0;">
-            <div class="form-group">
-                <label>Icon Position</label>
-                <select class="card-row-icon-pos">
-                    <option value="top" ${iconPositionVal === 'top' ? 'selected' : ''}>Top alignment</option>
-                    <option value="left" ${iconPositionVal === 'left' ? 'selected' : ''}>Left alignment</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Icon Size</label>
-                <select class="card-row-icon-size">
-                    <option value="20px" ${iconSizeVal === '20px' ? 'selected' : ''}>Small (20px)</option>
-                    <option value="24px" ${iconSizeVal === '24px' ? 'selected' : ''}>Medium (24px)</option>
-                    <option value="28px" ${iconSizeVal === '28px' ? 'selected' : ''}>Large (28px - Default)</option>
-                    <option value="36px" ${iconSizeVal === '36px' ? 'selected' : ''}>Extra Large (36px)</option>
-                    <option value="48px" ${iconSizeVal === '48px' ? 'selected' : ''}>Giant (48px)</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Icon Highlight Color</label>
-                <input type="color" class="card-row-icon-color" value="${iconColorVal}">
-            </div>
-        </div>
-    `;
-
-    list.appendChild(row);
-
-    if (window.lucide) {
-        lucide.createIcons();
-    }
-}
-
-function toggleCustomIconInput(selectElem) {
-    const customInput = selectElem.nextElementSibling;
-    if (customInput) {
-        customInput.style.display = selectElem.value === 'custom' ? 'block' : 'none';
-    }
-}
-
-async function editSection(id) {
-    try {
-        const doc = await db.collection(Collections.SECTIONS).doc(id).get();
-        if (!doc.exists) return;
-        
-        const data = doc.data();
-        resetSectionForm();
-
-        // Populate basic values
-        document.getElementById('sectionDocId').value = id;
-        document.getElementById('sectionTitleVal').value = data.title || '';
-        document.getElementById('sectionOrderVal').value = data.order || '0';
-
-        // Title styling
-        const titleModeSelect = document.getElementById('sectionTitleColorMode');
-        const isGradient = data.useGradient || false;
-        titleModeSelect.value = isGradient ? 'gradient' : 'color';
-
-        const titleColorGroup = document.getElementById('titleColorFormGroup');
-        const titleGradGroup = document.getElementById('titleGradientFormGroup');
-        const titleGradientSelect = document.getElementById('sectionTitleGradientSelect');
-        const titleGradientCustom = document.getElementById('sectionTitleGradientCustom');
-
-        if (isGradient) {
-            titleColorGroup.style.display = 'none';
-            titleGradGroup.style.display = 'block';
-
-            const presetOption = Array.from(titleGradientSelect.options).find(opt => opt.value === data.titleGradient);
-            if (presetOption) {
-                titleGradientSelect.value = data.titleGradient;
-                titleGradientCustom.style.display = 'none';
-            } else {
-                titleGradientSelect.value = 'custom';
-                titleGradientCustom.value = data.titleGradient || '';
-                titleGradientCustom.style.display = 'block';
-            }
-        } else {
-            titleColorGroup.style.display = 'block';
-            titleGradGroup.style.display = 'none';
-            document.getElementById('sectionTitleColor').value = data.titleColor || '#1e293b';
-        }
-
-        // Background settings
-        const bgTypeSelect = document.getElementById('sectionBgType');
-        bgTypeSelect.value = data.bgType || 'color';
-
-        const bgColGroup = document.getElementById('bgTypeColorGroup');
-        const bgGradGroup = document.getElementById('bgTypeGradientGroup');
-        const bgImgGroup = document.getElementById('bgTypeImageGroup');
-
-        bgColGroup.style.display = 'none';
-        bgGradGroup.style.display = 'none';
-        bgImgGroup.style.display = 'none';
-
-        if (data.bgType === 'color') {
-            bgColGroup.style.display = 'block';
-            document.getElementById('sectionBgColor').value = data.bgColor || '#ffffff';
-        } else if (data.bgType === 'gradient') {
-            bgGradGroup.style.display = 'block';
-            const bgGradSelect = document.getElementById('sectionBgGradientSelect');
-            const bgGradCustom = document.getElementById('sectionBgGradientCustom');
-
-            const bgPresetOption = Array.from(bgGradSelect.options).find(opt => opt.value === data.bgGradient);
-            if (bgPresetOption) {
-                bgGradSelect.value = data.bgGradient;
-                bgGradCustom.style.display = 'none';
-            } else {
-                bgGradSelect.value = 'custom';
-                bgGradCustom.value = data.bgGradient || '';
-                bgGradCustom.style.display = 'block';
-            }
-        } else if (data.bgType === 'image') {
-            bgImgGroup.style.display = 'block';
-            document.getElementById('sectionBgImageUrl').value = data.bgImage || '';
-        }
-
-        // Layout settings
-        const layoutSelect = document.getElementById('sectionContentType');
-        layoutSelect.value = data.contentType || 'text';
-
-        const layoutTextDiv = document.getElementById('sectionContentTypeText');
-        const layoutCardsDiv = document.getElementById('sectionContentTypeCards');
-
-        if (data.contentType === 'cards') {
-            layoutTextDiv.style.display = 'none';
-            layoutCardsDiv.style.display = 'block';
-
-            if (data.cards && data.cards.length > 0) {
-                data.cards.forEach(card => {
-                    addCardEditorRow(card);
-                });
-            }
-        } else {
-            layoutTextDiv.style.display = 'block';
-            layoutCardsDiv.style.display = 'none';
-            document.getElementById('sectionTextHTMLVal').value = data.textHTML || '';
-        }
-
-        // Display compiler window
-        const formContainer = document.getElementById('sectionFormContainer');
-        document.getElementById('sectionFormTitle').textContent = `Edit Section: ${data.title || 'Untitled'}`;
-        formContainer.style.display = 'block';
-        formContainer.scrollIntoView({ behavior: 'smooth' });
-        updateSectionLivePreview();
-    } catch (error) {
-        console.error('Error fetching section for edit:', error.message || String(error));
-        alert('Could not edit this section.');
-    }
-}
-
-async function deleteSection(id) {
-    if (confirm('Are you sure you want to delete this custom section? This will remove it from the home page completely!')) {
-        try {
-            await db.collection(Collections.SECTIONS).doc(id).delete();
-            loadCustomSectionsAdmin();
-        } catch (error) {
-            console.error('Error deleting section:', error.message || String(error));
-            alert('Error deleting section');
-        }
-    }
-}
-
-async function moveSection(id, direction) {
-    try {
-        const sectionsRef = db.collection(Collections.SECTIONS);
-        const snapshot = await safeList(sectionsRef.orderBy('order', 'asc'));
-        
-        if (!snapshot || snapshot.empty) return;
-
-        const list = [];
-        snapshot.forEach(doc => {
-            list.push({ id: doc.id, ...doc.data() });
-        });
-
-        const index = list.findIndex(item => item.id === id);
-        if (index === -1) return;
-
-        const targetIndex = index + direction;
-        if (targetIndex < 0 || targetIndex >= list.length) {
-            return; // Can't move past boundaries
-        }
-
-        // Swap orders
-        const tempOrder = list[index].order || 0;
-        const potentialCollidingOrder = list[targetIndex].order || 0;
-
-        // If they have identical orders, fix the whole sequence first
-        let currentOrder = tempOrder;
-        let swapOrder = potentialCollidingOrder;
-
-        if (currentOrder === swapOrder) {
-            // Assign sequential orders
-            for (let i = 0; i < list.length; i++) {
-                await sectionsRef.doc(list[i].id).update({ order: i });
-                list[i].order = i;
-            }
-            // Re-fetch index and swap
-            currentOrder = index;
-            swapOrder = targetIndex;
-        }
-
-        await sectionsRef.doc(list[index].id).update({ order: swapOrder });
-        await sectionsRef.doc(list[targetIndex].id).update({ order: currentOrder });
-
-        loadCustomSectionsAdmin();
-    } catch (error) {
-        console.error('Error reordering sections:', error.message || String(error));
-        alert('Could not update sequence. Please try again.');
-    }
-}
-
-// ========================================
-// Live Preview Renderer Routine
-// ========================================
-
-function updateSectionLivePreview() {
-    try {
-        const previewContainer = document.getElementById('liveSectionPreviewRender');
-        if (!previewContainer) return;
-
-        const titleVal = document.getElementById('sectionTitleVal').value.trim() || 'Your Section Title';
-        const titleMode = document.getElementById('sectionTitleColorMode').value;
-        const useGradient = titleMode === 'gradient';
-        
-        // Extract title coloring settings
-        let finalTitleColor = document.getElementById('sectionTitleColor').value;
-        let finalTitleGradient = '';
-        if (useGradient) {
-            const titleGradientSelect = document.getElementById('sectionTitleGradientSelect').value;
-            finalTitleGradient = titleGradientSelect === 'custom' 
-                ? document.getElementById('sectionTitleGradientCustom').value.trim() 
-                : titleGradientSelect;
-            if (!finalTitleGradient) {
-                finalTitleGradient = 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)';
-            }
-        }
-
-        // Background settings
-        const bgType = document.getElementById('sectionBgType').value;
-        const bgColor = document.getElementById('sectionBgColor').value;
-        
-        let bgGradient = '';
-        if (bgType === 'gradient') {
-            const bgGradientSelect = document.getElementById('sectionBgGradientSelect').value;
-            bgGradient = bgGradientSelect === 'custom'
-                ? document.getElementById('sectionBgGradientCustom').value.trim()
-                : bgGradientSelect;
-            if (!bgGradient) {
-                bgGradient = 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)';
-            }
-        }
-        const bgImage = document.getElementById('sectionBgImageUrl').value.trim();
-
-        // Gather background inline styling with cozy standard padding
-        let bgStyle = '';
-        if (bgType === 'image' && bgImage) {
-            bgStyle = `background-image: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.65)), url('${bgImage}'); background-size: cover; background-position: center; background-attachment: scroll; padding: 4rem 2rem;`;
-        } else if (bgType === 'gradient' && bgGradient) {
-            bgStyle = `background: ${bgGradient}; padding: 4rem 2rem;`;
-        } else if (bgType === 'color' && bgColor) {
-            bgStyle = `background-color: ${bgColor}; padding: 4rem 2rem;`;
-        } else {
-            bgStyle = `background: var(--bg-white, #ffffff); padding: 4rem 2rem;`;
-        }
-
-        // Gather title inline styling
-        let titleStyle = '';
-        let titleClass = '';
-        if (useGradient && finalTitleGradient) {
-            titleStyle = `background: ${finalTitleGradient}; -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; display: inline-block;`;
-            titleClass = 'gradient-title';
-        } else if (finalTitleColor) {
-            titleStyle = `color: ${finalTitleColor};`;
-        }
-
-        // Heuristics for dark background to determine text readability colors
-        const isDarkBg = bgType === 'image' || (bgType === 'color' && isColorDark(bgColor)) || (bgType === 'gradient' && isGradientDark(bgGradient));
-        let titleDefaultColor = isDarkBg ? '#ffffff' : 'var(--text-dark, #0f172a)';
-
-        const contentType = document.getElementById('sectionContentType').value;
-        
-        // Avoid undefined on text area
-        const textInpElement = document.getElementById('sectionTextHTMLVal');
-        const textHTML = textInpElement ? textInpElement.value : '';
-
-        let contentHTML = '';
-        if (contentType === 'text') {
-            contentHTML = `
-                <div class="custom-section-text-content" style="color: ${isDarkBg ? '#f1f5f9' : 'var(--text-dark, #0f172a)'}; max-width: 900px; margin: 0 auto; line-height: 1.8; font-size: 1.1rem; text-align: left;">
-                    ${textHTML || '<p style="color: #94a3b8; font-style: italic; text-align: center; margin: 0;">Enter formatted or plain text content in the form field above to see it here...</p>'}
-                </div>
-            `;
-        } else if (contentType === 'cards') {
-            const rowNodes = document.querySelectorAll('.card-editor-row');
-            const cardsArray = [];
-            rowNodes.forEach(row => {
-                const titleInp = row.querySelector('.card-row-title').value.trim();
-                const descInp = row.querySelector('.card-row-desc').value.trim();
-                const iconSelect = row.querySelector('.card-row-icon-select').value;
-                const iconCustom = row.querySelector('.card-row-icon-custom').value.trim();
-                const iconSize = row.querySelector('.card-row-icon-size').value;
-                const iconColor = row.querySelector('.card-row-icon-color').value;
-                const iconPosition = row.querySelector('.card-row-icon-pos').value;
-
-                const finalIcon = iconSelect === 'custom' ? iconCustom : iconSelect;
-
-                cardsArray.push({
-                    title: titleInp,
-                    description: descInp,
-                    icon: finalIcon,
-                    iconSize: iconSize,
-                    iconColor: iconColor,
-                    iconPosition: iconPosition
-                });
-            });
-
-            if (cardsArray.length === 0) {
-                contentHTML = `
-                    <div style="text-align: center; color: #94a3b8; font-style: italic; padding: 2rem;">
-                        No cards added yet. Click 'Add Card' above to start organizing items!
-                    </div>
-                `;
-            } else {
-                const cardsHTML = cardsArray.map(card => {
-                    const iconPos = card.iconPosition || 'top';
-                    const iconStyle = `width: ${card.iconSize || '28px'}; height: ${card.iconSize || '28px'}; color: ${card.iconColor || 'var(--primary-color)'}; flex-shrink: 0;`;
-                    
-                    const cardBg = isDarkBg ? 'rgba(255,255,255,0.06)' : 'var(--card-bg, #ffffff)';
-                    const cardBorder = isDarkBg ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)';
-                    const cardColor = isDarkBg ? '#f8fafc' : 'var(--text-dark)';
-                    const cardDescColor = isDarkBg ? '#cbd5e1' : 'var(--text-muted)';
-                    const shadow = isDarkBg ? '0 10px 30px -10px rgba(0,0,0,0.5)' : 'var(--card-shadow, 0 4px 6px -1px rgba(0,0,0,0.05))';
-
-                    if (iconPos === 'left') {
-                        return `
-                            <div class="custom-dyn-card left-icon" style="background: ${cardBg}; border: 1px solid ${cardBorder}; box-shadow: ${shadow}; color: ${cardColor}; display: flex; text-align: left; padding: 1.5rem; border-radius: 12px;">
-                                ${card.icon ? `
-                                <div class="custom-dyn-icon" style="margin-right: 1.25rem; margin-top: 0.2rem; display: flex;">
-                                    <i data-lucide="${card.icon}" style="${iconStyle}"></i>
-                                </div>` : ''}
-                                <div class="custom-dyn-body">
-                                    <h3 style="color: ${cardColor}; font-size: 1.1rem; font-weight: 700; margin: 0 0 0.5rem 0; line-height: 1.4;">${card.title || 'Untitled Card'}</h3>
-                                    <p style="color: ${cardDescColor}; margin: 0; font-size: 0.9rem; line-height: 1.5;">${card.description || 'Enter details...'}</p>
-                                </div>
-                            </div>
-                        `;
-                    } else {
-                        return `
-                            <div class="custom-dyn-card top-icon" style="background: ${cardBg}; border: 1px solid ${cardBorder}; box-shadow: ${shadow}; color: ${cardColor}; display: flex; flex-direction: column; text-align: left; padding: 1.5rem; border-radius: 12px;">
-                                ${card.icon ? `
-                                <div class="custom-dyn-icon" style="margin-bottom: 1rem; display: flex;">
-                                    <i data-lucide="${card.icon}" style="${iconStyle}"></i>
-                                </div>` : ''}
-                                <div class="custom-dyn-body">
-                                    <h3 style="color: ${cardColor}; font-size: 1.1rem; font-weight: 700; margin: 0 0 0.5rem 0; line-height: 1.4;">${card.title || 'Untitled Card'}</h3>
-                                    <p style="color: ${cardDescColor}; margin: 0; font-size: 0.9rem; line-height: 1.5;">${card.description || 'Enter details...'}</p>
-                                </div>
-                            </div>
-                        `;
-                    }
-                }).join('');
-
-                contentHTML = `
-                    <div class="custom-cards-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.5rem; width: 100%;">
-                        ${cardsHTML}
-                    </div>
-                `;
-            }
-        }
-
-        const previewHTML = `
-            <div style="${bgStyle} position: relative; overflow: hidden; width: 100%; box-sizing: border-box; text-align: center;">
-                <div style="max-width: 1100px; margin: 0 auto; position: relative; z-index: 2; width: 100%; box-sizing: border-box;">
-                    <div style="margin-bottom: 2.5rem; text-align: center;">
-                        <h2 class="${titleClass}" style="${titleStyle || `color: ${titleDefaultColor};`}; font-size: clamp(1.5rem, 3.2vw, 2.1rem); font-weight: 800; letter-spacing: -0.02em; margin-bottom: 0.75rem; margin-top: 0;">
-                            ${titleVal}
-                        </h2>
-                        <div style="background: ${useGradient && finalTitleGradient ? 'var(--primary-color)' : (finalTitleColor || 'var(--primary-color)')}; margin: 0 auto; width: 50px; height: 4px; border-radius: 4px;"></div>
-                    </div>
-                    ${contentHTML}
-                </div>
-            </div>
+    usersListListener = window.db.collection('users').orderBy('createdAt', 'desc').onSnapshot(snap => {
+      container.innerHTML = '';
+      window.allUsersList = [];
+      if (snap.empty) {
+        container.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-slate-400">No registered members found.</td></tr>`;
+        return;
+      }
+
+      snap.forEach(doc => {
+        const u = doc.data();
+        const uid = doc.id;
+        window.allUsersList.push({ uid, ...u });
+
+        const tr = document.createElement('tr');
+        tr.className = "border-b border-slate-100 dark:border-zinc-800 text-slate-800 dark:text-zinc-200";
+
+        const roles = ['Member', 'Cell Leader', 'Cell Coordinator', 'Pastor', 'Super Admin'];
+        const roleOptions = roles.map(r => `<option value="${r}" ${u.role === r ? 'selected' : ''}>${r}</option>`).join('');
+
+        const cellOptions = `
+          <option value="none" ${u.cellId === 'none' ? 'selected' : ''}>None</option>
+          ${cellsList.map(c => `<option value="${c.id}" ${u.cellId === c.id ? 'selected' : ''}>${c.name}</option>`).join('')}
         `;
 
-        previewContainer.innerHTML = previewHTML;
+        tr.innerHTML = `
+          <td class="p-4 font-bold text-slate-900 dark:text-zinc-100">${u.displayName || 'No Name'}</td>
+          <td class="p-4 font-mono text-xs text-slate-500">${u.email}</td>
+          <td class="p-4">
+            <select onchange="updateUserRole('${uid}', this.value)" class="text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500 font-bold text-slate-800 dark:text-zinc-200">
+              ${roleOptions}
+            </select>
+          </td>
+          <td class="p-4">
+            <select onchange="updateUserCellAssignment('${uid}', this.value)" class="text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500 font-bold text-slate-800 dark:text-zinc-200">
+              ${cellOptions}
+            </select>
+          </td>
+          <td class="p-4 text-center">
+            <button onclick="evictUser('${uid}')" class="text-rose-500 hover:text-rose-700 p-2 rounded-xl hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-all cursor-pointer" title="Evict User">
+              <i data-lucide="trash-2" class="w-4 h-4 mx-auto"></i>
+            </button>
+          </td>
+        `;
 
-        // Re-initialize Lucide icons for new content
-        if (window.lucide) {
-            window.lucide.createIcons();
+        container.appendChild(tr);
+      });
+
+      if (window.lucide) window.lucide.createIcons();
+    }, err => window.handleFirestoreError(err, 'list', 'users'));
+  });
+}
+
+function updateUserRole(uid, role) {
+  window.db.collection('users').doc(uid).update({ role })
+    .then(() => window.showToast?.(`Updated user role to ${role}`))
+    .catch(err => window.handleFirestoreError(err, 'write', `users/${uid}`));
+}
+
+function updateUserCellAssignment(uid, cellId) {
+  window.db.collection('users').doc(uid).update({ cellId })
+    .then(() => window.showToast?.(`Updated member fellowship assignment.`))
+    .catch(err => window.handleFirestoreError(err, 'write', `users/${uid}`));
+}
+
+function evictUser(uid) {
+  const isConfirmed = confirm("Are you sure you want to permanently evict this user from the portal registry?");
+  if (!isConfirmed) return;
+
+  window.db.collection('users').doc(uid).delete()
+    .then(() => window.showToast?.("User profile evicted."))
+    .catch(err => window.handleFirestoreError(err, 'delete', `users/${uid}`));
+}
+
+// 2. Fellowship Cell Suspensions & Listings
+function syncAdminCells() {
+  const container = document.getElementById('admin-cells-controls-box');
+  if (!container) return;
+
+  if (adminCellsListener) adminCellsListener();
+
+  adminCellsListener = window.db.collection('cells').onSnapshot(snap => {
+    container.innerHTML = '';
+    if (snap.empty) {
+      container.innerHTML = `<p class="text-slate-400 text-center py-6">No cell registries active.</p>`;
+      return;
+    }
+
+    const grid = document.createElement('div');
+    grid.className = "grid grid-cols-1 md:grid-cols-2 gap-6";
+
+    snap.forEach(doc => {
+      const cell = doc.data();
+      const cellId = doc.id;
+      const isSuspended = cell.status === 'suspended';
+
+      const card = document.createElement('div');
+      card.className = `p-5 bg-slate-50 dark:bg-zinc-800/40 border rounded-2xl flex flex-col justify-between ${
+        isSuspended ? 'border-amber-500 bg-amber-50/10' : 'border-slate-200 dark:border-zinc-800'
+      }`;
+
+      card.innerHTML = `
+        <div>
+          <span class="text-[10px] font-mono text-slate-400 uppercase tracking-widest">${cell.city}</span>
+          <div class="flex items-center gap-2">
+            <h5 class="font-black font-display text-slate-900 dark:text-zinc-100">${cell.name}</h5>
+            <button onclick="window.renameCellGroup('${cellId}', \`${cell.name.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)" class="p-1 hover:text-blue-600 text-slate-400 dark:text-zinc-500 rounded transition-colors cursor-pointer" title="Rename Cell">
+              <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+          <p class="text-xs text-slate-500 mt-1">${cell.description}</p>
+          <div class="text-[10px] text-slate-400 font-semibold mt-2">Leader: ${cell.leaderName} (${cell.leaderEmail})</div>
+        </div>
+
+        <div class="flex flex-col gap-2 mt-4 pt-3 border-t border-slate-100 dark:border-zinc-800/60">
+          <div class="flex gap-2">
+            <button onclick="toggleCellSuspension('${cellId}', '${cell.status}')" class="flex-grow py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+              isSuspended
+                ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                : 'bg-amber-600 hover:bg-amber-700 text-white'
+            }">
+              ${isSuspended ? 'Activate Cell' : 'Suspend Cell'}
+            </button>
+            <button onclick="deleteCellGroup('${cellId}')" class="px-2.5 py-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 dark:bg-rose-950/20 dark:text-rose-400 rounded-lg cursor-pointer">
+              <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>
+          </div>
+          <button onclick="openChangeCellLeaderModal('${cellId}')" class="w-full py-1.5 text-xs font-bold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all cursor-pointer text-center">
+            Change Cell Leader
+          </button>
+        </div>
+      `;
+
+      grid.appendChild(card);
+    });
+
+    container.appendChild(grid);
+
+    if (window.lucide) window.lucide.createIcons();
+  }, err => window.handleFirestoreError(err, 'list', 'cells'));
+}
+
+function toggleCellSuspension(cellId, currentStatus) {
+  const nextStatus = currentStatus === 'active' ? 'suspended' : 'active';
+  window.db.collection('cells').doc(cellId).update({ status: nextStatus })
+    .then(() => window.showToast?.(`Cell status shifted to ${nextStatus}.`))
+    .catch(err => window.handleFirestoreError(err, 'write', `cells/${cellId}`));
+}
+
+function deleteCellGroup(cellId) {
+  const isConfirmed = confirm("Are you sure you want to permanently delete this Fellowship Cell? All associated messages and events will remain inaccessible.");
+  if (!isConfirmed) return;
+
+  window.db.collection('cells').doc(cellId).delete()
+    .then(() => window.showToast?.("Cell group deleted."))
+    .catch(err => window.handleFirestoreError(err, 'delete', `cells/${cellId}`));
+}
+
+function renameCellGroup(cellId, currentName) {
+  const newName = prompt("Enter new name for the Fellowship Cell Group:", currentName);
+  if (newName === null) return;
+  const trimmed = newName.trim();
+  if (!trimmed) {
+    window.showToast?.("Cell name cannot be empty.", "error");
+    return;
+  }
+  window.db.collection('cells').doc(cellId).update({ name: trimmed })
+    .then(() => window.showToast?.("Cell renamed successfully."))
+    .catch(err => window.handleFirestoreError(err, 'write', `cells/${cellId}`));
+}
+
+// 3. Fellowship Gatherings Manager
+function syncAdminEvents() {
+  const container = document.getElementById('admin-events-list');
+  if (!container) return;
+
+  if (adminEventsListener) adminEventsListener();
+
+  adminEventsListener = window.db.collection('parish_events').orderBy('date', 'desc').onSnapshot(snap => {
+    container.innerHTML = '';
+    if (snap.empty) {
+      container.innerHTML = `<p class="text-xs text-slate-400">No scheduled gatherings.</p>`;
+      return;
+    }
+
+    snap.forEach(doc => {
+      const ev = doc.data();
+      const evId = doc.id;
+
+      const item = document.createElement('div');
+      item.className = "flex items-center justify-between p-3.5 bg-slate-50 dark:bg-zinc-800/40 border border-slate-200 dark:border-zinc-800 rounded-xl";
+      item.innerHTML = `
+        <div>
+          <h6 class="font-bold text-sm text-slate-800 dark:text-zinc-200">${ev.title}</h6>
+          <span class="text-[10px] font-mono text-slate-400">${ev.date}</span>
+        </div>
+        <button onclick="deleteParishEvent('${evId}')" class="text-rose-500 hover:text-rose-700 cursor-pointer p-1">
+          <i data-lucide="trash-2" class="w-4.5 h-4.5"></i>
+        </button>
+      `;
+
+      container.appendChild(item);
+    });
+
+    if (window.lucide) window.lucide.createIcons();
+  }, err => window.handleFirestoreError(err, 'list', 'parish_events'));
+}
+
+function createParishEvent(title, date, description) {
+  const docId = window.db.collection('parish_events').doc().id;
+  window.db.collection('parish_events').doc(docId).set({
+    id: docId,
+    title,
+    date,
+    description,
+    rsvps: {},
+    createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
+  })
+    .then(() => window.showToast?.("Created Universal Fellowship gathering."))
+    .catch(err => window.handleFirestoreError(err, 'create', `parish_events/${docId}`));
+}
+
+function deleteParishEvent(eventId) {
+  const isConfirmed = confirm("Are you sure you want to delete this Fellowship Gathering?");
+  if (!isConfirmed) return;
+
+  window.db.collection('parish_events').doc(eventId).delete()
+    .then(() => window.showToast?.("Gathering deleted."))
+    .catch(err => window.handleFirestoreError(err, 'delete', `parish_events/${eventId}`));
+}
+
+// 4. Trivia Q&A Factory
+function syncAdminTrivia() {
+  const container = document.getElementById('admin-trivia-list');
+  if (!container) return;
+
+  if (adminTriviaListener) adminTriviaListener();
+
+  adminTriviaListener = window.db.collection('trivia_questions').orderBy('createdAt', 'desc').onSnapshot(snap => {
+    container.innerHTML = '';
+    
+    // Also update public trivia listing under Bible tab
+    const publicContainer = document.getElementById('bible-trivia-deck');
+    if (publicContainer) publicContainer.innerHTML = '';
+
+    if (snap.empty) {
+      container.innerHTML = `<p class="text-xs text-slate-400">No trivia questions manufactured yet.</p>`;
+      if (publicContainer) {
+        publicContainer.innerHTML = `<p class="text-slate-400 italic text-center py-6">No Bible trivia Q&As published yet.</p>`;
+      }
+      return;
+    }
+
+    let qIdx = 1;
+    snap.forEach(doc => {
+      const q = doc.data();
+      const qid = doc.id;
+
+      // Render in Admin Panel
+      const item = document.createElement('div');
+      item.className = "p-3 bg-slate-50 dark:bg-zinc-800/40 border border-slate-200 dark:border-zinc-800 rounded-xl space-y-1 relative group";
+      item.innerHTML = `
+        <div class="text-xs font-bold text-slate-800 dark:text-zinc-200">Q: ${q.question}</div>
+        <div class="text-[10px] text-slate-400">Answer Index: ${q.answerIdx} (${q.options[q.answerIdx]})</div>
+        <button onclick="deleteTriviaQuestion('${qid}')" class="absolute hidden group-hover:block top-2 right-2 text-rose-500 hover:text-rose-700 p-1 cursor-pointer">
+          <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+        </button>
+      `;
+      container.appendChild(item);
+
+      // Render in Bible study pane for public interaction
+      if (publicContainer) {
+        const pcard = document.createElement('div');
+        pcard.className = "p-5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-sm space-y-4";
+        
+        const optionBlocks = q.options.map((opt, oIdx) => `
+          <button onclick="checkTriviaAnswer('${qid}', ${oIdx}, ${q.answerIdx})" id="trivia-opt-${qid}-${oIdx}" class="w-full text-left p-3 rounded-xl border border-slate-100 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/20 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:border-slate-300 dark:hover:border-zinc-700 transition-all font-semibold text-xs text-slate-700 dark:text-zinc-300 cursor-pointer flex justify-between items-center">
+            <span>${opt}</span>
+          </button>
+        `).join('');
+
+        pcard.innerHTML = `
+          <div class="space-y-1">
+            <span class="px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400">Bible Trivia Q${qIdx++}</span>
+            <h5 class="text-sm font-black text-slate-900 dark:text-zinc-100 pt-1">${q.question}</h5>
+          </div>
+          <div class="space-y-2">
+            ${optionBlocks}
+          </div>
+        `;
+        publicContainer.appendChild(pcard);
+      }
+    });
+
+    if (window.lucide) window.lucide.createIcons();
+  }, err => window.handleFirestoreError(err, 'list', 'trivia_questions'));
+}
+
+function createTriviaQuestion(question, options, answerIdx) {
+  const docId = window.db.collection('trivia_questions').doc().id;
+  window.db.collection('trivia_questions').doc(docId).set({
+    id: docId,
+    question,
+    options,
+    answerIdx,
+    createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
+  })
+    .then(() => window.showToast?.("Bible Trivia Q&A manufactured successfully!"))
+    .catch(err => window.handleFirestoreError(err, 'create', `trivia_questions/${docId}`));
+}
+
+function deleteTriviaQuestion(qid) {
+  const isConfirmed = confirm("Are you sure you want to delete this Trivia Question?");
+  if (!isConfirmed) return;
+
+  window.db.collection('trivia_questions').doc(qid).delete()
+    .then(() => window.showToast?.("Trivia question deleted."))
+    .catch(err => window.handleFirestoreError(err, 'delete', `trivia_questions/${qid}`));
+}
+
+// Client check handler
+function checkTriviaAnswer(qid, selectedIdx, correctIdx) {
+  const btn = document.getElementById(`trivia-opt-${qid}-${selectedIdx}`);
+  if (!btn) return;
+
+  // Clear previous highlights for this question
+  for (let i = 0; i < 4; i++) {
+    const obtn = document.getElementById(`trivia-opt-${qid}-${i}`);
+    if (obtn) {
+      obtn.className = "w-full text-left p-3 rounded-xl border border-slate-100 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/20 text-slate-700 dark:text-zinc-300 font-semibold text-xs";
+    }
+  }
+
+  if (selectedIdx === correctIdx) {
+    btn.className = "w-full text-left p-3 rounded-xl border border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-400 font-semibold text-xs flex justify-between items-center";
+    btn.innerHTML += `<i data-lucide="check-circle" class="w-4 h-4 text-emerald-500"></i>`;
+    window.showToast?.("Amen! Correct Answer!");
+  } else {
+    btn.className = "w-full text-left p-3 rounded-xl border border-rose-500 bg-rose-50 dark:bg-rose-950/30 text-rose-800 dark:text-rose-400 font-semibold text-xs flex justify-between items-center";
+    btn.innerHTML += `<i data-lucide="x-circle" class="w-4 h-4 text-rose-500"></i>`;
+    
+    // Highlight correct option as well
+    const correctBtn = document.getElementById(`trivia-opt-${qid}-${correctIdx}`);
+    if (correctBtn) {
+      correctBtn.className = "w-full text-left p-3 rounded-xl border border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-400 font-semibold text-xs";
+    }
+    window.showToast?.("Wrong answer. Try searching scripture details!", "error");
+  }
+
+  if (window.lucide) window.lucide.createIcons();
+}
+
+// 5. Installer Packages Publisher
+function syncAdminBundles() {
+  const container = document.getElementById('admin-bundles-list');
+  if (!container) return;
+
+  if (adminBundlesListener) adminBundlesListener();
+
+  adminBundlesListener = window.db.collection('download_bundles').orderBy('createdAt', 'desc').onSnapshot(snap => {
+    container.innerHTML = '';
+    if (snap.empty) {
+      container.innerHTML = `<p class="text-xs text-slate-400">No active trigger installers registered.</p>`;
+      return;
+    }
+
+    snap.forEach(doc => {
+      const b = doc.data();
+      const bid = doc.id;
+
+      const item = document.createElement('div');
+      item.className = "flex items-center justify-between p-3.5 bg-slate-50 dark:bg-zinc-800/40 border border-slate-200 dark:border-zinc-800 rounded-xl relative group";
+      item.innerHTML = `
+        <div>
+          <h6 class="font-bold text-xs text-slate-800 dark:text-zinc-200">${b.title} [${b.category}]</h6>
+          <span class="text-[9px] font-mono text-slate-400">${b.size} • ${b.tag}</span>
+        </div>
+        <button onclick="deleteDownloadBundle('${bid}')" class="text-rose-500 hover:text-rose-700 p-1 cursor-pointer">
+          <i data-lucide="trash-2" class="w-4 h-4"></i>
+        </button>
+      `;
+
+      container.appendChild(item);
+    });
+
+    if (window.lucide) window.lucide.createIcons();
+  }, err => window.handleFirestoreError(err, 'list', 'download_bundles'));
+}
+
+function createDownloadBundle(title, size, url, tag, category) {
+  const docId = window.db.collection('download_bundles').doc().id;
+  window.db.collection('download_bundles').doc(docId).set({
+    id: docId,
+    title,
+    size,
+    url,
+    tag,
+    category,
+    createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
+  })
+    .then(() => window.showToast?.("Installer Trigger Bundle registered successfully!"))
+    .catch(err => window.handleFirestoreError(err, 'create', `download_bundles/${docId}`));
+}
+
+function deleteDownloadBundle(bundleId) {
+  const isConfirmed = confirm("Are you sure you want to permanently delete this Download Bundle?");
+  if (!isConfirmed) return;
+
+  window.db.collection('download_bundles').doc(bundleId).delete()
+    .then(() => window.showToast?.("Bundle trigger removed."))
+    .catch(err => window.handleFirestoreError(err, 'delete', `download_bundles/${bundleId}`));
+}
+
+// 6. Global Desktop Support & YouTube Stream Config
+function loadGlobalDeskSettings() {
+  const phone = document.getElementById('desk-form-phone');
+  const wa = document.getElementById('desk-form-whatsapp');
+  const email = document.getElementById('desk-form-email');
+
+  const active = document.getElementById('admin-stream-active');
+  const title = document.getElementById('admin-stream-title');
+  const desc = document.getElementById('admin-stream-desc');
+  const url = document.getElementById('admin-stream-url');
+  const type = document.getElementById('admin-stream-type');
+
+  window.db.collection('system_configs').doc('contacts').get().then(doc => {
+    if (doc.exists) {
+      const d = doc.data();
+      if (phone) phone.value = d.phone || '';
+      if (wa) wa.value = d.whatsapp || '';
+      if (email) email.value = d.email || '';
+    }
+  });
+
+  window.db.collection('system_configs').doc('stream').get().then(doc => {
+    if (doc.exists) {
+      const d = doc.data();
+      if (active) active.checked = d.streamActive || false;
+      if (title) title.value = d.streamTitle || '';
+      if (desc) desc.value = d.streamDesc || '';
+      if (url) url.value = d.streamUrl || '';
+      if (type) type.value = d.streamType || 'hls';
+    }
+  });
+
+  const triviaTimerInput = document.getElementById('trivia-settings-timer');
+  const triviaPointsInput = document.getElementById('trivia-settings-points');
+  const triviaThemeInput = document.getElementById('trivia-settings-theme');
+
+  window.db.collection('system_configs').doc('trivia').get().then(doc => {
+    if (doc.exists) {
+      const d = doc.data();
+      if (triviaTimerInput) triviaTimerInput.value = d.timerLimit || 15;
+      if (triviaPointsInput) triviaPointsInput.value = d.pointsPerQuestion || 100;
+      if (triviaThemeInput) triviaThemeInput.value = d.weeklyTheme || 'The Pentecost Acts';
+    }
+  });
+}
+
+function updateSupportDesk() {
+  const phone = document.getElementById('desk-form-phone').value.trim();
+  const wa = document.getElementById('desk-form-whatsapp').value.trim();
+  const email = document.getElementById('desk-form-email').value.trim();
+
+  window.db.collection('system_configs').doc('contacts').set({
+    phone,
+    whatsapp: wa,
+    email
+  })
+    .then(() => window.showToast?.("Support desk channels updated."))
+    .catch(err => window.handleFirestoreError(err, 'write', 'system_configs/contacts'));
+}
+
+function updateStreamDesk() {
+  const streamId = document.getElementById('admin-stream-id').value.trim();
+  const active = document.getElementById('admin-stream-active').checked;
+  const title = document.getElementById('admin-stream-title').value.trim();
+  const desc = document.getElementById('admin-stream-desc').value.trim();
+  const url = document.getElementById('admin-stream-url').value.trim();
+  const type = document.getElementById('admin-stream-type').value;
+  const position = document.getElementById('admin-stream-position').value || 'top';
+  const schedule = document.getElementById('admin-stream-schedule').value || '';
+  const status = document.getElementById('admin-stream-status').value || 'scheduled';
+  const thumbnail = document.getElementById('admin-stream-thumbnail').value.trim() || '';
+
+  const docId = streamId || window.db.collection('live_streams').doc().id;
+
+  const streamObj = {
+    id: docId,
+    streamActive: active,
+    streamTitle: title,
+    streamDesc: desc,
+    streamUrl: url,
+    streamType: type,
+    position: position,
+    schedule: schedule,
+    status: status,
+    thumbnail: thumbnail,
+    updatedAt: window.firebase.firestore.FieldValue.serverTimestamp()
+  };
+
+  window.db.collection('live_streams').doc(docId).set(streamObj)
+    .then(() => {
+      // If active stream is Live, sync legacy system_configs/stream so the dashboard banner lights up
+      if (status === 'live' || active) {
+        window.db.collection('system_configs').doc('stream').set({
+          streamActive: active,
+          streamTitle: title,
+          streamDesc: desc,
+          streamUrl: url,
+          streamType: type
+        }).catch(err => console.error("Legacy stream config sync failed:", err));
+
+        // Trigger system-wide background notification off-app
+        if (window.sendPushNotification) {
+          window.sendPushNotification(
+            "📹 LIVE STREAM BROADCAST IS ACTIVE!",
+            `We are streaming: "${title || 'Holy Fellowship'}" live now! Tap to gather with us in prayer.`,
+            "/?tab=dashboard"
+          );
         }
-    } catch (err) {
-        console.error('Error updating live preview:', err);
-    }
+      }
+
+      window.showToast?.("Livestream broadcast successfully updated and synchronized!", "success");
+      resetStreamForm();
+    })
+    .catch(err => window.handleFirestoreError(err, 'write', `live_streams/${docId}`));
 }
 
-function isColorDark(colorHex) {
-    if (!colorHex || colorHex[0] !== '#') return false;
-    const cleanHex = colorHex.replace('#', '');
-    let r, g, b;
-    if (cleanHex.length === 3) {
-        r = parseInt(cleanHex[0] + cleanHex[0], 16);
-        g = parseInt(cleanHex[1] + cleanHex[1], 16);
-        b = parseInt(cleanHex[2] + cleanHex[2], 16);
-    } else if (cleanHex.length === 6) {
-        r = parseInt(cleanHex.slice(0, 2), 16);
-        g = parseInt(cleanHex.slice(2, 4), 16);
-        b = parseInt(cleanHex.slice(4, 6), 16);
+let adminStreamsListener = null;
+function syncAdminStreams() {
+  const container = document.getElementById('admin-streams-list');
+  if (!container) return;
+
+  if (adminStreamsListener) adminStreamsListener();
+
+  adminStreamsListener = window.db.collection('live_streams').orderBy('updatedAt', 'desc').onSnapshot(snap => {
+    container.innerHTML = '';
+    
+    if (snap.empty) {
+      container.innerHTML = `<p class="text-xs text-slate-400 italic">No custom broadcasts registered yet.</p>`;
+      return;
+    }
+
+    snap.forEach(doc => {
+      const s = doc.data();
+      const card = document.createElement('div');
+      card.className = "p-4 bg-slate-50 dark:bg-zinc-850 border border-slate-200 dark:border-zinc-700 rounded-2xl flex flex-col justify-between space-y-4 text-xs";
+      
+      let badgeHTML = '';
+      if (s.status === 'live') {
+        badgeHTML = `<span class="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider bg-rose-100 text-rose-700 animate-pulse rounded-md">🔴 Live Now</span>`;
+      } else if (s.status === 'scheduled') {
+        badgeHTML = `<span class="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-700 rounded-md">⏳ Scheduled</span>`;
+      } else {
+        badgeHTML = `<span class="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider bg-slate-200 text-slate-600 rounded-md">⚫ Offline</span>`;
+      }
+
+      card.innerHTML = `
+        <div class="space-y-2">
+          <div class="flex items-center justify-between gap-2">
+            <h5 class="font-extrabold text-slate-900 dark:text-zinc-50 line-clamp-1">${s.streamTitle}</h5>
+            ${badgeHTML}
+          </div>
+          <p class="text-[11px] text-slate-500 dark:text-zinc-400 line-clamp-2">${s.streamDesc}</p>
+          <div class="text-[10px] text-slate-400 font-bold space-y-1">
+            <p>Placement: <span class="text-blue-500 capitalize">${s.position}</span></p>
+            ${s.schedule ? `<p>Scheduled: <span class="text-purple-500 font-mono">${new Date(s.schedule).toLocaleString()}</span></p>` : ''}
+            <p class="truncate">Source: <span class="font-mono text-[9px]">${s.streamUrl}</span></p>
+          </div>
+        </div>
+        <div class="flex flex-col gap-2 pt-2 border-t border-slate-100 dark:border-zinc-800/50">
+          ${s.status === 'live' ? `
+            <button onclick="window.endLiveStream('${s.id}')" class="w-full py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-lg transition-all cursor-pointer text-center">
+              End Live Broadcast
+            </button>
+          ` : ''}
+          <div class="flex items-center gap-2 w-full">
+            <button onclick="window.editStream('${s.id}')" class="flex-1 py-1.5 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/20 dark:hover:bg-blue-950/40 text-blue-600 font-bold rounded-lg transition-all cursor-pointer text-center">
+              Edit
+            </button>
+            <button onclick="window.deleteStream('${s.id}')" class="py-1.5 px-3 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 dark:hover:bg-rose-950/40 text-rose-500 font-bold rounded-lg transition-all cursor-pointer text-center">
+              Delete
+            </button>
+          </div>
+        </div>
+      `;
+      container.appendChild(card);
+    });
+  }, err => console.error("Admin streams sync failed:", err));
+}
+
+function editStream(streamId) {
+  window.db.collection('live_streams').doc(streamId).get().then(doc => {
+    if (!doc.exists) return;
+    const s = doc.data();
+
+    document.getElementById('admin-stream-id').value = s.id;
+    document.getElementById('admin-stream-active').checked = s.streamActive || false;
+    document.getElementById('admin-stream-title').value = s.streamTitle || '';
+    document.getElementById('admin-stream-desc').value = s.streamDesc || '';
+    document.getElementById('admin-stream-url').value = s.streamUrl || '';
+    document.getElementById('admin-stream-type').value = s.streamType || 'hls';
+    document.getElementById('admin-stream-position').value = s.position || 'top';
+    document.getElementById('admin-stream-schedule').value = s.schedule || '';
+    document.getElementById('admin-stream-status').value = s.status || 'scheduled';
+    document.getElementById('admin-stream-thumbnail').value = s.thumbnail || '';
+
+    window.showToast?.("Loaded livestream settings into editing form!", "info");
+  }).catch(err => window.handleFirestoreError(err, 'get', `live_streams/${streamId}`));
+}
+
+function deleteStream(streamId) {
+  const isConfirmed = confirm("Are you sure you want to permanently delete this broadcast configuration?");
+  if (!isConfirmed) return;
+
+  window.db.collection('live_streams').doc(streamId).delete()
+    .then(() => {
+      window.showToast?.("Broadcast configuration successfully deleted.");
+    })
+    .catch(err => window.handleFirestoreError(err, 'delete', `live_streams/${streamId}`));
+}
+
+function endLiveStream(streamId) {
+  const isConfirmed = confirm("Are you sure you want to end this live broadcast?");
+  if (!isConfirmed) return;
+
+  window.db.collection('live_streams').doc(streamId).set({
+    status: 'offline',
+    streamActive: false,
+    updatedAt: window.firebase.firestore.FieldValue.serverTimestamp()
+  }, { merge: true })
+  .then(() => {
+    return window.db.collection('system_configs').doc('stream').set({
+      streamActive: false
+    }, { merge: true }).catch(err => console.warn("Failed to update legacy stream config:", err));
+  })
+  .then(() => {
+    window.showToast?.("Live broadcast ended successfully!", "success");
+  })
+  .catch(err => window.handleFirestoreError(err, 'write', `live_streams/${streamId}`));
+}
+
+function resetStreamForm() {
+  document.getElementById('admin-stream-form').reset();
+  document.getElementById('admin-stream-id').value = '';
+}
+
+// Admin Panel Sub Tab switches
+function setAdminSubTab(subTabId) {
+  const subTabs = ['users', 'cells', 'trivia', 'bundles', 'configs', 'stream'];
+  subTabs.forEach(tab => {
+    const pane = document.getElementById(`atab-${tab}`);
+    const btn = document.getElementById(`btn-atab-${tab}`);
+    if (pane) {
+      if (tab === subTabId) pane.classList.remove('hidden');
+      else pane.classList.add('hidden');
+    }
+    if (btn) {
+      if (tab === subTabId) {
+        btn.className = "px-4 py-2 rounded-lg bg-purple-100 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300 font-bold";
+      } else {
+        btn.className = "px-4 py-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:text-zinc-400 dark:hover:bg-zinc-800 font-semibold";
+      }
+    }
+  });
+}
+
+// Form Listeners
+document.addEventListener("DOMContentLoaded", () => {
+  const qForm = document.getElementById('trivia-creator-form');
+  if (qForm) {
+    qForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const question = document.getElementById('trivia-q').value.trim();
+      const opt0 = document.getElementById('trivia-o0').value.trim();
+      const opt1 = document.getElementById('trivia-o1').value.trim();
+      const opt2 = document.getElementById('trivia-o2').value.trim();
+      const opt3 = document.getElementById('trivia-o3').value.trim();
+      const answerIdx = parseInt(document.getElementById('trivia-answer-idx').value);
+
+      if (!question || !opt0 || !opt1) return;
+
+      createTriviaQuestion(question, [opt0, opt1, opt2, opt3], answerIdx);
+      qForm.reset();
+    });
+  }
+
+  const bForm = document.getElementById('admin-bundle-form');
+  if (bForm) {
+    bForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const title = document.getElementById('bundle-title').value.trim();
+      const size = document.getElementById('bundle-size').value.trim();
+      const url = document.getElementById('bundle-url').value.trim();
+      const tag = document.getElementById('bundle-tag').value.trim();
+      const category = document.getElementById('bundle-category').value;
+
+      if (!title || !url) return;
+
+      createDownloadBundle(title, size, url, tag, category);
+      bForm.reset();
+    });
+  }
+
+  const cForm = document.getElementById('admin-desk-form');
+  if (cForm) {
+    cForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      updateSupportDesk();
+    });
+  }
+
+  const tsForm = document.getElementById('admin-trivia-settings-form');
+  if (tsForm) {
+    tsForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const timerLimit = parseInt(document.getElementById('trivia-settings-timer').value) || 15;
+      const pointsPerQuestion = parseInt(document.getElementById('trivia-settings-points').value) || 100;
+      const weeklyTheme = document.getElementById('trivia-settings-theme').value.trim() || 'The Pentecost Acts';
+
+      window.db.collection('system_configs').doc('trivia').set({
+        timerLimit,
+        pointsPerQuestion,
+        weeklyTheme
+      })
+        .then(() => window.showToast?.("Trivia engine rules updated successfully!"))
+        .catch(err => window.handleFirestoreError(err, 'write', 'system_configs/trivia'));
+    });
+  }
+
+  const sForm = document.getElementById('admin-stream-form');
+  if (sForm) {
+    sForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      updateStreamDesk();
+    });
+  }
+
+  const clForm = document.getElementById('change-leader-form');
+  if (clForm) {
+    clForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const cellId = document.getElementById('change-leader-cell-id').value;
+      const newLeaderUid = document.getElementById('change-leader-select').value;
+      const newLeader = (window.allUsersList || []).find(u => u.uid === newLeaderUid);
+      if (!newLeader) return;
+
+      window.db.collection('cells').doc(cellId).get().then(cellDoc => {
+        if (!cellDoc.exists) {
+          window.showToast?.("Cell fellowship group not found.", "error");
+          return;
+        }
+
+        const cellData = cellDoc.data();
+        const oldLeaderUid = cellData.leaderUid;
+
+        const batch = window.db.batch();
+
+        // Update Cell Doc
+        batch.update(window.db.collection('cells').doc(cellId), {
+          leaderUid: newLeaderUid,
+          leaderName: newLeader.displayName || newLeader.email,
+          leaderEmail: newLeader.email
+        });
+
+        // Promote new leader
+        batch.update(window.db.collection('users').doc(newLeaderUid), {
+          role: 'Cell Leader',
+          cellId: cellId
+        });
+
+        // Demote old leader (if different from new leader)
+        if (oldLeaderUid && oldLeaderUid !== newLeaderUid) {
+          batch.update(window.db.collection('users').doc(oldLeaderUid), {
+            role: 'Member'
+          });
+        }
+
+        return batch.commit().then(() => {
+          window.showToast?.("Cell leadership reassigned successfully.");
+          closeChangeLeaderModal();
+        });
+      })
+      .catch(err => window.handleFirestoreError(err, 'write', 'reassign_leader'));
+    });
+  }
+});
+
+function openChangeCellLeaderModal(cellId) {
+  const cellIdInput = document.getElementById('change-leader-cell-id');
+  if (cellIdInput) cellIdInput.value = cellId;
+
+  const select = document.getElementById('change-leader-select');
+  if (select) {
+    select.innerHTML = (window.allUsersList || []).map(u => `
+      <option value="${u.uid}">${u.displayName || u.email} (${u.role || 'Member'})</option>
+    `).join('');
+  }
+
+  const modal = document.getElementById('change-leader-modal');
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeChangeLeaderModal() {
+  const modal = document.getElementById('change-leader-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+// Support for off-app push notifications nudges
+function applyNudgePreset() {
+  const select = document.getElementById('nudge-preset-select');
+  const titleInput = document.getElementById('admin-nudge-title');
+  const bodyInput = document.getElementById('admin-nudge-body');
+  const targetSelect = document.getElementById('admin-nudge-target');
+
+  if (!select || !titleInput || !bodyInput) return;
+
+  const choice = select.value;
+  if (choice === 'devotion') {
+    titleInput.value = "☀️ Keep Your Streak Alive!";
+    bodyInput.value = "Your personal devotion streak is a beautiful testimony of your faith. Complete today's daily devotional check-in now to maintain it!";
+    if (targetSelect) targetSelect.value = "/?tab=dashboard";
+  } else if (choice === 'trivia') {
+    titleInput.value = "🔥 Live Trivia Active Now!";
+    bodyInput.value = "The Pentecost Trivia arena is buzzing! Come test your bible knowledge in real-time with fellow members of the assembly!";
+    if (targetSelect) targetSelect.value = "/?tab=bible";
+  } else if (choice === 'testimony') {
+    titleInput.value = "🙏 Power-packed Testimony Shared!";
+    bodyInput.value = "A member of the cohort just shared a magnificent testimony of God's grace. Read it, support them, and get encouraged!";
+    if (targetSelect) targetSelect.value = "/?tab=feed";
+  } else if (choice === 'stream') {
+    titleInput.value = "📹 Live Fellowship Broadcast Active!";
+    bodyInput.value = "We are gathering online right now. Come tune into the live broadcast stream to connect, share, and grow together!";
+    if (targetSelect) targetSelect.value = "/?tab=dashboard";
+  }
+}
+
+function sendAdminNudge(event) {
+  event.preventDefault();
+  const title = document.getElementById('admin-nudge-title').value.trim();
+  const body = document.getElementById('admin-nudge-body').value.trim();
+  const target = document.getElementById('admin-nudge-target').value;
+  const targetRoleSelect = document.getElementById('admin-nudge-role');
+  const targetRole = (targetRoleSelect && targetRoleSelect.value !== 'all') ? targetRoleSelect.value : null;
+
+  if (!title || !body) return;
+
+  // Utilize our real push notification helper!
+  if (window.sendPushNotification) {
+    window.sendPushNotification(title, body, target, targetRole);
+    if (targetRole) {
+      window.showToast?.(`Push notification nudge successfully broadcasted off-app to all ${targetRole}s!`, "success");
     } else {
-        return false;
+      window.showToast?.("Push notification nudge successfully broadcasted off-app to all members!", "success");
     }
-    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-    return luminance < 0.65;
+    
+    // Clear form
+    const form = document.getElementById('admin-push-nudge-form');
+    if (form) form.reset();
+    const select = document.getElementById('nudge-preset-select');
+    if (select) select.value = "";
+  } else {
+    window.showToast?.("Push Notification engine is currently initializing, please wait.", "error");
+  }
 }
 
-function isGradientDark(gradientStr) {
-    if (!gradientStr) return false;
-    const lower = gradientStr.toLowerCase();
-    if (lower.includes('black') || lower.includes('#00') || lower.includes('#0f') || lower.includes('#1') || lower.includes('#2') || lower.includes('rgb(0') || lower.includes('dark')) {
-        return true;
+// ==========================================
+// 5. ULTIMATE INTERACTIVE QUIZ BUILDER CONSOLE
+// ==========================================
+let activeQuizQuestions = [];
+let editingQuestionIdx = null;
+
+function toggleAdminQuestionFormat() {
+  const qType = document.getElementById('admin-q-type').value;
+  const mcGroup = document.getElementById('admin-mc-group');
+  const ansSelect = document.getElementById('admin-q-correct');
+
+  if (qType === 'tf') {
+    if (mcGroup) mcGroup.classList.add('hidden');
+    if (ansSelect) {
+      ansSelect.innerHTML = `
+        <option value="0">True</option>
+        <option value="1">False</option>
+      `;
     }
-    return false;
+  } else {
+    if (mcGroup) mcGroup.classList.remove('hidden');
+    if (ansSelect) {
+      ansSelect.innerHTML = `
+        <option value="0">Option A</option>
+        <option value="1">Option B</option>
+        <option value="2">Option C</option>
+        <option value="3">Option D</option>
+      `;
+    }
+  }
 }
+
+function addQuestionToActiveQuiz() {
+  const promptEl = document.getElementById('admin-q-prompt');
+  if (!promptEl) return;
+  const prompt = promptEl.value.trim();
+  if (!prompt) {
+    window.showToast?.("Question prompt cannot be empty!", "error");
+    return;
+  }
+
+  const qType = document.getElementById('admin-q-type').value;
+  let options = [];
+  let answerIdx = parseInt(document.getElementById('admin-q-correct').value);
+
+  if (qType === 'tf') {
+    options = ["True", "False"];
+    if (answerIdx > 1) answerIdx = 0;
+  } else {
+    const o0 = document.getElementById('admin-q-o0').value.trim();
+    const o1 = document.getElementById('admin-q-o1').value.trim();
+    const o2 = document.getElementById('admin-q-o2').value.trim();
+    const o3 = document.getElementById('admin-q-o3').value.trim();
+
+    if (!o0 || !o1 || !o2 || !o3) {
+      window.showToast?.("All 4 options must be supplied for Multiple Choice questions!", "error");
+      return;
+    }
+    options = [o0, o1, o2, o3];
+  }
+
+  const newQ = { question: prompt, options, answerIdx, type: qType };
+
+  if (editingQuestionIdx !== null) {
+    activeQuizQuestions[editingQuestionIdx] = newQ;
+    editingQuestionIdx = null;
+    window.showToast?.("Question updated in builder queue.");
+  } else {
+    activeQuizQuestions.push(newQ);
+    window.showToast?.("Question added to builder queue.");
+  }
+
+  // Reset question form
+  promptEl.value = '';
+  const o0 = document.getElementById('admin-q-o0'); if (o0) o0.value = '';
+  const o1 = document.getElementById('admin-q-o1'); if (o1) o1.value = '';
+  const o2 = document.getElementById('admin-q-o2'); if (o2) o2.value = '';
+  const o3 = document.getElementById('admin-q-o3'); if (o3) o3.value = '';
+  const correct = document.getElementById('admin-q-correct'); if (correct) correct.value = '0';
+
+  renderActiveQuestionsQueue();
+}
+
+function renderActiveQuestionsQueue() {
+  const queueContainer = document.getElementById('admin-questions-queue');
+  const countEl = document.getElementById('admin-builder-count');
+  if (!queueContainer) return;
+
+  if (countEl) countEl.innerText = `${activeQuizQuestions.length} Questions Added`;
+
+  if (activeQuizQuestions.length === 0) {
+    queueContainer.innerHTML = `<p class="text-xs text-slate-400 text-center py-8">Add questions on the left to begin building this quiz.</p>`;
+    return;
+  }
+
+  queueContainer.innerHTML = '';
+  activeQuizQuestions.forEach((q, idx) => {
+    const card = document.createElement('div');
+    card.className = "p-3 bg-slate-50 dark:bg-zinc-800/50 border border-slate-200 dark:border-zinc-800 rounded-xl space-y-1 text-xs relative group flex items-start justify-between gap-4";
+    card.innerHTML = `
+      <div class="space-y-1 flex-1">
+        <div class="font-bold text-slate-800 dark:text-zinc-200">
+          <span class="text-blue-600 dark:text-blue-400 font-extrabold pr-1">Q${idx + 1}.</span> ${q.question}
+        </div>
+        <div class="text-[10px] text-slate-400 flex items-center gap-2 pt-1">
+          <span class="uppercase tracking-wider font-black text-[8px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400">${q.type === 'tf' ? 'True/False' : 'Multi Choice'}</span>
+          <span>Correct: ${q.options[q.answerIdx]}</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-1 shrink-0">
+        <button onclick="window.reorderBuilderQuestion(${idx}, -1)" class="p-1 hover:bg-slate-200 dark:hover:bg-zinc-700 rounded text-slate-500 cursor-pointer" title="Move Up">
+          <i data-lucide="chevron-up" class="w-3.5 h-3.5"></i>
+        </button>
+        <button onclick="window.reorderBuilderQuestion(${idx}, 1)" class="p-1 hover:bg-slate-200 dark:hover:bg-zinc-700 rounded text-slate-500 cursor-pointer" title="Move Down">
+          <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
+        </button>
+        <button onclick="window.editBuilderQuestion(${idx})" class="p-1 hover:bg-blue-100 dark:hover:bg-blue-950/40 rounded text-blue-600 cursor-pointer" title="Edit Question">
+          <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+        </button>
+        <button onclick="window.deleteBuilderQuestion(${idx})" class="p-1 hover:bg-rose-100 dark:hover:bg-rose-950/40 rounded text-rose-500 cursor-pointer" title="Delete Question">
+          <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+        </button>
+      </div>
+    `;
+    queueContainer.appendChild(card);
+  });
+
+  if (window.lucide) window.lucide.createIcons();
+}
+
+function reorderBuilderQuestion(index, direction) {
+  const newIndex = index + direction;
+  if (newIndex < 0 || newIndex >= activeQuizQuestions.length) return;
+  const temp = activeQuizQuestions[index];
+  activeQuizQuestions[index] = activeQuizQuestions[newIndex];
+  activeQuizQuestions[newIndex] = temp;
+  renderActiveQuestionsQueue();
+}
+
+function editBuilderQuestion(index) {
+  const q = activeQuizQuestions[index];
+  editingQuestionIdx = index;
+
+  document.getElementById('admin-q-prompt').value = q.question;
+  document.getElementById('admin-q-type').value = q.type || 'mc';
+  toggleAdminQuestionFormat();
+
+  if (q.type !== 'tf') {
+    document.getElementById('admin-q-o0').value = q.options[0] || '';
+    document.getElementById('admin-q-o1').value = q.options[1] || '';
+    document.getElementById('admin-q-o2').value = q.options[2] || '';
+    document.getElementById('admin-q-o3').value = q.options[3] || '';
+  }
+
+  document.getElementById('admin-q-correct').value = q.answerIdx;
+}
+
+function deleteBuilderQuestion(index) {
+  activeQuizQuestions.splice(index, 1);
+  if (editingQuestionIdx === index) editingQuestionIdx = null;
+  renderActiveQuestionsQueue();
+}
+
+function clearActiveQuizBuilder() {
+  activeQuizQuestions = [];
+  editingQuestionIdx = null;
+  const editId = document.getElementById('admin-quiz-edit-id'); if (editId) editId.value = '';
+  const title = document.getElementById('admin-quiz-title'); if (title) title.value = '';
+  const topic = document.getElementById('admin-quiz-topic'); if (topic) topic.value = '';
+  const diff = document.getElementById('admin-quiz-difficulty'); if (diff) diff.value = 'Beginner';
+  const emoji = document.getElementById('admin-quiz-emoji'); if (emoji) emoji.value = '📖';
+  const grad = document.getElementById('admin-quiz-gradient'); if (grad) grad.value = 'from-blue-600 to-indigo-700';
+  const desc = document.getElementById('admin-quiz-desc'); if (desc) desc.value = '';
+  renderActiveQuestionsQueue();
+}
+
+function publishQuizToCloud() {
+  const editId = document.getElementById('admin-quiz-edit-id').value;
+  const title = document.getElementById('admin-quiz-title').value.trim();
+  const topic = document.getElementById('admin-quiz-topic').value.trim();
+  const difficulty = document.getElementById('admin-quiz-difficulty').value;
+  const coverEmoji = document.getElementById('admin-quiz-emoji').value.trim();
+  const coverGradient = document.getElementById('admin-quiz-gradient').value;
+  const description = document.getElementById('admin-quiz-desc').value.trim();
+
+  if (!title || !topic || !description) {
+    window.showToast?.("Quiz Title, Topic Category, and Description are required!", "error");
+    return;
+  }
+
+  if (activeQuizQuestions.length === 0) {
+    window.showToast?.("Please add at least one question to the builder queue!", "error");
+    return;
+  }
+
+  const docId = editId || window.db.collection('quizzes').doc().id;
+
+  window.db.collection('quizzes').doc(docId).set({
+    id: docId,
+    title,
+    topic,
+    difficulty,
+    coverEmoji,
+    coverGradient,
+    description,
+    questions: activeQuizQuestions,
+    createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
+  })
+  .then(() => {
+    window.showToast?.("Sunday Congregational Quiz published successfully!", "success");
+    clearActiveQuizBuilder();
+    syncAdminQuizzes();
+    if (window.renderQuizSelectionGrid) window.renderQuizSelectionGrid();
+  })
+  .catch(err => window.handleFirestoreError(err, 'create', `quizzes/${docId}`));
+}
+
+let adminQuizzesListener = null;
+function syncAdminQuizzes() {
+  const catalogContainer = document.getElementById('admin-quizzes-catalog');
+  if (!catalogContainer) return;
+
+  if (adminQuizzesListener) adminQuizzesListener();
+
+  adminQuizzesListener = window.db.collection('quizzes').orderBy('createdAt', 'desc').onSnapshot(snap => {
+    catalogContainer.innerHTML = '';
+
+    if (snap.empty) {
+      catalogContainer.innerHTML = `<p class="text-xs text-slate-400 text-center py-6">No custom quizzes published to the catalog yet.</p>`;
+      return;
+    }
+
+    snap.forEach(doc => {
+      const q = doc.data();
+      const card = document.createElement('div');
+      card.className = "p-4 bg-slate-50 dark:bg-zinc-800/40 border border-slate-200 dark:border-zinc-800 rounded-2xl flex flex-col justify-between space-y-4 text-xs";
+      card.innerHTML = `
+        <div class="space-y-2">
+          <div class="flex items-center gap-2">
+            <span class="text-xl shrink-0">${q.coverEmoji || '📖'}</span>
+            <div class="leading-tight">
+              <h5 class="font-extrabold text-slate-900 dark:text-zinc-50 line-clamp-1">${q.title}</h5>
+              <span class="text-[9px] uppercase tracking-wider text-slate-400">${q.topic} • ${q.difficulty}</span>
+            </div>
+          </div>
+          <p class="text-[11px] text-slate-500 dark:text-zinc-400 line-clamp-2">${q.description}</p>
+          <div class="text-[10px] text-slate-400 font-bold">${q.questions ? q.questions.length : 0} Questions published</div>
+        </div>
+        <div class="flex items-center gap-2 pt-2 border-t border-slate-100 dark:border-zinc-800/50">
+          <button onclick="window.editQuizFromCatalog('${q.id}')" class="flex-1 py-1.5 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/20 dark:hover:bg-blue-950/40 text-blue-600 font-bold rounded-lg transition-all cursor-pointer text-center">
+            Edit
+          </button>
+          <button onclick="window.deleteQuizFromCatalog('${q.id}')" class="py-1.5 px-3 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 dark:hover:bg-rose-950/40 text-rose-500 font-bold rounded-lg transition-all cursor-pointer text-center">
+            Delete
+          </button>
+        </div>
+      `;
+      catalogContainer.appendChild(card);
+    });
+  }, err => console.warn("Published quizzes catalog stream failed:", err));
+}
+
+function editQuizFromCatalog(quizId) {
+  window.db.collection('quizzes').doc(quizId).get().then(doc => {
+    if (!doc.exists) return;
+    const q = doc.data();
+
+    document.getElementById('admin-quiz-edit-id').value = q.id;
+    document.getElementById('admin-quiz-title').value = q.title || '';
+    document.getElementById('admin-quiz-topic').value = q.topic || '';
+    document.getElementById('admin-quiz-difficulty').value = q.difficulty || 'Beginner';
+    document.getElementById('admin-quiz-emoji').value = q.coverEmoji || '📖';
+    document.getElementById('admin-quiz-gradient').value = q.coverGradient || 'from-blue-600 to-indigo-700';
+    document.getElementById('admin-quiz-desc').value = q.description || '';
+
+    activeQuizQuestions = q.questions || [];
+    editingQuestionIdx = null;
+
+    renderActiveQuestionsQueue();
+    window.showToast?.("Loaded quiz into builder queue! Scroll up to edit.");
+  }).catch(err => window.handleFirestoreError(err, 'get', `quizzes/${quizId}`));
+}
+
+function deleteQuizFromCatalog(quizId) {
+  const isConfirmed = confirm("Are you sure you want to delete this Custom Quiz from the assembly database?");
+  if (!isConfirmed) return;
+
+  window.db.collection('quizzes').doc(quizId).delete()
+    .then(() => {
+      window.showToast?.("Custom quiz deleted from catalog successfully.");
+      if (window.renderQuizSelectionGrid) window.renderQuizSelectionGrid();
+    })
+    .catch(err => window.handleFirestoreError(err, 'delete', `quizzes/${quizId}`));
+}
+
+// Expose globally
+window.initAdminModule = initAdminModule;
+window.toggleAdminQuestionFormat = toggleAdminQuestionFormat;
+window.addQuestionToActiveQuiz = addQuestionToActiveQuiz;
+window.reorderBuilderQuestion = reorderBuilderQuestion;
+window.editBuilderQuestion = editBuilderQuestion;
+window.deleteBuilderQuestion = deleteBuilderQuestion;
+window.clearActiveQuizBuilder = clearActiveQuizBuilder;
+window.publishQuizToCloud = publishQuizToCloud;
+window.syncAdminQuizzes = syncAdminQuizzes;
+window.editQuizFromCatalog = editQuizFromCatalog;
+window.deleteQuizFromCatalog = deleteQuizFromCatalog;
+window.updateUserRole = updateUserRole;
+window.updateUserCellAssignment = updateUserCellAssignment;
+window.evictUser = evictUser;
+window.toggleCellSuspension = toggleCellSuspension;
+window.deleteCellGroup = deleteCellGroup;
+window.deleteParishEvent = deleteParishEvent;
+window.deleteTriviaQuestion = deleteTriviaQuestion;
+window.deleteDownloadBundle = deleteDownloadBundle;
+window.checkTriviaAnswer = checkTriviaAnswer;
+window.updateSupportDesk = updateSupportDesk;
+window.updateStreamDesk = updateStreamDesk;
+window.syncAdminStreams = syncAdminStreams;
+window.editStream = editStream;
+window.deleteStream = deleteStream;
+window.endLiveStream = endLiveStream;
+window.resetStreamForm = resetStreamForm;
+window.setAdminSubTab = setAdminSubTab;
+window.openChangeCellLeaderModal = openChangeCellLeaderModal;
+window.closeChangeLeaderModal = closeChangeLeaderModal;
+window.applyNudgePreset = applyNudgePreset;
+window.sendAdminNudge = sendAdminNudge;
+window.renameCellGroup = renameCellGroup;

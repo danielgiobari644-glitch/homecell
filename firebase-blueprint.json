@@ -1,203 +1,251 @@
 {
   "entities": {
-    "ThemeSettings": {
-      "title": "Theme Settings",
-      "description": "Global theme and branding settings",
+    "User": {
+      "title": "User",
+      "description": "Registered user profile information.",
       "type": "object",
       "properties": {
-        "mode": { "type": "string", "enum": ["light", "dark"] },
-        "primaryColor": { "type": "string" },
-        "secondaryColor": { "type": "string" },
-        "accentColor": { "type": "string" },
-        "heroMode": { "type": "string", "enum": ["single", "collage", "slideshow"] },
-        "heroImages": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "url": { "type": "string" },
-              "link": { "type": "string" }
-            }
-          }
-        },
-        "heroText": { "type": "string" },
-        "heroSubtext": { "type": "string" },
-        "logoUrl": { "type": "string" },
-        "faviconUrl": { "type": "string" },
-        "livestreamUrl": { "type": "string" },
-        "sermonBackground": { "type": "string" },
-        "testimonyBackground": { "type": "string" }
+        "uid": { "type": "string" },
+        "displayName": { "type": "string" },
+        "email": { "type": "string" },
+        "bio": { "type": "string" },
+        "coordinates": { "type": "string" },
+        "role": { "type": "string", "enum": ["Member", "Cell Leader", "Cell Coordinator", "Pastor", "Super Admin"] },
+        "cellId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["primaryColor", "logoUrl"]
+      "required": ["uid", "displayName", "email", "bio", "coordinates", "role", "cellId", "createdAt"]
     },
-    "AboutContent": {
-      "title": "About Content",
-      "description": "Content for the about section",
+    "Cell": {
+      "title": "Cell",
+      "description": "Fellowship cell group details.",
       "type": "object",
       "properties": {
-        "mission": { "type": "string" },
-        "missionImage": { "type": "string" },
-        "vision": { "type": "string" },
-        "visionImage": { "type": "string" },
-        "welcomeMessage": { "type": "string" },
-        "welcomeImage": { "type": "string" }
-      }
-    },
-    "ServiceSchedule": {
-      "title": "Service Schedule",
-      "description": "Weekly service times and descriptions",
-      "type": "object",
-      "properties": {
-        "sunday1": { "$ref": "ServiceInfo" },
-        "sunday2": { "$ref": "ServiceInfo" },
-        "sunday3": { "$ref": "ServiceInfo" },
-        "sunday4": { "$ref": "ServiceInfo" },
-        "midweek": { "$ref": "ServiceInfo" },
-        "special": { "$ref": "ServiceInfo" }
-      }
-    },
-    "ServiceInfo": {
-      "title": "Service Info",
-      "type": "object",
-      "properties": {
-        "title": { "type": "string" },
-        "time": { "type": "string" },
-        "description": { "type": "string" }
-      }
-    },
-    "ContactInfo": {
-      "title": "Contact Info",
-      "description": "Contact details and offering accounts",
-      "type": "object",
-      "properties": {
-        "email": { "type": "string", "format": "email" },
-        "phone": { "type": "string" },
-        "address": { "type": "string" },
-        "offeringAccounts": {
-          "type": "array",
-          "items": { "$ref": "OfferingAccount" }
-        }
-      }
-    },
-    "OfferingAccount": {
-      "title": "Offering Account",
-      "type": "object",
-      "properties": {
-        "title": { "type": "string" },
-        "bank": { "type": "string" },
-        "accountName": { "type": "string" },
-        "accountNumber": { "type": "string" }
-      }
-    },
-    "Sermon": {
-      "title": "Sermon",
-      "type": "object",
-      "properties": {
-        "title": { "type": "string" },
-        "date": { "type": "string", "format": "date-time" },
-        "videoUrl": { "type": "string" },
-        "description": { "type": "string" }
-      }
-    },
-    "Event": {
-      "title": "Event",
-      "type": "object",
-      "properties": {
-        "title": { "type": "string" },
-        "date": { "type": "string", "format": "date-time" },
-        "location": { "type": "string" },
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "city": { "type": "string" },
         "description": { "type": "string" },
-        "imageUrl": { "type": "string" }
-      }
+        "leaderUid": { "type": "string" },
+        "leaderName": { "type": "string" },
+        "leaderEmail": { "type": "string" },
+        "coLeaders": { "type": "array" },
+        "status": { "type": "string", "enum": ["active", "suspended"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name", "city", "description", "leaderUid", "leaderName", "leaderEmail", "coLeaders", "status", "createdAt"]
     },
-    "Testimony": {
-      "title": "Testimony",
+    "CellMessage": {
+      "title": "CellMessage",
+      "description": "Message in the cellular group chat.",
       "type": "object",
       "properties": {
-        "name": { "type": "string" },
-        "message": { "type": "string" },
-        "approved": { "type": "boolean" },
-        "submittedAt": { "type": "string", "format": "date-time" }
-      }
-    },
-    "Message": {
-      "title": "Message",
-      "type": "object",
-      "properties": {
-        "name": { "type": "string" },
-        "email": { "type": "string", "format": "email" },
-        "subject": { "type": "string" },
-        "message": { "type": "string" },
-        "submittedAt": { "type": "string", "format": "date-time" }
-      }
-    },
-    "Quote": {
-      "title": "Quote",
-      "type": "object",
-      "properties": {
-        "type": { "type": "string", "enum": ["text", "image", "both"] },
+        "senderUid": { "type": "string" },
+        "senderName": { "type": "string" },
         "text": { "type": "string" },
-        "author": { "type": "string" },
-        "imageUrl": { "type": "string" },
-        "active": { "type": "boolean" },
         "createdAt": { "type": "string", "format": "date-time" }
-      }
+      },
+      "required": ["senderUid", "senderName", "text", "createdAt"]
     },
-    "Moment": {
-      "title": "Moment",
+    "CellEvent": {
+      "title": "CellEvent",
+      "description": "Scheduled cell fellowship event.",
       "type": "object",
       "properties": {
-        "type": { "type": "string", "enum": ["photo", "video"] },
-        "url": { "type": "string" },
         "title": { "type": "string" },
+        "date": { "type": "string" },
         "description": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
-      }
+      },
+      "required": ["title", "date", "description", "createdAt"]
     },
-    "CustomSection": {
-      "title": "Custom Section",
+    "PrayerPetition": {
+      "title": "PrayerPetition",
+      "description": "Prayer request submitted by members.",
       "type": "object",
       "properties": {
-        "title": { "type": "string" },
-        "titleColor": { "type": "string" },
-        "titleGradient": { "type": "string" },
-        "useGradient": { "type": "boolean" },
-        "contentType": { "type": "string", "enum": ["cards", "text"] },
-        "textHTML": { "type": "string" },
-        "cards": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "title": { "type": "string" },
-              "description": { "type": "string" },
-              "icon": { "type": "string" },
-              "iconSize": { "type": "string" },
-              "iconColor": { "type": "string" },
-              "iconPosition": { "type": "string", "enum": ["top", "left"] }
-            }
-          }
-        },
-        "bgType": { "type": "string", "enum": ["color", "gradient", "image"] },
-        "bgColor": { "type": "string" },
-        "bgGradient": { "type": "string" },
-        "bgImage": { "type": "string" },
-        "order": { "type": "number" },
+        "id": { "type": "string" },
+        "category": { "type": "string" },
+        "text": { "type": "string" },
+        "urgency": { "type": "boolean" },
+        "authorUid": { "type": "string" },
+        "authorName": { "type": "string" },
+        "agreementsCount": { "type": "number" },
+        "agreements": { "type": "object" },
         "createdAt": { "type": "string", "format": "date-time" }
-      }
+      },
+      "required": ["id", "category", "text", "urgency", "authorUid", "authorName", "agreementsCount", "agreements", "createdAt"]
+    },
+    "ParishEvent": {
+      "title": "ParishEvent",
+      "description": "Universal parish event with RSVPs.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "date": { "type": "string" },
+        "description": { "type": "string" },
+        "rsvps": { "type": "object" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "title", "date", "description", "rsvps", "createdAt"]
+    },
+    "TriviaQuestion": {
+      "title": "TriviaQuestion",
+      "description": "Trivia Q&A created by Super Admin.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "question": { "type": "string" },
+        "options": { "type": "array" },
+        "answerIdx": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "question", "options", "answerIdx", "createdAt"]
+    },
+    "DownloadBundle": {
+      "title": "DownloadBundle",
+      "description": "Direct installer trigger asset.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "size": { "type": "string" },
+        "url": { "type": "string" },
+        "tag": { "type": "string" },
+        "category": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "title", "size", "url", "tag", "category", "createdAt"]
+    },
+    "SystemConfig": {
+      "title": "SystemConfig",
+      "description": "Global layout settings and stream broadcast setup.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "phone": { "type": "string" },
+        "whatsapp": { "type": "string" },
+        "email": { "type": "string" },
+        "streamUrl": { "type": "string" },
+        "streamTitle": { "type": "string" },
+        "streamDesc": { "type": "string" },
+        "streamActive": { "type": "boolean" }
+      },
+      "required": ["id"]
+    },
+    "UserReview": {
+      "title": "UserReview",
+      "description": "Star ratings and feedback written by users.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "displayName": { "type": "string" },
+        "rating": { "type": "number" },
+        "comment": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "displayName", "rating", "comment", "createdAt"]
+    },
+    "FeaturedTestimony": {
+      "title": "FeaturedTestimony",
+      "description": "Elegant testimony displayed in featured carousel.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "authorName": { "type": "string" },
+        "text": { "type": "string" },
+        "order": { "type": "number" },
+        "pinned": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "authorName", "text", "order", "pinned", "createdAt"]
+    },
+    "LiveStream": {
+      "title": "LiveStream",
+      "description": "Broadcasting rtmp or hls live stream.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "thumbnail": { "type": "string" },
+        "type": { "type": "string" },
+        "streamUrl": { "type": "string" },
+        "status": { "type": "string" },
+        "scheduledAt": { "type": "string" },
+        "appearance": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "title", "description", "type", "streamUrl", "status", "appearance", "createdAt"]
+    },
+    "SupportMessage": {
+      "title": "SupportMessage",
+      "description": "Direct message between user and super admin for spiritual or app support.",
+      "type": "object",
+      "properties": {
+        "userUid": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "userName": { "type": "string" },
+        "senderUid": { "type": "string" },
+        "senderName": { "type": "string" },
+        "text": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userUid", "userEmail", "userName", "senderUid", "senderName", "text", "createdAt"]
     }
   },
   "firestore": {
-    "/settings/theme": { "schema": "ThemeSettings", "description": "Global theme settings" },
-    "/content/about": { "schema": "AboutContent", "description": "About section content" },
-    "/services/schedule": { "schema": "ServiceSchedule", "description": "Weekly service schedule" },
-    "/content/contact": { "schema": "ContactInfo", "description": "Contact and offering info" },
-    "/sermons/{sermonId}": { "schema": "Sermon", "description": "Church sermons" },
-    "/events/{eventId}": { "schema": "Event", "description": "Upcoming events" },
-    "/testimonies/{testimonyId}": { "schema": "Testimony", "description": "Member testimonies" },
-    "/messages/{messageId}": { "schema": "Message", "description": "Contact form messages" },
-    "/quotes/{quoteId}": { "schema": "Quote", "description": "Daily quotes" },
-    "/moments/{momentId}": { "schema": "Moment", "description": "Church moments (photos/videos)" },
-    "/sections/{sectionId}": { "schema": "CustomSection", "description": "Admin dynamic custom sections" }
+    "users/{userId}": {
+      "schema": "User",
+      "description": "User profile store."
+    },
+    "cells/{cellId}": {
+      "schema": "Cell",
+      "description": "Fellowship cell records."
+    },
+    "cells/{cellId}/messages/{messageId}": {
+      "schema": "CellMessage",
+      "description": "Cell chat lounge channel."
+    },
+    "cells/{cellId}/events/{eventId}": {
+      "schema": "CellEvent",
+      "description": "Cell localized calendar gatherings."
+    },
+    "prayer_petitions/{petitionId}": {
+      "schema": "PrayerPetition",
+      "description": "Intercession petitions feed."
+    },
+    "parish_events/{eventId}": {
+      "schema": "ParishEvent",
+      "description": "Universal monthly Parish calendar gatherings."
+    },
+    "trivia_questions/{questionId}": {
+      "schema": "TriviaQuestion",
+      "description": "Bible Trivia & Q&A registry."
+    },
+    "download_bundles/{bundleId}": {
+      "schema": "DownloadBundle",
+      "description": "App deliveries/bundles."
+    },
+    "system_configs/{configId}": {
+      "schema": "SystemConfig",
+      "description": "Primary live support channels and livestream broadcast flag."
+    },
+    "user_reviews/{reviewId}": {
+      "schema": "UserReview",
+      "description": "Real-time user feedback."
+    },
+    "featured_testimonies/{testimonyId}": {
+      "schema": "FeaturedTestimony",
+      "description": "Pinned testimonies for slides."
+    },
+    "live_streams/{streamId}": {
+      "schema": "LiveStream",
+      "description": "Scheduling and managing streams."
+    },
+    "support_chats/{msgId}": {
+      "schema": "SupportMessage",
+      "description": "Direct chat between a user and the Super Admin."
+    }
   }
 }
