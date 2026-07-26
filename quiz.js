@@ -142,10 +142,13 @@ function renderQuizSelectionGrid() {
     card.className = "bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4 relative overflow-hidden group hover:-translate-y-1 duration-300";
     card.innerHTML = `
       <div class="space-y-3">
-        <!-- Cover Art Gradient -->
+        <!-- Cover Art Gradient or Image -->
         <div class="h-32 w-full rounded-2xl bg-gradient-to-br ${quiz.coverGradient} flex items-center justify-center text-4xl shadow-sm relative overflow-hidden">
           <div class="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-          <span>${quiz.coverEmoji}</span>
+          ${quiz.coverImageUrl ? `<img src="${quiz.coverImageUrl}" class="w-full h-full object-cover" />` : `<span>${quiz.coverEmoji}</span>`}
+          <button onclick="window.copyDirectQuizLink('${quiz.id}')" class="absolute top-2 right-2 p-2 bg-slate-900/60 hover:bg-slate-900/90 text-white rounded-xl backdrop-blur transition-all cursor-pointer" title="Copy Direct Quiz Link">
+            <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
+          </button>
         </div>
         <div>
           <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400">${quiz.topic}</span>
@@ -169,10 +172,13 @@ function renderQuizSelectionGrid() {
       card.className = "bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4 relative overflow-hidden group hover:-translate-y-1 duration-300";
       card.innerHTML = `
         <div class="space-y-3">
-          <!-- Cover Art Gradient -->
+          <!-- Cover Art Gradient or Custom Image -->
           <div class="h-32 w-full rounded-2xl bg-gradient-to-br ${quiz.coverGradient || 'from-indigo-600 to-purple-800'} flex items-center justify-center text-4xl shadow-sm relative overflow-hidden">
             <div class="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            <span>${quiz.coverEmoji || '✨'}</span>
+            ${quiz.coverImageUrl ? `<img src="${quiz.coverImageUrl}" class="w-full h-full object-cover" />` : `<span>${quiz.coverEmoji || '✨'}</span>`}
+            <button onclick="window.copyDirectQuizLink('${quiz.id}')" class="absolute top-2 right-2 p-2 bg-slate-900/60 hover:bg-slate-900/90 text-white rounded-xl backdrop-blur transition-all cursor-pointer" title="Copy Direct Quiz Link">
+              <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
+            </button>
           </div>
           <div>
             <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-purple-100 text-purple-700 dark:bg-purple-950/50 dark:text-purple-400">${quiz.topic || 'Custom Study'}</span>
@@ -187,6 +193,8 @@ function renderQuizSelectionGrid() {
       `;
       grid.appendChild(card);
     });
+
+    if (window.lucide) window.lucide.createIcons();
   }).catch(err => console.warn("Published quizzes fetch failed:", err));
 
   // Load Admin Created Custom Questions (Legacy fallback) as a special Sunday Special Live Challenge
@@ -223,8 +231,32 @@ function renderQuizSelectionGrid() {
       `;
       grid.appendChild(card);
     }
+
+    if (window.lucide) window.lucide.createIcons();
   }).catch(err => console.warn("Custom trivia fetch:", err));
 }
+
+// Auto-launcher for direct quiz links
+function checkDirectQuizUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const quizId = params.get('quizId');
+  if (quizId) {
+    setTimeout(() => {
+      window.switchTab?.('bible');
+      window.setBibleSubMode?.('quiz');
+      setTimeout(() => {
+        const premium = PREMIUM_QUIZZES.find(q => q.id === quizId);
+        if (premium) {
+          window.startLiveTriviaSession(quizId);
+        } else {
+          window.startCustomQuizSession(quizId);
+        }
+      }, 600);
+    }, 400);
+  }
+}
+
+window.addEventListener('DOMContentLoaded', checkDirectQuizUrl);
 
 // Start custom quiz session
 function startCustomQuizSession(quizId) {

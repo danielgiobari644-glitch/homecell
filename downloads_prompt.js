@@ -4,11 +4,29 @@
 (function() {
   let deferredPrompt = null;
 
+  // Check if app is already downloaded / installed on device
+  function isAppAlreadyInstalled() {
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                         window.navigator.standalone === true ||
+                         document.referrer.includes('android-app://');
+    const hasInstalledFlag = localStorage.getItem('homecell_app_installed') === 'true' || 
+                             localStorage.getItem('app_installed_flag') === 'true';
+    return isStandalone || hasInstalledFlag;
+  }
+
+  // Listen to PWA installation completion
+  window.addEventListener('appinstalled', () => {
+    localStorage.setItem('homecell_app_installed', 'true');
+    localStorage.setItem('app_installed_flag', 'true');
+    window.dismissInstallBanner?.();
+  });
+
   // Track if prompt banner has been dismissed this session
   const isDismissed = sessionStorage.getItem('homecell_install_prompt_dismissed');
 
   // Listen to standard PWA beforeinstallprompt
   window.addEventListener('beforeinstallprompt', (e) => {
+    if (isAppAlreadyInstalled()) return;
     // Prevent standard automatic banner
     e.preventDefault();
     // Save the event
@@ -100,6 +118,7 @@
 
   // Build and show the beautiful Bottom Promo Banner
   function buildPromoBanner() {
+    if (isAppAlreadyInstalled()) return;
     if (isDismissed === 'true') return;
     if (document.getElementById('homecell-install-banner')) return;
 
@@ -633,6 +652,8 @@
 
     // Show a beautiful congrats Toast!
     window.showToast?.(`📥 Started downloading ${fileName} on this device!`, "success");
+    localStorage.setItem('homecell_app_installed', 'true');
+    window.dismissInstallBanner?.();
     
     // Increment User Streak for downloading app to keep faith connected!
     setTimeout(() => {

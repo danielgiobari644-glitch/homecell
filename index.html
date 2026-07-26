@@ -161,21 +161,42 @@
         border: 1px solid rgba(37, 99, 235, 0.25) !important;
       }
 
-      /* Hide regular layout when unauthenticated on the login page */
-      .unauthenticated #live-broadcast-banner,
-      .unauthenticated header,
-      .unauthenticated footer,
-      .unauthenticated #main-workspace-frame,
-      .unauthenticated #sidebar-backdrop,
-      .unauthenticated nav {
+      /* Universal High-Contrast Input Rules to fix invisible text in textboxes */
+      input, select, textarea {
+        color: #0f172a !important;
+      }
+      .dark input, .dark select, .dark textarea {
+        color: #f8fafc !important;
+      }
+      input.bg-white, select.bg-white, textarea.bg-white,
+      .bg-white input, .bg-white select, .bg-white textarea,
+      input[class*="bg-white"], textarea[class*="bg-white"] {
+        color: #0f172a !important;
+        background-color: #ffffff !important;
+      }
+      ::placeholder, .dark ::placeholder {
+        color: #64748b !important;
+        opacity: 1 !important;
+      }
+
+      /* Hide regular layout when unauthenticated before portfolio is marked as seen */
+      .unauthenticated:not(.portfolio-seen) #live-broadcast-banner,
+      .unauthenticated:not(.portfolio-seen) header,
+      .unauthenticated:not(.portfolio-seen) footer,
+      .unauthenticated:not(.portfolio-seen) #main-workspace-frame,
+      .unauthenticated:not(.portfolio-seen) #sidebar-backdrop,
+      .unauthenticated:not(.portfolio-seen) nav {
         display: none !important;
       }
 
       #portfolio-view {
-        display: none;
+        display: none !important;
       }
-      .unauthenticated #portfolio-view {
+      .unauthenticated:not(.portfolio-seen) #portfolio-view {
         display: block !important;
+      }
+      .unauthenticated.portfolio-seen #portfolio-view {
+        display: none !important;
       }
       
       /* Performant, smooth native CSS animations and keyframes */
@@ -2572,10 +2593,28 @@
                       </div>
                     </div>
                     <div>
+                      <label class="block font-bold text-slate-400 mb-1">Cover Image URL (Optional custom image)</label>
+                      <input type="url" id="admin-quiz-image-url" class="w-full px-3 py-2 bg-slate-50 dark:bg-zinc-850 border border-slate-200 dark:border-zinc-700 rounded-lg text-slate-800 dark:text-zinc-100" placeholder="e.g. https://images.unsplash.com/... or image link" />
+                    </div>
+                    <div>
                       <label class="block font-bold text-slate-400 mb-1">Short Description</label>
                       <input type="text" id="admin-quiz-desc" required class="w-full px-3 py-2 bg-slate-50 dark:bg-zinc-850 border border-slate-200 dark:border-zinc-700 rounded-lg text-slate-800 dark:text-zinc-100" placeholder="Briefly describe the focus of this study..." />
                     </div>
                   </div>
+                </div>
+
+                <!-- Admin Quiz Import from JSON File -->
+                <div class="bg-gradient-to-tr from-purple-50 to-indigo-50 dark:from-purple-950/20 dark:to-indigo-950/20 border border-purple-200 dark:border-purple-900/40 rounded-3xl p-6 shadow-sm space-y-3">
+                  <div class="flex items-center justify-between flex-wrap gap-2">
+                    <h3 class="text-sm font-bold font-display text-purple-950 dark:text-purple-200 flex items-center gap-1.5">
+                      <span>📄</span> Create Quiz from JSON File
+                    </h3>
+                    <button type="button" onclick="window.downloadQuizJsonTemplate()" class="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-[10px] uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center gap-1 shadow-sm">
+                      📥 Download Sample JSON Template
+                    </button>
+                  </div>
+                  <p class="text-xs text-slate-600 dark:text-zinc-300">Upload a JSON file containing quiz metadata and questions to populate the builder automatically.</p>
+                  <input type="file" id="admin-quiz-json-file" accept=".json" onchange="window.handleQuizJsonUpload(event)" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-extrabold file:bg-purple-600 file:text-white hover:file:bg-purple-700 file:cursor-pointer cursor-pointer" />
                 </div>
 
                 <!-- Live Question Add Form -->

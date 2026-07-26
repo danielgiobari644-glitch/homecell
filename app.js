@@ -14,7 +14,17 @@ function initTheme() {
   } else {
     html.classList.remove('dark');
   }
+
+  // Check if user has already seen app portfolio
+  if (localStorage.getItem('homecell_portfolio_seen') === 'true') {
+    html.classList.add('portfolio-seen');
+  }
 }
+
+window.markPortfolioSeen = function() {
+  localStorage.setItem('homecell_portfolio_seen', 'true');
+  document.documentElement.classList.add('portfolio-seen');
+};
 
 function toggleTheme() {
   const html = document.documentElement;

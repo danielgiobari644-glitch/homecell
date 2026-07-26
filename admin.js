@@ -1086,6 +1086,7 @@ function clearActiveQuizBuilder() {
   const diff = document.getElementById('admin-quiz-difficulty'); if (diff) diff.value = 'Beginner';
   const emoji = document.getElementById('admin-quiz-emoji'); if (emoji) emoji.value = '📖';
   const grad = document.getElementById('admin-quiz-gradient'); if (grad) grad.value = 'from-blue-600 to-indigo-700';
+  const imgUrl = document.getElementById('admin-quiz-image-url'); if (imgUrl) imgUrl.value = '';
   const desc = document.getElementById('admin-quiz-desc'); if (desc) desc.value = '';
   renderActiveQuestionsQueue();
 }
@@ -1097,6 +1098,7 @@ function publishQuizToCloud() {
   const difficulty = document.getElementById('admin-quiz-difficulty').value;
   const coverEmoji = document.getElementById('admin-quiz-emoji').value.trim();
   const coverGradient = document.getElementById('admin-quiz-gradient').value;
+  const coverImageUrl = document.getElementById('admin-quiz-image-url')?.value.trim() || '';
   const description = document.getElementById('admin-quiz-desc').value.trim();
 
   if (!title || !topic || !description) {
@@ -1118,6 +1120,7 @@ function publishQuizToCloud() {
     difficulty,
     coverEmoji,
     coverGradient,
+    coverImageUrl,
     description,
     questions: activeQuizQuestions,
     createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
@@ -1130,6 +1133,105 @@ function publishQuizToCloud() {
   })
   .catch(err => window.handleFirestoreError(err, 'create', `quizzes/${docId}`));
 }
+
+// Admin JSON Upload & Download Template Helpers
+function handleQuizJsonUpload(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      
+      if (data.questions && Array.isArray(data.questions)) {
+        if (data.title) document.getElementById('admin-quiz-title').value = data.title;
+        if (data.topic) document.getElementById('admin-quiz-topic').value = data.topic;
+        if (data.difficulty) document.getElementById('admin-quiz-difficulty').value = data.difficulty;
+        if (data.coverEmoji) document.getElementById('admin-quiz-emoji').value = data.coverEmoji;
+        if (data.coverGradient) document.getElementById('admin-quiz-gradient').value = data.coverGradient;
+        if (data.coverImageUrl) document.getElementById('admin-quiz-image-url').value = data.coverImageUrl;
+        if (data.description) document.getElementById('admin-quiz-desc').value = data.description;
+        
+        activeQuizQuestions = data.questions;
+        window.showToast?.(`Loaded full quiz (${data.questions.length} questions) from JSON file!`, "success");
+      } else if (Array.isArray(data)) {
+        activeQuizQuestions = data;
+        window.showToast?.(`Loaded ${data.length} questions into builder queue from JSON array!`, "success");
+      } else {
+        window.showToast?.("Invalid JSON format. Expected quiz object with questions array or array of questions.", "error");
+        return;
+      }
+
+      renderActiveQuestionsQueue();
+    } catch (err) {
+      window.showToast?.("Failed to parse JSON file: " + err.message, "error");
+    }
+  };
+  reader.readAsText(file);
+}
+
+function downloadQuizJsonTemplate() {
+  const template = {
+    title: "Acts of the Apostles & Early Church",
+    topic: "New Testament",
+    difficulty: "Intermediate",
+    coverEmoji: "🔥",
+    coverGradient: "from-purple-600 to-indigo-700",
+    coverImageUrl: "https://images.unsplash.com/photo-1490730141103-6cac27aaab94?auto=format&fit=crop&w=800&q=80",
+    description: "Explore the explosive growth of the early church following Pentecost.",
+    questions: [
+      {
+        question: "On which festival did the Holy Spirit descend upon the apostles?",
+        options: ["Passover", "Pentecost", "Tabernacles", "Unleavened Bread"],
+        answerIdx: 1,
+        type: "mc"
+      },
+      {
+        question: "In what city were the disciples first called 'Christians'?",
+        options: ["Jerusalem", "Antioch", "Damascus", "Rome"],
+        answerIdx: 1,
+        type: "mc"
+      },
+      {
+        question: "Saul of Tarsus was converted on the road to Damascus.",
+        options: ["True", "False"],
+        answerIdx: 0,
+        type: "tf"
+      }
+    ]
+  };
+
+  const jsonStr = JSON.stringify(template, null, 2);
+  const blob = new Blob([jsonStr], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = "HomeCell_Quiz_Template.json";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+
+  window.showToast?.("📥 Sample Quiz JSON Template downloaded!", "success");
+}
+
+window.handleQuizJsonUpload = handleQuizJsonUpload;
+window.downloadQuizJsonTemplate = downloadQuizJsonTemplate;
+
+function copyDirectQuizLink(quizId) {
+  const url = `${window.location.origin}${window.location.pathname}?quizId=${encodeURIComponent(quizId)}`;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(() => {
+      window.showToast?.("🔗 Direct quiz link copied to clipboard!", "success");
+    }).catch(() => {
+      prompt("Copy direct quiz link:", url);
+    });
+  } else {
+    prompt("Copy direct quiz link:", url);
+  }
+}
+window.copyDirectQuizLink = copyDirectQuizLink;
 
 let adminQuizzesListener = null;
 function syncAdminQuizzes() {
@@ -1153,7 +1255,7 @@ function syncAdminQuizzes() {
       card.innerHTML = `
         <div class="space-y-2">
           <div class="flex items-center gap-2">
-            <span class="text-xl shrink-0">${q.coverEmoji || '📖'}</span>
+            ${q.coverImageUrl ? `<img src="${q.coverImageUrl}" class="w-10 h-10 object-cover rounded-xl shrink-0" />` : `<span class="text-xl shrink-0">${q.coverEmoji || '📖'}</span>`}
             <div class="leading-tight">
               <h5 class="font-extrabold text-slate-900 dark:text-zinc-50 line-clamp-1">${q.title}</h5>
               <span class="text-[9px] uppercase tracking-wider text-slate-400">${q.topic} • ${q.difficulty}</span>
@@ -1165,6 +1267,9 @@ function syncAdminQuizzes() {
         <div class="flex items-center gap-2 pt-2 border-t border-slate-100 dark:border-zinc-800/50">
           <button onclick="window.editQuizFromCatalog('${q.id}')" class="flex-1 py-1.5 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/20 dark:hover:bg-blue-950/40 text-blue-600 font-bold rounded-lg transition-all cursor-pointer text-center">
             Edit
+          </button>
+          <button onclick="window.copyDirectQuizLink('${q.id}')" class="py-1.5 px-3 bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/20 dark:hover:bg-purple-950/40 text-purple-600 font-bold rounded-lg transition-all cursor-pointer text-center flex items-center gap-1" title="Copy Direct Link">
+            🔗 Link
           </button>
           <button onclick="window.deleteQuizFromCatalog('${q.id}')" class="py-1.5 px-3 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 dark:hover:bg-rose-950/40 text-rose-500 font-bold rounded-lg transition-all cursor-pointer text-center">
             Delete
@@ -1187,6 +1292,9 @@ function editQuizFromCatalog(quizId) {
     document.getElementById('admin-quiz-difficulty').value = q.difficulty || 'Beginner';
     document.getElementById('admin-quiz-emoji').value = q.coverEmoji || '📖';
     document.getElementById('admin-quiz-gradient').value = q.coverGradient || 'from-blue-600 to-indigo-700';
+    if (document.getElementById('admin-quiz-image-url')) {
+      document.getElementById('admin-quiz-image-url').value = q.coverImageUrl || '';
+    }
     document.getElementById('admin-quiz-desc').value = q.description || '';
 
     activeQuizQuestions = q.questions || [];
