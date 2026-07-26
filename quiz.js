@@ -600,9 +600,6 @@ function submitTriviaAnswer(selectedIdx) {
   // Update player stats
   updatePlayerLiveStats();
 
-  // Answer simulated cohort in real-time
-  simulateCohortActivity(correctIdx);
-
   // Stagger next question transition
   setTimeout(() => {
     advanceTrivia();
@@ -626,7 +623,6 @@ function autoFailQuestion() {
   window.showToast?.("Time's up for this holy riddle!", "info");
 
   updatePlayerLiveStats();
-  simulateCohortActivity(correctIdx);
 
   setTimeout(() => {
     advanceTrivia();
@@ -701,25 +697,24 @@ function subscribeToRealLeaderboard(quizId) {
 
   leaderboardUnsubscribe = db.collection('quiz_scores')
     .where('quizId', '==', targetQuizId)
-    .orderBy('score', 'desc')
-    .limit(50)
     .onSnapshot(snap => {
       const scores = [];
       snap.forEach(doc => {
         scores.push(doc.data());
       });
+      scores.sort((a, b) => (b.score || 0) - (a.score || 0));
       renderRealLeaderboardAndParticipants(scores);
     }, err => {
-      console.warn("quiz_scores snapshot query failed, fallback query:", err);
-      db.collection('quiz_scores').limit(50).get().then(snap => {
+      console.warn("quiz_scores snapshot query failed:", err);
+      db.collection('quiz_scores').get().then(snap => {
         const scores = [];
         snap.forEach(doc => {
           const d = doc.data();
           if (d.quizId === targetQuizId || !d.quizId) scores.push(d);
         });
-        scores.sort((a,b) => b.score - a.score);
+        scores.sort((a,b) => (b.score || 0) - (a.score || 0));
         renderRealLeaderboardAndParticipants(scores);
-      });
+      }).catch(e => console.warn("Fallback query error:", e));
     });
 }
 
@@ -922,23 +917,30 @@ function subscribeToQuizReactions(quizId) {
 
   reactionsUnsubscribe = db.collection('quiz_reactions')
     .where('quizId', '==', targetQuizId)
-    .orderBy('createdAt', 'asc')
-    .limitToLast(40)
     .onSnapshot(snap => {
-      snap.docChanges().forEach(change => {
-        if (change.type === 'added') {
-          const data = change.doc.data();
-          if (data.id && !seenReactionIds.has(data.id)) {
-            seenReactionIds.add(data.id);
+      const items = [];
+      snap.forEach(doc => {
+        items.push(doc.data());
+      });
 
-            const currentUser = window.auth?.currentUser || window.firebase?.auth()?.currentUser;
-            const isSelf = data.senderUid === (currentUser?.uid || '');
+      // Sort in memory by createdAt
+      items.sort((a, b) => {
+        const timeA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : (a.createdAt || 0);
+        const timeB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : (b.createdAt || 0);
+        return timeA - timeB;
+      });
 
-            addQuizChatMessageToUI(data.senderName, data.text, isSelf, data.type);
+      items.forEach(data => {
+        if (data.id && !seenReactionIds.has(data.id)) {
+          seenReactionIds.add(data.id);
 
-            if (data.type === 'reaction' && initialLoadDone) {
-              triggerFloatingPraiseAnimation(data.text, data.senderName);
-            }
+          const currentUser = window.auth?.currentUser || window.firebase?.auth()?.currentUser;
+          const isSelf = data.senderUid === (currentUser?.uid || '');
+
+          addQuizChatMessageToUI(data.senderName, data.text, isSelf, data.type);
+
+          if (data.type === 'reaction' && initialLoadDone) {
+            triggerFloatingPraiseAnimation(data.text, data.senderName);
           }
         }
       });
