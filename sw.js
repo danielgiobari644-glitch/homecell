@@ -3,10 +3,10 @@
 
 const CACHE_NAME = 'homecell-cache-v1';
 const ASSETS_TO_CACHE = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/favicon.jpg'
+  './',
+  'index.html',
+  'manifest.json',
+  'favicon.jpg'
 ];
 
 self.addEventListener('install', event => {

@@ -395,7 +395,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // General Service Worker Registration for PWA installability on all devices
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js', { scope: '/' })
+    navigator.serviceWorker.register('sw.js')
       .then(reg => console.log('PWA Service Worker registered with scope: ', reg.scope))
       .catch(err => console.error('PWA Service Worker registration failed: ', err));
   }

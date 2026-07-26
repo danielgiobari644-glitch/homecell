@@ -56,7 +56,7 @@ function renderCalendar() {
   // Offset padding for first day of the week
   for (let i = 0; i < firstDayIndex; i++) {
     const blank = document.createElement('div');
-    blank.className = "p-4 bg-slate-50/20 dark:bg-zinc-950/20 text-transparent select-none rounded-xl";
+    blank.className = "p-1.5 sm:p-3 bg-slate-50/20 dark:bg-zinc-950/20 text-transparent select-none rounded-xl";
     blank.innerText = "-";
     grid.appendChild(blank);
   }
@@ -75,7 +75,7 @@ function renderCalendar() {
     const isSelected = selectedDay === day;
 
     const box = document.createElement('div');
-    box.className = `p-3 min-h-[70px] flex flex-col justify-between border transition-all cursor-pointer rounded-xl ${
+    box.className = `p-1.5 sm:p-3 min-h-[50px] sm:min-h-[70px] flex flex-col justify-between border transition-all cursor-pointer rounded-xl ${
       isSelected
         ? 'bg-blue-600 text-white border-transparent shadow-lg scale-102 z-10'
         : isToday

@@ -1,7 +1,89 @@
 // quiz.js
-// Highly Interactive, Premium Bible Quizzes & Simulated Live Trivia Session Engine
+// Highly Interactive, Premium Bible Quizzes & Live Fellowship Trivia Engine for Home.cell
 
 const PREMIUM_QUIZZES = [
+  {
+    id: "power_of_thanksgiving",
+    title: "The Power of Thanksgiving",
+    topic: "Biblical Gratitude & Praise",
+    difficulty: "All Levels",
+    coverGradient: "from-amber-600 via-purple-700 to-indigo-900",
+    coverEmoji: "🙌",
+    coverImageUrl: "https://images.unsplash.com/photo-1490730141103-6cac27aaab94?auto=format&fit=crop&w=800&q=80",
+    description: "Explore the deep spiritual power of thanksgiving, praise, and gratitude in Holy Scripture.",
+    questions: [
+      {
+        question: "According to 1 Thessalonians 5:18, in what circumstances are believers instructed to give thanks?",
+        options: [
+          "Only during times of abundance",
+          "In everything, for this is God's will",
+          "When prayers are immediately answered",
+          "Strictly during holy feast days"
+        ],
+        answerIdx: 1
+      },
+      {
+        question: "In the Gospel of Luke, how many lepers were healed by Jesus, and how many returned to give thanks?",
+        options: [
+          "10 healed, 5 returned",
+          "12 healed, 12 returned",
+          "10 healed, 1 returned",
+          "7 healed, 3 returned"
+        ],
+        answerIdx: 2
+      },
+      {
+        question: "What psalm begins with 'Enter into His gates with thanksgiving, and into His courts with praise'?",
+        options: [
+          "Psalm 23",
+          "Psalm 91",
+          "Psalm 100",
+          "Psalm 150"
+        ],
+        answerIdx: 2
+      },
+      {
+        question: "What did Jesus do before performing the miracle of feeding the 5,000 with five loaves and two fish?",
+        options: [
+          "He gave thanks to the Father",
+          "He asked for a sign from heaven",
+          "He commanded the wind to stop",
+          "He fasted for three days"
+        ],
+        answerIdx: 0
+      },
+      {
+        question: "In Philippians 4:6, Apostle Paul urges believers to present requests to God with what key attitude?",
+        options: [
+          "With fasting and weeping",
+          "With thanksgiving",
+          "With fear and trembling",
+          "With loud cries"
+        ],
+        answerIdx: 1
+      },
+      {
+        question: "Which Old Testament king appointed Levites to record, thank, and praise the LORD God continuously?",
+        options: [
+          "King Saul",
+          "King Solomon",
+          "King David",
+          "King Hezekiah"
+        ],
+        answerIdx: 2
+      },
+      {
+        question: "When Paul and Silas were imprisoned in Philippi (Acts 16), what were they doing at midnight before the earthquake?",
+        options: [
+          "Planning their escape",
+          "Praying and singing hymns of thanksgiving to God",
+          "Sleeping soundly",
+          "Arguing with the jailer"
+        ],
+        answerIdx: 1
+      }
+    ]
+  },
   {
     id: "gospels_jesus",
     title: "The Life & Miracles of Jesus",
@@ -9,6 +91,7 @@ const PREMIUM_QUIZZES = [
     difficulty: "Medium",
     coverGradient: "from-blue-600 to-indigo-800",
     coverEmoji: "🌟",
+    coverImageUrl: "https://images.unsplash.com/photo-1509021436468-d0f075e24b7a?auto=format&fit=crop&w=800&q=80",
     description: "Journey through the four Gospels and test your knowledge of Jesus' teachings, miracles, and resurrection.",
     questions: [
       {
@@ -41,9 +124,9 @@ const PREMIUM_QUIZZES = [
   {
     id: "wisdom_solomon",
     title: "Wisdom of Solomon & Proverbs",
-    topic: "Old Testament Wisdom Literature",
+    topic: "Wisdom Literature",
     difficulty: "Hard",
-    coverGradient: "from-blue-500 to-indigo-700",
+    coverGradient: "from-amber-600 to-amber-900",
     coverEmoji: "👑",
     description: "Challenge your mind with the Proverbs, Ecclesiastes, and the legendary wisdom of King Solomon.",
     questions: [
@@ -76,8 +159,8 @@ const PREMIUM_QUIZZES = [
   },
   {
     id: "acts_apostles",
-    title: "Acts and the Early Apostolic Church",
-    topic: "Apostolic Era & Pentecost",
+    title: "Acts & Early Apostolic Church",
+    topic: "Pentecost & Missions",
     difficulty: "Hard",
     coverGradient: "from-purple-600 to-pink-700",
     coverEmoji: "🔥",
@@ -116,14 +199,26 @@ const PREMIUM_QUIZZES = [
 let currentQuiz = null;
 let currentQuestionIdx = 0;
 let userScore = 0;
+let userStreak = 0;
 let triviaTimer = null;
 let secondsRemaining = 15;
 let hasAnsweredCurrent = false;
 let triviaTimerLimit = 15;
 let pointsPerQuestion = 100;
 
-// Real-time participants (Empty for local play mode, zero simulated participants)
-let liveParticipants = [];
+// Simulated real-time fellowship participants
+let liveParticipants = [
+  { name: "Brother Emmanuel", score: 450, accuracy: 0.85, role: "Fellowship Lead", avatar: "👨‍💼" },
+  { name: "Sister Grace", score: 380, accuracy: 0.80, role: "Youth Leader", avatar: "👩‍🏫" },
+  { name: "Deacon David", score: 320, accuracy: 0.75, role: "Deacon", avatar: "👨‍🏫" },
+  { name: "Sister Mary", score: 250, accuracy: 0.70, role: "Choir Director", avatar: "👩‍🎤" },
+  { name: "Brother Joseph", score: 180, accuracy: 0.65, role: "Cell Member", avatar: "👨‍💻" }
+];
+
+let liveChatMessages = [
+  { sender: "Sister Grace", text: "Welcome everyone! May the Lord grant us wisdom and understanding! 🙏", time: "Just now" },
+  { sender: "Brother Emmanuel", text: "Thanksgiving opens heaven's gates! Let's go family! 🙌", time: "Just now" }
+];
 
 function initQuizLounge() {
   renderQuizSelectionGrid();
@@ -139,26 +234,28 @@ function renderQuizSelectionGrid() {
   // Render Premium Quizzes
   PREMIUM_QUIZZES.forEach(quiz => {
     const card = document.createElement('div');
-    card.className = "bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4 relative overflow-hidden group hover:-translate-y-1 duration-300";
+    card.className = "bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between space-y-4 relative overflow-hidden group hover:-translate-y-1";
     card.innerHTML = `
       <div class="space-y-3">
         <!-- Cover Art Gradient or Image -->
-        <div class="h-32 w-full rounded-2xl bg-gradient-to-br ${quiz.coverGradient} flex items-center justify-center text-4xl shadow-sm relative overflow-hidden">
-          <div class="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-          ${quiz.coverImageUrl ? `<img src="${quiz.coverImageUrl}" class="w-full h-full object-cover" />` : `<span>${quiz.coverEmoji}</span>`}
-          <button onclick="window.copyDirectQuizLink('${quiz.id}')" class="absolute top-2 right-2 p-2 bg-slate-900/60 hover:bg-slate-900/90 text-white rounded-xl backdrop-blur transition-all cursor-pointer" title="Copy Direct Quiz Link">
-            <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
+        <div class="h-36 w-full rounded-2xl bg-gradient-to-br ${quiz.coverGradient} flex items-center justify-center text-4xl shadow-md relative overflow-hidden">
+          <div class="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-colors duration-300"></div>
+          ${quiz.coverImageUrl ? `<img src="${quiz.coverImageUrl}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />` : `<span>${quiz.coverEmoji}</span>`}
+          <button onclick="window.copyDirectQuizLink('${quiz.id}')" class="absolute top-2.5 right-2.5 p-2 bg-slate-900/70 hover:bg-slate-900/90 text-amber-300 rounded-xl backdrop-blur-md transition-all cursor-pointer shadow-md" title="Copy Direct Quiz Link">
+            <i data-lucide="share-2" class="w-4 h-4"></i>
           </button>
         </div>
         <div>
-          <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400">${quiz.topic}</span>
-          <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400 ml-1.5">${quiz.difficulty}</span>
-          <h4 class="text-lg font-black text-slate-900 dark:text-zinc-50 font-display mt-2 leading-tight">${quiz.title}</h4>
-          <p class="text-xs text-slate-500 dark:text-zinc-400 mt-1.5 leading-relaxed">${quiz.description}</p>
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <span class="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-200 dark:border-purple-800">${quiz.topic}</span>
+            <span class="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800">${quiz.difficulty}</span>
+          </div>
+          <h4 class="text-lg font-black text-slate-900 dark:text-zinc-50 font-display mt-2 leading-tight group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">${quiz.title}</h4>
+          <p class="text-xs text-slate-500 dark:text-zinc-400 mt-1.5 leading-relaxed line-clamp-2">${quiz.description}</p>
         </div>
       </div>
-      <button onclick="startLiveTriviaSession('${quiz.id}')" class="w-full py-2.5 bg-slate-50 dark:bg-zinc-800 hover:bg-blue-600 dark:hover:bg-blue-600 hover:text-white dark:hover:text-white text-slate-700 dark:text-zinc-200 font-bold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2">
-        🚀 Join Live Trivia Session
+      <button onclick="startLiveTriviaSession('${quiz.id}')" class="w-full py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 shadow-md">
+        🚀 Join Live Quiz Arena (${quiz.questions.length} Qs)
       </button>
     `;
     grid.appendChild(card);
@@ -169,26 +266,23 @@ function renderQuizSelectionGrid() {
     snap.forEach(doc => {
       const quiz = doc.data();
       const card = document.createElement('div');
-      card.className = "bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4 relative overflow-hidden group hover:-translate-y-1 duration-300";
+      card.className = "bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between space-y-4 relative overflow-hidden group hover:-translate-y-1";
       card.innerHTML = `
         <div class="space-y-3">
-          <!-- Cover Art Gradient or Custom Image -->
-          <div class="h-32 w-full rounded-2xl bg-gradient-to-br ${quiz.coverGradient || 'from-indigo-600 to-purple-800'} flex items-center justify-center text-4xl shadow-sm relative overflow-hidden">
-            <div class="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            ${quiz.coverImageUrl ? `<img src="${quiz.coverImageUrl}" class="w-full h-full object-cover" />` : `<span>${quiz.coverEmoji || '✨'}</span>`}
-            <button onclick="window.copyDirectQuizLink('${quiz.id}')" class="absolute top-2 right-2 p-2 bg-slate-900/60 hover:bg-slate-900/90 text-white rounded-xl backdrop-blur transition-all cursor-pointer" title="Copy Direct Quiz Link">
-              <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
+          <div class="h-36 w-full rounded-2xl bg-gradient-to-br ${quiz.coverGradient || 'from-indigo-600 to-purple-800'} flex items-center justify-center text-4xl shadow-md relative overflow-hidden">
+            ${quiz.coverImageUrl ? `<img src="${quiz.coverImageUrl}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />` : `<span>${quiz.coverEmoji || '✨'}</span>`}
+            <button onclick="window.copyDirectQuizLink('${quiz.id}')" class="absolute top-2.5 right-2.5 p-2 bg-slate-900/70 hover:bg-slate-900/90 text-amber-300 rounded-xl backdrop-blur-md transition-all cursor-pointer shadow-md" title="Copy Direct Quiz Link">
+              <i data-lucide="share-2" class="w-4 h-4"></i>
             </button>
           </div>
           <div>
-            <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-purple-100 text-purple-700 dark:bg-purple-950/50 dark:text-purple-400">${quiz.topic || 'Custom Study'}</span>
-            <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-400 ml-1.5">${quiz.difficulty || 'Intermediate'}</span>
+            <span class="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-200 dark:border-purple-800">${quiz.topic || 'Custom Study'}</span>
             <h4 class="text-lg font-black text-slate-900 dark:text-zinc-50 font-display mt-2 leading-tight">${quiz.title}</h4>
-            <p class="text-xs text-slate-500 dark:text-zinc-400 mt-1.5 leading-relaxed">${quiz.description}</p>
+            <p class="text-xs text-slate-500 dark:text-zinc-400 mt-1.5 leading-relaxed line-clamp-2">${quiz.description}</p>
           </div>
         </div>
-        <button onclick="window.startCustomQuizSession('${quiz.id}')" class="w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 shadow-sm">
-          ⚡ Join Live Trivia Session (${quiz.questions ? quiz.questions.length : 0} Qs)
+        <button onclick="window.startCustomQuizSession('${quiz.id}')" class="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 shadow-md">
+          ⚡ Enter Live Quiz Arena (${quiz.questions ? quiz.questions.length : 0} Qs)
         </button>
       `;
       grid.appendChild(card);
@@ -197,7 +291,7 @@ function renderQuizSelectionGrid() {
     if (window.lucide) window.lucide.createIcons();
   }).catch(err => console.warn("Published quizzes fetch failed:", err));
 
-  // Load Admin Created Custom Questions (Legacy fallback) as a special Sunday Special Live Challenge
+  // Load Admin Created Custom Questions (Legacy fallback)
   window.db.collection('trivia_questions').get().then(snap => {
     if (!snap.empty) {
       const qList = [];
@@ -211,22 +305,20 @@ function renderQuizSelectionGrid() {
       });
 
       const card = document.createElement('div');
-      card.className = "bg-gradient-to-tr from-purple-50 to-indigo-50 dark:from-zinc-950/40 dark:to-indigo-950/20 border border-purple-200 dark:border-purple-900/50 rounded-3xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4 relative overflow-hidden group hover:-translate-y-1 duration-300";
+      card.className = "bg-gradient-to-tr from-purple-950 to-indigo-950 border border-amber-500/30 rounded-3xl p-6 shadow-xl transition-all duration-300 flex flex-col justify-between space-y-4 relative overflow-hidden group hover:-translate-y-1 text-white";
       card.innerHTML = `
         <div class="space-y-3">
-          <!-- Cover Art Gradient -->
-          <div class="h-32 w-full rounded-2xl bg-gradient-to-br from-purple-600 to-indigo-900 flex items-center justify-center text-4xl shadow-sm relative overflow-hidden animate-pulse">
+          <div class="h-36 w-full rounded-2xl bg-gradient-to-br from-amber-500 to-purple-800 flex items-center justify-center text-4xl shadow-md relative overflow-hidden">
             <span>🔥</span>
           </div>
           <div>
-            <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-purple-100 text-purple-700 dark:bg-purple-950/50 dark:text-purple-400">Congregational Special</span>
-            <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-400 ml-1.5">Live Live</span>
-            <h4 class="text-lg font-black text-slate-900 dark:text-zinc-50 font-display mt-2 leading-tight">Admin's Sunday Live Challenge</h4>
-            <p class="text-xs text-slate-500 dark:text-zinc-400 mt-1.5 leading-relaxed">Play custom questions dynamically uploaded by the General Super Admins and leadership.</p>
+            <span class="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-400/20 text-amber-300 border border-amber-400/30">Congregational Special</span>
+            <h4 class="text-lg font-black text-amber-100 font-display mt-2 leading-tight">Admin's Sunday Live Challenge</h4>
+            <p class="text-xs text-zinc-300 mt-1.5 leading-relaxed">Play custom questions dynamically uploaded by the General Super Admins and leadership.</p>
           </div>
         </div>
-        <button onclick="startAdminCustomTriviaSession()" class="w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2">
-          ⚡ Enter Admin Live Lounge (${qList.length} Qs)
+        <button onclick="startAdminCustomTriviaSession()" class="w-full py-3 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 shadow-lg">
+          ⚡ Join Admin Live Room (${qList.length} Qs)
         </button>
       `;
       grid.appendChild(card);
@@ -277,9 +369,7 @@ window.renderQuizSelectionGrid = renderQuizSelectionGrid;
 
 // Start a simulated Live Trivia Session
 function startLiveTriviaSession(quizId) {
-  const selected = PREMIUM_QUIZZES.find(q => q.id === quizId);
-  if (!selected) return;
-
+  const selected = PREMIUM_QUIZZES.find(q => q.id === quizId) || PREMIUM_QUIZZES[0];
   setupTriviaLounge(selected);
 }
 
@@ -320,16 +410,34 @@ function setupTriviaLounge(quiz) {
   currentQuiz = quiz;
   currentQuestionIdx = 0;
   userScore = 0;
+  userStreak = 0;
   hasAnsweredCurrent = false;
 
-  // Set default values in case Firestore has none
   triviaTimerLimit = 15;
   pointsPerQuestion = 100;
 
   // Reset live cohort scores
-  liveParticipants.forEach(p => p.score = 0);
+  liveParticipants.forEach(p => p.score = Math.floor(Math.random() * 150));
 
-  // Fetch from DB
+  // Populate header details
+  const titleEl = document.getElementById('trivia-session-title');
+  const descEl = document.getElementById('trivia-session-desc');
+  const topicTag = document.getElementById('trivia-topic-tag');
+  const coverEmoji = document.getElementById('trivia-cover-emoji');
+  const coverBox = document.getElementById('trivia-cover-box');
+
+  if (titleEl) titleEl.innerText = quiz.title;
+  if (descEl) descEl.innerText = quiz.description || "Join the live fellowship competition and glorify God!";
+  if (topicTag) topicTag.innerText = quiz.topic || "Bible Quiz";
+  if (coverEmoji) coverEmoji.innerText = quiz.coverEmoji || "📖";
+  
+  if (coverBox && quiz.coverImageUrl) {
+    coverBox.innerHTML = `<img src="${quiz.coverImageUrl}" class="w-full h-full object-cover" />`;
+  } else if (coverBox) {
+    coverBox.innerHTML = `<span>${quiz.coverEmoji || '🙌'}</span>`;
+  }
+
+  // Fetch configs from DB if existing
   window.db.collection('system_configs').doc('trivia').get().then(doc => {
     if (doc.exists) {
       const d = doc.data();
@@ -343,25 +451,28 @@ function setupTriviaLounge(quiz) {
     document.getElementById('quiz-intro-deck').classList.add('hidden');
     document.getElementById('live-trivia-session-board').classList.remove('hidden');
 
+    // Default to Arena tab
+    switchQuizRoomTab('arena');
+
     // Trigger countdown transition
     const lobby = document.getElementById('trivia-waiting-lobby');
-    const arena = document.getElementById('trivia-active-arena');
+    const arenaPane = document.getElementById('trivia-pane-arena');
     const countdownText = document.getElementById('lobby-countdown-timer');
 
-    lobby.classList.remove('hidden');
-    arena.classList.add('hidden');
+    if (lobby) lobby.classList.remove('hidden');
+    if (arenaPane) arenaPane.classList.add('hidden');
 
     let cnt = 3;
-    countdownText.innerText = `Preparing your scripture challenge... Starts in ${cnt}...`;
+    if (countdownText) countdownText.innerText = `Synchronizing live congregation... Starts in ${cnt}...`;
     
     const loader = setInterval(() => {
       cnt--;
       if (cnt > 0) {
-        countdownText.innerText = `Preparing your scripture challenge... Starts in ${cnt}...`;
+        if (countdownText) countdownText.innerText = `Synchronizing live congregation... Starts in ${cnt}...`;
       } else {
         clearInterval(loader);
-        lobby.classList.add('hidden');
-        arena.classList.remove('hidden');
+        if (lobby) lobby.classList.add('hidden');
+        if (arenaPane) arenaPane.classList.remove('hidden');
         loadTriviaQuestion();
       }
     }, 1000);
@@ -376,29 +487,40 @@ function loadTriviaQuestion() {
 
   const q = currentQuiz.questions[currentQuestionIdx];
   
-  // Render header stats
-  document.getElementById('trivia-session-title').innerText = currentQuiz.title;
-  document.getElementById('trivia-q-progress').innerText = `Question ${currentQuestionIdx + 1} of ${currentQuiz.questions.length}`;
-  document.getElementById('trivia-live-question-text').innerText = q.question;
-  
-  // Render options buttons
-  const optBox = document.getElementById('trivia-live-options-box');
-  optBox.innerHTML = '';
-  
-  q.options.forEach((opt, idx) => {
-    const btn = document.createElement('button');
-    btn.className = "w-full text-left p-4 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-slate-50 dark:hover:bg-zinc-800 hover:border-slate-300 dark:hover:border-zinc-700 font-semibold text-xs text-slate-800 dark:text-zinc-200 transition-all cursor-pointer flex justify-between items-center active:scale-[0.98]";
-    btn.setAttribute('id', `trivia-live-opt-${idx}`);
-    btn.onclick = () => submitTriviaAnswer(idx);
-    btn.innerHTML = `
-      <span>${opt}</span>
-      <span class="w-6 h-6 rounded-full border border-slate-200 dark:border-zinc-800 text-[10px] font-bold flex items-center justify-center font-mono uppercase bg-slate-50 dark:bg-zinc-950">${String.fromCharCode(65 + idx)}</span>
-    `;
-    optBox.appendChild(btn);
-  });
+  // Render progress & question
+  const progressText = document.getElementById('trivia-q-progress');
+  const progressBar = document.getElementById('trivia-q-progress-bar');
+  const questionText = document.getElementById('trivia-live-question-text');
 
-  // Render cohort scoreboard
-  renderCohortScoreboard();
+  if (progressText) progressText.innerText = `Question ${currentQuestionIdx + 1} of ${currentQuiz.questions.length}`;
+  if (progressBar) progressBar.style.width = `${((currentQuestionIdx + 1) / currentQuiz.questions.length) * 100}%`;
+  if (questionText) questionText.innerText = q.question;
+
+  // Render 4 Touch-Friendly Option Buttons (A, B, C, D)
+  const optBox = document.getElementById('trivia-live-options-box');
+  if (optBox) {
+    optBox.innerHTML = '';
+    const letters = ['A', 'B', 'C', 'D'];
+    q.options.forEach((opt, idx) => {
+      const btn = document.createElement('button');
+      btn.className = "group w-full text-left p-4 md:p-5 rounded-2xl border-2 border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-purple-500 hover:bg-purple-50/50 dark:hover:bg-purple-950/30 text-slate-900 dark:text-zinc-100 transition-all duration-200 cursor-pointer flex justify-between items-center shadow-sm active:scale-[0.99] relative overflow-hidden";
+      btn.setAttribute('id', `trivia-live-opt-${idx}`);
+      btn.onclick = () => submitTriviaAnswer(idx);
+      btn.innerHTML = `
+        <div class="flex items-center gap-3.5 flex-1 pr-2">
+          <span class="w-8.5 h-8.5 rounded-xl border border-slate-300 dark:border-zinc-700 bg-slate-100 dark:bg-zinc-800 group-hover:bg-purple-600 group-hover:text-white group-hover:border-purple-600 text-xs font-black flex items-center justify-center font-mono shrink-0 transition-colors shadow-xs">
+            ${letters[idx]}
+          </span>
+          <span class="text-xs md:text-sm font-bold leading-snug text-slate-800 dark:text-zinc-100">${opt}</span>
+        </div>
+        <span id="trivia-opt-badge-${idx}" class="text-xs font-black shrink-0"></span>
+      `;
+      optBox.appendChild(btn);
+    });
+  }
+
+  // Update live player stats in UI
+  updatePlayerLiveStats();
 
   // Start countdown timer
   startQuestionCountdown();
@@ -412,7 +534,7 @@ function startQuestionCountdown() {
   
   if (timerBar) {
     timerBar.style.width = '100%';
-    timerBar.className = 'h-full bg-blue-500 rounded-full transition-all duration-300';
+    timerBar.className = 'h-full bg-gradient-to-r from-emerald-400 to-amber-400 rounded-full transition-all duration-300';
   }
   if (timerText) timerText.innerText = `${secondsRemaining}s`;
 
@@ -424,7 +546,7 @@ function startQuestionCountdown() {
       const pct = (secondsRemaining / triviaTimerLimit) * 100;
       timerBar.style.width = `${pct}%`;
       if (secondsRemaining <= 5) {
-        timerBar.className = 'h-full bg-rose-500 rounded-full transition-all duration-300 animate-pulse';
+        timerBar.className = 'h-full bg-gradient-to-r from-rose-500 to-red-600 rounded-full transition-all duration-300 animate-pulse';
       }
     }
 
@@ -445,26 +567,45 @@ function submitTriviaAnswer(selectedIdx) {
 
   const selectedBtn = document.getElementById(`trivia-live-opt-${selectedIdx}`);
   const correctBtn = document.getElementById(`trivia-live-opt-${correctIdx}`);
+  const selectedBadge = document.getElementById(`trivia-opt-badge-${selectedIdx}`);
+  const correctBadge = document.getElementById(`trivia-opt-badge-${correctIdx}`);
 
-  // Highlight choices
   if (selectedIdx === correctIdx) {
-    userScore += pointsPerQuestion; // Add points
+    userStreak++;
+    const speedBonus = secondsRemaining > 10 ? 50 : 0;
+    const earnedPts = pointsPerQuestion + speedBonus;
+    userScore += earnedPts;
+
     if (selectedBtn) {
-      selectedBtn.className = "w-full text-left p-4 rounded-2xl border-2 border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20 font-bold text-xs text-emerald-800 dark:text-emerald-400 transition-all flex justify-between items-center";
-      selectedBtn.innerHTML += `<span class="text-emerald-600">✅ +${pointsPerQuestion} PTS</span>`;
+      selectedBtn.className = "w-full text-left p-4 md:p-5 rounded-2xl border-2 border-emerald-500 bg-emerald-500/20 text-emerald-300 dark:text-emerald-200 font-bold text-xs md:text-sm transition-all flex justify-between items-center ring-2 ring-emerald-500/50 shadow-emerald-500/20 shadow-lg";
     }
+    if (selectedBadge) {
+      selectedBadge.innerHTML = `<span class="px-2.5 py-1 rounded-lg bg-emerald-600 text-white font-black text-[11px] shadow">✅ +${earnedPts} PTS</span>`;
+    }
+
     window.showToast?.("Amen! Correct Answer!", "success");
   } else {
+    userStreak = 0;
+
     if (selectedBtn) {
-      selectedBtn.className = "w-full text-left p-4 rounded-2xl border-2 border-rose-500 bg-rose-50 dark:bg-rose-950/20 font-bold text-xs text-rose-800 dark:text-rose-400 transition-all flex justify-between items-center";
-      selectedBtn.innerHTML += `<span class="text-rose-600">❌ Incorrect</span>`;
+      selectedBtn.className = "w-full text-left p-4 md:p-5 rounded-2xl border-2 border-rose-500 bg-rose-500/20 text-rose-300 dark:text-rose-200 font-bold text-xs md:text-sm transition-all flex justify-between items-center ring-2 ring-rose-500/50";
     }
+    if (selectedBadge) {
+      selectedBadge.innerHTML = `<span class="px-2.5 py-1 rounded-lg bg-rose-600 text-white font-black text-[11px] shadow">❌ Incorrect</span>`;
+    }
+
     if (correctBtn) {
-      correctBtn.className = "w-full text-left p-4 rounded-2xl border-2 border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20 font-bold text-xs text-emerald-800 dark:text-emerald-400 transition-all flex justify-between items-center";
-      correctBtn.innerHTML += `<span class="text-emerald-600">✅ Correct Answer</span>`;
+      correctBtn.className = "w-full text-left p-4 md:p-5 rounded-2xl border-2 border-emerald-500 bg-emerald-500/20 text-emerald-300 dark:text-emerald-200 font-bold text-xs md:text-sm transition-all flex justify-between items-center ring-2 ring-emerald-500/50 shadow-emerald-500/20 shadow-lg";
+      if (correctBadge) {
+        correctBadge.innerHTML = `<span class="px-2.5 py-1 rounded-lg bg-emerald-600 text-white font-black text-[11px] shadow">✅ Correct Answer</span>`;
+      }
     }
+
     window.showToast?.("Incorrect answer. Study scripture more to grow!", "error");
   }
+
+  // Update player stats
+  updatePlayerLiveStats();
 
   // Answer simulated cohort in real-time
   simulateCohortActivity(correctIdx);
@@ -472,26 +613,31 @@ function submitTriviaAnswer(selectedIdx) {
   // Stagger next question transition
   setTimeout(() => {
     advanceTrivia();
-  }, 2500);
+  }, 2200);
 }
 
 function autoFailQuestion() {
   hasAnsweredCurrent = true;
+  userStreak = 0;
   const q = currentQuiz.questions[currentQuestionIdx];
   const correctIdx = q.answerIdx;
   const correctBtn = document.getElementById(`trivia-live-opt-${correctIdx}`);
+  const correctBadge = document.getElementById(`trivia-opt-badge-${correctIdx}`);
 
   if (correctBtn) {
-    correctBtn.className = "w-full text-left p-4 rounded-2xl border-2 border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20 font-bold text-xs text-emerald-800 dark:text-emerald-400 transition-all flex justify-between items-center";
-    correctBtn.innerHTML += `<span class="text-emerald-600">⏳ Time Up! Correct Answer</span>`;
+    correctBtn.className = "w-full text-left p-4 md:p-5 rounded-2xl border-2 border-emerald-500 bg-emerald-500/20 text-emerald-300 dark:text-emerald-200 font-bold text-xs md:text-sm transition-all flex justify-between items-center ring-2 ring-emerald-500/50 shadow-emerald-500/20 shadow-lg";
+  }
+  if (correctBadge) {
+    correctBadge.innerHTML = `<span class="px-2.5 py-1 rounded-lg bg-emerald-600 text-white font-black text-[11px] shadow">⏳ Time Up! Correct Answer</span>`;
   }
   window.showToast?.("Time's up for this holy riddle!", "info");
 
+  updatePlayerLiveStats();
   simulateCohortActivity(correctIdx);
 
   setTimeout(() => {
     advanceTrivia();
-  }, 2500);
+  }, 2200);
 }
 
 function simulateCohortActivity(correctIdx) {
@@ -501,37 +647,214 @@ function simulateCohortActivity(correctIdx) {
       p.score += pointsPerQuestion;
     }
   });
-  renderCohortScoreboard();
+  updatePlayerLiveStats();
 }
 
-function renderCohortScoreboard() {
+function updatePlayerLiveStats() {
+  // Update Score
+  const scoreEl = document.getElementById('trivia-player-score');
+  if (scoreEl) scoreEl.innerText = `${userScore} PTS`;
+
+  // Update Streak
+  const streakEl = document.getElementById('trivia-player-streak');
+  if (streakEl) streakEl.innerText = `🔥 ${userStreak} Streak`;
+
+  // Calculate Rank
+  const allPlayers = [
+    { name: "You (Faith Warrior)", score: userScore, isUser: true, avatar: "✝️" },
+    ...liveParticipants
+  ].sort((a, b) => b.score - a.score);
+
+  const userRankIdx = allPlayers.findIndex(p => p.isUser);
+  const userRank = userRankIdx + 1;
+
+  const rankEl = document.getElementById('trivia-player-rank');
+  if (rankEl) rankEl.innerText = `#${userRank}`;
+
+  // Render Compact Scoreboard Sidebar
+  renderCohortScoreboard(allPlayers);
+
+  // Render Full Leaderboard Pane
+  renderFullLeaderboardPane(allPlayers);
+
+  // Render Participants Pane
+  renderParticipantsPane(allPlayers);
+}
+
+function renderCohortScoreboard(allPlayers) {
   const container = document.getElementById('trivia-cohort-scoreboard');
   if (!container) return;
 
   container.innerHTML = '';
-  
-  // Combine user and simulated participants
-  const allPlayers = [
-    { name: "You (Faith Warrior)", score: userScore, isUser: true },
+
+  const list = allPlayers || [
+    { name: "You (Faith Warrior)", score: userScore, isUser: true, avatar: "✝️" },
     ...liveParticipants
   ].sort((a, b) => b.score - a.score);
 
-  allPlayers.forEach((p, idx) => {
+  list.slice(0, 6).forEach((p, idx) => {
     const row = document.createElement('div');
-    row.className = `p-2.5 rounded-xl border flex items-center justify-between transition-colors ${
+    row.className = `p-3 rounded-2xl border flex items-center justify-between transition-all ${
       p.isUser 
-        ? "bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900/40 font-bold text-blue-700 dark:text-blue-400" 
-        : "bg-slate-50 dark:bg-zinc-900/50 border-slate-100 dark:border-zinc-800 text-slate-700 dark:text-zinc-300"
+        ? "bg-purple-100 dark:bg-purple-950/40 border-purple-300 dark:border-purple-800 font-black text-purple-900 dark:text-purple-300 shadow-sm" 
+        : "bg-slate-50 dark:bg-zinc-900/60 border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-zinc-300"
     }`;
     row.innerHTML = `
-      <div class="flex items-center gap-2">
-        <span class="text-xs font-mono font-black text-slate-400">${idx + 1}.</span>
-        <span class="text-xs truncate max-w-[120px]">${p.name}</span>
+      <div class="flex items-center gap-2.5 truncate pr-2">
+        <span class="w-5 text-xs font-mono font-black text-slate-400 text-center">${idx + 1}.</span>
+        <span class="text-xs">${p.avatar || '👤'}</span>
+        <span class="text-xs font-bold truncate max-w-[110px]">${p.name}</span>
       </div>
-      <span class="text-xs font-mono font-black">${p.score} PTS</span>
+      <span class="text-xs font-mono font-black shrink-0 text-amber-500">${p.score} PTS</span>
     `;
     container.appendChild(row);
   });
+}
+
+function renderFullLeaderboardPane(allPlayers) {
+  const container = document.getElementById('trivia-full-leaderboard-container');
+  if (!container) return;
+
+  container.innerHTML = '';
+
+  const list = allPlayers || [
+    { name: "You (Faith Warrior)", score: userScore, isUser: true, avatar: "✝️" },
+    ...liveParticipants
+  ].sort((a, b) => b.score - a.score);
+
+  list.forEach((p, idx) => {
+    let medal = `#${idx + 1}`;
+    if (idx === 0) medal = "🥇 Gold Champion";
+    else if (idx === 1) medal = "🥈 Silver Medal";
+    else if (idx === 2) medal = "🥉 Bronze Medal";
+
+    const card = document.createElement('div');
+    card.className = `p-4 rounded-2xl border flex items-center justify-between transition-all ${
+      p.isUser
+        ? "bg-gradient-to-r from-purple-900 to-indigo-900 border-amber-400/50 text-white shadow-lg ring-2 ring-amber-400/30"
+        : "bg-slate-50 dark:bg-zinc-900/80 border-slate-200 dark:border-zinc-800 text-slate-800 dark:text-zinc-200"
+    }`;
+    card.innerHTML = `
+      <div class="flex items-center gap-3">
+        <span class="text-sm font-black font-mono w-8 text-center text-amber-400">${idx + 1}</span>
+        <span class="text-xl">${p.avatar || '👤'}</span>
+        <div>
+          <h5 class="text-xs md:text-sm font-black">${p.name} ${p.isUser ? '(You)' : ''}</h5>
+          <span class="text-[10px] opacity-75 font-semibold">${p.role || 'Believer'} • ${medal}</span>
+        </div>
+      </div>
+      <span class="text-sm md:text-base font-black font-mono text-amber-400">${p.score} PTS</span>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function renderParticipantsPane(allPlayers) {
+  const container = document.getElementById('trivia-full-participants-container');
+  if (!container) return;
+
+  container.innerHTML = '';
+
+  const list = allPlayers || [
+    { name: "You (Faith Warrior)", score: userScore, isUser: true, avatar: "✝️" },
+    ...liveParticipants
+  ];
+
+  list.forEach(p => {
+    const card = document.createElement('div');
+    card.className = "p-3.5 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 flex items-center justify-between";
+    card.innerHTML = `
+      <div class="flex items-center gap-2.5">
+        <span class="text-lg">${p.avatar || '👤'}</span>
+        <div>
+          <span class="text-xs font-extrabold block text-slate-900 dark:text-zinc-100">${p.name}</span>
+          <span class="text-[10px] text-slate-400">${p.role || 'Member'}</span>
+        </div>
+      </div>
+      <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">Online</span>
+    `;
+    container.appendChild(card);
+  });
+}
+
+// Sub-Navigation Tab Switcher inside Quiz Room
+window.switchQuizRoomTab = function(tabName) {
+  const tabs = ['arena', 'leaderboard', 'participants', 'chat'];
+  tabs.forEach(t => {
+    const btn = document.getElementById(`trivia-tab-${t}`);
+    const pane = document.getElementById(`trivia-pane-${t}`);
+    
+    if (btn) {
+      if (t === tabName) {
+        btn.className = "px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider bg-purple-600 text-white shadow-sm transition-all cursor-pointer flex items-center gap-1.5";
+      } else {
+        btn.className = "px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-all cursor-pointer flex items-center gap-1.5";
+      }
+    }
+
+    if (pane) {
+      if (t === tabName) {
+        pane.classList.remove('hidden');
+      } else {
+        pane.classList.add('hidden');
+      }
+    }
+  });
+};
+
+// Send Floating Praise Reactions
+window.sendQuizPraiseReaction = function(text) {
+  const container = document.getElementById('floating-reactions-container');
+  if (container) {
+    const el = document.createElement('div');
+    el.className = 'absolute font-black text-xs md:text-sm px-3.5 py-1.5 rounded-full bg-amber-400 text-slate-950 shadow-2xl pointer-events-none z-50 animate-bounce border border-amber-300';
+    el.innerText = text;
+    el.style.left = `${15 + Math.random() * 70}%`;
+    el.style.bottom = '25%';
+    el.style.transition = 'all 1.6s ease-out';
+    container.appendChild(el);
+
+    setTimeout(() => {
+      el.style.transform = 'translateY(-180px) scale(1.25)';
+      el.style.opacity = '0';
+    }, 50);
+
+    setTimeout(() => {
+      if (el.parentNode) el.parentNode.removeChild(el);
+    }, 1700);
+  }
+
+  // Add message to chat as well
+  addQuizChatMessage("You", text, true);
+};
+
+window.sendQuizChatMessage = function() {
+  const input = document.getElementById('trivia-chat-input');
+  if (!input || !input.value.trim()) return;
+  const val = input.value.trim();
+  input.value = '';
+  addQuizChatMessage("You", val, false);
+};
+
+function addQuizChatMessage(sender, text, isReaction) {
+  const log = document.getElementById('trivia-chat-log');
+  if (!log) return;
+
+  const msg = document.createElement('div');
+  msg.className = `p-2.5 rounded-xl border text-xs ${
+    sender === "You" 
+      ? "bg-purple-100 dark:bg-purple-950/50 border-purple-200 dark:border-purple-800 text-purple-900 dark:text-purple-200 ml-6" 
+      : "bg-white dark:bg-zinc-900 border-slate-200 dark:border-zinc-800 text-slate-800 dark:text-zinc-200 mr-6"
+  }`;
+  msg.innerHTML = `
+    <div class="flex items-center justify-between mb-0.5">
+      <span class="font-black text-[10px] text-amber-500 uppercase">${sender}</span>
+      <span class="text-[9px] text-slate-400">Just now</span>
+    </div>
+    <p class="font-medium leading-relaxed">${text}</p>
+  `;
+  log.appendChild(msg);
+  log.scrollTop = log.scrollHeight;
 }
 
 function advanceTrivia() {
@@ -546,11 +869,11 @@ function advanceTrivia() {
 function completeTriviaSession() {
   if (triviaTimer) clearInterval(triviaTimer);
 
-  const arena = document.getElementById('trivia-active-arena');
+  const arenaPane = document.getElementById('trivia-pane-arena');
   const results = document.getElementById('trivia-results-card');
-  if (!arena || !results) return;
+  if (!arenaPane || !results) return;
 
-  arena.classList.add('hidden');
+  arenaPane.classList.add('hidden');
   results.classList.remove('hidden');
 
   // Determine Rank
@@ -561,19 +884,24 @@ function completeTriviaSession() {
 
   const userRankIdx = finalLeaderboard.findIndex(p => p.isUser);
   const userRank = userRankIdx + 1;
+  const maxPossible = currentQuiz.questions.length * (pointsPerQuestion + 50);
   const userScorePct = Math.round((userScore / (currentQuiz.questions.length * pointsPerQuestion)) * 100);
 
   let medal = "🥉 Bronze";
   if (userRank === 1) medal = "🥇 Gold Champion";
   else if (userRank === 2) medal = "🥈 Silver";
 
-  document.getElementById('res-score').innerText = `${userScorePct}% (${Math.round(userScore / pointsPerQuestion)}/${currentQuiz.questions.length} Correct)`;
-  document.getElementById('res-rank').innerText = `#${userRank} (${medal} Medal)`;
-  document.getElementById('res-pts').innerText = `${userScore} PTS`;
+  const resScore = document.getElementById('res-score');
+  const resRank = document.getElementById('res-rank');
+  const resPts = document.getElementById('res-pts');
+
+  if (resScore) resScore.innerText = `${userScorePct}% (${Math.round(userScore / pointsPerQuestion)}/${currentQuiz.questions.length} Correct)`;
+  if (resRank) resRank.innerText = `#${userRank} (${medal})`;
+  if (resPts) resPts.innerText = `${userScore} PTS`;
 
   // Trigger Streak increment
   if (userScore > 0) {
-    window.incrementUserStreak(`taking Live Trivia: ${currentQuiz.title}`);
+    window.incrementUserStreak?.(`taking Live Trivia: ${currentQuiz.title}`);
   }
 
   // Trigger celebration Confetti
@@ -588,9 +916,13 @@ function completeTriviaSession() {
 
 function exitTrivia() {
   if (triviaTimer) clearInterval(triviaTimer);
-  document.getElementById('quiz-intro-deck').classList.remove('hidden');
-  document.getElementById('live-trivia-session-board').classList.add('hidden');
-  document.getElementById('trivia-results-card').classList.add('hidden');
+  const deck = document.getElementById('quiz-intro-deck');
+  const board = document.getElementById('live-trivia-session-board');
+  const results = document.getElementById('trivia-results-card');
+
+  if (deck) deck.classList.remove('hidden');
+  if (board) board.classList.add('hidden');
+  if (results) results.classList.add('hidden');
   renderQuizSelectionGrid();
 }
 
@@ -624,13 +956,13 @@ function broadcastTriviaTriumph(correct, total, title, medal) {
     window.showToast?.("Broadcast posted to fellowship feed successfully!", "success");
     
     // Trigger real background push notification off the app!
-    window.sendPushNotification(
+    window.sendPushNotification?.(
       `🔥 Trivia Champion Alert!`,
       `Congratulations to ${displayName} for conquering the '${title}' live session! Tap to play.`,
       `/?tab=bible`,
       null, // targetRole
       null, // targetUid
-      user.uid // excludeUid: exclude the trivia winner!
+      user.uid // excludeUid
     );
 
     exitTrivia();
@@ -647,7 +979,7 @@ function triggerConfetti() {
     const confetti = document.createElement('div');
     confetti.className = 'absolute w-2 h-2 rounded-full pointer-events-none opacity-80';
     
-    const colors = ['bg-sky-400', 'bg-blue-500', 'bg-rose-500', 'bg-emerald-500', 'bg-purple-500'];
+    const colors = ['bg-amber-400', 'bg-yellow-500', 'bg-purple-500', 'bg-emerald-500', 'bg-indigo-500'];
     confetti.classList.add(colors[Math.floor(Math.random() * colors.length)]);
 
     confetti.style.left = `${Math.random() * 100}%`;
@@ -691,14 +1023,14 @@ window.setBibleSubMode = function(mode) {
 
   if (mode === 'quiz') {
     readBtn.className = "px-4 py-2.5 text-xs font-bold uppercase tracking-wider rounded-xl bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-all cursor-pointer";
-    quizBtn.className = "px-4 py-2.5 text-xs font-bold uppercase tracking-wider rounded-xl bg-blue-600 text-white shadow-sm transition-all cursor-pointer flex items-center gap-1.5";
+    quizBtn.className = "px-4 py-2.5 text-xs font-bold uppercase tracking-wider rounded-xl bg-purple-600 text-white shadow-sm transition-all cursor-pointer flex items-center gap-1.5";
     
     readPane.classList.add('hidden');
     quizPane.classList.remove('hidden');
     
     initQuizLounge();
   } else {
-    readBtn.className = "px-4 py-2.5 text-xs font-bold uppercase tracking-wider rounded-xl bg-blue-600 text-white shadow-sm transition-all cursor-pointer";
+    readBtn.className = "px-4 py-2.5 text-xs font-bold uppercase tracking-wider rounded-xl bg-purple-600 text-white shadow-sm transition-all cursor-pointer";
     quizBtn.className = "px-4 py-2.5 text-xs font-bold uppercase tracking-wider rounded-xl bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-all cursor-pointer flex items-center gap-1.5";
     
     readPane.classList.remove('hidden');

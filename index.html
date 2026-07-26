@@ -6,9 +6,9 @@
     <title>Home.cell - Home Fellowship Portal</title>
     
     <!-- Beautiful High-Fidelity Favicon & Title Icon -->
-    <link rel="icon" type="image/jpeg" href="/favicon.jpg" />
+    <link rel="icon" type="image/jpeg" href="favicon.jpg" />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='25' fill='%232563EB'/%3E%3Cpath d='M50 22 L22 47 H34 V78 H66 V47 H78 Z' fill='white'/%3E%3Cpolygon points='50,40 50,58 44,58 44,40' fill='%232563EB'/%3E%3Cpolygon points='40,46 54,46 54,52 40,52' fill='%232563EB'/%3E%3C/svg%3E" />
-    <link rel="manifest" href="/manifest.json" />
+    <link rel="manifest" href="manifest.json" />
     
     <!-- Tailwind CSS Play CDN (v4 Compiler) -->
     <script src="https://unpkg.com/@tailwindcss/browser@4" crossorigin="anonymous"></script>
@@ -179,6 +179,21 @@
         opacity: 1 !important;
       }
 
+      /* Universal Mobile Responsiveness Rules */
+      html, body {
+        max-width: 100vw !important;
+        overflow-x: hidden !important;
+        word-break: break-word;
+        overflow-wrap: anywhere;
+      }
+      img, video, canvas, iframe, svg {
+        max-width: 100% !important;
+      }
+      .app-tab {
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+      }
+
       /* Hide regular layout when unauthenticated before portfolio is marked as seen */
       .unauthenticated:not(.portfolio-seen) #live-broadcast-banner,
       .unauthenticated:not(.portfolio-seen) header,
@@ -307,7 +322,7 @@
 
     <!-- Login / Registration Modal overlay -->
     <div id="auth-modal" class="hidden fixed inset-0 bg-slate-950/90 backdrop-blur-lg z-50 flex items-center justify-center p-4">
-      <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl w-full max-w-md p-8 shadow-2xl relative">
+      <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl w-full max-w-md p-6 sm:p-8 max-h-[90vh] overflow-y-auto shadow-2xl relative">
         <!-- Close button to go back to reading the portfolio landing page -->
         <button onclick="window.closeAuthModal()" class="absolute top-5 right-5 p-2 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-full cursor-pointer transition-all">
           <i data-lucide="x" class="w-5 h-5"></i>
@@ -612,7 +627,7 @@
             </div>
 
             <!-- Floating Glassmorphism Badges -->
-            <div class="absolute -top-4 -right-2 sm:-right-8 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border border-slate-200/50 dark:border-zinc-800/50 px-3.5 py-2 rounded-2xl shadow-lg flex items-center gap-2 z-30 transform hover:scale-105 transition-transform">
+            <div class="absolute -top-4 right-0 sm:-right-8 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border border-slate-200/50 dark:border-zinc-800/50 px-3.5 py-2 rounded-2xl shadow-lg flex items-center gap-2 z-30 transform hover:scale-105 transition-transform">
               <span class="text-lg">🏆</span>
               <div class="text-left leading-none">
                 <span class="text-[9px] text-slate-400 block font-bold">Trivia Chamber</span>
@@ -620,7 +635,7 @@
               </div>
             </div>
 
-            <div class="absolute bottom-8 -left-4 sm:-left-12 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border border-slate-200/50 dark:border-zinc-800/50 px-3.5 py-2 rounded-2xl shadow-lg flex items-center gap-2 z-30 transform hover:scale-105 transition-transform">
+            <div class="absolute bottom-8 left-0 sm:-left-12 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border border-slate-200/50 dark:border-zinc-800/50 px-3.5 py-2 rounded-2xl shadow-lg flex items-center gap-2 z-30 transform hover:scale-105 transition-transform">
               <span class="text-lg">🔥</span>
               <div class="text-left leading-none">
                 <span class="text-[9px] text-slate-400 block font-bold">Consecrated Habit</span>
@@ -1941,99 +1956,305 @@
               </div>
 
               <!-- Active Live Trivia Session Board -->
-              <div id="live-trivia-session-board" class="hidden grid grid-cols-1 xl:grid-cols-3 gap-8 relative">
+              <div id="live-trivia-session-board" class="hidden flex flex-col space-y-6 relative">
                 <!-- Confetti container -->
                 <div id="confetti-rain-container" class="absolute inset-0 pointer-events-none z-50 overflow-hidden rounded-3xl"></div>
+                <!-- Floating praise reaction container -->
+                <div id="floating-reactions-container" class="absolute inset-0 pointer-events-none z-50 overflow-hidden"></div>
 
-                <!-- Main Arena Column -->
-                <div class="xl:col-span-2 bg-slate-50 dark:bg-zinc-950 p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 space-y-6 flex flex-col justify-between min-h-[400px]">
-                  
-                  <!-- Lobby waiting for others -->
-                  <div id="trivia-waiting-lobby" class="flex flex-col items-center justify-center text-center py-16 space-y-4">
-                    <div class="w-12 h-12 rounded-full border-4 border-slate-200 border-t-blue-500 animate-spin"></div>
-                    <p id="lobby-countdown-timer" class="text-sm font-semibold text-slate-600 dark:text-zinc-400">Connecting with other believers... Session starts in 3...</p>
+                <!-- Top Action Header Bar -->
+                <div class="flex flex-wrap items-center justify-between gap-3 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md p-4 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm">
+                  <button onclick="exitTrivia()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center gap-2">
+                    <i data-lucide="arrow-left" class="w-4 h-4"></i> Leave Quiz Room
+                  </button>
+                  <div class="flex items-center gap-2">
+                    <span class="px-3 py-1 rounded-full bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 font-black text-[10px] uppercase tracking-widest border border-purple-200 dark:border-purple-800 flex items-center gap-1.5">
+                      <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                      LIVE FELLOWSHIP QUIZ ARENA
+                    </span>
+                    <span id="trivia-room-online-count" class="px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-black text-[10px] uppercase tracking-wider border border-emerald-200 dark:border-emerald-800 flex items-center gap-1.5">
+                      <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                      14 Believers Online
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Featured Quiz Header Banner (Deep Purple & Golden Accents) -->
+                <div class="bg-gradient-to-br from-purple-950 via-indigo-950 to-slate-950 border-2 border-amber-500/30 text-white rounded-3xl p-6 shadow-xl relative overflow-hidden">
+                  <!-- Ambient Golden/Purple Glow Spots -->
+                  <div class="absolute -right-16 -top-16 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                  <div class="absolute -left-16 -bottom-16 w-64 h-64 bg-purple-600/20 rounded-full blur-3xl pointer-events-none"></div>
+
+                  <div class="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                    <!-- Quiz Title Info -->
+                    <div class="flex items-center gap-4">
+                      <div id="trivia-cover-box" class="w-16 h-16 md:w-20 md:h-20 rounded-2xl border-2 border-amber-400/40 shadow-lg object-cover overflow-hidden bg-gradient-to-br from-amber-500 to-purple-800 flex items-center justify-center text-3xl shrink-0">
+                        <span id="trivia-cover-emoji">🙌</span>
+                      </div>
+                      <div class="space-y-1">
+                        <div class="flex items-center gap-2">
+                          <span id="trivia-topic-tag" class="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-amber-400/20 text-amber-300 border border-amber-400/30">Biblical Gratitude & Praise</span>
+                          <span class="text-[10px] text-zinc-400 font-semibold">• Live Fellowship Challenge</span>
+                        </div>
+                        <h2 id="trivia-session-title" class="text-xl md:text-2xl font-black font-display text-amber-100 tracking-tight leading-tight">The Power of Thanksgiving</h2>
+                        <p id="trivia-session-desc" class="text-xs text-zinc-300 line-clamp-1">Explore the deep spiritual power of thanksgiving, praise, and gratitude in Holy Scripture.</p>
+                      </div>
+                    </div>
+
+                    <!-- Question Progress & Timer Widget -->
+                    <div class="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end bg-black/40 backdrop-blur-md p-3.5 rounded-2xl border border-amber-500/20">
+                      <div class="space-y-1">
+                        <span class="text-[9px] uppercase font-bold text-amber-300/80 tracking-wider">Progress</span>
+                        <div id="trivia-q-progress" class="text-xs md:text-sm font-black text-white font-mono">Question 1 of 7</div>
+                        <div class="w-28 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                          <div id="trivia-q-progress-bar" class="h-full bg-gradient-to-r from-amber-400 to-amber-500 transition-all duration-300" style="width: 14%;"></div>
+                        </div>
+                      </div>
+
+                      <div class="h-8 w-px bg-amber-500/20"></div>
+
+                      <div class="text-right space-y-0.5">
+                        <span class="text-[9px] uppercase font-bold text-amber-300/80 tracking-wider">Time Left</span>
+                        <div class="flex items-center gap-1.5 justify-end">
+                          <i data-lucide="timer" class="w-4 h-4 text-amber-400 animate-pulse"></i>
+                          <span id="trivia-timer-sec" class="text-lg md:text-xl font-mono font-black text-amber-400">15s</span>
+                        </div>
+                        <div class="w-24 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                          <div id="trivia-timer-bar" class="h-full bg-gradient-to-r from-emerald-400 to-amber-400 rounded-full transition-all duration-300" style="width: 100%;"></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Player Live Performance Bar -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 p-3.5 rounded-2xl shadow-sm flex items-center justify-between">
+                    <div>
+                      <span class="text-[9px] font-extrabold uppercase text-slate-400 tracking-wider block">Your Score</span>
+                      <span id="trivia-player-score" class="text-base font-black font-mono text-slate-900 dark:text-amber-400">0 PTS</span>
+                    </div>
+                    <div class="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-950/50 border border-amber-300/40 text-amber-600 dark:text-amber-400 flex items-center justify-center text-lg font-bold">⭐</div>
                   </div>
 
-                  <!-- Active Arena -->
-                  <div id="trivia-active-arena" class="hidden space-y-6">
-                    <div class="flex items-center justify-between border-b border-slate-200 dark:border-zinc-800 pb-3">
-                      <div>
-                        <h4 id="trivia-session-title" class="text-sm font-black font-display text-slate-800 dark:text-zinc-200">The Life & Miracles of Jesus</h4>
-                        <span id="trivia-q-progress" class="text-[10px] uppercase font-bold text-slate-400">Question 1 of 5</span>
+                  <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 p-3.5 rounded-2xl shadow-sm flex items-center justify-between">
+                    <div>
+                      <span class="text-[9px] font-extrabold uppercase text-slate-400 tracking-wider block">Current Rank</span>
+                      <span id="trivia-player-rank" class="text-base font-black font-mono text-slate-900 dark:text-purple-400">#1</span>
+                    </div>
+                    <div class="w-9 h-9 rounded-xl bg-purple-100 dark:bg-purple-950/50 border border-purple-300/40 text-purple-600 dark:text-purple-400 flex items-center justify-center text-lg font-bold">🏆</div>
+                  </div>
+
+                  <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 p-3.5 rounded-2xl shadow-sm flex items-center justify-between">
+                    <div>
+                      <span class="text-[9px] font-extrabold uppercase text-slate-400 tracking-wider block">Answer Streak</span>
+                      <span id="trivia-player-streak" class="text-base font-black font-mono text-amber-500">🔥 0 Streak</span>
+                    </div>
+                    <div class="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 text-amber-500 flex items-center justify-center text-lg">⚡</div>
+                  </div>
+
+                  <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 p-3.5 rounded-2xl shadow-sm flex items-center justify-between">
+                    <div>
+                      <span class="text-[9px] font-extrabold uppercase text-slate-400 tracking-wider block">Speed Bonus</span>
+                      <span id="trivia-speed-multiplier" class="text-base font-black font-mono text-emerald-600 dark:text-emerald-400">1.5x Multiplier</span>
+                    </div>
+                    <div class="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-lg">🚀</div>
+                  </div>
+                </div>
+
+                <!-- Sub-Navigation Navigation Bar -->
+                <div class="flex items-center justify-between gap-2 border-b border-slate-200 dark:border-zinc-800 pb-2 overflow-x-auto scrollbar-none">
+                  <div class="flex items-center gap-2">
+                    <button id="trivia-tab-arena" onclick="switchQuizRoomTab('arena')" class="px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider bg-purple-600 text-white shadow-sm transition-all cursor-pointer flex items-center gap-1.5">
+                      🎯 Question Arena
+                    </button>
+                    <button id="trivia-tab-leaderboard" onclick="switchQuizRoomTab('leaderboard')" class="px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-all cursor-pointer flex items-center gap-1.5">
+                      🏆 Live Leaderboard
+                    </button>
+                    <button id="trivia-tab-participants" onclick="switchQuizRoomTab('participants')" class="px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-all cursor-pointer flex items-center gap-1.5">
+                      👥 Participants
+                    </button>
+                    <button id="trivia-tab-chat" onclick="switchQuizRoomTab('chat')" class="px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-all cursor-pointer flex items-center gap-1.5">
+                      💬 Fellowship Chat
+                    </button>
+                  </div>
+
+                  <!-- Quick Praise Buttons Bar -->
+                  <div class="hidden md:flex items-center gap-1.5">
+                    <button onclick="sendQuizPraiseReaction('🙏 Amen!')" class="px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 font-bold text-[11px] hover:scale-105 transition-all cursor-pointer">
+                      🙏 Amen!
+                    </button>
+                    <button onclick="sendQuizPraiseReaction('🙌 Hallelujah!')" class="px-2.5 py-1 rounded-lg bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300 font-bold text-[11px] hover:scale-105 transition-all cursor-pointer">
+                      🙌 Hallelujah!
+                    </button>
+                    <button onclick="sendQuizPraiseReaction('🕊️ Praise God!')" class="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 font-bold text-[11px] hover:scale-105 transition-all cursor-pointer">
+                      🕊️ Praise God!
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Main Quiz Room Body Grid (Question Area + Cohort Preview) -->
+                <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+
+                  <!-- Center Main Arena Pane -->
+                  <div class="xl:col-span-2 space-y-6">
+
+                    <!-- Lobby Waiting Area -->
+                    <div id="trivia-waiting-lobby" class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 p-12 rounded-3xl text-center space-y-4 shadow-sm flex flex-col items-center justify-center min-h-[300px]">
+                      <div class="w-14 h-14 rounded-full border-4 border-amber-400 border-t-purple-600 animate-spin"></div>
+                      <p id="lobby-countdown-timer" class="text-sm font-extrabold text-slate-700 dark:text-zinc-300">Synchronizing live congregation... Starts in 3...</p>
+                    </div>
+
+                    <!-- Active Arena Pane (Default Active) -->
+                    <div id="trivia-pane-arena" class="hidden space-y-6">
+
+                      <!-- Question Card -->
+                      <div class="bg-gradient-to-br from-white to-slate-50 dark:from-zinc-900 dark:to-zinc-950 border-2 border-purple-200 dark:border-purple-900/50 rounded-3xl p-6 md:p-8 shadow-md relative overflow-hidden">
+                        <div class="flex items-center justify-between mb-4">
+                          <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300 border border-purple-200 dark:border-purple-800 flex items-center gap-1.5">
+                            📖 Scripture Question
+                          </span>
+                          <span class="text-xs font-mono font-bold text-slate-400">+100 PTS</span>
+                        </div>
+
+                        <h3 id="trivia-live-question-text" class="text-lg md:text-2xl font-extrabold text-slate-900 dark:text-zinc-50 font-display leading-relaxed">
+                          In the Gospel of Luke, how many lepers were healed by Jesus, and how many returned to give thanks?
+                        </h3>
                       </div>
-                      
-                      <!-- Circular countdown timer -->
-                      <div class="flex items-center gap-2">
-                        <span id="trivia-timer-sec" class="text-xs font-mono font-black text-rose-500">15s</span>
-                        <div class="w-24 h-2 bg-slate-200 dark:bg-zinc-800 rounded-full overflow-hidden">
-                          <div id="trivia-timer-bar" class="h-full bg-blue-500 rounded-full" style="width: 100%"></div>
+
+                      <!-- Answer Options Grid (4 Touch-Friendly Buttons A, B, C, D) -->
+                      <div id="trivia-live-options-box" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Populated dynamically via quiz.js -->
+                      </div>
+
+                      <!-- Mobile Reaction Bar -->
+                      <div class="md:hidden flex items-center justify-center gap-2 pt-2">
+                        <button onclick="sendQuizPraiseReaction('🙏 Amen!')" class="px-3 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 font-extrabold text-xs">
+                          🙏 Amen!
+                        </button>
+                        <button onclick="sendQuizPraiseReaction('🙌 Hallelujah!')" class="px-3 py-1.5 rounded-xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300 font-extrabold text-xs">
+                          🙌 Hallelujah!
+                        </button>
+                        <button onclick="sendQuizPraiseReaction('🕊️ Praise God!')" class="px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 font-extrabold text-xs">
+                          🕊️ Praise God!
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- Leaderboard Pane -->
+                    <div id="trivia-pane-leaderboard" class="hidden space-y-4">
+                      <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 p-6 rounded-3xl shadow-sm space-y-4">
+                        <div class="flex items-center justify-between">
+                          <h3 class="text-lg font-black font-display text-slate-900 dark:text-zinc-50 flex items-center gap-2">
+                            <span>🏆</span> Full Live Fellowship Leaderboard
+                          </h3>
+                          <span class="text-xs text-slate-400">Live synchronized scores</span>
+                        </div>
+                        <div id="trivia-full-leaderboard-container" class="space-y-3">
+                          <!-- Filled dynamically -->
                         </div>
                       </div>
                     </div>
 
-                    <!-- Question text -->
-                    <div class="py-4">
-                      <h3 id="trivia-live-question-text" class="text-lg md:text-xl font-black text-slate-900 dark:text-zinc-100 leading-snug">In which town was Jesus born according to the Gospels?</h3>
+                    <!-- Participants Pane -->
+                    <div id="trivia-pane-participants" class="hidden space-y-4">
+                      <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 p-6 rounded-3xl shadow-sm space-y-4">
+                        <div class="flex items-center justify-between">
+                          <h3 class="text-lg font-black font-display text-slate-900 dark:text-zinc-50 flex items-center gap-2">
+                            <span>👥</span> Live Room Participants
+                          </h3>
+                          <span class="text-xs text-emerald-500 font-bold">🟢 Active Room</span>
+                        </div>
+                        <div id="trivia-full-participants-container" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <!-- Filled dynamically -->
+                        </div>
+                      </div>
                     </div>
 
-                    <!-- Options -->
-                    <div id="trivia-live-options-box" class="space-y-3">
-                      <!-- Buttons populate dynamically -->
+                    <!-- Chat Pane -->
+                    <div id="trivia-pane-chat" class="hidden space-y-4">
+                      <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 p-6 rounded-3xl shadow-sm space-y-4">
+                        <h3 class="text-lg font-black font-display text-slate-900 dark:text-zinc-50 flex items-center gap-2">
+                          <span>💬</span> Live Fellowship Commentary & Praise
+                        </h3>
+                        <div id="trivia-chat-log" class="h-64 overflow-y-auto space-y-2 p-3 bg-slate-50 dark:bg-zinc-950 rounded-2xl border border-slate-200 dark:border-zinc-800">
+                          <!-- Chat messages -->
+                        </div>
+                        <div class="flex items-center gap-2">
+                          <input type="text" id="trivia-chat-input" placeholder="Type a praise message..." onkeydown="if(event.key==='Enter') sendQuizChatMessage()" class="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-100 dark:bg-zinc-800 text-xs font-semibold" />
+                          <button onclick="sendQuizChatMessage()" class="px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer">
+                            Send
+                          </button>
+                        </div>
+                      </div>
                     </div>
+
+                    <!-- Results Card (When quiz completes) -->
+                    <div id="trivia-results-card" class="hidden bg-white dark:bg-zinc-900 border-2 border-amber-500/30 p-8 rounded-3xl text-center space-y-6 shadow-xl relative overflow-hidden">
+                      <div class="w-20 h-20 rounded-full bg-gradient-to-tr from-amber-400 to-amber-600 text-white flex items-center justify-center text-4xl mx-auto shadow-lg animate-bounce">
+                        👑
+                      </div>
+                      <div class="space-y-2">
+                        <h3 class="text-2xl md:text-3xl font-black font-display text-slate-900 dark:text-zinc-50">Live Quiz Session Completed!</h3>
+                        <p class="text-xs text-slate-500 dark:text-zinc-400">Praise the Lord! Your scriptural knowledge has been registered on the fellowship board.</p>
+                      </div>
+
+                      <div class="grid grid-cols-3 gap-4 max-w-md mx-auto bg-slate-50 dark:bg-zinc-950 p-4 rounded-2xl border border-slate-200 dark:border-zinc-800">
+                        <div>
+                          <span class="text-[9px] uppercase font-extrabold text-slate-400 block">Accuracy</span>
+                          <span id="res-score" class="text-base font-black text-slate-900 dark:text-zinc-100">100%</span>
+                        </div>
+                        <div>
+                          <span class="text-[9px] uppercase font-extrabold text-slate-400 block">Award Rank</span>
+                          <span id="res-rank" class="text-base font-black text-amber-500 font-mono">#1 Gold Medal</span>
+                        </div>
+                        <div>
+                          <span class="text-[9px] uppercase font-extrabold text-slate-400 block">Total Score</span>
+                          <span id="res-pts" class="text-base font-black text-purple-600 dark:text-purple-400 font-mono">700 PTS</span>
+                        </div>
+                      </div>
+
+                      <div class="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
+                        <button id="btn-trivia-broadcast" class="flex-1 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-md flex items-center justify-center gap-2">
+                          📢 Broadcast Triumph to Feed
+                        </button>
+                        <button onclick="exitTrivia()" class="px-6 py-3 bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 font-extrabold text-xs uppercase tracking-wider hover:bg-slate-200 dark:hover:bg-zinc-700 rounded-xl transition-all cursor-pointer">
+                          Exit Lounge
+                        </button>
+                      </div>
+                    </div>
+
                   </div>
 
-                  <!-- Results Card (When complete) -->
-                  <div id="trivia-results-card" class="hidden flex flex-col items-center justify-center text-center py-10 space-y-6">
-                    <div class="w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-950 flex items-center justify-center text-3xl animate-bounce">
-                      👑
-                    </div>
-                    
-                    <div class="space-y-2">
-                      <h3 class="text-2xl font-black font-display text-slate-900 dark:text-zinc-50">Live Trivia Session Completed!</h3>
-                      <p class="text-xs text-slate-500 dark:text-zinc-400">Your score has been registered. Peace be with you!</p>
-                    </div>
+                  <!-- Right Sidebar: Compact Leaderboard Preview & Cohort Activity -->
+                  <div class="space-y-4">
+                    <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 p-6 rounded-3xl shadow-sm space-y-4">
+                      <div class="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800 pb-3">
+                        <h4 class="text-sm font-black font-display text-slate-900 dark:text-zinc-50 flex items-center gap-2">
+                          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                          Leaderboard Preview
+                        </h4>
+                        <button onclick="switchQuizRoomTab('leaderboard')" class="text-[10px] font-bold text-purple-600 dark:text-purple-400 hover:underline cursor-pointer">View All →</button>
+                      </div>
 
-                    <div class="grid grid-cols-3 gap-4 w-full max-w-md bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-slate-100 dark:border-zinc-800">
-                      <div class="text-center">
-                        <span class="text-[9px] uppercase font-bold text-slate-400">Your Accuracy</span>
-                        <span id="res-score" class="text-sm font-black block text-slate-800 dark:text-zinc-200">100%</span>
-                      </div>
-                      <div class="text-center">
-                        <span class="text-[9px] uppercase font-bold text-slate-400">Award Rank</span>
-                        <span id="res-rank" class="text-sm font-black block text-slate-800 dark:text-zinc-200 font-mono">#1 Gold Medal</span>
-                      </div>
-                      <div class="text-center">
-                        <span class="text-[9px] uppercase font-bold text-slate-400">Total Points</span>
-                        <span id="res-pts" class="text-sm font-black block text-slate-800 dark:text-zinc-200 font-mono">500 PTS</span>
+                      <div id="trivia-cohort-scoreboard" class="space-y-2.5">
+                        <!-- Cohort rows filled dynamically -->
                       </div>
                     </div>
 
-                    <div class="flex flex-col sm:flex-row gap-3 w-full max-w-md">
-                      <button id="btn-trivia-broadcast" class="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs uppercase tracking-wider transition-all cursor-pointer shadow flex items-center justify-center gap-2">
-                        📢 Broadcast Achievement to Feed
-                      </button>
-                      <button onclick="exitTrivia()" class="px-5 py-3 bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 font-bold rounded-xl text-xs uppercase tracking-wider hover:bg-slate-200 dark:hover:bg-zinc-700 transition-all cursor-pointer">
-                        Back to Lobby
-                      </button>
+                    <!-- Quick Fellowship Community Activity Card -->
+                    <div class="bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950/20 dark:to-indigo-950/20 border border-purple-200 dark:border-purple-900/40 p-5 rounded-3xl space-y-3">
+                      <h4 class="text-xs font-black uppercase tracking-wider text-purple-900 dark:text-purple-200 flex items-center gap-1.5">
+                        <span>🕊️</span> Fellowship Encouragement
+                      </h4>
+                      <p class="text-xs text-slate-600 dark:text-zinc-300 leading-relaxed">
+                        "Give thanks in all circumstances; for this is God's will for you in Christ Jesus." — 1 Thessalonians 5:18
+                      </p>
                     </div>
                   </div>
 
                 </div>
 
-                <!-- Live Cohort scoreboard sidebar -->
-                <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 p-6 rounded-3xl shadow-sm space-y-4">
-                  <div>
-                    <h4 class="text-sm font-black font-display text-slate-900 dark:text-zinc-50 flex items-center gap-1.5">
-                      <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                      Active Live Participants
-                    </h4>
-                    <p class="text-[10px] text-slate-400">Synchronized cohort scores update dynamically</p>
-                  </div>
-
-                  <div id="trivia-cohort-scoreboard" class="space-y-2.5">
-                    <!-- Cohort rows -->
-                  </div>
-                </div>
               </div>
 
             </div>
@@ -2934,7 +3155,7 @@
 
     <!-- Edit Profile testimony dialog modal -->
     <div id="profile-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-      <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl w-full max-w-md p-8 shadow-2xl relative">
+      <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl w-full max-w-md p-6 sm:p-8 max-h-[90vh] overflow-y-auto shadow-2xl relative">
         <button onclick="closeProfileModal()" class="absolute top-6 right-6 text-slate-400 hover:text-slate-600">
           <i data-lucide="x" class="w-6 h-6"></i>
         </button>
@@ -2962,7 +3183,7 @@
 
     <!-- Cell event creation modal -->
     <div id="cell-event-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-      <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl w-full max-w-md p-8 shadow-2xl relative">
+      <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl w-full max-w-md p-6 sm:p-8 max-h-[90vh] overflow-y-auto shadow-2xl relative">
         <button onclick="closeCellEventModal()" class="absolute top-6 right-6 text-slate-400 hover:text-slate-600">
           <i data-lucide="x" class="w-6 h-6"></i>
         </button>
@@ -2990,7 +3211,7 @@
 
     <!-- Change Cell Leader Modal -->
     <div id="change-leader-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-      <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl w-full max-w-md p-8 shadow-2xl relative">
+      <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl w-full max-w-md p-6 sm:p-8 max-h-[90vh] overflow-y-auto shadow-2xl relative">
         <button onclick="closeChangeLeaderModal()" class="absolute top-6 right-6 text-slate-400 hover:text-slate-600">
           <i data-lucide="x" class="w-6 h-6"></i>
         </button>
@@ -3081,7 +3302,7 @@
 
     <!-- Write a Review Modal -->
     <div id="pf-review-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-      <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl w-full max-w-md p-8 shadow-2xl relative">
+      <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl w-full max-w-md p-6 sm:p-8 max-h-[90vh] overflow-y-auto shadow-2xl relative">
         <button onclick="window.closeReviewModal()" class="absolute top-6 right-6 text-slate-400 hover:text-slate-600 cursor-pointer">
           <i data-lucide="x" class="w-6 h-6"></i>
         </button>
