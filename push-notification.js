@@ -43,9 +43,14 @@ window.requestNotificationPermission = async function() {
       return permission;
     }
 
-    // Register service worker
-    const registration = await navigator.serviceWorker.register('sw.js');
-    console.log("Service Worker registered successfully:", registration);
+    // Register service worker safely
+    const registration = await navigator.serviceWorker.register('./sw.js').catch(err => {
+      console.warn("Service Worker registration skipped or restricted in sandbox/iframe:", err);
+      return null;
+    });
+    if (registration) {
+      console.log("Service Worker registered successfully:", registration);
+    }
 
     // Get VAPID Public Key from the server
     const keyRes = await fetch(VAPID_KEY_URL);

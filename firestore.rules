@@ -174,10 +174,32 @@ service cloudfire.firestore {
       );
     }
 
-    // --- Bible Trivia ---
+    // --- Bible Trivia & Quizzes ---
     match /trivia_questions/{questionId} {
       allow read: if isSignedIn();
       allow write: if isAdmin();
+    }
+
+    match /quizzes/{quizId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    match /quiz_scores/{scoreId} {
+      allow read: if isSignedIn();
+      allow create, update: if isVerified()
+                            && incoming().userUid == request.auth.uid
+                            && incoming().userName is string
+                            && incoming().score is number;
+      allow delete: if isAdmin();
+    }
+
+    match /quiz_reactions/{reactionId} {
+      allow read: if isSignedIn();
+      allow create: if isVerified()
+                    && incoming().senderUid == request.auth.uid
+                    && incoming().text is string && incoming().text.size() <= 1000;
+      allow delete: if isVerified() && (existing().senderUid == request.auth.uid || isAdmin());
     }
 
     // --- Downloads Hub Bundles ---

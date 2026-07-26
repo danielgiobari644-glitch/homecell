@@ -206,19 +206,11 @@ let hasAnsweredCurrent = false;
 let triviaTimerLimit = 15;
 let pointsPerQuestion = 100;
 
-// Simulated real-time fellowship participants
-let liveParticipants = [
-  { name: "Brother Emmanuel", score: 450, accuracy: 0.85, role: "Fellowship Lead", avatar: "👨‍💼" },
-  { name: "Sister Grace", score: 380, accuracy: 0.80, role: "Youth Leader", avatar: "👩‍🏫" },
-  { name: "Deacon David", score: 320, accuracy: 0.75, role: "Deacon", avatar: "👨‍🏫" },
-  { name: "Sister Mary", score: 250, accuracy: 0.70, role: "Choir Director", avatar: "👩‍🎤" },
-  { name: "Brother Joseph", score: 180, accuracy: 0.65, role: "Cell Member", avatar: "👨‍💻" }
-];
-
-let liveChatMessages = [
-  { sender: "Sister Grace", text: "Welcome everyone! May the Lord grant us wisdom and understanding! 🙏", time: "Just now" },
-  { sender: "Brother Emmanuel", text: "Thanksgiving opens heaven's gates! Let's go family! 🙌", time: "Just now" }
-];
+// Real Firestore state subscriptions
+let leaderboardUnsubscribe = null;
+let reactionsUnsubscribe = null;
+let usersCache = [];
+let seenReactionIds = new Set();
 
 function initQuizLounge() {
   renderQuizSelectionGrid();
@@ -416,8 +408,9 @@ function setupTriviaLounge(quiz) {
   triviaTimerLimit = 15;
   pointsPerQuestion = 100;
 
-  // Reset live cohort scores
-  liveParticipants.forEach(p => p.score = Math.floor(Math.random() * 150));
+  // Initialize real Firestore data & real-time listeners for current quiz
+  fetchRealUsersAndSubscribe(quiz.id);
+  subscribeToQuizReactions(quiz.id);
 
   // Populate header details
   const titleEl = document.getElementById('trivia-session-title');
@@ -640,14 +633,29 @@ function autoFailQuestion() {
   }, 2200);
 }
 
-function simulateCohortActivity(correctIdx) {
-  liveParticipants.forEach(p => {
-    const isCorrect = Math.random() < p.accuracy;
-    if (isCorrect) {
-      p.score += pointsPerQuestion;
-    }
-  });
-  updatePlayerLiveStats();
+function saveCurrentScoreToFirestore() {
+  const user = window.auth?.currentUser || window.firebase?.auth()?.currentUser;
+  if (!user || !currentQuiz) return;
+
+  const db = window.db;
+  if (!db) return;
+
+  const quizId = currentQuiz.id;
+  const docId = `${user.uid}_${quizId}`;
+  const displayName = window.currentUserProfile?.displayName || user.displayName || user.email || 'Faith Warrior';
+  const userRole = window.currentUserRole || 'Member';
+
+  db.collection('quiz_scores').doc(docId).set({
+    id: docId,
+    userUid: user.uid,
+    userName: displayName,
+    userRole: userRole,
+    quizId: quizId,
+    quizTitle: currentQuiz.title,
+    score: userScore,
+    streak: userStreak,
+    updatedAt: window.firebase.firestore.FieldValue.serverTimestamp()
+  }, { merge: true }).catch(err => console.warn("Score update error:", err));
 }
 
 function updatePlayerLiveStats() {
@@ -659,43 +667,117 @@ function updatePlayerLiveStats() {
   const streakEl = document.getElementById('trivia-player-streak');
   if (streakEl) streakEl.innerText = `🔥 ${userStreak} Streak`;
 
-  // Calculate Rank
-  const allPlayers = [
-    { name: "You (Faith Warrior)", score: userScore, isUser: true, avatar: "✝️" },
-    ...liveParticipants
-  ].sort((a, b) => b.score - a.score);
+  saveCurrentScoreToFirestore();
+}
 
-  const userRankIdx = allPlayers.findIndex(p => p.isUser);
-  const userRank = userRankIdx + 1;
+function fetchRealUsersAndSubscribe(quizId) {
+  const db = window.db;
+  if (!db) return;
 
+  db.collection('users').get().then(snap => {
+    usersCache = [];
+    snap.forEach(doc => {
+      const u = doc.data();
+      usersCache.push({
+        uid: doc.id,
+        name: u.displayName || u.email || 'Fellowship Member',
+        role: u.role || 'Member',
+        avatar: u.avatar || '👤'
+      });
+    });
+    subscribeToRealLeaderboard(quizId);
+  }).catch(err => {
+    console.warn("Real users fetch error:", err);
+    subscribeToRealLeaderboard(quizId);
+  });
+}
+
+function subscribeToRealLeaderboard(quizId) {
+  if (leaderboardUnsubscribe) leaderboardUnsubscribe();
+  const db = window.db;
+  if (!db) return;
+
+  const targetQuizId = quizId || (currentQuiz ? currentQuiz.id : 'power_of_thanksgiving');
+
+  leaderboardUnsubscribe = db.collection('quiz_scores')
+    .where('quizId', '==', targetQuizId)
+    .orderBy('score', 'desc')
+    .limit(50)
+    .onSnapshot(snap => {
+      const scores = [];
+      snap.forEach(doc => {
+        scores.push(doc.data());
+      });
+      renderRealLeaderboardAndParticipants(scores);
+    }, err => {
+      console.warn("quiz_scores snapshot query failed, fallback query:", err);
+      db.collection('quiz_scores').limit(50).get().then(snap => {
+        const scores = [];
+        snap.forEach(doc => {
+          const d = doc.data();
+          if (d.quizId === targetQuizId || !d.quizId) scores.push(d);
+        });
+        scores.sort((a,b) => b.score - a.score);
+        renderRealLeaderboardAndParticipants(scores);
+      });
+    });
+}
+
+function renderRealLeaderboardAndParticipants(scoresList) {
+  const currentUser = window.auth?.currentUser || window.firebase?.auth()?.currentUser;
+  const currentUid = currentUser?.uid;
+
+  let scoreEntries = [...scoresList];
+  const userInScores = scoreEntries.find(s => s.userUid === currentUid);
+
+  if (!userInScores && currentUid) {
+    const displayName = window.currentUserProfile?.displayName || currentUser.displayName || currentUser.email || 'You';
+    scoreEntries.push({
+      userUid: currentUid,
+      userName: displayName + " (You)",
+      userRole: window.currentUserRole || 'Member',
+      score: userScore,
+      quizId: currentQuiz ? currentQuiz.id : ''
+    });
+  }
+
+  scoreEntries.sort((a, b) => (b.score || 0) - (a.score || 0));
+
+  // Calculate current user rank
+  const userRankIdx = scoreEntries.findIndex(p => p.userUid === currentUid);
+  const userRank = userRankIdx >= 0 ? userRankIdx + 1 : 1;
   const rankEl = document.getElementById('trivia-player-rank');
   if (rankEl) rankEl.innerText = `#${userRank}`;
 
+  // Update room online count
+  const roomCountEl = document.getElementById('trivia-room-online-count');
+  const totalBelievers = Math.max(scoreEntries.length, usersCache.length, 1);
+  if (roomCountEl) {
+    roomCountEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span> ${totalBelievers} Real Believers`;
+  }
+
   // Render Compact Scoreboard Sidebar
-  renderCohortScoreboard(allPlayers);
+  renderCohortScoreboard(scoreEntries);
 
   // Render Full Leaderboard Pane
-  renderFullLeaderboardPane(allPlayers);
+  renderFullLeaderboardPane(scoreEntries);
 
   // Render Participants Pane
-  renderParticipantsPane(allPlayers);
+  renderParticipantsPane(scoreEntries);
 }
 
-function renderCohortScoreboard(allPlayers) {
+function renderCohortScoreboard(scoreEntries) {
   const container = document.getElementById('trivia-cohort-scoreboard');
   if (!container) return;
 
   container.innerHTML = '';
+  const currentUser = window.auth?.currentUser || window.firebase?.auth()?.currentUser;
 
-  const list = allPlayers || [
-    { name: "You (Faith Warrior)", score: userScore, isUser: true, avatar: "✝️" },
-    ...liveParticipants
-  ].sort((a, b) => b.score - a.score);
-
-  list.slice(0, 6).forEach((p, idx) => {
+  scoreEntries.slice(0, 6).forEach((p, idx) => {
+    const isSelf = p.userUid === currentUser?.uid;
     const row = document.createElement('div');
     row.className = `p-3 rounded-2xl border flex items-center justify-between transition-all ${
-      p.isUser 
+      isSelf 
         ? "bg-purple-100 dark:bg-purple-950/40 border-purple-300 dark:border-purple-800 font-black text-purple-900 dark:text-purple-300 shadow-sm" 
         : "bg-slate-50 dark:bg-zinc-900/60 border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-zinc-300"
     }`;
@@ -703,26 +785,23 @@ function renderCohortScoreboard(allPlayers) {
       <div class="flex items-center gap-2.5 truncate pr-2">
         <span class="w-5 text-xs font-mono font-black text-slate-400 text-center">${idx + 1}.</span>
         <span class="text-xs">${p.avatar || '👤'}</span>
-        <span class="text-xs font-bold truncate max-w-[110px]">${p.name}</span>
+        <span class="text-xs font-bold truncate max-w-[110px]">${p.userName || 'Member'} ${isSelf ? '(You)' : ''}</span>
       </div>
-      <span class="text-xs font-mono font-black shrink-0 text-amber-500">${p.score} PTS</span>
+      <span class="text-xs font-mono font-black shrink-0 text-amber-500">${p.score || 0} PTS</span>
     `;
     container.appendChild(row);
   });
 }
 
-function renderFullLeaderboardPane(allPlayers) {
+function renderFullLeaderboardPane(scoreEntries) {
   const container = document.getElementById('trivia-full-leaderboard-container');
   if (!container) return;
 
   container.innerHTML = '';
+  const currentUser = window.auth?.currentUser || window.firebase?.auth()?.currentUser;
 
-  const list = allPlayers || [
-    { name: "You (Faith Warrior)", score: userScore, isUser: true, avatar: "✝️" },
-    ...liveParticipants
-  ].sort((a, b) => b.score - a.score);
-
-  list.forEach((p, idx) => {
+  scoreEntries.forEach((p, idx) => {
+    const isSelf = p.userUid === currentUser?.uid;
     let medal = `#${idx + 1}`;
     if (idx === 0) medal = "🥇 Gold Champion";
     else if (idx === 1) medal = "🥈 Silver Medal";
@@ -730,7 +809,7 @@ function renderFullLeaderboardPane(allPlayers) {
 
     const card = document.createElement('div');
     card.className = `p-4 rounded-2xl border flex items-center justify-between transition-all ${
-      p.isUser
+      isSelf
         ? "bg-gradient-to-r from-purple-900 to-indigo-900 border-amber-400/50 text-white shadow-lg ring-2 ring-amber-400/30"
         : "bg-slate-50 dark:bg-zinc-900/80 border-slate-200 dark:border-zinc-800 text-slate-800 dark:text-zinc-200"
     }`;
@@ -739,28 +818,58 @@ function renderFullLeaderboardPane(allPlayers) {
         <span class="text-sm font-black font-mono w-8 text-center text-amber-400">${idx + 1}</span>
         <span class="text-xl">${p.avatar || '👤'}</span>
         <div>
-          <h5 class="text-xs md:text-sm font-black">${p.name} ${p.isUser ? '(You)' : ''}</h5>
-          <span class="text-[10px] opacity-75 font-semibold">${p.role || 'Believer'} • ${medal}</span>
+          <h5 class="text-xs md:text-sm font-black">${p.userName || 'Member'} ${isSelf ? '(You)' : ''}</h5>
+          <span class="text-[10px] opacity-75 font-semibold">${p.userRole || 'Believer'} • ${medal}</span>
         </div>
       </div>
-      <span class="text-sm md:text-base font-black font-mono text-amber-400">${p.score} PTS</span>
+      <span class="text-sm md:text-base font-black font-mono text-amber-400">${p.score || 0} PTS</span>
     `;
     container.appendChild(card);
   });
 }
 
-function renderParticipantsPane(allPlayers) {
+function renderParticipantsPane(scoreEntries) {
   const container = document.getElementById('trivia-full-participants-container');
   if (!container) return;
 
   container.innerHTML = '';
 
-  const list = allPlayers || [
-    { name: "You (Faith Warrior)", score: userScore, isUser: true, avatar: "✝️" },
-    ...liveParticipants
-  ];
+  // Combine user cache and score entries to display all real registered users
+  const uniqueUsersMap = new Map();
 
-  list.forEach(p => {
+  usersCache.forEach(u => {
+    uniqueUsersMap.set(u.uid, {
+      uid: u.uid,
+      name: u.name,
+      role: u.role,
+      avatar: u.avatar || '👤'
+    });
+  });
+
+  scoreEntries.forEach(s => {
+    if (s.userUid) {
+      const existing = uniqueUsersMap.get(s.userUid) || {};
+      uniqueUsersMap.set(s.userUid, {
+        uid: s.userUid,
+        name: s.userName || existing.name || 'Member',
+        role: s.userRole || existing.role || 'Believer',
+        avatar: existing.avatar || '👤'
+      });
+    }
+  });
+
+  const participantList = Array.from(uniqueUsersMap.values());
+
+  if (participantList.length === 0) {
+    container.innerHTML = `
+      <div class="p-6 text-center text-slate-400 text-xs font-medium">
+        No active participants registered yet. Invite cell members!
+      </div>
+    `;
+    return;
+  }
+
+  participantList.forEach(p => {
     const card = document.createElement('div');
     card.className = "p-3.5 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 flex items-center justify-between";
     card.innerHTML = `
@@ -771,7 +880,7 @@ function renderParticipantsPane(allPlayers) {
           <span class="text-[10px] text-slate-400">${p.role || 'Member'}</span>
         </div>
       </div>
-      <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">Online</span>
+      <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">Active User</span>
     `;
     container.appendChild(card);
   });
@@ -802,13 +911,49 @@ window.switchQuizRoomTab = function(tabName) {
   });
 };
 
-// Send Floating Praise Reactions
-window.sendQuizPraiseReaction = function(text) {
+function subscribeToQuizReactions(quizId) {
+  if (reactionsUnsubscribe) reactionsUnsubscribe();
+  const db = window.db;
+  if (!db) return;
+
+  const targetQuizId = quizId || (currentQuiz ? currentQuiz.id : 'power_of_thanksgiving');
+  seenReactionIds.clear();
+  let initialLoadDone = false;
+
+  reactionsUnsubscribe = db.collection('quiz_reactions')
+    .where('quizId', '==', targetQuizId)
+    .orderBy('createdAt', 'asc')
+    .limitToLast(40)
+    .onSnapshot(snap => {
+      snap.docChanges().forEach(change => {
+        if (change.type === 'added') {
+          const data = change.doc.data();
+          if (data.id && !seenReactionIds.has(data.id)) {
+            seenReactionIds.add(data.id);
+
+            const currentUser = window.auth?.currentUser || window.firebase?.auth()?.currentUser;
+            const isSelf = data.senderUid === (currentUser?.uid || '');
+
+            addQuizChatMessageToUI(data.senderName, data.text, isSelf, data.type);
+
+            if (data.type === 'reaction' && initialLoadDone) {
+              triggerFloatingPraiseAnimation(data.text, data.senderName);
+            }
+          }
+        }
+      });
+      initialLoadDone = true;
+    }, err => {
+      console.warn("Quiz reactions listener failed:", err);
+    });
+}
+
+function triggerFloatingPraiseAnimation(text, senderName) {
   const container = document.getElementById('floating-reactions-container');
   if (container) {
     const el = document.createElement('div');
-    el.className = 'absolute font-black text-xs md:text-sm px-3.5 py-1.5 rounded-full bg-amber-400 text-slate-950 shadow-2xl pointer-events-none z-50 animate-bounce border border-amber-300';
-    el.innerText = text;
+    el.className = 'absolute font-black text-xs md:text-sm px-3.5 py-1.5 rounded-full bg-amber-400 text-slate-950 shadow-2xl pointer-events-none z-50 animate-bounce border border-amber-300 flex items-center gap-1.5';
+    el.innerHTML = `<span>${text}</span> <span class="text-[9px] opacity-80">(${senderName})</span>`;
     el.style.left = `${15 + Math.random() * 70}%`;
     el.style.bottom = '25%';
     el.style.transition = 'all 1.6s ease-out';
@@ -823,9 +968,35 @@ window.sendQuizPraiseReaction = function(text) {
       if (el.parentNode) el.parentNode.removeChild(el);
     }, 1700);
   }
+}
 
-  // Add message to chat as well
-  addQuizChatMessage("You", text, true);
+window.sendQuizPraiseReaction = function(text) {
+  const user = window.auth?.currentUser || window.firebase?.auth()?.currentUser;
+  if (!user) {
+    window.showToast?.("Please sign in to react in the live quiz arena.", "info");
+    return;
+  }
+
+  const db = window.db;
+  if (!db) return;
+
+  const quizId = currentQuiz ? currentQuiz.id : 'power_of_thanksgiving';
+  const displayName = window.currentUserProfile?.displayName || user.displayName || user.email || 'Fellowship Member';
+  const docRef = db.collection('quiz_reactions').doc();
+
+  // Optimistically trigger local float animation
+  triggerFloatingPraiseAnimation(text, "You");
+
+  docRef.set({
+    id: docRef.id,
+    quizId: quizId,
+    senderUid: user.uid,
+    senderName: displayName,
+    senderRole: window.currentUserRole || 'Member',
+    text: text,
+    type: 'reaction',
+    createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
+  }).catch(err => console.warn("Send reaction error:", err));
 };
 
 window.sendQuizChatMessage = function() {
@@ -833,23 +1004,46 @@ window.sendQuizChatMessage = function() {
   if (!input || !input.value.trim()) return;
   const val = input.value.trim();
   input.value = '';
-  addQuizChatMessage("You", val, false);
+
+  const user = window.auth?.currentUser || window.firebase?.auth()?.currentUser;
+  if (!user) {
+    window.showToast?.("Please sign in to send messages.", "info");
+    return;
+  }
+
+  const db = window.db;
+  if (!db) return;
+
+  const quizId = currentQuiz ? currentQuiz.id : 'power_of_thanksgiving';
+  const displayName = window.currentUserProfile?.displayName || user.displayName || user.email || 'Fellowship Member';
+  const docRef = db.collection('quiz_reactions').doc();
+
+  docRef.set({
+    id: docRef.id,
+    quizId: quizId,
+    senderUid: user.uid,
+    senderName: displayName,
+    senderRole: window.currentUserRole || 'Member',
+    text: val,
+    type: 'message',
+    createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
+  }).catch(err => console.warn("Send chat message error:", err));
 };
 
-function addQuizChatMessage(sender, text, isReaction) {
+function addQuizChatMessageToUI(sender, text, isSelf, type) {
   const log = document.getElementById('trivia-chat-log');
   if (!log) return;
 
   const msg = document.createElement('div');
   msg.className = `p-2.5 rounded-xl border text-xs ${
-    sender === "You" 
+    isSelf 
       ? "bg-purple-100 dark:bg-purple-950/50 border-purple-200 dark:border-purple-800 text-purple-900 dark:text-purple-200 ml-6" 
       : "bg-white dark:bg-zinc-900 border-slate-200 dark:border-zinc-800 text-slate-800 dark:text-zinc-200 mr-6"
   }`;
   msg.innerHTML = `
     <div class="flex items-center justify-between mb-0.5">
-      <span class="font-black text-[10px] text-amber-500 uppercase">${sender}</span>
-      <span class="text-[9px] text-slate-400">Just now</span>
+      <span class="font-black text-[10px] text-amber-500 uppercase">${sender} ${isSelf ? '(You)' : ''}</span>
+      <span class="text-[9px] text-slate-400">Live</span>
     </div>
     <p class="font-medium leading-relaxed">${text}</p>
   `;

@@ -43,12 +43,31 @@ function toggleTheme() {
 function switchTab(tabId) {
   activeTab = tabId;
 
+  const tabTitles = {
+    feed: 'Community Feed',
+    dashboard: 'Faith Dashboard',
+    bible: 'Scripture & Trivia',
+    cells: 'Cell Fellowships',
+    chat: 'Fellowship Lounge',
+    prayers: 'Prayer Desk',
+    calendar: 'Parish Events',
+    downloads: 'Resource Hub',
+    settings: 'Profile & Settings',
+    admin: 'Admin Console'
+  };
+
+  // Update top active tab badge
+  const tabTitleEl = document.getElementById('active-tab-title-text');
+  if (tabTitleEl && tabTitles[tabId]) {
+    tabTitleEl.innerText = tabTitles[tabId];
+  }
+
   // List of all navigation tabs
   const tabIds = ['feed', 'dashboard', 'bible', 'cells', 'chat', 'prayers', 'calendar', 'downloads', 'admin', 'settings'];
 
   tabIds.forEach(id => {
     const pane = document.getElementById(`tab-${id}`);
-    const btn = document.getElementById(`nav-${id}`);
+    const navBtns = document.querySelectorAll(`.nav-item-${id}, #nav-${id}, #mobile-nav-${id}`);
 
     if (pane) {
       if (id === tabId) {
@@ -60,22 +79,22 @@ function switchTab(tabId) {
       }
     }
 
-    if (btn) {
-      if (id === tabId) {
-        if (id === 'admin') {
-          btn.className = `nav-btn-${id} flex-1 flex flex-col items-center justify-center gap-1 py-1.5 px-3 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all duration-300 text-purple-600 bg-purple-50/80 dark:text-purple-400 dark:bg-purple-950/40 border border-purple-200/20 dark:border-purple-900/20 shadow-sm shrink-0 select-none cursor-pointer snap-center scale-102`;
-        } else {
-          btn.className = `nav-btn-${id} flex-1 flex flex-col items-center justify-center gap-1 py-1.5 px-3 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all duration-300 text-blue-600 bg-blue-50/80 dark:text-blue-400 dark:bg-blue-950/50 border border-blue-200/20 dark:border-blue-900/20 shadow-sm shrink-0 select-none cursor-pointer snap-center scale-102`;
-        }
-        btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    navBtns.forEach(btn => {
+      const isSelected = (id === tabId);
+      if (id === 'admin') {
+        btn.className = `nav-item-${id} w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-black transition-all duration-200 cursor-pointer ${
+          isSelected
+            ? 'bg-purple-600 text-white shadow-md shadow-purple-500/20'
+            : 'text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/30'
+        }`;
       } else {
-        if (id === 'admin') {
-          btn.className = `nav-btn-${id} flex-1 flex flex-col items-center justify-center gap-1 py-1.5 px-3 rounded-2xl text-[10px] font-semibold uppercase tracking-wider transition-all duration-300 text-purple-500/70 hover:text-purple-600 dark:text-purple-400/70 dark:hover:text-purple-300 hover:bg-purple-50/30 dark:hover:bg-purple-950/10 border border-transparent shrink-0 select-none cursor-pointer snap-center`;
-        } else {
-          btn.className = `nav-btn-${id} flex-1 flex flex-col items-center justify-center gap-1 py-1.5 px-3 rounded-2xl text-[10px] font-semibold uppercase tracking-wider transition-all duration-300 text-slate-500 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-slate-100/50 dark:hover:bg-zinc-800/30 border border-transparent shrink-0 select-none cursor-pointer snap-center`;
-        }
+        btn.className = `nav-item-${id} w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-extrabold transition-all duration-200 cursor-pointer ${
+          isSelected
+            ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
+            : 'text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800/60'
+        }`;
       }
-    }
+    });
   });
 
   // Call designated module initializers on tab switch
@@ -195,18 +214,18 @@ function listenToAuthState() {
               });
           }
 
+          const adminBtns = document.querySelectorAll('#nav-admin, #mobile-nav-admin, .nav-item-admin');
           if (window.currentUserRole === 'Super Admin') {
-            const adminBtn = document.getElementById('nav-admin');
-            if (adminBtn) adminBtn.classList.remove('hidden');
+            adminBtns.forEach(btn => btn.classList.remove('hidden'));
           } else {
-            const adminBtn = document.getElementById('nav-admin');
-            if (adminBtn) adminBtn.classList.add('hidden');
+            adminBtns.forEach(btn => btn.classList.add('hidden'));
           }
 
           // Update header badges
           const nameEl = document.getElementById('header-user-name');
           const roleEl = document.getElementById('header-user-role');
-          if (nameEl) nameEl.innerText = profile.displayName || user.email;
+          const nameValue = profile.displayName || user.email;
+          if (nameEl) nameEl.innerText = nameValue;
           if (roleEl) {
             roleEl.innerText = window.currentUserRole.toUpperCase();
             if (window.currentUserRole === 'Super Admin') {
@@ -216,11 +235,16 @@ function listenToAuthState() {
             }
           }
 
+          // Update desktop sidebar badges
+          const deskNameEl = document.getElementById('sidebar-user-name');
+          const deskRoleEl = document.getElementById('sidebar-user-role');
+          if (deskNameEl) deskNameEl.innerText = nameValue;
+          if (deskRoleEl) deskRoleEl.innerText = window.currentUserRole.toUpperCase();
+
           // Update mobile sidebar badges
           const mobNameEl = document.getElementById('mobile-sidebar-user-name');
           const mobRoleEl = document.getElementById('mobile-sidebar-user-role');
           const mobAvatarEl = document.getElementById('mobile-user-avatar');
-          const nameValue = profile.displayName || user.email;
           if (mobNameEl) mobNameEl.innerText = nameValue;
           if (mobRoleEl) {
             mobRoleEl.innerText = window.currentUserRole.toUpperCase();
