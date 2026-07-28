@@ -194,8 +194,8 @@ function listenToAuthState() {
     // User logged in, check profile document
     window.db.collection('users').doc(user.uid).get()
       .then(doc => {
-        if (!doc.exists) {
-          // New User signup: launch Onboarding
+        if (!doc.exists || !doc.data().onboarded) {
+          // New User signup or incomplete profile: launch Onboarding
           openOnboardingModal();
         } else {
           // Registered member, sync variables and unlock console
@@ -272,7 +272,13 @@ function listenToAuthState() {
             switchTab(activeTab);
           }
 
-          // Sync notification metadata (such as role and uid) with server Web Push subscribers list
+          // Check if user should see fellowship prompt or sidebar spotlight hint
+          setTimeout(() => {
+            checkSidebarSpotlight();
+            checkJoinFellowshipPrompt();
+          }, 800);
+
+          // Sync notification metadata with server
           if (window.updateSubscriptionOnServer) {
             window.updateSubscriptionOnServer();
           }
@@ -282,35 +288,315 @@ function listenToAuthState() {
   });
 }
 
-// Onboarding Modal control
+// Onboarding Wizard State & Control
+let currentObSlide = 1;
+const totalObSlides = 7;
+let touchStartX = 0;
+let touchEndX = 0;
+
+function renderOnboardingSlide(slideNum) {
+  currentObSlide = Math.max(1, Math.min(totalObSlides, slideNum));
+
+  // Update badge & progress bar
+  const badge = document.getElementById('ob-step-badge');
+  const bar = document.getElementById('ob-progress-bar');
+  if (badge) badge.innerText = `STEP ${currentObSlide} OF ${totalObSlides}`;
+  if (bar) bar.style.width = `${(currentObSlide / totalObSlides) * 100}%`;
+
+  // Hide all slides, reveal target slide
+  for (let i = 1; i <= totalObSlides; i++) {
+    const slide = document.getElementById(`ob-slide-${i}`);
+    if (slide) {
+      if (i === currentObSlide) {
+        slide.classList.remove('hidden');
+        slide.classList.add('animate-fadeIn');
+      } else {
+        slide.classList.add('hidden');
+      }
+    }
+  }
+
+  // Prev / Next button states
+  const btnPrev = document.getElementById('btn-ob-prev');
+  const btnNext = document.getElementById('btn-ob-next');
+
+  if (btnPrev) {
+    if (currentObSlide === 1) btnPrev.classList.add('invisible');
+    else btnPrev.classList.remove('invisible');
+  }
+
+  if (btnNext) {
+    if (currentObSlide === totalObSlides) {
+      btnNext.innerHTML = `Complete Setup <i data-lucide="check" class="w-4 h-4"></i>`;
+      btnNext.classList.replace('bg-blue-600', 'bg-emerald-600');
+      btnNext.classList.replace('hover:bg-blue-500', 'hover:bg-emerald-500');
+    } else {
+      btnNext.innerHTML = `Next <i data-lucide="chevron-right" class="w-4 h-4"></i>`;
+      btnNext.classList.replace('bg-emerald-600', 'bg-blue-600');
+      btnNext.classList.replace('hover:bg-emerald-500', 'hover:bg-blue-500');
+    }
+  }
+
+  // Dots indicator
+  const dotsBox = document.getElementById('ob-dots-container');
+  if (dotsBox) {
+    dotsBox.innerHTML = '';
+    for (let i = 1; i <= totalObSlides; i++) {
+      const dot = document.createElement('button');
+      dot.className = `w-2.5 h-2.5 rounded-full transition-all cursor-pointer ${
+        i === currentObSlide ? 'w-6 bg-blue-600 dark:bg-blue-400' : 'bg-slate-300 dark:bg-zinc-700 hover:bg-slate-400'
+      }`;
+      dot.onclick = () => {
+        window.soundEngine?.playClick();
+        renderOnboardingSlide(i);
+      };
+      dotsBox.appendChild(dot);
+    }
+  }
+
+  if (window.lucide) window.lucide.createIcons();
+}
+
+function nextOnboardingSlide() {
+  window.soundEngine?.playClick();
+  if (currentObSlide < totalObSlides) {
+    renderOnboardingSlide(currentObSlide + 1);
+  } else {
+    // Focus on display name on slide 7
+    const input = document.getElementById('ob-display-name');
+    if (input) input.focus();
+  }
+}
+
+function prevOnboardingSlide() {
+  window.soundEngine?.playClick();
+  if (currentObSlide > 1) {
+    renderOnboardingSlide(currentObSlide - 1);
+  }
+}
+
+function skipOnboardingToSetup() {
+  window.soundEngine?.playClick();
+  renderOnboardingSlide(totalObSlides);
+}
+
 function openOnboardingModal() {
   const ob = document.getElementById('onboarding-modal');
   if (ob) ob.classList.remove('hidden');
 
-  // Populate cells directory into onboarding select
-  window.db.collection('cells').where('status', '==', 'active').get().then(snap => {
-    const obSelect = document.getElementById('ob-cell-choice');
-    if (!obSelect) return;
-    
-    obSelect.innerHTML = `
-      <option value="none">Register / Setup Independently later</option>
-      <option value="new">Create/Register a new Fellowship Cell Group</option>
-    `;
+  renderOnboardingSlide(1);
 
-    snap.forEach(doc => {
-      const cell = doc.data();
-      const opt = document.createElement('option');
-      opt.value = doc.id;
-      opt.innerText = `${cell.name} (${cell.city})`;
-      obSelect.appendChild(opt);
-    });
-  });
+  // Attach touch gesture listeners for swiping
+  const viewport = document.getElementById('ob-slides-viewport');
+  if (viewport && !viewport.dataset.touchAttached) {
+    viewport.dataset.touchAttached = 'true';
+    viewport.addEventListener('touchstart', (e) => {
+      touchStartX = e.changedTouches[0].screenX;
+    }, { passive: true });
+
+    viewport.addEventListener('touchend', (e) => {
+      touchEndX = e.changedTouches[0].screenX;
+      handleSwipeGesture();
+    }, { passive: true });
+  }
+
+  // Populate cells directory into onboarding select
+  if (window.db) {
+    window.db.collection('cells').where('status', '==', 'active').get().then(snap => {
+      const obSelect = document.getElementById('ob-cell-choice');
+      if (!obSelect) return;
+      
+      obSelect.innerHTML = `
+        <option value="none">Browse & Join Cell Groups Later</option>
+        <option value="new">Create/Register a new Fellowship Cell Group</option>
+      `;
+
+      snap.forEach(doc => {
+        const cell = doc.data();
+        const opt = document.createElement('option');
+        opt.value = doc.id;
+        opt.innerText = `${cell.name} (${cell.city})`;
+        obSelect.appendChild(opt);
+      });
+    }).catch(err => console.warn("Onboarding cell choice load:", err));
+  }
+}
+
+function handleSwipeGesture() {
+  const diffX = touchEndX - touchStartX;
+  if (Math.abs(diffX) > 40) {
+    if (diffX < 0) nextOnboardingSlide(); // Swipe left = next
+    else prevOnboardingSlide(); // Swipe right = prev
+  }
 }
 
 function closeOnboardingModal() {
   const ob = document.getElementById('onboarding-modal');
   if (ob) ob.classList.add('hidden');
+  localStorage.setItem('homecell_onboarding_completed', 'true');
+
+  // Trigger fellowship modal if user is not in a cell group
+  setTimeout(() => {
+    checkJoinFellowshipPrompt();
+  }, 500);
 }
+
+function restartOnboardingTutorial() {
+  window.showToast?.("Restarting Interactive Onboarding Tour...", "info");
+  openOnboardingModal();
+}
+
+// Join Fellowship Prompt Modal Logic
+let fellowshipModalCellsList = [];
+
+function checkJoinFellowshipPrompt() {
+  const profile = window.currentUserProfile;
+  if (profile && (!profile.cellId || profile.cellId === 'none')) {
+    if (!localStorage.getItem('homecell_dismissed_fellowship_prompt')) {
+      openJoinFellowshipModal();
+    }
+  }
+}
+
+function openJoinFellowshipModal() {
+  const modal = document.getElementById('join-fellowship-modal');
+  const cardsBox = document.getElementById('fellowship-modal-cards-list');
+  if (!modal || !cardsBox) return;
+
+  modal.classList.remove('hidden');
+
+  if (window.db) {
+    window.db.collection('cells').where('status', '==', 'active').get().then(snap => {
+      fellowshipModalCellsList = [];
+      snap.forEach(doc => {
+        fellowshipModalCellsList.push({ id: doc.id, ...doc.data() });
+      });
+      renderFellowshipModalCards(fellowshipModalCellsList);
+    }).catch(err => console.warn("Load fellowship modal cells:", err));
+  }
+}
+
+function renderFellowshipModalCards(cells) {
+  const cardsBox = document.getElementById('fellowship-modal-cards-list');
+  if (!cardsBox) return;
+
+  cardsBox.innerHTML = '';
+  if (cells.length === 0) {
+    cardsBox.innerHTML = `
+      <div class="col-span-full text-center py-8 text-slate-400">
+        <p class="text-xs font-bold">No matching fellowship cells found.</p>
+      </div>
+    `;
+    return;
+  }
+
+  cells.forEach(cell => {
+    const card = document.createElement('div');
+    card.className = "p-4 bg-slate-50 dark:bg-zinc-800/70 border border-slate-200 dark:border-zinc-700/70 rounded-2xl space-y-3 flex flex-col justify-between shadow-xs";
+    card.innerHTML = `
+      <div class="space-y-1.5">
+        <div class="flex items-center justify-between gap-1">
+          <span class="text-[10px] font-black uppercase text-emerald-600 dark:text-emerald-400 tracking-wider">${cell.city || 'Home Cell'}</span>
+          <span class="text-[10px] font-bold text-slate-400">👥 Members</span>
+        </div>
+        <h4 class="text-sm font-black text-slate-900 dark:text-zinc-100">${cell.name}</h4>
+        <p class="text-[11px] text-slate-500 dark:text-zinc-400 line-clamp-2">${cell.description}</p>
+        <div class="text-[11px] text-slate-600 dark:text-zinc-300 font-medium">
+          👤 Leader: <span class="font-bold">${cell.leaderName}</span>
+        </div>
+      </div>
+      <button onclick="window.joinCell('${cell.id}'); window.closeJoinFellowshipModal();" class="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all shadow cursor-pointer flex items-center justify-center gap-1.5">
+        Request to Join <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+      </button>
+    `;
+    cardsBox.appendChild(card);
+  });
+
+  if (window.lucide) window.lucide.createIcons();
+}
+
+function filterFellowshipModalList(query) {
+  const q = query.toLowerCase().trim();
+  const filtered = fellowshipModalCellsList.filter(c => 
+    (c.name && c.name.toLowerCase().includes(q)) ||
+    (c.city && c.city.toLowerCase().includes(q)) ||
+    (c.leaderName && c.leaderName.toLowerCase().includes(q))
+  );
+  renderFellowshipModalCards(filtered);
+}
+
+function closeJoinFellowshipModal() {
+  const modal = document.getElementById('join-fellowship-modal');
+  if (modal) modal.classList.add('hidden');
+  localStorage.setItem('homecell_dismissed_fellowship_prompt', 'true');
+
+  // Trigger quiz prompt next
+  setTimeout(() => {
+    checkQuizPrompt();
+  }, 400);
+}
+
+// Sidebar Spotlight Hint
+function checkSidebarSpotlight() {
+  if (!localStorage.getItem('homecell_sidebar_hint_seen')) {
+    const overlay = document.getElementById('sidebar-spotlight-overlay');
+    if (overlay) overlay.classList.remove('hidden');
+
+    // Add pulse ring to hamburger buttons
+    const btn1 = document.getElementById('btn-toggle-sidebar');
+    const btn2 = document.getElementById('mobile-nav-toggle');
+    if (btn1) btn1.classList.add('ring-4', 'ring-indigo-500', 'ring-offset-2', 'animate-pulse');
+    if (btn2) btn2.classList.add('ring-4', 'ring-indigo-500', 'ring-offset-2', 'animate-pulse');
+  }
+}
+
+function dismissSidebarSpotlight() {
+  const overlay = document.getElementById('sidebar-spotlight-overlay');
+  if (overlay) overlay.classList.add('hidden');
+  localStorage.setItem('homecell_sidebar_hint_seen', 'true');
+
+  const btn1 = document.getElementById('btn-toggle-sidebar');
+  const btn2 = document.getElementById('mobile-nav-toggle');
+  if (btn1) btn1.classList.remove('ring-4', 'ring-indigo-500', 'ring-offset-2', 'animate-pulse');
+  if (btn2) btn2.classList.remove('ring-4', 'ring-indigo-500', 'ring-offset-2', 'animate-pulse');
+}
+
+// Quiz Prompt
+function checkQuizPrompt() {
+  if (!localStorage.getItem('homecell_quiz_prompt_seen')) {
+    const modal = document.getElementById('encourage-quiz-modal');
+    if (modal) modal.classList.remove('hidden');
+  }
+}
+
+function launchQuizFromPrompt() {
+  const modal = document.getElementById('encourage-quiz-modal');
+  if (modal) modal.classList.add('hidden');
+  localStorage.setItem('homecell_quiz_prompt_seen', 'true');
+
+  if (window.switchTab) window.switchTab('bible');
+  if (window.setBibleSubMode) window.setBibleSubMode('quiz');
+}
+
+// Attach keyboard navigation for onboarding
+window.addEventListener('keydown', (e) => {
+  const ob = document.getElementById('onboarding-modal');
+  if (ob && !ob.classList.contains('hidden')) {
+    if (e.key === 'ArrowRight') nextOnboardingSlide();
+    if (e.key === 'ArrowLeft') prevOnboardingSlide();
+  }
+});
+
+window.renderOnboardingSlide = renderOnboardingSlide;
+window.nextOnboardingSlide = nextOnboardingSlide;
+window.prevOnboardingSlide = prevOnboardingSlide;
+window.skipOnboardingToSetup = skipOnboardingToSetup;
+window.restartOnboardingTutorial = restartOnboardingTutorial;
+window.openJoinFellowshipModal = openJoinFellowshipModal;
+window.closeJoinFellowshipModal = closeJoinFellowshipModal;
+window.filterFellowshipModalList = filterFellowshipModalList;
+window.dismissSidebarSpotlight = dismissSidebarSpotlight;
+window.launchQuizFromPrompt = launchQuizFromPrompt;
 
 // Edit soul testimony profile modal
 function openProfileEditModal() {

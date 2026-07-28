@@ -213,6 +213,40 @@
       .unauthenticated.portfolio-seen #portfolio-view {
         display: none !important;
       }
+
+      /* Direct Standalone Quiz Mode (Users must not go to the app) */
+      .direct-quiz-mode #portfolio-view,
+      .direct-quiz-mode #main-header,
+      .direct-quiz-mode #sidebar-desktop,
+      .direct-quiz-mode #sidebar-mobile,
+      .direct-quiz-mode #live-broadcast-banner,
+      .direct-quiz-mode nav,
+      .direct-quiz-mode footer,
+      .direct-quiz-mode .app-tab:not(#tab-bible),
+      .direct-quiz-mode #btn-bible-mode-read,
+      .direct-quiz-mode #bible-read-container {
+        display: none !important;
+      }
+
+      .direct-quiz-mode #main-workspace-frame {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100vw !important;
+        max-width: 100vw !important;
+        min-height: 100vh !important;
+      }
+
+      .direct-quiz-mode #tab-bible {
+        display: block !important;
+        opacity: 1 !important;
+        max-width: 100% !important;
+        min-height: 100vh !important;
+        padding: 1rem !important;
+      }
+
+      .direct-quiz-mode #bible-quiz-container {
+        display: block !important;
+      }
       
       /* Performant, smooth native CSS animations and keyframes */
       @keyframes tabFadeIn {
@@ -262,61 +296,366 @@
       </button>
     </div>
 
-    <!-- Onboarding / Welcome Modal overlay -->
-    <div id="onboarding-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-      <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl w-full max-w-xl p-8 max-h-[90vh] overflow-y-auto shadow-2xl">
-        <div class="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800 pb-4 mb-6">
-          <h2 class="text-2xl font-black font-display tracking-tight text-blue-600 dark:text-blue-400">Welcome to Home.cell</h2>
-          <button onclick="closeOnboardingModal()" class="text-slate-500 hover:text-slate-800 dark:hover:text-zinc-200">
-            <i data-lucide="x" class="w-6 h-6"></i>
+    <!-- Onboarding / Welcome Modal overlay (7-Step Interactive Responsive Wizard) -->
+    <div id="onboarding-modal" class="hidden fixed inset-0 bg-slate-950/90 backdrop-blur-xl z-[100] flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+      <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl relative flex flex-col min-h-[540px] sm:min-h-[580px] max-h-[92vh] animate-fadeIn">
+        
+        <!-- Top Wizard Header: Progress Bar & Controls -->
+        <div class="p-4 sm:p-5 border-b border-slate-100 dark:border-zinc-800/80 bg-slate-50/80 dark:bg-zinc-900/80 flex items-center justify-between gap-3 shrink-0">
+          <div class="flex items-center gap-3">
+            <span id="ob-step-badge" class="text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-900/50">
+              STEP 1 OF 7
+            </span>
+            <span class="text-xs font-bold text-slate-500 dark:text-zinc-400 hidden sm:inline">Interactive Tour</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="window.soundEngine?.toggleMute()" class="p-2 bg-slate-200/80 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 hover:bg-slate-300 rounded-xl text-xs transition-all cursor-pointer" title="Toggle Sound">
+              <span id="ob-sound-icon">🔊</span>
+            </button>
+            <button onclick="window.skipOnboardingToSetup()" class="px-3 py-1.5 text-xs font-bold text-slate-500 hover:text-slate-900 dark:hover:text-zinc-100 transition-colors cursor-pointer">
+              Skip Tour
+            </button>
+            <button onclick="closeOnboardingModal()" class="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 cursor-pointer">
+              <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Top Progress Bar -->
+        <div class="w-full bg-slate-100 dark:bg-zinc-800 h-1.5 shrink-0">
+          <div id="ob-progress-bar" class="h-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 transition-all duration-300" style="width: 14.28%;"></div>
+        </div>
+
+        <!-- Slides Content Area (Swipeable container) -->
+        <div id="ob-slides-viewport" class="p-6 sm:p-8 flex-1 overflow-y-auto space-y-6 flex flex-col justify-between">
+          
+          <!-- Slide 1: Welcome -->
+          <div id="ob-slide-1" class="ob-slide space-y-5 text-center my-auto">
+            <div class="w-20 h-20 rounded-3xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center text-4xl mx-auto shadow-xl shadow-blue-500/20">
+              🏰
+            </div>
+            <div class="space-y-2">
+              <h2 class="text-2xl sm:text-3xl font-black font-display text-slate-900 dark:text-zinc-50 tracking-tight">
+                Welcome to Home.Cell
+              </h2>
+              <p class="text-xs sm:text-sm text-slate-600 dark:text-zinc-300 max-w-lg mx-auto leading-relaxed">
+                Your modern, connected digital sanctuary for local Home Fellowship gatherings, competitive scripture trivia, daily devotionals, and global praise testimonies!
+              </p>
+            </div>
+            <div class="p-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/50 rounded-2xl text-left space-y-2 max-w-lg mx-auto">
+              <div class="text-xs font-bold text-blue-700 dark:text-blue-300 flex items-center gap-2">
+                ✨ What you can do on Home.Cell:
+              </div>
+              <ul class="text-xs text-slate-600 dark:text-zinc-300 space-y-1.5 list-disc pl-4">
+                <li>Join or register a local house fellowship cell group</li>
+                <li>Participate in live scripture quizzes, earn XP & climb leaderboards</li>
+                <li>Share testimony reports and pray for brethren worldwide</li>
+                <li>Access offline KJV Bible & cell event calendars</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Slide 2: Home Fellowships -->
+          <div id="ob-slide-2" class="ob-slide hidden space-y-5 text-center my-auto">
+            <div class="w-20 h-20 rounded-3xl bg-gradient-to-tr from-emerald-600 to-teal-600 text-white flex items-center justify-center text-4xl mx-auto shadow-xl shadow-emerald-500/20">
+              🏡
+            </div>
+            <div class="space-y-2">
+              <h2 class="text-2xl sm:text-3xl font-black font-display text-slate-900 dark:text-zinc-50 tracking-tight">
+                Belong to a Home Fellowship
+              </h2>
+              <p class="text-xs sm:text-sm text-slate-600 dark:text-zinc-300 max-w-lg mx-auto leading-relaxed">
+                Home.Cell shines brightest when you are connected to a physical or online house cell group. Experience spiritual accountability, localized prayer support, and weekly house meetings!
+              </p>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-lg mx-auto text-left">
+              <div class="p-3 bg-slate-50 dark:bg-zinc-800/60 rounded-2xl border border-slate-200 dark:border-zinc-700/60 space-y-1">
+                <span class="text-lg">👥</span>
+                <div class="text-xs font-bold text-slate-800 dark:text-zinc-200">Cell Groups</div>
+                <div class="text-[10px] text-slate-500">Weekly house gatherings & study</div>
+              </div>
+              <div class="p-3 bg-slate-50 dark:bg-zinc-800/60 rounded-2xl border border-slate-200 dark:border-zinc-700/60 space-y-1">
+                <span class="text-lg">🛡️</span>
+                <div class="text-xs font-bold text-slate-800 dark:text-zinc-200">Mentorship</div>
+                <div class="text-[10px] text-slate-500">Direct leadership guidance</div>
+              </div>
+              <div class="p-3 bg-slate-50 dark:bg-zinc-800/60 rounded-2xl border border-slate-200 dark:border-zinc-700/60 space-y-1">
+                <span class="text-lg">🙏</span>
+                <div class="text-xs font-bold text-slate-800 dark:text-zinc-200">Prayer Network</div>
+                <div class="text-[10px] text-slate-500">Instant intercession alerts</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Slide 3: Sidebar Discovery -->
+          <div id="ob-slide-3" class="ob-slide hidden space-y-5 text-center my-auto">
+            <div class="w-20 h-20 rounded-3xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center text-4xl mx-auto shadow-xl shadow-purple-500/20 animate-pulse">
+              📱
+            </div>
+            <div class="space-y-2">
+              <h2 class="text-2xl sm:text-3xl font-black font-display text-slate-900 dark:text-zinc-50 tracking-tight">
+                Discover the Sidebar Navigation
+              </h2>
+              <p class="text-xs sm:text-sm text-slate-600 dark:text-zinc-300 max-w-lg mx-auto leading-relaxed">
+                Tap or click the menu icon <span class="px-2 py-0.5 bg-slate-200 dark:bg-zinc-800 rounded font-mono font-bold text-xs">☰</span> at the top left anytime to access all 9 Home.Cell modules!
+              </p>
+            </div>
+            <div class="p-4 bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-900/50 rounded-2xl text-xs text-purple-900 dark:text-purple-200 max-w-lg mx-auto space-y-2 text-left">
+              <div class="font-bold flex items-center gap-1.5 text-purple-700 dark:text-purple-300">
+                <i data-lucide="compass" class="w-4 h-4"></i> What's inside the Sidebar:
+              </div>
+              <div class="grid grid-cols-2 gap-2 text-[11px] font-medium">
+                <div>• Community Praise Feed</div>
+                <div>• Bible & Quiz Arena</div>
+                <div>• Cell Fellowship Directory</div>
+                <div>• Fellowship Chat Lounge</div>
+                <div>• Prayer Request Desk</div>
+                <div>• Cell Events Calendar</div>
+                <div>• Native App Downloads</div>
+                <div>• Profile & Settings</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Slide 4: Scripture Quizzes -->
+          <div id="ob-slide-4" class="ob-slide hidden space-y-5 text-center my-auto">
+            <div class="w-20 h-20 rounded-3xl bg-gradient-to-tr from-amber-500 to-orange-600 text-white flex items-center justify-center text-4xl mx-auto shadow-xl shadow-amber-500/20">
+              🏆
+            </div>
+            <div class="space-y-2">
+              <h2 class="text-2xl sm:text-3xl font-black font-display text-slate-900 dark:text-zinc-50 tracking-tight">
+                Live Competitive Trivia & Quizzes
+              </h2>
+              <p class="text-xs sm:text-sm text-slate-600 dark:text-zinc-300 max-w-lg mx-auto leading-relaxed">
+                Level up your faith! Test your Bible knowledge, earn XP, maintain daily streaks, and climb the live congregation leaderboards!
+              </p>
+            </div>
+            <div class="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-2xl max-w-lg mx-auto flex items-center justify-around gap-2 text-amber-900 dark:text-amber-200">
+              <div class="text-center">
+                <div class="text-xl font-black font-mono">100 XP</div>
+                <div class="text-[10px] font-bold uppercase">Per Correct Answer</div>
+              </div>
+              <div class="text-center border-x border-amber-200 dark:border-amber-800/60 px-3">
+                <div class="text-xl font-black font-mono">🔥 5x</div>
+                <div class="text-[10px] font-bold uppercase">Streak Multipliers</div>
+              </div>
+              <div class="text-center">
+                <div class="text-xl font-black font-mono">🏅 Medals</div>
+                <div class="text-[10px] font-bold uppercase">Community Ranks</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Slide 5: Praise Feed & Testimonies -->
+          <div id="ob-slide-5" class="ob-slide hidden space-y-5 text-center my-auto">
+            <div class="w-20 h-20 rounded-3xl bg-gradient-to-tr from-rose-500 to-pink-600 text-white flex items-center justify-center text-4xl mx-auto shadow-xl shadow-rose-500/20">
+              🙏
+            </div>
+            <div class="space-y-2">
+              <h2 class="text-2xl sm:text-3xl font-black font-display text-slate-900 dark:text-zinc-50 tracking-tight">
+                Praise Feed & Prayer Reports
+              </h2>
+              <p class="text-xs sm:text-sm text-slate-600 dark:text-zinc-300 max-w-lg mx-auto leading-relaxed">
+                Has God done something wonderful in your life? Broadcast praise reports, testify of God's goodness, and stand in intercession with saints across the globe.
+              </p>
+            </div>
+            <div class="p-4 bg-slate-50 dark:bg-zinc-800/80 border border-slate-200 dark:border-zinc-700/80 rounded-2xl max-w-lg mx-auto text-left space-y-2">
+              <div class="flex items-center gap-2">
+                <div class="w-7 h-7 rounded-full bg-rose-500 text-white font-black text-xs flex items-center justify-center">J</div>
+                <div>
+                  <div class="text-xs font-bold text-slate-900 dark:text-zinc-100">Bro. Joshua</div>
+                  <div class="text-[10px] text-slate-400">Praise Report • Grace Fellowship</div>
+                </div>
+              </div>
+              <p class="text-xs text-slate-600 dark:text-zinc-300 italic">"Praise the Lord! God healed my sister after our cell prayer meeting yesterday!"</p>
+            </div>
+          </div>
+
+          <!-- Slide 6: Devotionals & Native Downloads -->
+          <div id="ob-slide-6" class="ob-slide hidden space-y-5 text-center my-auto">
+            <div class="w-20 h-20 rounded-3xl bg-gradient-to-tr from-teal-600 to-emerald-600 text-white flex items-center justify-center text-4xl mx-auto shadow-xl shadow-teal-500/20">
+              📲
+            </div>
+            <div class="space-y-2">
+              <h2 class="text-2xl sm:text-3xl font-black font-display text-slate-900 dark:text-zinc-50 tracking-tight">
+                Download Native Android & Desktop Apps
+              </h2>
+              <p class="text-xs sm:text-sm text-slate-600 dark:text-zinc-300 max-w-lg mx-auto leading-relaxed">
+                Install Home.Cell directly onto your Android phone or desktop for instant push notifications, offline scripture reading, and one-tap cell access!
+              </p>
+            </div>
+            <div class="flex flex-wrap items-center justify-center gap-3 max-w-lg mx-auto">
+              <button onclick="window.downloadAndroidApkFile()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow cursor-pointer flex items-center gap-2">
+                <i data-lucide="download" class="w-4 h-4"></i> Download Android APK
+              </button>
+            </div>
+          </div>
+
+          <!-- Slide 7: Setup Profile & Cell Choice -->
+          <div id="ob-slide-7" class="ob-slide hidden space-y-4 text-left">
+            <div class="text-center space-y-1">
+              <div class="w-12 h-12 rounded-2xl bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center text-2xl mx-auto">
+                👤
+              </div>
+              <h2 class="text-xl font-black font-display text-slate-900 dark:text-zinc-50">
+                Setup Your Soul Profile & Fellowship
+              </h2>
+              <p class="text-xs text-slate-500 dark:text-zinc-400">
+                Enter your details below to complete onboarding and join your cell group.
+              </p>
+            </div>
+
+            <form id="onboarding-form" class="space-y-3.5">
+              <div>
+                <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 mb-1">Display Name</label>
+                <input type="text" id="ob-display-name" required class="w-full px-4 py-2.5 bg-slate-100 dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 text-slate-900 dark:text-zinc-100 text-xs sm:text-sm" placeholder="e.g. Bro. John Doe" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 mb-1">Spiritual Bio / Testimony</label>
+                <textarea id="ob-spiritual-bio" required rows="2" class="w-full px-4 py-2.5 bg-slate-100 dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 text-slate-900 dark:text-zinc-100 text-xs sm:text-sm resize-none" placeholder="Share your testimony or walk with God..."></textarea>
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 mb-1">Localized City / Coordinates</label>
+                <input type="text" id="ob-coordinates" required class="w-full px-4 py-2.5 bg-slate-100 dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 text-slate-900 dark:text-zinc-100 text-xs sm:text-sm" placeholder="e.g. Port Harcourt, Nigeria" />
+              </div>
+              
+              <div>
+                <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 mb-1">Join a Cell Group Choice</label>
+                <select id="ob-cell-choice" class="w-full px-4 py-2.5 bg-slate-100 dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 text-slate-900 dark:text-zinc-100 text-xs sm:text-sm">
+                  <option value="none">Browse & Join Cell Groups Later</option>
+                  <option value="new">Create/Register a new Fellowship Cell Group</option>
+                  <!-- Populated dynamically with cells -->
+                </select>
+              </div>
+
+              <div id="ob-new-cell-section" class="hidden p-3 bg-blue-50 dark:bg-blue-950/30 rounded-2xl border border-blue-200 dark:border-blue-900/50 space-y-2">
+                <h3 class="text-xs font-bold text-blue-700 dark:text-blue-400">New Fellowship Cell Details</h3>
+                <input type="text" id="ob-new-cell-name" class="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl text-slate-900 dark:text-zinc-100 text-xs" placeholder="Cell Name e.g. Grace Fellowship" />
+                <input type="text" id="ob-new-cell-city" class="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl text-slate-900 dark:text-zinc-100 text-xs" placeholder="City Location e.g. Port Harcourt" />
+                <input type="text" id="ob-new-cell-desc" class="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl text-slate-900 dark:text-zinc-100 text-xs" placeholder="Brief description of gathering location" />
+              </div>
+
+              <button type="submit" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-extrabold py-3.5 rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all shadow-lg text-xs uppercase tracking-wider">
+                Complete Onboarding & Enter Home.Cell <i data-lucide="check-circle" class="w-4 h-4"></i>
+              </button>
+            </form>
+          </div>
+
+        </div>
+
+        <!-- Footer Navigation Controls -->
+        <div class="p-4 sm:p-5 border-t border-slate-100 dark:border-zinc-800/80 bg-slate-50/80 dark:bg-zinc-900/80 flex items-center justify-between gap-3 shrink-0">
+          <button id="btn-ob-prev" onclick="window.prevOnboardingSlide()" class="px-4 py-2 bg-slate-200 dark:bg-zinc-800 hover:bg-slate-300 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center gap-1">
+            <i data-lucide="chevron-left" class="w-4 h-4"></i> Back
+          </button>
+          
+          <!-- Dots Indicator -->
+          <div id="ob-dots-container" class="flex items-center gap-1.5">
+            <!-- Populated dynamically -->
+          </div>
+
+          <button id="btn-ob-next" onclick="window.nextOnboardingSlide()" class="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all shadow cursor-pointer flex items-center gap-1">
+            Next <i data-lucide="chevron-right" class="w-4 h-4"></i>
           </button>
         </div>
-        <p class="text-sm text-slate-600 dark:text-zinc-300 mb-6">
-          Thank you for joining our home fellowship portal! Let's complete your onboarding so you can join a fellowship cell group.
-        </p>
-        <form id="onboarding-form" class="space-y-4">
-          <div>
-            <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 mb-2">Display Name</label>
-            <input type="text" id="ob-display-name" required class="w-full px-4 py-3 bg-slate-100 dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 text-slate-900 dark:text-zinc-100" placeholder="e.g. Bro. John Doe" />
-          </div>
-          <div>
-            <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 mb-2">Spiritual Bio / Testimony</label>
-            <textarea id="ob-spiritual-bio" required rows="3" class="w-full px-4 py-3 bg-slate-100 dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 text-slate-900 dark:text-zinc-100" placeholder="Share your testimony or walk with God..."></textarea>
-          </div>
-          <div>
-            <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 mb-2">Localized City / Coordinates</label>
-            <input type="text" id="ob-coordinates" required class="w-full px-4 py-3 bg-slate-100 dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 text-slate-900 dark:text-zinc-100" placeholder="e.g. Port Harcourt, Nigeria" />
-          </div>
-          
-          <div>
-            <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 mb-2">Join a Cell Group Choice</label>
-            <select id="ob-cell-choice" class="w-full px-4 py-3 bg-slate-100 dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 text-slate-900 dark:text-zinc-100">
-              <option value="none">Register / Setup Independently later</option>
-              <option value="new">Create/Register a new Fellowship Cell Group</option>
-              <!-- Populated dynamically with cells -->
-            </select>
-          </div>
 
-          <div id="ob-new-cell-section" class="hidden p-4 bg-blue-50 dark:bg-blue-950/30 rounded-2xl border border-blue-200 dark:border-blue-900/50 space-y-3">
-            <h3 class="text-sm font-bold text-blue-700 dark:text-blue-400">New Fellowship Cell Details</h3>
-            <div>
-              <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 mb-1">Cell Name</label>
-              <input type="text" id="ob-new-cell-name" class="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl text-slate-900 dark:text-zinc-100 text-sm" placeholder="e.g. Grace Fellowship" />
-            </div>
-            <div>
-              <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 mb-1">City Location</label>
-              <input type="text" id="ob-new-cell-city" class="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl text-slate-900 dark:text-zinc-100 text-sm" placeholder="e.g. Port Harcourt" />
-            </div>
-            <div>
-              <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 mb-1">Cell Description</label>
-              <input type="text" id="ob-new-cell-desc" class="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl text-slate-900 dark:text-zinc-100 text-sm" placeholder="Brief description of gathering location & focus" />
-            </div>
-          </div>
+      </div>
+    </div>
 
-          <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all">
-            Save Profile & Onboard <i data-lucide="check-circle" class="w-5 h-5"></i>
+    <!-- Join Fellowship Prompt Modal -->
+    <div id="join-fellowship-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[90] flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+      <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl w-full max-w-2xl p-6 sm:p-8 space-y-6 shadow-2xl relative max-h-[90vh] flex flex-col justify-between">
+        <button onclick="window.closeJoinFellowshipModal()" class="absolute top-6 right-6 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 cursor-pointer">
+          <i data-lucide="x" class="w-6 h-6"></i>
+        </button>
+
+        <div class="space-y-2 text-center sm:text-left">
+          <div class="inline-flex items-center gap-2 px-3 py-1 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 rounded-full text-xs font-bold uppercase tracking-wider">
+            🏡 Local Fellowship Gathering
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-black font-display text-slate-900 dark:text-zinc-50 tracking-tight">
+            Join a Home Fellowship Cell
+          </h2>
+          <p class="text-xs sm:text-sm text-slate-500 dark:text-zinc-400 leading-relaxed">
+            Home.Cell works best when you belong to a local fellowship. Connect with brethren, experience weekly house meetings, intercession, and spiritual mentorship!
+          </p>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="relative">
+          <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400"></i>
+          <input type="text" id="fellowship-search-input" oninput="window.filterFellowshipModalList(this.value)" placeholder="Search cell group by name, city, or leader..." class="w-full pl-10 pr-4 py-2.5 bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        </div>
+
+        <!-- Fellowship Cards List (Scrollable) -->
+        <div id="fellowship-modal-cards-list" class="grid grid-cols-1 sm:grid-cols-2 gap-3 overflow-y-auto max-h-[42vh] pr-1">
+          <!-- Populated dynamically -->
+        </div>
+
+        <div class="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100 dark:border-zinc-800">
+          <p class="text-[11px] text-slate-400">Want to host a gathering at your house?</p>
+          <button onclick="window.closeJoinFellowshipModal(); window.openOnboardingModal(); window.skipOnboardingToSetup();" class="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline">
+            + Register a New Cell Group
           </button>
-        </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Encourage Quiz Participation Modal -->
+    <div id="encourage-quiz-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[90] flex items-center justify-center p-4">
+      <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl w-full max-w-md p-6 sm:p-8 space-y-5 shadow-2xl text-center relative animate-fadeIn">
+        <button onclick="document.getElementById('encourage-quiz-modal').classList.add('hidden')" class="absolute top-5 right-5 text-slate-400 hover:text-slate-600 cursor-pointer">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+        <div class="w-16 h-16 rounded-3xl bg-gradient-to-tr from-amber-500 to-orange-600 text-white flex items-center justify-center text-3xl mx-auto shadow-lg shadow-amber-500/30">
+          🏆
+        </div>
+        <div class="space-y-2">
+          <h3 class="text-2xl font-black font-display text-slate-900 dark:text-zinc-50">Test Your Scripture Wisdom!</h3>
+          <p class="text-xs text-slate-500 dark:text-zinc-400 leading-relaxed">
+            Join the live Scripture Trivia Lounge! Earn XP, maintain your daily faith streak, climb community leaderboards, and unlock achievements!
+          </p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 text-left text-xs font-bold text-slate-700 dark:text-zinc-300">
+          <div class="p-2.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-xl flex items-center gap-2">
+            <span>⚡</span> Earn XP & Level Up
+          </div>
+          <div class="p-2.5 bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-900/50 rounded-xl flex items-center gap-2">
+            <span>👑</span> Climb Leaderboards
+          </div>
+          <div class="p-2.5 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 rounded-xl flex items-center gap-2">
+            <span>🔥</span> Daily Streaks
+          </div>
+          <div class="p-2.5 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/50 rounded-xl flex items-center gap-2">
+            <span>🏅</span> Unlock Medals
+          </div>
+        </div>
+
+        <button onclick="window.launchQuizFromPrompt()" class="w-full py-3.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-extrabold text-xs uppercase tracking-wider rounded-2xl transition-all shadow-lg cursor-pointer flex items-center justify-center gap-2">
+          Join a Quiz Now <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Sidebar Discovery Spotlight Overlay -->
+    <div id="sidebar-spotlight-overlay" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[110] flex items-start justify-start p-4 sm:p-8 animate-fadeIn">
+      <div class="bg-gradient-to-br from-indigo-900 via-slate-900 to-purple-950 border border-indigo-500/50 rounded-3xl p-6 max-w-sm shadow-2xl text-white space-y-4 mt-16 sm:mt-12 ml-2 relative">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-indigo-500/30 border border-indigo-400/40 flex items-center justify-center text-2xl animate-bounce">
+            👈
+          </div>
+          <div>
+            <h3 class="text-sm font-black font-display text-white">Sidebar Navigation Discovery</h3>
+            <p class="text-[11px] text-indigo-200">Tap or click here anytime!</p>
+          </div>
+        </div>
+        <p class="text-xs text-slate-300 leading-relaxed">
+          Access all Home.Cell features, settings, competitive quizzes, prayer requests, fellowship groups, and native downloads from the sidebar menu!
+        </p>
+        <button onclick="window.dismissSidebarSpotlight()" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow">
+          Got it, Let's Go!
+        </button>
       </div>
     </div>
 
@@ -2124,6 +2463,34 @@
             <!-- Tab 2 Sub-Mode: Bible Quizzes & Trivia Lounge -->
             <div id="bible-quiz-container" class="hidden space-y-6">
               
+              <!-- Standalone Direct Quiz Mode Header (Visible when accessed directly via link) -->
+              <div id="standalone-quiz-header" class="hidden bg-slate-900 border border-purple-500/30 text-white p-4 sm:p-5 rounded-3xl shadow-xl space-y-3 relative overflow-hidden">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                  <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center text-white font-black text-xl shadow-md">
+                      ✝️
+                    </div>
+                    <div>
+                      <h2 class="text-base font-black font-display text-white flex items-center gap-2">
+                        Home.cell Scripture Trivia & Bible Quiz
+                      </h2>
+                      <p class="text-[11px] text-purple-200">Official Congregation Standalone Trivia Arena</p>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <button onclick="window.copyDirectQuizLink('power_of_thanksgiving')" class="px-3 py-1.5 bg-purple-600/80 hover:bg-purple-600 text-white text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-1.5 shadow">
+                      <i data-lucide="share-2" class="w-3.5 h-3.5"></i> Share Quiz Link
+                    </button>
+                    <button onclick="window.downloadAndroidApkFile()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-1.5 shadow">
+                      <i data-lucide="download" class="w-3.5 h-3.5"></i> Download Android App
+                    </button>
+                    <button onclick="toggleTheme()" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl cursor-pointer">
+                      <i data-lucide="sun" class="w-4 h-4"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
               <!-- Quiz Intro / Grid selection deck -->
               <div id="quiz-intro-deck" class="space-y-6">
                 <div class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6 rounded-3xl space-y-2 shadow relative overflow-hidden">
@@ -2405,6 +2772,19 @@
                         </button>
                         <button onclick="exitTrivia()" class="px-6 py-3 bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 font-extrabold text-xs uppercase tracking-wider hover:bg-slate-200 dark:hover:bg-zinc-700 rounded-xl transition-all cursor-pointer">
                           Exit Lounge
+                        </button>
+                      </div>
+
+                      <!-- Post-Quiz Android App Download Prompt Card -->
+                      <div id="post-quiz-android-download-card" class="p-5 bg-gradient-to-br from-emerald-950/80 to-slate-900 border border-emerald-500/30 rounded-2xl max-w-md mx-auto space-y-3 text-center shadow-lg">
+                        <div class="flex items-center justify-center gap-2 text-emerald-400 font-extrabold text-xs uppercase tracking-wider">
+                          📱 Download Official Android App
+                        </div>
+                        <p class="text-xs text-slate-300 leading-relaxed">
+                          Great job on completing the trivia! Download the official Android APK uploaded by the Admin for offline scripture study, instant cell alerts, and daily devotionals.
+                        </p>
+                        <button onclick="window.downloadAndroidApkFile()" class="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-md cursor-pointer flex items-center justify-center gap-2">
+                          <i data-lucide="download" class="w-4 h-4"></i> Download Android APK
                         </button>
                       </div>
                     </div>
@@ -2850,9 +3230,14 @@
                 <p class="text-xs text-slate-500 dark:text-zinc-400 leading-relaxed">
                   Update your display name, edit your personal spiritual testimony, and set your coordinates to let local cell groups discover you.
                 </p>
-                <button onclick="openProfileEditModal()" class="w-full py-2.5 bg-slate-900 hover:bg-slate-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-950 font-bold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-sm">
-                  <i data-lucide="edit-3" class="w-4 h-4"></i> Edit Profile & Testimony
-                </button>
+                <div class="flex gap-2">
+                  <button onclick="openProfileEditModal()" class="flex-1 py-2.5 bg-slate-900 hover:bg-slate-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-950 font-bold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-sm">
+                    <i data-lucide="edit-3" class="w-4 h-4"></i> Edit Profile
+                  </button>
+                  <button onclick="restartOnboardingTutorial()" class="py-2.5 px-3 bg-blue-100 dark:bg-blue-950/50 hover:bg-blue-200 text-blue-700 dark:text-blue-300 font-bold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5" title="Re-open Onboarding Tutorial">
+                    <i data-lucide="compass" class="w-4 h-4"></i> Tour
+                  </button>
+                </div>
               </div>
 
               <!-- PWA Direct Installer Bento -->
@@ -3120,6 +3505,62 @@
 
           <!-- Admin Sub Tab 4: Custom Downloads -->
           <div id="atab-bundles" class="admin-sub-tab hidden space-y-6">
+            
+            <!-- Admin Official Android APK File Publisher -->
+            <div class="bg-gradient-to-tr from-emerald-950 via-slate-900 to-slate-950 border border-emerald-500/40 rounded-3xl p-6 shadow-xl space-y-5 relative overflow-hidden text-white">
+              <div class="flex flex-wrap items-center justify-between gap-3">
+                <div class="flex items-center gap-3">
+                  <div class="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-bold text-2xl shadow-inner">
+                    📱
+                  </div>
+                  <div>
+                    <h3 class="text-base font-black font-display text-white">Official Android APK Installer Publisher</h3>
+                    <p class="text-xs text-slate-300">Upload or link the official .apk file that users will be prompted to download after quizzes or via mobile links.</p>
+                  </div>
+                </div>
+                <span id="admin-apk-status-badge" class="px-3.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                  Checking Status...
+                </span>
+              </div>
+
+              <!-- Active Uploaded APK Status Box -->
+              <div id="admin-current-apk-box" class="p-4 bg-slate-900/90 border border-slate-800 rounded-2xl flex flex-wrap items-center justify-between gap-3 hidden">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
+                    ✓
+                  </div>
+                  <div>
+                    <div id="admin-apk-filename" class="text-xs font-bold text-white font-mono">HomeCell_Release_v1.0.4.apk</div>
+                    <div id="admin-apk-meta" class="text-[10px] text-slate-400">Size: 24.2 MB • Ready for Android Users</div>
+                  </div>
+                </div>
+                <button onclick="window.downloadAndroidApkFile()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow flex items-center gap-1.5">
+                  <i data-lucide="download" class="w-3.5 h-3.5"></i> Test APK Download
+                </button>
+              </div>
+
+              <!-- Admin APK File Upload Form -->
+              <form id="admin-apk-upload-form" onsubmit="window.handleAdminApkUploadSubmit(event)" class="space-y-4 pt-1">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div class="space-y-1.5">
+                    <label class="block text-xs font-bold text-slate-300">Option A: Choose .apk File from Device</label>
+                    <input type="file" id="admin-apk-file-input" accept=".apk,application/vnd.android.package-archive" class="w-full text-xs text-slate-300 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-emerald-600 file:text-white hover:file:bg-emerald-500 cursor-pointer bg-slate-800/80 border border-slate-700 rounded-xl p-1" />
+                  </div>
+                  <div class="space-y-1.5">
+                    <label class="block text-xs font-bold text-slate-300">Option B: Direct External APK URL</label>
+                    <input type="url" id="admin-apk-url-input" placeholder="https://example.com/downloads/homecell.apk" class="w-full px-4 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:ring-1 focus:ring-emerald-500 font-mono" />
+                  </div>
+                </div>
+
+                <div class="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-800">
+                  <p class="text-[11px] text-slate-400">Users on Android devices will automatically receive this exact APK file when prompted.</p>
+                  <button type="submit" id="btn-upload-apk-submit" class="px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-lg cursor-pointer flex items-center gap-2">
+                    <i data-lucide="upload-cloud" class="w-4 h-4"></i> Upload & Publish APK
+                  </button>
+                </div>
+              </form>
+            </div>
+
             <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm space-y-4">
               <h3 class="text-lg font-bold font-display">Add App Deliveries / Bundles</h3>
               <form id="admin-bundle-form" class="space-y-3 text-sm">
@@ -3467,7 +3908,34 @@
       </div>
     </div>
 
+    <!-- Android Quiz Download Prompt Modal -->
+    <div id="quiz-android-download-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[200] hidden items-center justify-center p-4">
+      <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl w-full max-w-md p-6 sm:p-8 space-y-5 shadow-2xl text-center relative animate-fadeIn">
+        <button onclick="document.getElementById('quiz-android-download-modal').classList.add('hidden')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 cursor-pointer">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+        <div class="w-16 h-16 rounded-2xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-3xl mx-auto shadow-inner">
+          📱
+        </div>
+        <div class="space-y-2">
+          <h3 class="text-xl font-black font-display text-slate-900 dark:text-zinc-50">Download Official Android App</h3>
+          <p class="text-xs text-slate-500 dark:text-zinc-400 leading-relaxed">
+            Praise God for completing the quiz! Download the official Android APK uploaded by the Admin to save your scores, receive cell push notifications, and practice offline.
+          </p>
+        </div>
+        <div class="pt-2 space-y-3">
+          <button onclick="window.downloadAndroidApkFile()" class="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs uppercase tracking-wider rounded-2xl transition-all shadow-lg cursor-pointer flex items-center justify-center gap-2">
+            <i data-lucide="download" class="w-4 h-4"></i> Download Android APK
+          </button>
+          <button onclick="document.getElementById('quiz-android-download-modal').classList.add('hidden')" class="w-full py-2.5 text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200 font-bold text-xs uppercase tracking-wider">
+            Continue in Browser
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Core App logic scripts link -->
+    <script src="sound-engine.js"></script>
     <script src="firebase.js"></script>
     <script src="push-notification.js"></script>
     <script src="toast.js"></script>

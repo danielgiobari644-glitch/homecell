@@ -504,10 +504,53 @@
     });
   };
 
+  // Download Android APK file uploaded by Admin (or fallback)
+  window.downloadAndroidApkFile = async function() {
+    window.showToast?.("Preparing Android APK download...", "info");
+
+    const db = window.db;
+    if (db) {
+      try {
+        const doc = await db.collection('system_configs').doc('apk').get();
+        if (doc.exists) {
+          const data = doc.data();
+          if (data && (data.apkDataUrl || data.externalUrl)) {
+            const downloadUrl = data.externalUrl || data.apkDataUrl;
+            const fileName = data.fileName || 'HomeCell_Mobile_App_Installer.apk';
+
+            const a = document.createElement('a');
+            a.href = downloadUrl;
+            a.download = fileName;
+            if (data.externalUrl) a.target = '_blank';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+
+            window.showToast?.(`📥 Downloading official Android APK: ${fileName}!`, "success");
+            localStorage.setItem('homecell_app_installed', 'true');
+            window.dismissInstallBanner?.();
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn("Could not load admin uploaded APK from Firestore:", err);
+      }
+    }
+
+    // Fallback if no custom upload in Firestore: download default payload
+    window.triggerDirectFileDownload('android-fallback');
+  };
+
   // Trigger real file download (satisfies "gets downloaded" literally on devices)
   window.triggerDirectFileDownload = function(platform) {
+    if (platform === 'android') {
+      window.downloadAndroidApkFile();
+      return;
+    }
+
     const nameMap = {
       'android': 'HomeCell_Mobile_App_Installer.apk',
+      'android-fallback': 'HomeCell_Mobile_App_Installer.apk',
       'ios': 'HomeCell_iOS_Shortcut.mobileconfig',
       'windows': 'HomeCell_Windows_Launcher.html',
       'macos': 'HomeCell_macOS_Launcher.html',

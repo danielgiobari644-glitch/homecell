@@ -320,14 +320,40 @@ function renderQuizSelectionGrid() {
   }).catch(err => console.warn("Custom trivia fetch:", err));
 }
 
-// Auto-launcher for direct quiz links
+// Standalone launcher and mode detector for direct quiz links
 function checkDirectQuizUrl() {
   const params = new URLSearchParams(window.location.search);
-  const quizId = params.get('quizId');
-  if (quizId) {
+  const hash = window.location.hash;
+
+  const quizParam = params.get('quiz') || params.get('quizId');
+  const isDirectQuiz = params.has('quiz') || 
+                       params.has('quizId') || 
+                       params.get('mode') === 'quiz' || 
+                       params.get('tab') === 'quiz' || 
+                       hash === '#quiz';
+
+  if (isDirectQuiz) {
+    console.log("Direct Quiz Link detected! Launching Standalone Direct Quiz Mode...");
+
+    // Flag direct quiz mode on document elements
+    document.documentElement.classList.add('direct-quiz-mode');
+    document.body.classList.add('direct-quiz-mode');
+    document.body.classList.add('portfolio-seen');
+
+    // Hide portfolio view
+    const pfView = document.getElementById('portfolio-view');
+    if (pfView) pfView.style.setProperty('display', 'none', 'important');
+
+    // Reveal standalone header
+    const stdHeader = document.getElementById('standalone-quiz-header');
+    if (stdHeader) stdHeader.classList.remove('hidden');
+
+    // Switch view to bible tab and activate quiz mode
     setTimeout(() => {
-      window.switchTab?.('bible');
-      window.setBibleSubMode?.('quiz');
+      if (window.switchTab) window.switchTab('bible');
+      if (window.setBibleSubMode) window.setBibleSubMode('quiz');
+
+      const quizId = (quizParam && quizParam !== 'true' && quizParam !== '1') ? quizParam : 'power_of_thanksgiving';
       setTimeout(() => {
         const premium = PREMIUM_QUIZZES.find(q => q.id === quizId);
         if (premium) {
@@ -336,7 +362,7 @@ function checkDirectQuizUrl() {
           window.startCustomQuizSession(quizId);
         }
       }, 600);
-    }, 400);
+    }, 300);
   }
 }
 
@@ -1107,6 +1133,18 @@ function completeTriviaSession() {
   const broadcastBtn = document.getElementById('btn-trivia-broadcast');
   if (broadcastBtn) {
     broadcastBtn.onclick = () => broadcastTriviaTriumph(Math.round(userScore / pointsPerQuestion), currentQuiz.questions.length, currentQuiz.title, medal);
+  }
+
+  // Show Android download prompt modal if on Android device or in direct quiz mode
+  const isAndroid = /android/i.test(navigator.userAgent) || (window.getDevicePlatform && window.getDevicePlatform() === 'Android');
+  if (isAndroid || document.body.classList.contains('direct-quiz-mode')) {
+    setTimeout(() => {
+      const androidModal = document.getElementById('quiz-android-download-modal');
+      if (androidModal) {
+        androidModal.classList.remove('hidden');
+        androidModal.classList.add('flex');
+      }
+    }, 1200);
   }
 }
 

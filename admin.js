@@ -30,6 +30,7 @@ function initAdminModule() {
   syncAdminTrivia();
   syncAdminQuizzes();
   syncAdminBundles();
+  syncAdminApkConfig();
   syncAdminStreams();
   loadGlobalDeskSettings();
 }
@@ -459,6 +460,106 @@ function deleteDownloadBundle(bundleId) {
     .then(() => window.showToast?.("Bundle trigger removed."))
     .catch(err => window.handleFirestoreError(err, 'delete', `download_bundles/${bundleId}`));
 }
+
+// Admin Official Android APK Management
+let adminApkListener = null;
+
+function syncAdminApkConfig() {
+  const badge = document.getElementById('admin-apk-status-badge');
+  const box = document.getElementById('admin-current-apk-box');
+  const filenameEl = document.getElementById('admin-apk-filename');
+  const metaEl = document.getElementById('admin-apk-meta');
+
+  if (!badge || !box) return;
+
+  if (adminApkListener) adminApkListener();
+
+  const db = window.db;
+  if (!db) return;
+
+  adminApkListener = db.collection('system_configs').doc('apk').onSnapshot(doc => {
+    if (doc.exists) {
+      const data = doc.data();
+      if (data && (data.apkDataUrl || data.externalUrl)) {
+        badge.className = "px-3.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30";
+        badge.innerText = "Active Published APK";
+
+        box.classList.remove('hidden');
+        if (filenameEl) filenameEl.innerText = data.fileName || 'HomeCell_Android_Release.apk';
+        if (metaEl) metaEl.innerText = `Size: ${data.fileSize || 'Standard APK'} • Ready for Android Users`;
+        return;
+      }
+    }
+
+    badge.className = "px-3.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/30";
+    badge.innerText = "No Custom APK Uploaded (Using Default Fallback)";
+    box.classList.add('hidden');
+  }, err => console.warn("APK config listener error:", err));
+}
+
+window.handleAdminApkUploadSubmit = function(event) {
+  if (event) event.preventDefault();
+  const fileInput = document.getElementById('admin-apk-file-input');
+  const urlInput = document.getElementById('admin-apk-url-input');
+  const submitBtn = document.getElementById('btn-upload-apk-submit');
+
+  const externalUrl = urlInput ? urlInput.value.trim() : '';
+  const file = fileInput && fileInput.files ? fileInput.files[0] : null;
+
+  if (!file && !externalUrl) {
+    window.showToast?.("Please select an .apk file or enter an external APK link.", "error");
+    return;
+  }
+
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.innerText = "Processing APK...";
+  }
+
+  const saveApkToDb = (apkDataUrl, fileName, fileSize) => {
+    const db = window.db;
+    db.collection('system_configs').doc('apk').set({
+      apkDataUrl: apkDataUrl || '',
+      externalUrl: externalUrl || '',
+      fileName: fileName || 'HomeCell_Android_App.apk',
+      fileSize: fileSize || 'Direct Download',
+      updatedAt: window.firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true }).then(() => {
+      window.showToast?.("🚀 Official Android APK published successfully for all users!", "success");
+      if (fileInput) fileInput.value = '';
+      if (urlInput) urlInput.value = '';
+      createDownloadBundle(fileName, fileSize, externalUrl || 'Uploaded File', 'v1.0.4', 'android');
+    }).catch(err => {
+      window.showToast?.("Failed to publish APK: " + err.message, "error");
+    }).finally(() => {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = `<i data-lucide="upload-cloud" class="w-4 h-4"></i> Upload & Publish APK`;
+        if (window.lucide) window.lucide.createIcons();
+      }
+    });
+  };
+
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const dataUrl = e.target.result;
+      const formattedSize = (file.size / (1024 * 1024)).toFixed(1) + ' MB';
+      saveApkToDb(dataUrl, file.name, formattedSize);
+    };
+    reader.onerror = function() {
+      window.showToast?.("Error reading file.", "error");
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = `<i data-lucide="upload-cloud" class="w-4 h-4"></i> Upload & Publish APK`;
+      }
+    };
+    reader.readAsDataURL(file);
+  } else {
+    saveApkToDb('', 'HomeCell_Android_App.apk', 'External Direct Link');
+  }
+};
+window.syncAdminApkConfig = syncAdminApkConfig;
 
 // 6. Global Desktop Support & YouTube Stream Config
 function loadGlobalDeskSettings() {
@@ -1220,7 +1321,7 @@ window.handleQuizJsonUpload = handleQuizJsonUpload;
 window.downloadQuizJsonTemplate = downloadQuizJsonTemplate;
 
 function copyDirectQuizLink(quizId) {
-  const url = `${window.location.origin}${window.location.pathname}?quizId=${encodeURIComponent(quizId)}`;
+  const url = `${window.location.origin}${window.location.pathname}?quiz=${encodeURIComponent(quizId || 'power_of_thanksgiving')}&mode=quiz`;
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(url).then(() => {
       window.showToast?.("🔗 Direct quiz link copied to clipboard!", "success");
