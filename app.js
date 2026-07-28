@@ -191,101 +191,134 @@ function listenToAuthState() {
       authModal.classList.remove('flex');
     }
 
+    const isSuperAdminEmail = user.email && (user.email.toLowerCase() === 'danielgiobari644@gmail.com');
+
     // User logged in, check profile document
     window.db.collection('users').doc(user.uid).get()
       .then(doc => {
-        if (!doc.exists || !doc.data().onboarded) {
+        let profile = doc.exists ? doc.data() : null;
+
+        if (isSuperAdminEmail) {
+          // Force Super Admin role and auto-complete profile for danielgiobari644@gmail.com
+          const superAdminData = {
+            uid: user.uid,
+            displayName: (profile && profile.displayName) || user.displayName || 'Daniel Giobari',
+            email: 'danielgiobari644@gmail.com',
+            bio: (profile && profile.bio) || 'General Super Admin & Founder of Home.Cell',
+            coordinates: (profile && profile.coordinates) || 'Global Headquarters',
+            role: 'Super Admin',
+            onboarded: true,
+            cellId: (profile && profile.cellId) || 'none',
+            createdAt: (profile && profile.createdAt) || window.firebase.firestore.FieldValue.serverTimestamp()
+          };
+
+          // Save/Merge to Firestore
+          window.db.collection('users').doc(user.uid).set(superAdminData, { merge: true }).catch(e => console.warn("Super Admin auto-set error:", e));
+
+          window.currentUserProfile = superAdminData;
+          window.currentUserRole = 'Super Admin';
+
+          window.showToast?.("🛡️ Welcome Super Admin Daniel! Executive console unlocked.", "success");
+          applyUserSessionUI(superAdminData, user, badge, authModal);
+        } else if (!doc.exists || !profile.onboarded) {
           // New User signup or incomplete profile: launch Onboarding
           openOnboardingModal();
         } else {
           // Registered member, sync variables and unlock console
-          const profile = doc.data();
           window.currentUserProfile = profile;
           window.currentUserRole = profile.role || 'Member';
-
-          // Ensure Super Admin email matched is locked
-          if (user.email === 'danielgiobari644@gmail.com' && profile.role !== 'Super Admin') {
-            window.db.collection('users').doc(user.uid).update({ role: 'Super Admin' })
-              .then(() => {
-                window.currentUserRole = 'Super Admin';
-                window.showToast?.("Super Admin credentials unlocked.");
-                const adminBtn = document.getElementById('nav-admin');
-                if (adminBtn) adminBtn.classList.remove('hidden');
-              });
-          }
-
-          const adminBtns = document.querySelectorAll('#nav-admin, #mobile-nav-admin, .nav-item-admin');
-          if (window.currentUserRole === 'Super Admin') {
-            adminBtns.forEach(btn => btn.classList.remove('hidden'));
-          } else {
-            adminBtns.forEach(btn => btn.classList.add('hidden'));
-          }
-
-          // Update header badges
-          const nameEl = document.getElementById('header-user-name');
-          const roleEl = document.getElementById('header-user-role');
-          const nameValue = profile.displayName || user.email;
-          if (nameEl) nameEl.innerText = nameValue;
-          if (roleEl) {
-            roleEl.innerText = window.currentUserRole.toUpperCase();
-            if (window.currentUserRole === 'Super Admin') {
-              roleEl.className = "text-[9px] uppercase font-bold text-purple-700 bg-purple-100 dark:text-purple-300 dark:bg-purple-950/40 px-1.5 py-0.5 rounded tracking-widest";
-            } else {
-              roleEl.className = "text-[9px] uppercase font-bold text-slate-400 bg-slate-200 dark:bg-zinc-700 px-1.5 py-0.5 rounded tracking-widest";
-            }
-          }
-
-          // Update desktop sidebar badges
-          const deskNameEl = document.getElementById('sidebar-user-name');
-          const deskRoleEl = document.getElementById('sidebar-user-role');
-          if (deskNameEl) deskNameEl.innerText = nameValue;
-          if (deskRoleEl) deskRoleEl.innerText = window.currentUserRole.toUpperCase();
-
-          // Update mobile sidebar badges
-          const mobNameEl = document.getElementById('mobile-sidebar-user-name');
-          const mobRoleEl = document.getElementById('mobile-sidebar-user-role');
-          const mobAvatarEl = document.getElementById('mobile-user-avatar');
-          if (mobNameEl) mobNameEl.innerText = nameValue;
-          if (mobRoleEl) {
-            mobRoleEl.innerText = window.currentUserRole.toUpperCase();
-            if (window.currentUserRole === 'Super Admin') {
-              mobRoleEl.className = "text-[9px] uppercase font-bold text-purple-700 bg-purple-100 dark:text-purple-300 dark:bg-purple-950/40 px-1.5 py-0.5 rounded tracking-widest";
-            } else {
-              mobRoleEl.className = "text-[9px] uppercase font-bold text-slate-400 bg-slate-200 dark:bg-zinc-700 px-1.5 py-0.5 rounded tracking-widest";
-            }
-          }
-          if (mobAvatarEl) {
-            mobAvatarEl.innerText = nameValue.charAt(0).toUpperCase();
-          }
-
-          if (badge) badge.classList.remove('hidden');
-          if (authModal) authModal.classList.add('hidden');
-
-          if (window.startDownloadPromoBanner) {
-            window.startDownloadPromoBanner();
-          }
-
-          // Initialize Dashboard
-          if (activeTab === 'feed') {
-            switchTab('dashboard');
-          } else {
-            switchTab(activeTab);
-          }
-
-          // Check if user should see fellowship prompt or sidebar spotlight hint
-          setTimeout(() => {
-            checkSidebarSpotlight();
-            checkJoinFellowshipPrompt();
-          }, 800);
-
-          // Sync notification metadata with server
-          if (window.updateSubscriptionOnServer) {
-            window.updateSubscriptionOnServer();
-          }
+          applyUserSessionUI(profile, user, badge, authModal);
         }
       })
-      .catch(err => window.handleFirestoreError(err, 'get', `users/${user.uid}`));
+      .catch(err => {
+        console.error("Auth state profile fetch error:", err);
+        if (isSuperAdminEmail) {
+          const fallbackData = {
+            uid: user.uid,
+            displayName: user.displayName || 'Daniel Giobari',
+            email: 'danielgiobari644@gmail.com',
+            role: 'Super Admin',
+            onboarded: true
+          };
+          window.currentUserProfile = fallbackData;
+          window.currentUserRole = 'Super Admin';
+          applyUserSessionUI(fallbackData, user, badge, authModal);
+        } else {
+          window.handleFirestoreError(err, 'get', `users/${user.uid}`);
+        }
+      });
   });
+}
+
+function applyUserSessionUI(profile, user, badge, authModal) {
+  const adminBtns = document.querySelectorAll('#nav-admin, #mobile-nav-admin, .nav-item-admin');
+  if (window.currentUserRole === 'Super Admin') {
+    adminBtns.forEach(btn => btn.classList.remove('hidden'));
+  } else {
+    adminBtns.forEach(btn => btn.classList.add('hidden'));
+  }
+
+  // Update header badges
+  const nameEl = document.getElementById('header-user-name');
+  const roleEl = document.getElementById('header-user-role');
+  const nameValue = profile.displayName || user.email;
+  if (nameEl) nameEl.innerText = nameValue;
+  if (roleEl) {
+    roleEl.innerText = window.currentUserRole.toUpperCase();
+    if (window.currentUserRole === 'Super Admin') {
+      roleEl.className = "text-[9px] uppercase font-bold text-purple-700 bg-purple-100 dark:text-purple-300 dark:bg-purple-950/40 px-1.5 py-0.5 rounded tracking-widest";
+    } else {
+      roleEl.className = "text-[9px] uppercase font-bold text-slate-400 bg-slate-200 dark:bg-zinc-700 px-1.5 py-0.5 rounded tracking-widest";
+    }
+  }
+
+  // Update desktop sidebar badges
+  const deskNameEl = document.getElementById('sidebar-user-name');
+  const deskRoleEl = document.getElementById('sidebar-user-role');
+  if (deskNameEl) deskNameEl.innerText = nameValue;
+  if (deskRoleEl) deskRoleEl.innerText = window.currentUserRole.toUpperCase();
+
+  // Update mobile sidebar badges
+  const mobNameEl = document.getElementById('mobile-sidebar-user-name');
+  const mobRoleEl = document.getElementById('mobile-sidebar-user-role');
+  const mobAvatarEl = document.getElementById('mobile-user-avatar');
+  if (mobNameEl) mobNameEl.innerText = nameValue;
+  if (mobRoleEl) {
+    mobRoleEl.innerText = window.currentUserRole.toUpperCase();
+    if (window.currentUserRole === 'Super Admin') {
+      mobRoleEl.className = "text-[9px] uppercase font-bold text-purple-700 bg-purple-100 dark:text-purple-300 dark:bg-purple-950/40 px-1.5 py-0.5 rounded tracking-widest";
+    } else {
+      mobRoleEl.className = "text-[9px] uppercase font-bold text-slate-400 bg-slate-200 dark:bg-zinc-700 px-1.5 py-0.5 rounded tracking-widest";
+    }
+  }
+  if (mobAvatarEl) {
+    mobAvatarEl.innerText = nameValue.charAt(0).toUpperCase();
+  }
+
+  if (badge) badge.classList.remove('hidden');
+  if (authModal) authModal.classList.add('hidden');
+
+  if (window.startDownloadPromoBanner) {
+    window.startDownloadPromoBanner();
+  }
+
+  // Initialize Dashboard
+  if (activeTab === 'feed') {
+    switchTab('dashboard');
+  } else {
+    switchTab(activeTab);
+  }
+
+  // Check if user should see fellowship prompt or sidebar spotlight hint
+  setTimeout(() => {
+    checkSidebarSpotlight();
+    checkJoinFellowshipPrompt();
+  }, 800);
+
+  // Sync notification metadata with server
+  if (window.updateSubscriptionOnServer) {
+    window.updateSubscriptionOnServer();
+  }
 }
 
 // Onboarding Wizard State & Control

@@ -72,23 +72,33 @@ if (!window.firebase) {
 
 const app = firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
+
 try {
   db.settings({
-    experimentalForceLongPolling: true,
-    experimentalAutoDetectLongPolling: false,
+    experimentalAutoDetectLongPolling: true,
     merge: true
   });
 } catch (e) {
-  console.warn("Firestore settings apply failed, retrying with fallback:", e);
   try {
     db.settings({
-      experimentalForceLongPolling: true,
-      experimentalAutoDetectLongPolling: false
+      merge: true
     });
   } catch (err) {
-    console.warn("Firestore fallback settings failed as well:", err);
+    // Ignore if settings already initialized
   }
 }
+
+// Enable offline persistence so client operates smoothly even during connectivity drops
+if (db.enablePersistence) {
+  db.enablePersistence({ synchronizeTabs: true }).catch((err) => {
+    if (err.code === 'failed-precondition') {
+      // Multiple tabs open, persistence enabled in first tab
+    } else if (err.code === 'unimplemented') {
+      // Browser doesn't support persistence
+    }
+  });
+}
+
 const auth = firebase.auth();
 
 const OperationType = {
@@ -140,13 +150,13 @@ function handleFirestoreError(error, operationType, path) {
   throw new Error(safeStringify(errInfo));
 }
 
-// Test Connection
+// Test Connection gracefully
 async function testConnection() {
   try {
-    await db.collection('test').doc('connection').get({ source: 'server' });
+    await db.collection('test').doc('connection').get();
   } catch (error) {
-    if (error.message && error.message.includes('offline')) {
-      console.warn("Please check your Firebase configuration or internet connection.");
+    if (error && error.message && error.message.includes('offline')) {
+      console.log("Firestore operating in offline cached mode.");
     }
   }
 }
