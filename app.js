@@ -832,7 +832,7 @@ document.addEventListener("DOMContentLoaded", () => {
               email: user.email,
               bio: bio,
               coordinates: coords,
-              role: 'Cell Leader', // Automatic promotion
+              role: (user.email === 'danielgiobari644@gmail.com') ? 'Super Admin' : 'Cell Leader', // Automatic promotion
               cellId: newCellId,
               createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
             });
@@ -862,7 +862,7 @@ document.addEventListener("DOMContentLoaded", () => {
           email: user.email,
           bio: bio,
           coordinates: coords,
-          role: 'Member',
+          role: (user.email === 'danielgiobari644@gmail.com') ? 'Super Admin' : 'Member',
           cellId: choice,
           createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
         })

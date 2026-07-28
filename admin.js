@@ -87,9 +87,14 @@ function syncMembershipRegistry() {
             </select>
           </td>
           <td class="p-4 text-center">
-            <button onclick="evictUser('${uid}')" class="text-rose-500 hover:text-rose-700 p-2 rounded-xl hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-all cursor-pointer" title="Evict User">
-              <i data-lucide="trash-2" class="w-4 h-4 mx-auto"></i>
-            </button>
+            <div class="flex items-center justify-center gap-1">
+              <button onclick="sendUserPasswordResetEmail('${u.email}')" class="text-blue-500 hover:text-blue-700 p-2 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-all cursor-pointer" title="Send Password Reset Email">
+                <i data-lucide="key-round" class="w-4 h-4"></i>
+              </button>
+              <button onclick="evictUser('${uid}')" class="text-rose-500 hover:text-rose-700 p-2 rounded-xl hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-all cursor-pointer" title="Evict User">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+              </button>
+            </div>
           </td>
         `;
 
@@ -1418,6 +1423,80 @@ function deleteQuizFromCatalog(quizId) {
     .catch(err => window.handleFirestoreError(err, 'delete', `quizzes/${quizId}`));
 }
 
+function handleAdminPasswordChangeSubmit(e) {
+  if (e) e.preventDefault();
+  const user = window.auth.currentUser;
+  if (!user) {
+    window.showToast?.("You must be logged in as Super Admin to change password.", "error");
+    return;
+  }
+
+  const newPass = document.getElementById('admin-new-password')?.value.trim();
+  const confirmPass = document.getElementById('admin-confirm-password')?.value.trim();
+
+  if (!newPass || newPass.length < 6) {
+    window.showToast?.("Password must be at least 6 characters long.", "error");
+    return;
+  }
+
+  if (newPass !== confirmPass) {
+    window.showToast?.("Passwords do not match. Please verify and try again.", "error");
+    return;
+  }
+
+  const btn = document.getElementById('btn-change-admin-pass');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Updating...`;
+  }
+
+  user.updatePassword(newPass)
+    .then(() => {
+      window.showToast?.("🔑 Admin password updated successfully!", "success");
+      if (document.getElementById('admin-new-password')) document.getElementById('admin-new-password').value = '';
+      if (document.getElementById('admin-confirm-password')) document.getElementById('admin-confirm-password').value = '';
+    })
+    .catch(err => {
+      console.error("Admin password change error:", err);
+      if (err.code === 'auth/requires-recent-login') {
+        window.showToast?.("Security requirement: Please sign out and log back in before changing password directly, or click 'Send Password Reset Link'.", "error");
+      } else {
+        window.showToast?.("Failed to update password: " + err.message, "error");
+      }
+    })
+    .finally(() => {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = `<i data-lucide="key" class="w-4 h-4"></i> Update Password Now`;
+        if (window.lucide) window.lucide.createIcons();
+      }
+    });
+}
+
+function sendAdminPasswordResetEmail() {
+  const adminEmail = 'danielgiobari644@gmail.com';
+  window.auth.sendPasswordResetEmail(adminEmail)
+    .then(() => {
+      window.showToast?.(`📧 Password reset email sent to ${adminEmail}! Check your inbox.`, "success");
+    })
+    .catch(err => {
+      console.error("Password reset email error:", err);
+      window.showToast?.("Failed to send reset email: " + err.message, "error");
+    });
+}
+
+function sendUserPasswordResetEmail(email) {
+  if (!email) return;
+  window.auth.sendPasswordResetEmail(email)
+    .then(() => {
+      window.showToast?.(`📧 Password reset link sent to ${email}`, "success");
+    })
+    .catch(err => {
+      console.error("User password reset error:", err);
+      window.showToast?.("Failed to send reset email: " + err.message, "error");
+    });
+}
+
 // Expose globally
 window.initAdminModule = initAdminModule;
 window.toggleAdminQuestionFormat = toggleAdminQuestionFormat;
@@ -1452,3 +1531,6 @@ window.closeChangeLeaderModal = closeChangeLeaderModal;
 window.applyNudgePreset = applyNudgePreset;
 window.sendAdminNudge = sendAdminNudge;
 window.renameCellGroup = renameCellGroup;
+window.handleAdminPasswordChangeSubmit = handleAdminPasswordChangeSubmit;
+window.sendAdminPasswordResetEmail = sendAdminPasswordResetEmail;
+window.sendUserPasswordResetEmail = sendUserPasswordResetEmail;
