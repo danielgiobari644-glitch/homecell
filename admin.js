@@ -777,21 +777,30 @@ function deleteStream(streamId) {
 }
 
 function endLiveStream(streamId) {
-  const isConfirmed = confirm("Are you sure you want to end this live broadcast?");
+  const isConfirmed = confirm("Are you sure you want to end this live broadcast and save it as a recorded replay?");
   if (!isConfirmed) return;
 
-  window.db.collection('live_streams').doc(streamId).set({
-    status: 'offline',
-    streamActive: false,
-    updatedAt: window.firebase.firestore.FieldValue.serverTimestamp()
-  }, { merge: true })
+  window.db.collection('live_streams').doc(streamId).get().then(doc => {
+    if (doc.exists) {
+      const data = doc.data();
+      if (window.saveStreamAsReplay) {
+        window.saveStreamAsReplay(data).catch(err => console.warn("Replay save error:", err));
+      }
+    }
+
+    return window.db.collection('live_streams').doc(streamId).set({
+      status: 'offline',
+      streamActive: false,
+      updatedAt: window.firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+  })
   .then(() => {
     return window.db.collection('system_configs').doc('stream').set({
       streamActive: false
     }, { merge: true }).catch(err => console.warn("Failed to update legacy stream config:", err));
   })
   .then(() => {
-    window.showToast?.("Live broadcast ended successfully!", "success");
+    window.showToast?.("Live broadcast ended and saved as replay successfully!", "success");
   })
   .catch(err => window.handleFirestoreError(err, 'write', `live_streams/${streamId}`));
 }

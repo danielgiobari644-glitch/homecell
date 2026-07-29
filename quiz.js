@@ -216,6 +216,29 @@ function initQuizLounge() {
   renderQuizSelectionGrid();
 }
 
+// Real-time listener for quiz participation count on selection cards
+const quizParticipantCountUnsubscribers = new Map();
+
+function subscribeToQuizParticipantCount(quizId) {
+  if (!quizId) return;
+  if (quizParticipantCountUnsubscribers.has(quizId)) {
+    quizParticipantCountUnsubscribers.get(quizId)();
+  }
+
+  const unsub = window.db.collection('quiz_scores')
+    .where('quizId', '==', quizId)
+    .onSnapshot(snap => {
+      const count = snap.size;
+      const countEl = document.getElementById(`quiz-participant-count-${quizId}`);
+      if (countEl) {
+        countEl.innerHTML = `<i data-lucide="users" class="w-3.5 h-3.5 text-purple-600 dark:text-purple-400 inline"></i> <span>${count.toLocaleString()} participant${count === 1 ? '' : 's'}</span>`;
+        if (window.lucide) window.lucide.createIcons();
+      }
+    }, err => console.warn(`Quiz participant count snapshot error for ${quizId}:`, err));
+
+  quizParticipantCountUnsubscribers.set(quizId, unsub);
+}
+
 // Render available quizzes including premium and custom admin-created
 function renderQuizSelectionGrid() {
   const grid = document.getElementById('quiz-deck-grid');
@@ -238,12 +261,18 @@ function renderQuizSelectionGrid() {
           </button>
         </div>
         <div>
-          <div class="flex items-center gap-1.5 flex-wrap">
-            <span class="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-200 dark:border-purple-800">${quiz.topic}</span>
-            <span class="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800">${quiz.difficulty}</span>
+          <div class="flex items-center justify-between gap-1.5 flex-wrap">
+            <div class="flex items-center gap-1.5">
+              <span class="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-200 dark:border-purple-800">${quiz.topic}</span>
+              <span class="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800">${quiz.difficulty}</span>
+            </div>
           </div>
           <h4 class="text-lg font-black text-slate-900 dark:text-zinc-50 font-display mt-2 leading-tight group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">${quiz.title}</h4>
           <p class="text-xs text-slate-500 dark:text-zinc-400 mt-1.5 leading-relaxed line-clamp-2">${quiz.description}</p>
+          <div id="quiz-participant-count-${quiz.id}" class="flex items-center gap-1.5 text-xs font-bold text-slate-600 dark:text-zinc-300 mt-3 pt-2 border-t border-slate-100 dark:border-zinc-800/60">
+            <i data-lucide="users" class="w-3.5 h-3.5 text-purple-600 dark:text-purple-400"></i>
+            <span>0 participants</span>
+          </div>
         </div>
       </div>
       <button onclick="startLiveTriviaSession('${quiz.id}')" class="w-full py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 shadow-md">
@@ -251,6 +280,7 @@ function renderQuizSelectionGrid() {
       </button>
     `;
     grid.appendChild(card);
+    subscribeToQuizParticipantCount(quiz.id);
   });
 
   // Load Custom Admin Created Quizzes from FireStore
@@ -271,6 +301,10 @@ function renderQuizSelectionGrid() {
             <span class="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-200 dark:border-purple-800">${quiz.topic || 'Custom Study'}</span>
             <h4 class="text-lg font-black text-slate-900 dark:text-zinc-50 font-display mt-2 leading-tight">${quiz.title}</h4>
             <p class="text-xs text-slate-500 dark:text-zinc-400 mt-1.5 leading-relaxed line-clamp-2">${quiz.description}</p>
+            <div id="quiz-participant-count-${quiz.id}" class="flex items-center gap-1.5 text-xs font-bold text-slate-600 dark:text-zinc-300 mt-3 pt-2 border-t border-slate-100 dark:border-zinc-800/60">
+              <i data-lucide="users" class="w-3.5 h-3.5 text-purple-600 dark:text-purple-400"></i>
+              <span>0 participants</span>
+            </div>
           </div>
         </div>
         <button onclick="window.startCustomQuizSession('${quiz.id}')" class="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 shadow-md">
@@ -278,6 +312,7 @@ function renderQuizSelectionGrid() {
         </button>
       `;
       grid.appendChild(card);
+      subscribeToQuizParticipantCount(quiz.id);
     });
 
     if (window.lucide) window.lucide.createIcons();
@@ -307,6 +342,10 @@ function renderQuizSelectionGrid() {
             <span class="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-400/20 text-amber-300 border border-amber-400/30">Congregational Special</span>
             <h4 class="text-lg font-black text-amber-100 font-display mt-2 leading-tight">Admin's Sunday Live Challenge</h4>
             <p class="text-xs text-zinc-300 mt-1.5 leading-relaxed">Play custom questions dynamically uploaded by the General Super Admins and leadership.</p>
+            <div id="quiz-participant-count-admin_custom" class="flex items-center gap-1.5 text-xs font-bold text-amber-300/80 mt-3 pt-2 border-t border-amber-500/20">
+              <i data-lucide="users" class="w-3.5 h-3.5 text-amber-400"></i>
+              <span>0 participants</span>
+            </div>
           </div>
         </div>
         <button onclick="startAdminCustomTriviaSession()" class="w-full py-3 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 shadow-lg">
@@ -314,6 +353,7 @@ function renderQuizSelectionGrid() {
         </button>
       `;
       grid.appendChild(card);
+      subscribeToQuizParticipantCount('admin_custom');
     }
 
     if (window.lucide) window.lucide.createIcons();
@@ -693,25 +733,7 @@ function updatePlayerLiveStats() {
 }
 
 function fetchRealUsersAndSubscribe(quizId) {
-  const db = window.db;
-  if (!db) return;
-
-  db.collection('users').get().then(snap => {
-    usersCache = [];
-    snap.forEach(doc => {
-      const u = doc.data();
-      usersCache.push({
-        uid: doc.id,
-        name: u.displayName || u.email || 'Fellowship Member',
-        role: u.role || 'Member',
-        avatar: u.avatar || '👤'
-      });
-    });
-    subscribeToRealLeaderboard(quizId);
-  }).catch(err => {
-    console.warn("Real users fetch error:", err);
-    subscribeToRealLeaderboard(quizId);
-  });
+  subscribeToRealLeaderboard(quizId);
 }
 
 function subscribeToRealLeaderboard(quizId) {
@@ -772,9 +794,9 @@ function renderRealLeaderboardAndParticipants(scoresList) {
 
   // Update room online count
   const roomCountEl = document.getElementById('trivia-room-online-count');
-  const totalBelievers = Math.max(scoreEntries.length, usersCache.length, 1);
+  const totalBelievers = Math.max(scoreEntries.length, 1);
   if (roomCountEl) {
-    roomCountEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span> ${totalBelievers} Real Believers`;
+    roomCountEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span> ${totalBelievers} Quiz Participant${totalBelievers === 1 ? '' : 's'}`;
   }
 
   // Render Compact Scoreboard Sidebar
@@ -855,53 +877,32 @@ function renderParticipantsPane(scoreEntries) {
 
   container.innerHTML = '';
 
-  // Combine user cache and score entries to display all real registered users
-  const uniqueUsersMap = new Map();
-
-  usersCache.forEach(u => {
-    uniqueUsersMap.set(u.uid, {
-      uid: u.uid,
-      name: u.name,
-      role: u.role,
-      avatar: u.avatar || '👤'
-    });
-  });
-
-  scoreEntries.forEach(s => {
-    if (s.userUid) {
-      const existing = uniqueUsersMap.get(s.userUid) || {};
-      uniqueUsersMap.set(s.userUid, {
-        uid: s.userUid,
-        name: s.userName || existing.name || 'Member',
-        role: s.userRole || existing.role || 'Believer',
-        avatar: existing.avatar || '👤'
-      });
-    }
-  });
-
-  const participantList = Array.from(uniqueUsersMap.values());
-
-  if (participantList.length === 0) {
+  if (!scoreEntries || scoreEntries.length === 0) {
     container.innerHTML = `
-      <div class="p-6 text-center text-slate-400 text-xs font-medium">
-        No active participants registered yet. Invite cell members!
+      <div class="p-8 text-center text-slate-400 dark:text-zinc-500 space-y-2">
+        <i data-lucide="users" class="w-8 h-8 mx-auto text-slate-300 dark:text-zinc-600"></i>
+        <p class="text-xs font-bold">No participants yet for this quiz.</p>
+        <p class="text-[10px] text-slate-400">Be the first to enter and complete the challenge!</p>
       </div>
     `;
+    if (window.lucide) window.lucide.createIcons();
     return;
   }
 
-  participantList.forEach(p => {
+  scoreEntries.forEach((p, idx) => {
     const card = document.createElement('div');
     card.className = "p-3.5 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 flex items-center justify-between";
     card.innerHTML = `
       <div class="flex items-center gap-2.5">
         <span class="text-lg">${p.avatar || '👤'}</span>
         <div>
-          <span class="text-xs font-extrabold block text-slate-900 dark:text-zinc-100">${p.name}</span>
-          <span class="text-[10px] text-slate-400">${p.role || 'Member'}</span>
+          <span class="text-xs font-extrabold block text-slate-900 dark:text-zinc-100">${p.userName || 'Member'}</span>
+          <span class="text-[10px] text-slate-400">${p.userRole || 'Believer'} • Rank #${idx + 1}</span>
         </div>
       </div>
-      <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">Active User</span>
+      <span class="px-2.5 py-1 rounded-full text-[10px] font-black font-mono bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+        ${p.score || 0} PTS
+      </span>
     `;
     container.appendChild(card);
   });

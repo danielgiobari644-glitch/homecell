@@ -238,6 +238,62 @@ window.setupStreamPlayer = function(url, type) {
   }
 };
 
+  // Real Stream Presence Viewer Tracking
+  let streamPresenceInterval = null;
+  let streamViewerUnsubscribe = null;
+
+  window.startRealStreamPresence = function(streamId) {
+    const user = window.firebase?.auth()?.currentUser;
+    const uid = user ? user.uid : (window.anonPresenceId || (window.anonPresenceId = 'anon_' + Math.random().toString(36).substring(2, 9)));
+    const targetStreamId = streamId || 'global';
+
+    const docRef = window.db.collection('stream_viewers').doc(`${targetStreamId}_${uid}`);
+
+    const updatePresence = () => {
+      docRef.set({
+        streamId: targetStreamId,
+        uid: uid,
+        userName: window.currentUserProfile?.displayName || user?.email || 'Viewer',
+        timestamp: Date.now()
+      }, { merge: true }).catch(err => console.warn("Stream presence update failed:", err));
+    };
+
+    updatePresence();
+    if (streamPresenceInterval) clearInterval(streamPresenceInterval);
+    streamPresenceInterval = setInterval(updatePresence, 10000);
+
+    if (streamViewerUnsubscribe) streamViewerUnsubscribe();
+    streamViewerUnsubscribe = window.db.collection('stream_viewers')
+      .where('streamId', '==', targetStreamId)
+      .onSnapshot(snap => {
+        let count = 0;
+        const now = Date.now();
+        snap.forEach(doc => {
+          const data = doc.data();
+          if (data.timestamp && (now - data.timestamp < 30000)) {
+            count++;
+          }
+        });
+
+        const el = document.getElementById('stream-viewer-count');
+        if (el) el.innerText = `${Math.max(count, 1)} Watching Live`;
+
+        const feedEl = document.getElementById(`feed-viewer-count-${targetStreamId}`);
+        if (feedEl) feedEl.innerText = `${Math.max(count, 1)} Watching Live`;
+      }, err => console.warn("Viewer presence snapshot error:", err));
+  };
+
+  window.stopRealStreamPresence = function(streamId) {
+    if (streamPresenceInterval) {
+      clearInterval(streamPresenceInterval);
+      streamPresenceInterval = null;
+    }
+    if (streamViewerUnsubscribe) {
+      streamViewerUnsubscribe();
+      streamViewerUnsubscribe = null;
+    }
+  };
+
   // Sync Live stream broadcast banner & live stream dashboard pane
   const streamBanner = document.getElementById('live-broadcast-banner');
   const bannerTitle = document.getElementById('broadcast-banner-title');
@@ -258,6 +314,9 @@ window.setupStreamPlayer = function(url, type) {
           if (paneTitle) paneTitle.innerText = data.streamTitle || '';
           if (paneDesc) paneDesc.innerText = data.streamDesc || '';
           window.setupStreamPlayer(data.streamUrl, data.streamType || 'hls');
+
+          // Start real presence tracking for live viewers
+          window.startRealStreamPresence(data.id || 'global');
 
           // Sync dynamic likes count
           const likesEl = document.getElementById('stream-likes-count');
@@ -284,18 +343,12 @@ window.setupStreamPlayer = function(url, type) {
         const container = document.getElementById('stream-player-container');
         if (container) container.innerHTML = '';
 
+        window.stopRealStreamPresence('global');
+
         // Disconnect and cleanup chat listeners
         if (chatUnsubscribe) {
           chatUnsubscribe();
           chatUnsubscribe = null;
-        }
-        if (simulatedChatInterval) {
-          clearInterval(simulatedChatInterval);
-          simulatedChatInterval = null;
-        }
-        if (viewerCountInterval) {
-          clearInterval(viewerCountInterval);
-          viewerCountInterval = null;
         }
       }
     } else {
@@ -311,6 +364,9 @@ window.setupStreamPlayer = function(url, type) {
       }
     }
   }, err => console.warn("Live stream config read limit:", err));
+
+  // Sync Stream Replays Archive
+  syncStreamReplays();
 }
 
 // Active user streak synchronization and championship leader identification
@@ -714,37 +770,261 @@ window.sendQuickReaction = function(emoji) {
   });
 };
 
+// Save ending live stream automatically as a Replay
+window.saveStreamAsReplay = function(stream) {
+  if (!stream || (!stream.streamUrl && !stream.videoUrl && !stream.url)) {
+    return Promise.resolve();
+  }
+
+  const streamUrl = stream.streamUrl || stream.videoUrl || stream.url;
+  const streamId = stream.id || stream.streamId || Date.now().toString();
+  const replayId = `replay_${streamId}_${Date.now()}`;
+
+  const replayDoc = {
+    id: replayId,
+    originalStreamId: streamId,
+    title: stream.streamTitle || stream.title || 'Fellowship Livestream Replay',
+    description: stream.streamDesc || stream.description || 'Recorded broadcast replay for the congregation.',
+    videoUrl: streamUrl,
+    streamType: stream.streamType || 'hls',
+    thumbnail: stream.thumbnail || '',
+    broadcaster: stream.broadcaster || 'Super Admin',
+    duration: stream.duration || 'Full Replay',
+    createdAt: window.firebase.firestore.FieldValue.serverTimestamp(),
+    viewsCount: stream.viewsCount || 0,
+    likesCount: stream.likesCount || 0,
+    likes: [],
+    type: 'video_replay'
+  };
+
+  const p1 = window.db.collection('stream_replays').doc(replayId).set(replayDoc, { merge: true });
+
+  const feedDoc = {
+    id: `post_${replayId}`,
+    authorUid: 'admin_system',
+    authorName: stream.broadcaster || 'Super Admin',
+    authorRole: 'Super Admin',
+    text: `📼 **Stream Replay**: ${stream.streamTitle || stream.title || 'Fellowship Broadcast'}\n\n${stream.streamDesc || stream.description || ''}`,
+    type: 'video_replay',
+    mediaUrl: streamUrl,
+    videoUrl: streamUrl,
+    streamType: stream.streamType || 'hls',
+    videoTitle: stream.streamTitle || stream.title || 'Livestream Replay',
+    thumbnail: stream.thumbnail || '',
+    createdAt: window.firebase.firestore.FieldValue.serverTimestamp(),
+    likes: [],
+    likesCount: stream.likesCount || 0,
+    commentsCount: 0,
+    viewsCount: 0
+  };
+
+  const p2 = window.db.collection('community_feed').doc(`post_${replayId}`).set(feedDoc, { merge: true });
+
+  return Promise.all([p1, p2]);
+};
+
+let streamReplaysUnsubscribe = null;
+
+function syncStreamReplays() {
+  const grid = document.getElementById('stream-replays-grid');
+  const badge = document.getElementById('replays-count-badge');
+  if (!grid) return;
+
+  if (streamReplaysUnsubscribe) streamReplaysUnsubscribe();
+
+  streamReplaysUnsubscribe = window.db.collection('stream_replays')
+    .orderBy('createdAt', 'desc')
+    .onSnapshot(snap => {
+      grid.innerHTML = '';
+      const replays = [];
+      snap.forEach(doc => replays.push(doc.data()));
+
+      if (badge) {
+        badge.innerText = `${replays.length} Replay${replays.length === 1 ? '' : 's'} Saved`;
+      }
+
+      if (replays.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-full p-8 text-center text-slate-400 dark:text-zinc-500 bg-slate-50 dark:bg-zinc-950/40 rounded-2xl border border-dashed border-slate-200 dark:border-zinc-800 space-y-2">
+            <i data-lucide="video" class="w-8 h-8 mx-auto text-slate-300 dark:text-zinc-600"></i>
+            <p class="text-xs font-bold">No recorded stream replays yet.</p>
+            <p class="text-[10px] text-slate-400">When live broadcasts end, recorded replays automatically appear here for the congregation!</p>
+          </div>
+        `;
+        if (window.lucide) window.lucide.createIcons();
+        return;
+      }
+
+      replays.forEach(r => {
+        const card = document.createElement('div');
+        card.className = "bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-5 shadow-sm space-y-4 hover:shadow-md transition-all flex flex-col justify-between";
+
+        let dateStr = 'Recently';
+        if (r.createdAt) {
+          const dt = r.createdAt.toDate ? r.createdAt.toDate() : new Date(r.createdAt.seconds * 1000);
+          dateStr = dt.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+        }
+
+        const views = r.viewsCount || 0;
+        const likes = r.likesCount || 0;
+        const encodedUrl = encodeURIComponent(r.videoUrl || '');
+
+        card.innerHTML = `
+          <div class="space-y-3">
+            <div id="replay-player-box-${r.id}" class="aspect-video w-full rounded-2xl bg-slate-950 overflow-hidden relative group flex items-center justify-center border border-slate-100 dark:border-zinc-800">
+              ${r.thumbnail ? `<img src="${r.thumbnail}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />` : ''}
+              <div class="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                <button onclick="window.playDashboardReplay('${r.id}', '${encodedUrl}', '${r.streamType || 'hls'}')" class="w-14 h-14 rounded-full bg-white/90 text-indigo-600 shadow-xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all cursor-pointer">
+                  <i data-lucide="play" class="w-6 h-6 fill-current ml-1"></i>
+                </button>
+              </div>
+              <span class="absolute bottom-2 right-2 px-2 py-0.5 bg-black/70 text-white rounded text-[10px] font-mono font-bold">${r.duration || 'Replay'}</span>
+            </div>
+
+            <div>
+              <div class="flex items-center gap-2 text-[10px] font-bold text-slate-400">
+                <span>📹 ${r.broadcaster || 'Super Admin'}</span>
+                <span>•</span>
+                <span>${dateStr}</span>
+              </div>
+              <h4 class="text-base font-black text-slate-900 dark:text-zinc-50 font-display mt-1 leading-snug">${r.title || 'Livestream Replay'}</h4>
+              <p class="text-xs text-slate-500 dark:text-zinc-400 mt-1 leading-relaxed line-clamp-2">${r.description || ''}</p>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-zinc-800 text-xs text-slate-500 font-bold">
+            <div class="flex items-center gap-3">
+              <span class="flex items-center gap-1 text-slate-600 dark:text-zinc-400">
+                <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                <span id="replay-views-${r.id}">${views} views</span>
+              </span>
+              <button onclick="window.likeReplay('${r.id}')" class="flex items-center gap-1 hover:text-rose-500 transition-colors cursor-pointer">
+                <i data-lucide="heart" class="w-3.5 h-3.5"></i>
+                <span>${likes}</span>
+              </button>
+            </div>
+            <button onclick="window.shareReplay('${r.id}', '${encodeURIComponent(r.title || 'Replay')}')" class="text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 cursor-pointer">
+              <i data-lucide="share-2" class="w-3.5 h-3.5"></i> Share
+            </button>
+          </div>
+        `;
+
+        grid.appendChild(card);
+      });
+
+      if (window.lucide) window.lucide.createIcons();
+    }, err => console.warn("Stream replays snapshot failed:", err));
+}
+
+window.playDashboardReplay = function(replayId, encodedUrl, streamType) {
+  const box = document.getElementById(`replay-player-box-${replayId}`);
+  if (!box) return;
+
+  const url = decodeURIComponent(encodedUrl);
+  box.innerHTML = '';
+
+  let isYoutube = false;
+  let embedUrl = '';
+  try {
+    if (url.includes('youtube.com') || url.includes('youtu.be')) {
+      isYoutube = true;
+      let videoId = '';
+      if (url.includes('youtu.be/')) videoId = url.split('youtu.be/')[1].split('?')[0];
+      else if (url.includes('v=')) videoId = url.split('v=')[1].split('&')[0];
+      else if (url.includes('embed/')) videoId = url.split('embed/')[1].split('?')[0];
+      if (videoId) embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+    }
+  } catch (e) {}
+
+  if (isYoutube && embedUrl) {
+    box.innerHTML = `<iframe src="${embedUrl}" class="w-full h-full border-none" allow="autoplay; fullscreen" allowfullscreen></iframe>`;
+  } else {
+    const video = document.createElement('video');
+    video.src = url;
+    video.controls = true;
+    video.autoplay = true;
+    video.playsInline = true;
+    video.className = "w-full h-full object-contain bg-black";
+    box.appendChild(video);
+
+    if (streamType === 'hls' || url.includes('.m3u8')) {
+      if (window.Hls && window.Hls.isSupported()) {
+        const hls = new window.Hls();
+        hls.loadSource(url);
+        hls.attachMedia(video);
+      }
+    }
+  }
+
+  // Increment views count in Firestore
+  window.db.collection('stream_replays').doc(replayId).update({
+    viewsCount: window.firebase.firestore.FieldValue.increment(1)
+  }).catch(() => {});
+};
+
+window.likeReplay = function(replayId) {
+  const user = window.firebase.auth().currentUser;
+  if (!user) {
+    window.showToast?.("Please log in to like this replay.", "info");
+    return;
+  }
+  window.db.collection('stream_replays').doc(replayId).update({
+    likesCount: window.firebase.firestore.FieldValue.increment(1)
+  }).then(() => {
+    window.showToast?.("Liked recorded broadcast replay! ❤️", "success");
+  }).catch(err => console.warn("Replay like error:", err));
+};
+
+window.shareReplay = function(replayId, encodedTitle) {
+  const title = decodeURIComponent(encodedTitle);
+  const shareUrl = window.location.href;
+  if (navigator.share) {
+    navigator.share({
+      title: title,
+      text: `Watch this recorded live stream replay on Home.cell: ${title}`,
+      url: shareUrl
+    }).catch(() => {});
+  } else {
+    navigator.clipboard.writeText(shareUrl);
+    window.showToast?.("Replay link copied to clipboard!", "success");
+  }
+};
+
 window.stopLiveStream = function() {
   if (window.currentUserRole !== 'Super Admin') {
     window.showToast?.("Only Super Admins can stop a livestream broadcast.", "error");
     return;
   }
 
-  if (confirm("Are you sure you want to stop this live broadcast and take it offline?")) {
-    window.db.collection('system_configs').doc('stream').update({
-      streamActive: false
+  if (confirm("Are you sure you want to stop this live broadcast and save it as a replay?")) {
+    window.db.collection('system_configs').doc('stream').get().then(doc => {
+      if (doc.exists) {
+        const data = doc.data();
+        // Save stream as replay automatically
+        window.saveStreamAsReplay(data).catch(err => console.warn("Save replay error:", err));
+      }
+
+      return window.db.collection('system_configs').doc('stream').update({
+        streamActive: false
+      });
     }).then(() => {
-      // Also set any active stream documents inside 'live_streams' collection to offline/inactive
-      window.db.collection('live_streams')
+      return window.db.collection('live_streams')
         .where('streamActive', '==', true)
         .get()
         .then(snap => {
           const batch = window.db.batch();
-          snap.forEach(doc => {
-            batch.update(doc.ref, {
+          snap.forEach(d => {
+            const data = d.data();
+            window.saveStreamAsReplay(data).catch(() => {});
+            batch.update(d.ref, {
               streamActive: false,
               status: 'offline'
             });
           });
           return batch.commit();
-        })
-        .then(() => {
-          window.showToast?.("Livestream broadcast successfully stopped.", "success");
-        })
-        .catch(err => {
-          console.error("Error setting live_streams to offline:", err);
-          window.showToast?.("Broadcast stopped, but failed to sync all records.", "info");
         });
+    }).then(() => {
+      window.showToast?.("Livestream ended and saved as replay successfully!", "success");
     }).catch(err => {
       console.error("Error stopping livestream:", err);
       window.showToast?.("Failed to stop livestream.", "error");
