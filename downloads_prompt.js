@@ -10,8 +10,13 @@
                          window.navigator.standalone === true ||
                          document.referrer.includes('android-app://');
     const hasInstalledFlag = localStorage.getItem('homecell_app_installed') === 'true' || 
-                             localStorage.getItem('app_installed_flag') === 'true';
-    return isStandalone || hasInstalledFlag;
+                             localStorage.getItem('app_installed_flag') === 'true' ||
+                             localStorage.getItem('homecell_apk_downloaded') === 'true' ||
+                             localStorage.getItem('homecell_app_downloaded') === 'true';
+    const profileFlag = window.currentUserProfile?.appDownloaded === true ||
+                        window.currentUserProfile?.apkDownloaded === true ||
+                        window.currentUserProfile?.isAppInstalled === true;
+    return isStandalone || hasInstalledFlag || profileFlag;
   }
 
   // Listen to PWA installation completion
@@ -504,9 +509,9 @@
     });
   };
 
-  // Download Android APK file uploaded by Admin (or fallback)
+  // Download Android APK file uploaded by Admin
   window.downloadAndroidApkFile = async function() {
-    window.showToast?.("Preparing Android APK download...", "info");
+    window.showToast?.("Checking for official Android APK...", "info");
 
     const db = window.db;
     if (db) {
@@ -528,6 +533,19 @@
 
             window.showToast?.(`📥 Downloading official Android APK: ${fileName}!`, "success");
             localStorage.setItem('homecell_app_installed', 'true');
+            localStorage.setItem('homecell_apk_downloaded', 'true');
+            localStorage.setItem('homecell_app_downloaded', 'true');
+
+            // Sync user profile in Firestore if user is authenticated
+            const user = window.auth?.currentUser;
+            if (user && db) {
+              db.collection('users').doc(user.uid).update({
+                apkDownloaded: true,
+                appDownloaded: true,
+                isAppInstalled: true
+              }).catch(() => {});
+            }
+
             window.dismissInstallBanner?.();
             return;
           }
@@ -537,8 +555,8 @@
       }
     }
 
-    // Fallback if no custom upload in Firestore: download default payload
-    window.triggerDirectFileDownload('android-fallback');
+    // If no custom APK uploaded by Super Admin in Firestore
+    window.showToast?.("Super Admin has not published the official Android APK file yet. Please contact your Super Admin.", "warning");
   };
 
   // Trigger real file download (satisfies "gets downloaded" literally on devices)

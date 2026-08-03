@@ -20,10 +20,9 @@ function loadCellDirectory() {
     // Also update Onboarding cell choice select dropdown
     const obSelect = document.getElementById('ob-cell-choice');
     if (obSelect) {
-      // Keep first two options (none & new)
       obSelect.innerHTML = `
-        <option value="none">Register / Setup Independently later</option>
-        <option value="new">Create/Register a new Fellowship Cell Group</option>
+        <option value="" disabled selected>-- Choose an available Cell Group to join (Required) --</option>
+        <option value="request_new">➕ Request a new Fellowship Cell Group (Requires Super Admin Approval)</option>
       `;
     }
 
@@ -32,7 +31,7 @@ function loadCellDirectory() {
         <div class="col-span-full text-center py-12 text-slate-400">
           <i data-lucide="info" class="w-12 h-12 mx-auto mb-3 opacity-50"></i>
           <p class="font-bold">No active fellowship cells found in the registry.</p>
-          <p class="text-xs mt-1">Select edit testimony profile to create a fresh cell group!</p>
+          <p class="text-xs mt-1">Please request a new cell group during onboarding for Super Admin approval.</p>
         </div>
       `;
       return;
@@ -42,11 +41,11 @@ function loadCellDirectory() {
       const cell = doc.data();
       const cellId = doc.id;
 
-      // Populate onboarding select
-      if (obSelect && cell.status === 'active') {
+      // Populate onboarding select only with active cells or approved cells
+      if (obSelect && (cell.status === 'active' || !cell.status)) {
         const opt = document.createElement('option');
         opt.value = cellId;
-        opt.innerText = `${cell.name} (${cell.city})`;
+        opt.innerText = `🏡 ${cell.name} (${cell.city}) - Leader: ${cell.leaderName}`;
         obSelect.appendChild(opt);
       }
 

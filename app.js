@@ -15,16 +15,7 @@ function initTheme() {
     html.classList.remove('dark');
   }
 
-  // Check if user has already seen app portfolio
-  if (localStorage.getItem('homecell_portfolio_seen') === 'true') {
-    html.classList.add('portfolio-seen');
-  }
 }
-
-window.markPortfolioSeen = function() {
-  localStorage.setItem('homecell_portfolio_seen', 'true');
-  document.documentElement.classList.add('portfolio-seen');
-};
 
 function toggleTheme() {
   const html = document.documentElement;
@@ -752,7 +743,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // Sidebar navigation handlers
-  const navs = ['portfolio', 'dashboard', 'bible', 'cells', 'prayers', 'calendar', 'downloads', 'admin'];
+  const navs = ['dashboard', 'bible', 'cells', 'prayers', 'calendar', 'downloads', 'admin'];
   navs.forEach(nav => {
     const btn = document.getElementById(`nav-${nav}`);
     if (btn) {
@@ -810,7 +801,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const obNewCellSection = document.getElementById('ob-new-cell-section');
   if (obChoiceSelect && obNewCellSection) {
     obChoiceSelect.addEventListener('change', (e) => {
-      if (e.target.value === 'new') {
+      if (e.target.value === 'request_new' || e.target.value === 'new') {
         obNewCellSection.classList.remove('hidden');
       } else {
         obNewCellSection.classList.add('hidden');
@@ -830,9 +821,14 @@ document.addEventListener("DOMContentLoaded", () => {
       const coords = document.getElementById('ob-coordinates').value.trim();
       const choice = document.getElementById('ob-cell-choice').value;
 
+      if (!choice || choice === '' || choice === 'none') {
+        window.showToast?.("All members must choose an available Cell Group to join during sign up.", "error");
+        return;
+      }
+
       const userDocRef = window.db.collection('users').doc(user.uid);
 
-      if (choice === 'new') {
+      if (choice === 'request_new' || choice === 'new') {
         const cellName = document.getElementById('ob-new-cell-name').value.trim();
         const cellCity = document.getElementById('ob-new-cell-city').value.trim();
         const cellDesc = document.getElementById('ob-new-cell-desc').value.trim();
@@ -843,8 +839,9 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         const newCellId = window.db.collection('cells').doc().id;
+        const isSuperAdminUser = (user.email === 'danielgiobari644@gmail.com');
 
-        // Register new cell
+        // Register new cell with pending_approval status unless created by Super Admin
         window.db.collection('cells').doc(newCellId).set({
           id: newCellId,
           name: cellName,
@@ -854,7 +851,8 @@ document.addEventListener("DOMContentLoaded", () => {
           leaderName: name,
           leaderEmail: user.email,
           coLeaders: [],
-          status: 'active',
+          status: isSuperAdminUser ? 'active' : 'pending_approval',
+          approvedByAdmin: isSuperAdminUser,
           createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
         })
           .then(() => {
@@ -865,22 +863,28 @@ document.addEventListener("DOMContentLoaded", () => {
               email: user.email,
               bio: bio,
               coordinates: coords,
-              role: (user.email === 'danielgiobari644@gmail.com') ? 'Super Admin' : 'Cell Leader', // Automatic promotion
+              role: isSuperAdminUser ? 'Super Admin' : 'Member',
               cellId: newCellId,
+              cellStatus: isSuperAdminUser ? 'active' : 'pending_approval',
+              onboarded: true,
               createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
             });
           })
           .then(() => {
-            window.showToast?.("Fellowship cell established & profile fully onboarded!");
+            if (isSuperAdminUser) {
+              window.showToast?.("Fellowship cell established & active!", "success");
+            } else {
+              window.showToast?.("Cell creation request submitted! Awaiting Super Admin review & approval.", "info");
+            }
             closeOnboardingModal();
             window.updateSubscriptionOnServer?.();
 
-            // Notify Super Admins offline/off-app of new cell registration
-            if (window.sendPushNotification) {
+            // Notify Super Admin of pending cell approval
+            if (window.sendPushNotification && !isSuperAdminUser) {
               window.sendPushNotification(
-                "🏰 New Fellowship Cell Registered!",
-                `Cell "${cellName}" has been established in ${cellCity} by leader ${name}.`,
-                "/?tab=cells",
+                "🏰 New Cell Pending Super Admin Approval!",
+                `Cell "${cellName}" requested by ${name} in ${cellCity} requires approval.`,
+                "/?tab=admin",
                 "Super Admin"
               );
             }
@@ -888,19 +892,21 @@ document.addEventListener("DOMContentLoaded", () => {
           .catch(err => window.handleFirestoreError(err, 'write', 'onboarding'));
 
       } else {
-        // Standard join or none
+        // Standard join selected cell
+        const isSuperAdminUser = (user.email === 'danielgiobari644@gmail.com');
         userDocRef.set({
           uid: user.uid,
           displayName: name,
           email: user.email,
           bio: bio,
           coordinates: coords,
-          role: (user.email === 'danielgiobari644@gmail.com') ? 'Super Admin' : 'Member',
+          role: isSuperAdminUser ? 'Super Admin' : 'Member',
           cellId: choice,
+          onboarded: true,
           createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
         })
           .then(() => {
-            window.showToast?.("Onboarding successfully completed!");
+            window.showToast?.("Onboarding successfully completed & Cell Group joined!", "success");
             closeOnboardingModal();
             window.updateSubscriptionOnServer?.();
             // Trigger first daily streak

@@ -147,16 +147,21 @@ function syncAdminCells() {
     snap.forEach(doc => {
       const cell = doc.data();
       const cellId = doc.id;
+      const isPending = cell.status === 'pending_approval';
       const isSuspended = cell.status === 'suspended';
 
       const card = document.createElement('div');
       card.className = `p-5 bg-slate-50 dark:bg-zinc-800/40 border rounded-2xl flex flex-col justify-between ${
-        isSuspended ? 'border-amber-500 bg-amber-50/10' : 'border-slate-200 dark:border-zinc-800'
+        isPending ? 'border-amber-500 bg-amber-50/20 dark:bg-amber-950/20' :
+        isSuspended ? 'border-rose-500 bg-rose-50/10' : 'border-slate-200 dark:border-zinc-800'
       }`;
 
       card.innerHTML = `
         <div>
-          <span class="text-[10px] font-mono text-slate-400 uppercase tracking-widest">${cell.city}</span>
+          <div class="flex items-center justify-between gap-2 mb-1">
+            <span class="text-[10px] font-mono text-slate-400 uppercase tracking-widest">${cell.city}</span>
+            ${isPending ? '<span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30">PENDING APPROVAL</span>' : ''}
+          </div>
           <div class="flex items-center gap-2">
             <h5 class="font-black font-display text-slate-900 dark:text-zinc-100">${cell.name}</h5>
             <button onclick="window.renameCellGroup('${cellId}', \`${cell.name.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)" class="p-1 hover:text-blue-600 text-slate-400 dark:text-zinc-500 rounded transition-colors cursor-pointer" title="Rename Cell">
@@ -168,6 +173,11 @@ function syncAdminCells() {
         </div>
 
         <div class="flex flex-col gap-2 mt-4 pt-3 border-t border-slate-100 dark:border-zinc-800/60">
+          ${isPending ? `
+            <button onclick="window.approveCellGroup('${cellId}')" class="w-full py-2 text-xs font-black bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-all cursor-pointer shadow-sm flex items-center justify-center gap-1.5">
+              <i data-lucide="check-circle" class="w-4 h-4"></i> Approve & Activate Cell Group
+            </button>
+          ` : ''}
           <div class="flex gap-2">
             <button onclick="toggleCellSuspension('${cellId}', '${cell.status}')" class="flex-grow py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
               isSuspended
@@ -194,6 +204,20 @@ function syncAdminCells() {
     if (window.lucide) window.lucide.createIcons();
   }, err => window.handleFirestoreError(err, 'list', 'cells'));
 }
+
+window.approveCellGroup = function(cellId) {
+  const db = window.db;
+  if (!db) return;
+  db.collection('cells').doc(cellId).update({
+    status: 'active',
+    approvedByAdmin: true,
+    approvedAt: window.firebase.firestore.FieldValue.serverTimestamp()
+  }).then(() => {
+    window.showToast?.("✅ Cell group approved and activated successfully!", "success");
+  }).catch(err => {
+    window.showToast?.("Error approving cell: " + err.message, "error");
+  });
+};
 
 function toggleCellSuspension(cellId, currentStatus) {
   const nextStatus = currentStatus === 'active' ? 'suspended' : 'active';

@@ -378,11 +378,6 @@ function checkDirectQuizUrl() {
     // Flag direct quiz mode on document elements
     document.documentElement.classList.add('direct-quiz-mode');
     document.body.classList.add('direct-quiz-mode');
-    document.body.classList.add('portfolio-seen');
-
-    // Hide portfolio view
-    const pfView = document.getElementById('portfolio-view');
-    if (pfView) pfView.style.setProperty('display', 'none', 'important');
 
     // Reveal standalone header
     const stdHeader = document.getElementById('standalone-quiz-header');
