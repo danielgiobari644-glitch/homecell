@@ -944,203 +944,261 @@
       <!-- Central Canvas Content space -->
       <main class="flex-grow min-w-0">
         
-        <!-- Tab 0: Community Feed Page -->
-        <section id="tab-feed" class="app-tab active space-y-6 animate-fade-in">
+        <!-- Tab 0: Home Feed Page -->
+        <section id="tab-feed" class="app-tab active space-y-6 animate-fade-in max-w-3xl mx-auto pb-16 lg:pb-0">
           
-          <!-- Banner for Feed -->
-          <div class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-[2.5rem] p-8 shadow-md relative overflow-hidden">
-            <div class="absolute -right-16 -bottom-16 w-48 h-48 bg-white/10 rounded-full blur-2xl"></div>
-            <div class="relative max-w-2xl space-y-2">
-              <span class="bg-white/20 backdrop-blur-md px-3.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-blue-100">Fellowship Stream</span>
-              <h1 class="text-3xl md:text-4xl font-black font-display tracking-tight leading-none">The Community Feed</h1>
-              <p class="text-xs md:text-sm text-blue-100">
-                A warm place to share testimonies of God's goodness, stay updated with fellowship announcements, and lift each other up.
-              </p>
+          <!-- 1. Greeting Header -->
+          <div class="flex items-center justify-between pt-1 pb-1">
+            <div>
+              <span id="greeting-time-sub" class="text-xs sm:text-sm font-semibold text-slate-400 dark:text-zinc-400 block">Good Morning,</span>
+              <h1 class="text-2xl sm:text-3xl font-black font-display text-slate-900 dark:text-zinc-50 flex items-center gap-2">
+                <span id="greeting-user-name">Member</span>! 👋
+              </h1>
+            </div>
+            <div class="flex items-center gap-3">
+              <!-- Unread Notification Icon with badge -->
+              <button onclick="window.openNotificationsModal()" class="relative p-2.5 bg-white dark:bg-zinc-900 hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200 border border-slate-200/80 dark:border-zinc-800 rounded-2xl transition-all cursor-pointer shadow-xs">
+                <i data-lucide="bell" class="w-5 h-5"></i>
+                <span id="unread-notifications-badge" class="absolute -top-1 -right-1 w-5 h-5 bg-rose-600 text-white font-black text-[10px] rounded-full flex items-center justify-center border-2 border-slate-900">3</span>
+              </button>
+              <!-- User Profile Picture Avatar -->
+              <button onclick="switchTab('settings')" class="w-10 h-10 rounded-full border-2 border-blue-500 overflow-hidden shadow-md cursor-pointer hover:scale-105 transition-all bg-blue-600 text-white flex items-center justify-center font-bold text-sm" id="home-user-avatar-btn">
+                <img id="home-user-avatar-img" src="" class="w-full h-full object-cover hidden" />
+                <span id="home-user-avatar-initial">M</span>
+              </button>
             </div>
           </div>
 
-          <!-- Social Feed Columns Grid -->
-          <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
-            
-            <!-- Main Feed Column (Post Composer and Streams) -->
-            <div class="xl:col-span-2 space-y-6">
+          <!-- 2. Scripture Carousel -->
+          <div class="space-y-3">
+            <div id="scripture-carousel-card" class="relative rounded-3xl overflow-hidden shadow-xl border border-slate-800/80 bg-slate-900 min-h-[170px] sm:min-h-[190px] flex flex-col justify-end p-6 group transition-all duration-500">
+              <!-- Background Image Overlay -->
+              <img id="carousel-bg-image" src="https://images.unsplash.com/photo-1509021436468-d51009121bda?auto=format&fit=crop&w=1200&q=80" class="absolute inset-0 w-full h-full object-cover brightness-50 group-hover:scale-105 transition-transform duration-700" />
+              <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
               
-              <!-- Social Post Composer -->
-              <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm space-y-4">
-                <div class="flex items-start gap-3">
-                  <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 font-bold flex items-center justify-center text-sm font-display shadow-inner" id="feed-user-avatar">
-                    ?
-                  </div>
-                  <div class="flex-grow">
-                    <textarea id="feed-composer-text" rows="3" class="w-full text-sm bg-slate-50 dark:bg-zinc-800/50 border border-slate-200 dark:border-zinc-800/80 rounded-2xl p-4 focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-zinc-100 resize-none transition-all placeholder:text-slate-400" placeholder="What is God doing in your life today? Share a testimony or praise..."></textarea>
-                  </div>
-                </div>
-
-                <!-- Media Attachments Panel -->
-                <div class="space-y-2 bg-slate-50 dark:bg-zinc-800/20 p-4 rounded-2xl border border-slate-100 dark:border-zinc-800/50">
-                  <div class="flex items-center gap-4 text-xs font-semibold text-slate-500 dark:text-zinc-400">
-                    <span>Add attachments (optional):</span>
-                    <button onclick="toggleAttachmentInput('image')" class="flex items-center gap-1 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer">
-                      <i data-lucide="image" class="w-4 h-4"></i> Picture
-                    </button>
-                    <button onclick="toggleAttachmentInput('video')" class="flex items-center gap-1 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer">
-                      <i data-lucide="video" class="w-4 h-4"></i> Video
-                    </button>
-                  </div>
-                  
-                  <!-- Image upload/URL input panel -->
-                  <div id="attachment-image-box" class="hidden flex flex-col gap-2 pt-2 border-t border-slate-100 dark:border-zinc-800/40">
-                    <div class="flex flex-col sm:flex-row gap-2 items-center">
-                      <input type="text" id="feed-image-url" class="flex-1 px-3 py-2 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl text-xs" placeholder="Paste image URL..." />
-                      <span class="text-xs text-slate-400 font-bold">or</span>
-                      <input type="file" id="feed-image-file" accept="image/*" onchange="handleFileAttachment('image')" class="text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer" />
-                    </div>
-                    <div id="attachment-image-preview" class="hidden relative max-w-[150px] rounded-xl overflow-hidden mt-1 shadow-sm border border-slate-200 dark:border-zinc-700">
-                      <img id="image-preview-img" src="" class="w-full h-auto object-cover" />
-                      <button onclick="clearAttachment('image')" class="absolute top-1 right-1 bg-red-600 hover:bg-red-700 text-white p-1 rounded-full cursor-pointer shadow"><i data-lucide="x" class="w-3 h-3"></i></button>
-                    </div>
-                  </div>
-
-                  <!-- Video upload/URL input panel -->
-                  <div id="attachment-video-box" class="hidden flex flex-col gap-2 pt-2 border-t border-slate-100 dark:border-zinc-800/40">
-                    <div class="flex flex-col sm:flex-row gap-2 items-center">
-                      <input type="text" id="feed-video-url" class="flex-1 px-3 py-2 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl text-xs" placeholder="Paste video URL (mp4/webm) or YouTube link..." />
-                      <span class="text-xs text-slate-400 font-bold">or</span>
-                      <input type="file" id="feed-video-file" accept="video/*" onchange="handleFileAttachment('video')" class="text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer" />
-                    </div>
-                    <div id="attachment-video-preview" class="hidden relative max-w-[150px] rounded-xl overflow-hidden mt-1 shadow-sm border border-slate-200 dark:border-zinc-700">
-                      <video id="video-preview-vid" src="" class="w-full h-auto" controls></video>
-                      <button onclick="clearAttachment('video')" class="absolute top-1 right-1 bg-red-600 hover:bg-red-700 text-white p-1 rounded-full cursor-pointer shadow"><i data-lucide="x" class="w-3 h-3"></i></button>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Composer Controls -->
-                <div class="flex flex-wrap items-center justify-between gap-4 pt-2 border-t border-slate-100 dark:border-zinc-800/60">
-                  <div class="flex items-center gap-4">
-                    <!-- Post Type Selector (Testimony vs Normal Note) -->
-                    <select id="feed-post-type" class="text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl px-3 py-2 font-bold text-slate-700 dark:text-zinc-200 focus:outline-none">
-                      <option value="testimony">🙏 Share Testimony</option>
-                      <option value="post">✍️ General Post</option>
-                    </select>
-
-                    <!-- Announcement Toggle (Admin & Cell Leaders Only) -->
-                    <div id="feed-announcement-toggle-box" class="hidden items-center gap-2">
-                      <input type="checkbox" id="feed-is-announcement" class="w-4 h-4 text-purple-600 rounded border-slate-300 focus:ring-purple-500 cursor-pointer" />
-                      <label for="feed-is-announcement" class="text-xs font-bold text-purple-700 dark:text-purple-400 cursor-pointer flex items-center gap-1">
-                        <i data-lucide="megaphone" class="w-3.5 h-3.5"></i> Post Announcement (Official)
-                      </label>
-                    </div>
-                  </div>
-
-                  <button onclick="publishToFeed()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase tracking-wider px-5 py-2.5 rounded-xl transition-all hover:scale-105 active:scale-95 flex items-center gap-2 cursor-pointer shadow-sm">
-                    Publish to Feed <i data-lucide="send" class="w-3.5 h-3.5"></i>
-                  </button>
-                </div>
+              <!-- Slide Verse & Reference -->
+              <div class="relative z-10 space-y-2 max-w-xl">
+                <p id="carousel-verse-text" class="text-base sm:text-lg font-serif italic font-medium text-white leading-snug drop-shadow-md">
+                  "I can do all things through Christ who strengthens me."
+                </p>
+                <span id="carousel-verse-ref" class="text-xs font-bold font-mono tracking-wider text-blue-300 block uppercase">
+                  Philippians 4:13
+                </span>
               </div>
+            </div>
+            
+            <!-- Carousel Dots Indicators -->
+            <div id="carousel-dots-container" class="flex items-center justify-center gap-2 pt-1">
+              <!-- Dots populated dynamically via JS -->
+            </div>
+          </div>
 
-              <!-- Feed Filter Segmented Tab Bar -->
-              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 p-2 rounded-3xl shadow-sm">
-                <div class="flex flex-wrap items-center gap-1">
-                  <button onclick="window.setFeedFilter('all')" id="feed-filter-all" class="px-4 py-2 text-xs font-black rounded-2xl transition-all cursor-pointer bg-blue-600 text-white shadow-sm flex items-center gap-1.5">
-                    ✨ All Updates
-                  </button>
-                  <button onclick="window.setFeedFilter('testimony')" id="feed-filter-testimony" class="px-4 py-2 text-xs font-black rounded-2xl transition-all cursor-pointer text-slate-500 hover:text-slate-800 dark:hover:text-zinc-200 flex items-center gap-1.5">
-                    🙏 Praise Testimonies
-                  </button>
-                  <button onclick="window.setFeedFilter('announcement')" id="feed-filter-announcement" class="px-4 py-2 text-xs font-black rounded-2xl transition-all cursor-pointer text-slate-500 hover:text-slate-800 dark:hover:text-zinc-200 flex items-center gap-1.5">
-                    📢 Announcements
-                  </button>
-                </div>
-                <div class="text-[10px] font-bold text-slate-400 dark:text-zinc-500 px-2 flex items-center gap-1.5" id="feed-items-count-badge">
-                  <span class="w-1.5 h-1.5 bg-blue-500 rounded-full animate-ping"></span> Live Connection
-                </div>
+          <!-- 3. Quick Actions -->
+          <div class="grid grid-cols-4 gap-2.5 sm:gap-4">
+            <button onclick="window.scrollToComposerOrOpenModal()" class="flex flex-col items-center justify-center gap-2 p-3 sm:p-4 bg-white dark:bg-zinc-900 hover:dark:bg-zinc-800/80 border border-slate-200/80 dark:border-zinc-800 rounded-2xl shadow-xs hover:scale-103 active:scale-97 transition-all cursor-pointer group">
+              <div class="p-2.5 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded-xl group-hover:bg-blue-600 group-hover:text-white transition-all">
+                <i data-lucide="edit-3" class="w-5 h-5"></i>
               </div>
+              <span class="text-[11px] sm:text-xs font-bold text-slate-800 dark:text-zinc-200 text-center leading-tight">New Post</span>
+            </button>
 
-              <!-- Featured Testimonies Carousel -->
-              <div id="featured-testimonies-carousel-section" class="hidden bg-slate-50 dark:bg-zinc-900/60 rounded-3xl p-6 space-y-4">
-                <div class="flex items-center justify-between">
-                  <h4 class="text-xs font-black font-display text-amber-700 dark:text-amber-500 flex items-center gap-1.5 uppercase tracking-wider">
-                    ⭐ Featured Praise Testimonies
-                  </h4>
-                  <div class="flex items-center gap-1">
-                    <button onclick="window.prevFeaturedTestimony()" class="p-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-400 rounded-lg cursor-pointer transition-all">
-                      <i data-lucide="chevron-left" class="w-4 h-4"></i>
-                    </button>
-                    <button onclick="window.nextFeaturedTestimony()" class="p-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-400 rounded-lg cursor-pointer transition-all">
-                      <i data-lucide="chevron-right" class="w-4 h-4"></i>
-                    </button>
-                  </div>
-                </div>
-                <div id="featured-testimonies-carousel-container" class="relative overflow-hidden min-h-[140px] flex items-center">
-                  <!-- Auto playing items rendered here dynamically -->
-                  <p class="text-xs text-slate-400 italic">No pinned testimonies shared currently.</p>
-                </div>
+            <button onclick="switchTab('prayers')" class="flex flex-col items-center justify-center gap-2 p-3 sm:p-4 bg-white dark:bg-zinc-900 hover:dark:bg-zinc-800/80 border border-slate-200/80 dark:border-zinc-800 rounded-2xl shadow-xs hover:scale-103 active:scale-97 transition-all cursor-pointer group">
+              <div class="p-2.5 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded-xl group-hover:bg-blue-600 group-hover:text-white transition-all">
+                <i data-lucide="flame" class="w-5 h-5"></i>
               </div>
+              <span class="text-[11px] sm:text-xs font-bold text-slate-800 dark:text-zinc-200 text-center leading-tight">Prayer Room</span>
+            </button>
 
-              <!-- Live Stream Feed Posts Container -->
-              <div id="community-posts-stream" class="space-y-6">
-                <!-- Posts loaded via JS -->
-                <div class="text-center py-12 text-slate-400 font-medium flex flex-col items-center gap-3">
-                  <i data-lucide="loader-2" class="w-8 h-8 animate-spin text-blue-500"></i>
-                  Loading fellowship feed...
-                </div>
+            <button onclick="switchTab('bible')" class="flex flex-col items-center justify-center gap-2 p-3 sm:p-4 bg-white dark:bg-zinc-900 hover:dark:bg-zinc-800/80 border border-slate-200/80 dark:border-zinc-800 rounded-2xl shadow-xs hover:scale-103 active:scale-97 transition-all cursor-pointer group">
+              <div class="p-2.5 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded-xl group-hover:bg-blue-600 group-hover:text-white transition-all">
+                <i data-lucide="book-open" class="w-5 h-5"></i>
               </div>
+              <span class="text-[11px] sm:text-xs font-bold text-slate-800 dark:text-zinc-200 text-center leading-tight">Bible Study</span>
+            </button>
 
+            <button onclick="window.openQuizModal ? window.openQuizModal() : switchTab('bible')" class="flex flex-col items-center justify-center gap-2 p-3 sm:p-4 bg-white dark:bg-zinc-900 hover:dark:bg-zinc-800/80 border border-slate-200/80 dark:border-zinc-800 rounded-2xl shadow-xs hover:scale-103 active:scale-97 transition-all cursor-pointer group">
+              <div class="p-2.5 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded-xl group-hover:bg-blue-600 group-hover:text-white transition-all">
+                <i data-lucide="help-circle" class="w-5 h-5"></i>
+              </div>
+              <span class="text-[11px] sm:text-xs font-bold text-slate-800 dark:text-zinc-200 text-center leading-tight">Quiz</span>
+            </button>
+          </div>
+
+          <!-- 4. Today's Devotional -->
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <h3 class="text-base font-black font-display text-slate-900 dark:text-zinc-100">Today's Devotional</h3>
+              <span id="devotional-streak-badge" class="px-3 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 rounded-full text-xs font-bold flex items-center gap-1.5">
+                Streak 🔥 <span id="home-streak-count">12</span>
+              </span>
             </div>
 
-            <!-- Sidebars: Testimonies & Quick Info (Desktop only) -->
-            <div class="space-y-6">
-              
-              <!-- Quick Help Guidance Box -->
-              <div id="quick-help-box" class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm space-y-4 relative">
-                <button onclick="dismissWidget('quick-help-box')" class="absolute top-4 right-4 p-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-zinc-800 dark:hover:text-zinc-200 transition-colors cursor-pointer" title="Dismiss">
-                  <i data-lucide="x" class="w-4 h-4"></i>
-                </button>
-                <h4 class="font-black font-display text-slate-900 dark:text-zinc-100 flex items-center gap-2 text-sm uppercase tracking-wider text-blue-600 dark:text-blue-400">
-                  <i data-lucide="help-circle" class="w-4 h-4"></i> About this Feed
-                </h4>
-                <p class="text-xs text-slate-500 dark:text-zinc-400 leading-relaxed">
-                  Connect and engage with your brothers and sisters in Christ. Ask for prayer, like testimonies, read official fellowship announcements, and leave comments of support!
+            <!-- Featured Devotional Card -->
+            <div id="todays-devotional-card" class="bg-gradient-to-br from-slate-900 via-zinc-900 to-slate-950 border border-slate-800/80 rounded-3xl p-5 shadow-xl relative overflow-hidden flex flex-col sm:flex-row gap-5 items-center">
+              <img id="devotional-cover-img" src="https://images.unsplash.com/photo-1509021436468-d51009121bda?auto=format&fit=crop&w=600&q=80" class="w-full sm:w-40 h-36 object-cover rounded-2xl shrink-0 shadow-md" />
+              <div class="space-y-2.5 flex-1 min-w-0 w-full">
+                <div>
+                  <h4 id="devotional-title" class="text-lg font-black font-display text-white truncate">Walking by Faith</h4>
+                  <span id="devotional-ref" class="text-xs font-bold text-blue-400 block font-mono">Hebrews 11:1</span>
+                </div>
+                <p id="devotional-short-desc" class="text-xs text-slate-300 line-clamp-2 leading-relaxed">
+                  Faith is the confidence that what we hope for will actually happen.
                 </p>
-                <div class="text-[10px] bg-slate-50 dark:bg-zinc-800/40 p-3 rounded-xl border border-slate-100 dark:border-zinc-800/60 space-y-1.5">
-                  <span class="font-bold text-slate-700 dark:text-zinc-300 block">📢 Who can post Announcements?</span>
-                  <p class="text-slate-500 dark:text-zinc-400">Only Super Admins and Cell Leaders can broadcast official announcements to the entire fellowship.</p>
+                <button onclick="window.readFullDevotional()" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-full transition-all cursor-pointer shadow-md hover:scale-105 active:scale-95 inline-flex items-center gap-1.5">
+                  Read Now
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 5. Upcoming Live (Placed directly below Today's Devotional!) -->
+          <div id="home-upcoming-live-section" class="space-y-3 hidden">
+            <div class="flex items-center justify-between">
+              <h3 class="text-base font-black font-display text-slate-900 dark:text-zinc-100 flex items-center gap-2">
+                Upcoming Live
+              </h3>
+              <button onclick="switchTab('dashboard')" class="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline">
+                See All
+              </button>
+            </div>
+
+            <!-- Upcoming Live Card -->
+            <div class="bg-slate-900/90 border border-slate-800 rounded-3xl p-5 shadow-xl flex flex-col sm:flex-row items-center gap-4 relative overflow-hidden">
+              <div class="relative w-full sm:w-44 h-32 rounded-2xl overflow-hidden shrink-0 shadow-md">
+                <img id="live-banner-img" src="https://images.unsplash.com/photo-1438232992991-995b7058bbb3?auto=format&fit=crop&w=600&q=80" class="w-full h-full object-cover" />
+                <span id="live-status-pill" class="absolute top-2 left-2 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-rose-600 text-white animate-pulse">
+                  LIVE
+                </span>
+              </div>
+
+              <div class="space-y-2 flex-1 min-w-0 w-full">
+                <h4 id="live-card-title" class="text-base font-black font-display text-white truncate">Sunday Worship Service</h4>
+                <div class="text-xs text-slate-400 space-y-1 font-medium">
+                  <div class="flex items-center gap-1.5" id="live-card-date">
+                    <i data-lucide="calendar" class="w-3.5 h-3.5 text-blue-400"></i> May 25, 2025 • 10:00 AM
+                  </div>
+                  <div class="flex items-center gap-1.5 text-blue-400 font-mono font-bold" id="live-card-countdown">
+                    <i data-lucide="clock" class="w-3.5 h-3.5"></i> <span id="live-countdown-val">02h 18m 45s left</span>
+                  </div>
+                </div>
+
+                <button id="live-card-action-btn" onclick="switchTab('dashboard')" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-full transition-all cursor-pointer shadow-sm hover:scale-105 active:scale-95 inline-flex items-center gap-1.5 mt-1">
+                  Join Live
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 6. Upcoming Events -->
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <h3 class="text-base font-black font-display text-slate-900 dark:text-zinc-100">Upcoming Events</h3>
+              <button onclick="switchTab('calendar')" class="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline">
+                See All
+              </button>
+            </div>
+
+            <!-- Event Card -->
+            <div id="home-upcoming-event-card" class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-4 shadow-xs flex items-center justify-between gap-4">
+              <div class="flex items-center gap-3 min-w-0">
+                <img id="home-event-thumb" src="https://images.unsplash.com/photo-1519817650390-64a93db51149?auto=format&fit=crop&w=300&q=80" class="w-14 h-14 rounded-2xl object-cover shrink-0 shadow-xs" />
+                <div class="min-w-0">
+                  <h4 id="home-event-title" class="text-sm font-black font-display text-slate-900 dark:text-zinc-100 truncate">Youth Fellowship Service</h4>
+                  <p id="home-event-time" class="text-xs text-slate-500 dark:text-zinc-400 font-medium">May 25, 2025 • 10:00 AM</p>
+                  <p id="home-event-venue" class="text-[11px] text-slate-400 dark:text-zinc-500 truncate">📍 Main Auditorium</p>
+                </div>
+              </div>
+              <span id="home-event-category-pill" class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-200/50 dark:border-blue-900/40 shrink-0">
+                Youth
+              </span>
+            </div>
+          </div>
+
+          <!-- 7. Community Feed -->
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <h3 class="text-base font-black font-display text-slate-900 dark:text-zinc-100">Community Feed</h3>
+              <button onclick="window.scrollToComposerOrOpenModal()" class="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline">
+                + Share Post
+              </button>
+            </div>
+
+            <!-- Social Post Composer -->
+            <div id="home-feed-composer-card" class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-5 shadow-xs space-y-3">
+              <div class="flex items-start gap-3">
+                <div class="w-10 h-10 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center text-sm font-display shadow-inner shrink-0" id="feed-user-avatar">
+                  ?
+                </div>
+                <div class="flex-grow">
+                  <textarea id="feed-composer-text" rows="2" class="w-full text-xs sm:text-sm bg-slate-50 dark:bg-zinc-800/50 border border-slate-200 dark:border-zinc-800/80 rounded-2xl p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-zinc-100 resize-none transition-all placeholder:text-slate-400" placeholder="What is God doing in your life today? Share a testimony or praise..."></textarea>
                 </div>
               </div>
 
-              <!-- Side Widget: Community Praise Testimonies Slideshow -->
-              <div id="member-journeys-box" class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm space-y-4 relative">
-                <button onclick="dismissWidget('member-journeys-box')" class="absolute top-4 right-4 p-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-zinc-800 dark:hover:text-zinc-200 transition-colors cursor-pointer" title="Dismiss">
-                  <i data-lucide="x" class="w-4 h-4"></i>
-                </button>
-                <div class="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800/60 pb-2">
-                  <h4 class="font-black font-display text-slate-900 dark:text-zinc-100 flex items-center gap-2 text-sm uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-                    <i data-lucide="sparkles" class="w-4 h-4"></i> Praise Testimonies
-                  </h4>
-                  <div id="sidebar-journeys-nav" class="hidden flex items-center gap-1">
-                    <button onclick="window.prevSidebarJourney()" class="p-1 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-slate-50 dark:hover:bg-zinc-800 rounded transition-colors cursor-pointer">
-                      <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i>
-                    </button>
-                    <button onclick="window.nextSidebarJourney()" class="p-1 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-slate-50 dark:hover:bg-zinc-800 rounded transition-colors cursor-pointer">
-                      <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
-                    </button>
-                  </div>
-                </div>
-                <p class="text-xs text-slate-500 dark:text-zinc-400 leading-relaxed">
-                  Read real-time testimonies of God's power, goodness, and active moves in our fellowship community.
-                </p>
-                <div id="sidebar-testimonies-list" class="space-y-3">
-                  <!-- Loaded dynamically from real community praise testimonies as a slideshow -->
+              <!-- Media Attachments Panel -->
+              <div class="space-y-2 bg-slate-50 dark:bg-zinc-800/20 p-3 rounded-2xl border border-slate-100 dark:border-zinc-800/50">
+                <div class="flex items-center gap-4 text-xs font-semibold text-slate-500 dark:text-zinc-400">
+                  <span>Add attachments:</span>
+                  <button onclick="toggleAttachmentInput('image')" class="flex items-center gap-1 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer">
+                    <i data-lucide="image" class="w-4 h-4"></i> Picture
+                  </button>
+                  <button onclick="toggleAttachmentInput('video')" class="flex items-center gap-1 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer">
+                    <i data-lucide="video" class="w-4 h-4"></i> Video
+                  </button>
                 </div>
                 
-                <div class="pt-3 border-t border-slate-100 dark:border-zinc-800/60 flex flex-col gap-2">
-                  <p class="text-[10px] text-slate-400 dark:text-zinc-500 italic">
-                    Has God done something wonderful in your life? We urge you to share your praise report and encourage the saints!
-                  </p>
-                  <button onclick="window.scrollToComposerAndSelectTestimony()" class="w-full py-2 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900 text-emerald-700 dark:text-emerald-400 font-bold text-[11px] uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1">
-                    <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> Share Your Testimony
-                  </button>
+                <!-- Image upload/URL input panel -->
+                <div id="attachment-image-box" class="hidden flex flex-col gap-2 pt-2 border-t border-slate-100 dark:border-zinc-800/40">
+                  <div class="flex flex-col sm:flex-row gap-2 items-center">
+                    <input type="text" id="feed-image-url" class="flex-1 px-3 py-2 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl text-xs" placeholder="Paste image URL..." />
+                    <span class="text-xs text-slate-400 font-bold">or</span>
+                    <input type="file" id="feed-image-file" accept="image/*" onchange="handleFileAttachment('image')" class="text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer" />
+                  </div>
+                </div>
+
+                <!-- Video upload/URL input panel -->
+                <div id="attachment-video-box" class="hidden flex flex-col gap-2 pt-2 border-t border-slate-100 dark:border-zinc-800/40">
+                  <div class="flex flex-col sm:flex-row gap-2 items-center">
+                    <input type="text" id="feed-video-url" class="flex-1 px-3 py-2 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl text-xs" placeholder="Paste video URL..." />
+                    <span class="text-xs text-slate-400 font-bold">or</span>
+                    <input type="file" id="feed-video-file" accept="video/*" onchange="handleFileAttachment('video')" class="text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Composer Controls -->
+              <div class="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-zinc-800/60">
+                <select id="feed-post-type" class="text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl px-3 py-1.5 font-bold text-slate-700 dark:text-zinc-200 focus:outline-none">
+                  <option value="testimony">🙏 Share Testimony</option>
+                  <option value="post">✍️ General Post</option>
+                </select>
+
+                <button onclick="publishToFeed()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase tracking-wider px-5 py-2 rounded-full transition-all hover:scale-105 active:scale-95 flex items-center gap-1.5 cursor-pointer shadow-xs">
+                  Publish <i data-lucide="send" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Feed Filter Bar -->
+            <div class="flex items-center justify-between gap-2 bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 p-1.5 rounded-2xl shadow-xs">
+              <div class="flex items-center gap-1">
+                <button onclick="window.setFeedFilter('all')" id="feed-filter-all" class="px-3.5 py-1.5 text-xs font-black rounded-xl transition-all cursor-pointer bg-blue-600 text-white shadow-xs">
+                  All Posts
+                </button>
+                <button onclick="window.setFeedFilter('testimony')" id="feed-filter-testimony" class="px-3.5 py-1.5 text-xs font-black rounded-xl transition-all cursor-pointer text-slate-500 hover:text-slate-800 dark:hover:text-zinc-200">
+                  Testimonies
+                </button>
+              </div>
+            </div>
+
+            <!-- Live Stream Posts List -->
+            <div id="community-posts-stream" class="space-y-4">
+              <div class="text-center py-10 text-slate-400 font-medium flex flex-col items-center gap-3">
+                <i data-lucide="loader-2" class="w-8 h-8 animate-spin text-blue-500"></i>
+                Loading community feed...
+              </div>
+            </div>
+          </div>
+        </section>          </button>
                 </div>
               </div>
 
@@ -3107,6 +3165,130 @@
           <button onclick="document.getElementById('quiz-android-download-modal').classList.add('hidden')" class="w-full py-2.5 text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200 font-bold text-xs uppercase tracking-wider">
             Continue in Browser
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Floating Glassmorphism Mobile Bottom Navigation Bar -->
+    <nav id="mobile-bottom-nav" class="fixed bottom-3 left-4 right-4 z-40 lg:hidden backdrop-blur-xl bg-[#0b101d]/90 border border-slate-800/80 rounded-[2rem] p-2 shadow-2xl flex items-center justify-around">
+      <button onclick="switchTab('feed')" id="bnav-feed" class="flex flex-col items-center gap-0.5 px-3 py-1 text-blue-500 font-bold cursor-pointer transition-all">
+        <i data-lucide="home" class="w-5 h-5"></i>
+        <span class="text-[10px]">Home</span>
+      </button>
+
+      <button onclick="switchTab('cells')" id="bnav-cells" class="flex flex-col items-center gap-0.5 px-3 py-1 text-slate-400 hover:text-slate-200 font-medium cursor-pointer transition-all">
+        <i data-lucide="users" class="w-5 h-5"></i>
+        <span class="text-[10px]">Cells</span>
+      </button>
+
+      <button onclick="switchTab('chat')" id="bnav-chat" class="flex flex-col items-center gap-0.5 px-3 py-1 text-slate-400 hover:text-slate-200 font-medium cursor-pointer transition-all">
+        <i data-lucide="message-square" class="w-5 h-5"></i>
+        <span class="text-[10px]">Chat</span>
+      </button>
+
+      <button onclick="switchTab('calendar')" id="bnav-calendar" class="flex flex-col items-center gap-0.5 px-3 py-1 text-slate-400 hover:text-slate-200 font-medium cursor-pointer transition-all">
+        <i data-lucide="calendar" class="w-5 h-5"></i>
+        <span class="text-[10px]">Events</span>
+      </button>
+
+      <button onclick="window.openMoreMenu()" id="bnav-more" class="flex flex-col items-center gap-0.5 px-3 py-1 text-slate-400 hover:text-slate-200 font-medium cursor-pointer transition-all">
+        <i data-lucide="more-horizontal" class="w-5 h-5"></i>
+        <span class="text-[10px]">More</span>
+      </button>
+    </nav>
+
+    <!-- Devotional Reader Modal -->
+    <div id="devotional-reader-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+      <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 max-w-lg w-full max-h-[90vh] overflow-y-auto custom-scrollbar space-y-5 text-white shadow-2xl relative">
+        <button onclick="window.closeDevotionalModal()" class="absolute top-4 right-4 p-2 text-slate-400 hover:text-white rounded-full bg-slate-800 cursor-pointer">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+        
+        <img id="modal-devotional-img" src="https://images.unsplash.com/photo-1509021436468-d51009121bda?auto=format&fit=crop&w=800&q=80" class="w-full h-48 object-cover rounded-2xl shadow-md" />
+        <div class="space-y-1">
+          <span id="modal-devotional-ref" class="text-xs font-bold text-blue-400 uppercase tracking-widest font-mono">Hebrews 11:1</span>
+          <h3 id="modal-devotional-title" class="text-2xl font-black font-display text-white">Walking by Faith</h3>
+        </div>
+        
+        <div id="modal-devotional-body" class="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap space-y-3 border-t border-slate-800 pt-4">
+          Faith is step-by-step trust in the character and word of Almighty God. Even when circumstances appear uncertain, His word stands firm forever.
+        </div>
+
+        <div class="bg-blue-950/40 border border-blue-900/50 p-4 rounded-2xl space-y-2">
+          <span class="text-xs font-bold text-blue-400 uppercase tracking-wider block">Reflection & Prayer</span>
+          <p id="modal-devotional-reflection" class="text-xs text-blue-200 italic leading-relaxed">
+            "Lord, grant me the grace to walk by faith today, trusting Your good plan above all sight."
+          </p>
+        </div>
+
+        <button onclick="window.triggerDevotionalCheckin(); window.closeDevotionalModal();" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase tracking-widest rounded-xl transition-all cursor-pointer shadow-md">
+          Complete Check-in & Claim Streak 🔥
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile More Menu Modal / Drawer -->
+    <div id="more-menu-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div class="bg-slate-900 border border-slate-800 rounded-t-3xl sm:rounded-3xl p-6 max-w-md w-full space-y-4 text-white shadow-2xl relative animate-fade-in">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <h3 class="text-base font-black font-display text-white">More Navigation</h3>
+          <button onclick="window.closeMoreMenu()" class="p-1.5 text-slate-400 hover:text-white rounded-full bg-slate-800 cursor-pointer">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 pt-1">
+          <button onclick="switchTab('prayers'); window.closeMoreMenu();" class="p-3 bg-slate-800/80 hover:bg-slate-800 rounded-2xl border border-slate-700/60 flex items-center gap-3 text-xs font-bold text-white cursor-pointer">
+            <i data-lucide="flame" class="w-4 h-4 text-blue-400"></i> Prayer Desk
+          </button>
+          <button onclick="switchTab('bible'); window.closeMoreMenu();" class="p-3 bg-slate-800/80 hover:bg-slate-800 rounded-2xl border border-slate-700/60 flex items-center gap-3 text-xs font-bold text-white cursor-pointer">
+            <i data-lucide="book-open" class="w-4 h-4 text-blue-400"></i> Bible Study
+          </button>
+          <button onclick="switchTab('downloads'); window.closeMoreMenu();" class="p-3 bg-slate-800/80 hover:bg-slate-800 rounded-2xl border border-slate-700/60 flex items-center gap-3 text-xs font-bold text-white cursor-pointer">
+            <i data-lucide="download" class="w-4 h-4 text-blue-400"></i> Resource Hub
+          </button>
+          <button onclick="switchTab('dashboard'); window.closeMoreMenu();" class="p-3 bg-slate-800/80 hover:bg-slate-800 rounded-2xl border border-slate-700/60 flex items-center gap-3 text-xs font-bold text-white cursor-pointer">
+            <i data-lucide="layout-dashboard" class="w-4 h-4 text-blue-400"></i> Faith Dashboard
+          </button>
+          <button onclick="switchTab('settings'); window.closeMoreMenu();" class="p-3 bg-slate-800/80 hover:bg-slate-800 rounded-2xl border border-slate-700/60 flex items-center gap-3 text-xs font-bold text-white cursor-pointer">
+            <i data-lucide="settings" class="w-4 h-4 text-blue-400"></i> Settings
+          </button>
+          <button id="more-menu-admin-btn" onclick="switchTab('admin'); window.closeMoreMenu();" class="hidden p-3 bg-blue-950/60 hover:bg-blue-900/60 rounded-2xl border border-blue-800/60 flex items-center gap-3 text-xs font-bold text-blue-300 cursor-pointer">
+            <i data-lucide="shield-check" class="w-4 h-4 text-blue-400"></i> Admin Console
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notifications Modal -->
+    <div id="notifications-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+      <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-md w-full space-y-4 text-white shadow-2xl relative">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div class="flex items-center gap-2">
+            <i data-lucide="bell" class="w-5 h-5 text-blue-400"></i>
+            <h3 class="text-base font-black font-display text-white">Notifications</h3>
+          </div>
+          <button onclick="window.closeNotificationsModal()" class="p-1.5 text-slate-400 hover:text-white rounded-full bg-slate-800 cursor-pointer">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+        </div>
+
+        <div id="notifications-list" class="space-y-3 max-h-80 overflow-y-auto custom-scrollbar">
+          <div class="p-3 bg-slate-800/60 rounded-2xl border border-slate-700/50 space-y-1">
+            <span class="text-xs font-bold text-blue-400 block">✨ Welcome to HCVerse!</span>
+            <p class="text-[11px] text-slate-300">Your profile and cell fellowship membership are active.</p>
+            <span class="text-[9px] text-slate-500 font-mono">Just now</span>
+          </div>
+          <div class="p-3 bg-slate-800/60 rounded-2xl border border-slate-700/50 space-y-1">
+            <span class="text-xs font-bold text-blue-400 block">📖 Today's Devotional Published</span>
+            <p class="text-[11px] text-slate-300">Read "Walking by Faith" and complete your check-in.</p>
+            <span class="text-[9px] text-slate-500 font-mono">Today</span>
+          </div>
+          <div class="p-3 bg-slate-800/60 rounded-2xl border border-slate-700/50 space-y-1">
+            <span class="text-xs font-bold text-blue-400 block">📹 Sunday Worship Service</span>
+            <p class="text-[11px] text-slate-300">Live stream broadcast is active.</p>
+            <span class="text-[9px] text-slate-500 font-mono">Live now</span>
+          </div>
         </div>
       </div>
     </div>
