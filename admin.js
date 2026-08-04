@@ -1674,8 +1674,98 @@ function downloadQuizJsonTemplate() {
   window.showToast?.("📥 Sample Quiz JSON Template downloaded!", "success");
 }
 
+function parseAndApplyQuizJson(jsonText, publishDirectly = false) {
+  if (!jsonText || !jsonText.trim()) {
+    window.showToast?.("Please paste valid JSON code into the text area first.", "error");
+    return;
+  }
+  try {
+    const data = JSON.parse(jsonText.trim());
+    
+    if (data.questions && Array.isArray(data.questions)) {
+      if (data.title) document.getElementById('admin-quiz-title').value = data.title;
+      if (data.topic) document.getElementById('admin-quiz-topic').value = data.topic;
+      if (data.difficulty) document.getElementById('admin-quiz-difficulty').value = data.difficulty;
+      if (data.coverEmoji) document.getElementById('admin-quiz-emoji').value = data.coverEmoji;
+      if (data.coverGradient) document.getElementById('admin-quiz-gradient').value = data.coverGradient;
+      if (data.coverImageUrl) document.getElementById('admin-quiz-image-url').value = data.coverImageUrl;
+      if (data.description) document.getElementById('admin-quiz-desc').value = data.description;
+      
+      activeQuizQuestions = data.questions;
+
+      if (publishDirectly) {
+        publishQuizToCloud();
+        return;
+      }
+
+      window.showToast?.(`Loaded quiz "${data.title || 'Untitled'}" (${data.questions.length} questions) into builder!`, "success");
+    } else if (Array.isArray(data)) {
+      activeQuizQuestions = data;
+      window.showToast?.(`Loaded ${data.length} questions into builder queue from JSON!`, "success");
+    } else {
+      window.showToast?.("Invalid JSON format. Expected quiz object with questions array or an array of question objects.", "error");
+      return;
+    }
+
+    renderActiveQuestionsQueue();
+  } catch (err) {
+    window.showToast?.("Failed to parse pasted JSON code: " + err.message, "error");
+  }
+}
+
+function handleQuizJsonPasteSubmit() {
+  const jsonText = document.getElementById('admin-quiz-json-textarea')?.value;
+  parseAndApplyQuizJson(jsonText, false);
+}
+
+function handleQuizJsonPasteDirectPublish() {
+  const jsonText = document.getElementById('admin-quiz-json-textarea')?.value;
+  parseAndApplyQuizJson(jsonText, true);
+}
+
+function copySampleQuizJsonToTextarea() {
+  const sample = {
+    title: "The Book of Acts & Early Church Miracles",
+    topic: "New Testament History",
+    difficulty: "Intermediate",
+    coverEmoji: "🔥",
+    coverGradient: "from-purple-600 to-indigo-700",
+    coverImageUrl: "https://images.unsplash.com/photo-1490730141103-6cac27aaab94?auto=format&fit=crop&w=800&q=80",
+    description: "Explore the Holy Spirit movement in the early apostolic church.",
+    questions: [
+      {
+        question: "On which Jewish festival did the Holy Spirit descend upon the disciples?",
+        options: ["Passover", "Pentecost", "Tabernacles", "Yom Kippur"],
+        answerIdx: 1,
+        type: "mc"
+      },
+      {
+        question: "In which city were believers first called 'Christians'?",
+        options: ["Jerusalem", "Antioch", "Damascus", "Ephesus"],
+        answerIdx: 1,
+        type: "mc"
+      },
+      {
+        question: "Saul of Tarsus encountered Jesus on the road to Damascus.",
+        options: ["True", "False"],
+        answerIdx: 0,
+        type: "tf"
+      }
+    ]
+  };
+
+  const textarea = document.getElementById('admin-quiz-json-textarea');
+  if (textarea) {
+    textarea.value = JSON.stringify(sample, null, 2);
+    window.showToast?.("Sample quiz JSON code loaded into textarea!");
+  }
+}
+
 window.handleQuizJsonUpload = handleQuizJsonUpload;
 window.downloadQuizJsonTemplate = downloadQuizJsonTemplate;
+window.handleQuizJsonPasteSubmit = handleQuizJsonPasteSubmit;
+window.handleQuizJsonPasteDirectPublish = handleQuizJsonPasteDirectPublish;
+window.copySampleQuizJsonToTextarea = copySampleQuizJsonToTextarea;
 
 function copyDirectQuizLink(quizId) {
   const url = `${window.location.origin}${window.location.pathname}?quiz=${encodeURIComponent(quizId || 'power_of_thanksgiving')}&mode=quiz`;

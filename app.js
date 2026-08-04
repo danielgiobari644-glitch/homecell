@@ -37,6 +37,7 @@ function switchTab(tabId) {
   const tabTitles = {
     feed: 'Community Feed',
     dashboard: 'Faith Dashboard',
+    streak: 'My Streak',
     bible: 'Scripture & Trivia',
     cells: 'Cell Fellowships',
     chat: 'Fellowship Lounge',
@@ -54,7 +55,7 @@ function switchTab(tabId) {
   }
 
   // List of all navigation tabs
-  const tabIds = ['feed', 'dashboard', 'bible', 'cells', 'chat', 'prayers', 'calendar', 'downloads', 'admin', 'settings'];
+  const tabIds = ['feed', 'dashboard', 'streak', 'bible', 'cells', 'chat', 'prayers', 'calendar', 'downloads', 'admin', 'settings'];
 
   tabIds.forEach(id => {
     const pane = document.getElementById(`tab-${id}`);
@@ -91,6 +92,7 @@ function switchTab(tabId) {
   // Call designated module initializers on tab switch
   if (tabId === 'feed' && window.initFeedEngine) window.initFeedEngine();
   if (tabId === 'dashboard' && window.initDashboard) window.initDashboard();
+  if (tabId === 'streak' && window.initStreakModule) window.initStreakModule();
   if (tabId === 'bible' && window.initBibleEngine) window.initBibleEngine();
   if (tabId === 'cells' && window.initCellsModule) window.initCellsModule();
   if (tabId === 'chat' && window.initCellsModule) window.initCellsModule();

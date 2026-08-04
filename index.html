@@ -730,6 +730,11 @@
             <span>Faith Dashboard</span>
           </button>
 
+          <button onclick="switchTab('streak')" id="nav-streak" class="nav-item-streak w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800/60 transition-all cursor-pointer">
+            <i data-lucide="flame" class="w-4.5 h-4.5 text-orange-500"></i>
+            <span>My Streak</span>
+          </button>
+
           <button onclick="switchTab('bible')" id="nav-bible" class="nav-item-bible w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800/60 transition-all cursor-pointer">
             <i data-lucide="book-open" class="w-4.5 h-4.5"></i>
             <span>Scripture & Trivia</span>
@@ -821,6 +826,11 @@
           <button onclick="switchTab('dashboard')" class="nav-item-dashboard w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl text-xs font-bold text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800/60 transition-all cursor-pointer">
             <i data-lucide="layout-dashboard" class="w-4.5 h-4.5"></i>
             <span>Faith Dashboard</span>
+          </button>
+
+          <button onclick="switchTab('streak')" class="nav-item-streak w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl text-xs font-bold text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800/60 transition-all cursor-pointer">
+            <i data-lucide="flame" class="w-4.5 h-4.5 text-orange-500"></i>
+            <span>My Streak</span>
           </button>
 
           <button onclick="switchTab('bible')" class="nav-item-bible w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl text-xs font-bold text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800/60 transition-all cursor-pointer">
@@ -1534,6 +1544,214 @@
               </a>
             </div>
           </div>
+        </section>
+
+        <!-- Tab: My Streak -->
+        <section id="tab-streak" class="app-tab hidden space-y-6 animate-fade-in">
+          
+          <!-- Modern Dark Glassmorphism Header & Daily Check-In Banner -->
+          <div class="bg-gradient-to-br from-zinc-900 via-zinc-950 to-black border border-zinc-800 rounded-[2.5rem] p-6 sm:p-10 shadow-2xl relative overflow-hidden text-white space-y-8">
+            <!-- Background Glow FX -->
+            <div class="absolute -right-20 -top-20 w-72 h-72 bg-orange-500/20 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="absolute -left-20 -bottom-20 w-72 h-72 bg-blue-500/15 rounded-full blur-3xl pointer-events-none"></div>
+
+            <!-- Header Title & Main Streak Counter -->
+            <div class="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
+              <div class="text-center md:text-left space-y-2">
+                <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30 text-xs font-black uppercase tracking-wider">
+                  🔥 My Streak
+                </div>
+                <div class="flex items-baseline justify-center md:justify-start gap-3">
+                  <span id="streak-header-count" class="text-6xl sm:text-7xl font-black font-display tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500 drop-shadow-md">0</span>
+                  <div class="text-left">
+                    <span class="text-xl sm:text-2xl font-black font-display text-white block">Days in a Row</span>
+                    <span class="text-xs text-slate-400 font-medium">Keep going! Don't break the chain.</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Today Check-in Action Button & Status -->
+              <div class="flex flex-col items-center md:items-end gap-3 w-full md:w-auto relative z-10">
+                <div id="streak-today-status" class="px-3 py-1 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 text-xs font-bold inline-flex items-center gap-1.5">
+                  <span>⏳</span> Pending Today's Devotion
+                </div>
+                <button id="btn-complete-streak-today" onclick="completeStreakDevotional()" class="w-full sm:w-auto px-6 py-3.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-black text-xs uppercase tracking-wider rounded-2xl cursor-pointer shadow-lg shadow-orange-500/30 transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2">
+                  <span>🔥 Complete Today's Devotional</span>
+                  <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Weekly Check-in Tracker (Mon - Sun) -->
+            <div class="pt-6 border-t border-zinc-800 relative z-10 space-y-3">
+              <div class="flex items-center justify-between">
+                <h3 class="text-xs font-black uppercase tracking-widest text-slate-400">Weekly Devotion Check-in Tracker</h3>
+                <span class="text-[10px] text-zinc-500">Auto-checkins on devotion completion</span>
+              </div>
+              <div id="weekly-checkin-tracker" class="grid grid-cols-7 gap-1.5 sm:gap-3 text-center pt-2">
+                <!-- Dynamically rendered Mon-Sun circles -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Statistics Cards Grid -->
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+            <!-- Current Streak Card -->
+            <div class="p-5 bg-zinc-900/80 backdrop-blur border border-zinc-800 rounded-3xl space-y-1 shadow-sm relative overflow-hidden">
+              <div class="flex items-center justify-between text-slate-400 text-xs font-bold uppercase tracking-wider">
+                <span>Current Streak</span>
+                <span class="text-lg">🔥</span>
+              </div>
+              <div id="stat-streak-current" class="text-3xl font-black font-display text-white">0</div>
+              <p class="text-[10px] text-orange-400 font-semibold">Active Consecutive Days</p>
+            </div>
+
+            <!-- Longest Streak Card -->
+            <div class="p-5 bg-zinc-900/80 backdrop-blur border border-zinc-800 rounded-3xl space-y-1 shadow-sm relative overflow-hidden">
+              <div class="flex items-center justify-between text-slate-400 text-xs font-bold uppercase tracking-wider">
+                <span>Longest Streak</span>
+                <span class="text-lg">🏆</span>
+              </div>
+              <div id="stat-streak-longest" class="text-3xl font-black font-display text-amber-400">0</div>
+              <p class="text-[10px] text-slate-400">All-Time High Record</p>
+            </div>
+
+            <!-- Total Devotions Card -->
+            <div class="p-5 bg-zinc-900/80 backdrop-blur border border-zinc-800 rounded-3xl space-y-1 shadow-sm relative overflow-hidden">
+              <div class="flex items-center justify-between text-slate-400 text-xs font-bold uppercase tracking-wider">
+                <span>Total Devotions</span>
+                <span class="text-lg">📚</span>
+              </div>
+              <div id="stat-streak-total" class="text-3xl font-black font-display text-blue-400">0</div>
+              <p class="text-[10px] text-slate-400">Scriptures Completed</p>
+            </div>
+
+            <!-- Active Days Card -->
+            <div class="p-5 bg-zinc-900/80 backdrop-blur border border-zinc-800 rounded-3xl space-y-1 shadow-sm relative overflow-hidden">
+              <div class="flex items-center justify-between text-slate-400 text-xs font-bold uppercase tracking-wider">
+                <span>Days Active</span>
+                <span class="text-lg">📅</span>
+              </div>
+              <div id="stat-streak-active-days" class="text-3xl font-black font-display text-emerald-400">0</div>
+              <p class="text-[10px] text-slate-400">Unique Check-in Days</p>
+            </div>
+          </div>
+
+          <!-- Streak Freeze Shield Status Card -->
+          <div id="streak-freeze-status-card" class="space-y-2">
+            <!-- Rendered dynamically -->
+          </div>
+
+          <!-- Encouraging Daily Verse Section -->
+          <div class="p-6 bg-gradient-to-r from-amber-950/40 via-orange-950/30 to-zinc-900 border border-amber-500/30 rounded-3xl space-y-2 text-white shadow-md">
+            <div class="flex items-center gap-2 text-amber-400 text-xs font-black uppercase tracking-widest">
+              <span>📖</span> Daily Spiritual Encouragement
+            </div>
+            <p id="encouragement-verse-text" class="text-sm font-medium italic text-slate-200">
+              "Loading scripture promise..."
+            </p>
+            <div id="encouragement-verse-ref" class="text-xs font-bold text-amber-400 text-right">
+              — Scripture Reference
+            </div>
+          </div>
+
+          <!-- Legend Progress Circle & Badges Grid -->
+          <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-stretch">
+            
+            <!-- Progress Ring Card (4 cols on xl) -->
+            <div class="xl:col-span-4 p-6 bg-zinc-900/80 backdrop-blur border border-zinc-800 rounded-3xl flex flex-col items-center justify-between text-center space-y-4">
+              <div class="space-y-1">
+                <h3 class="text-sm font-black text-white uppercase tracking-wider">365-Day Legend Goal</h3>
+                <p class="text-xs text-slate-400">Your journey towards an entire year of daily devotion</p>
+              </div>
+
+              <!-- SVG Progress Circle -->
+              <div class="relative w-40 h-40 flex items-center justify-center my-2">
+                <svg class="w-full h-full transform -rotate-90" viewBox="0 0 120 120">
+                  <circle cx="60" cy="60" r="54" stroke="currentColor" stroke-width="8" class="text-zinc-800" fill="transparent" />
+                  <circle id="progress-ring-circle" cx="60" cy="60" r="54" stroke="url(#streak-gradient)" stroke-width="8" class="text-orange-500 transition-all duration-1000 ease-out" stroke-dasharray="339.29" stroke-dashoffset="339.29" stroke-linecap="round" fill="transparent" />
+                  <defs>
+                    <linearGradient id="streak-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stop-color="#f59e0b" />
+                      <stop offset="100%" stop-color="#ea580c" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+                <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+                  <span id="progress-ring-percent" class="text-2xl font-black font-display text-white">0%</span>
+                  <span id="progress-ring-label" class="text-[10px] text-slate-400 font-bold">0 / 365 Days</span>
+                </div>
+              </div>
+
+              <div id="progress-ring-target" class="text-xs font-bold text-amber-400 bg-amber-500/10 px-4 py-2 rounded-xl border border-amber-500/20 w-full">
+                365 Days to Legend 👑
+              </div>
+            </div>
+
+            <!-- Achievement Badges Grid (8 cols on xl) -->
+            <div class="xl:col-span-8 p-6 bg-zinc-900/80 backdrop-blur border border-zinc-800 rounded-3xl space-y-4">
+              <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+                <h3 class="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
+                  <span>🏅</span> Achievement Badges
+                </h3>
+                <span class="text-[10px] text-slate-400 font-bold">Tap badge for requirements</span>
+              </div>
+
+              <div id="streak-badges-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                <!-- Dynamically loaded badge cards -->
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Monthly Calendar View & Leaderboard Grid -->
+          <div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
+            
+            <!-- Monthly Calendar View (7 cols on xl) -->
+            <div class="xl:col-span-7 p-6 bg-zinc-900/80 backdrop-blur border border-zinc-800 rounded-3xl space-y-4">
+              <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+                <div class="flex items-center gap-2">
+                  <i data-lucide="calendar" class="w-4 h-4 text-orange-400"></i>
+                  <h3 id="calendar-month-year-label" class="text-sm font-black text-white uppercase tracking-wider">August 2026</h3>
+                </div>
+                <div class="flex items-center gap-1">
+                  <button onclick="prevCalendarMonth()" class="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-all cursor-pointer">
+                    <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                  </button>
+                  <button onclick="nextCalendarMonth()" class="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-all cursor-pointer">
+                    <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Calendar Grid -->
+              <div id="monthly-calendar-grid" class="grid grid-cols-7 gap-1 sm:gap-2">
+                <!-- Rendered dynamically -->
+              </div>
+            </div>
+
+            <!-- Leaderboard Rankings (5 cols on xl) -->
+            <div class="xl:col-span-5 p-6 bg-zinc-900/80 backdrop-blur border border-zinc-800 rounded-3xl space-y-4">
+              <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+                <h3 class="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
+                  <span>🏆</span> Assembly Leaderboard
+                </h3>
+                <span class="text-[10px] text-amber-400 font-bold uppercase">Top Streaks</span>
+              </div>
+
+              <!-- Current User Rank Banner -->
+              <div id="streak-user-rank-banner" class="p-3 bg-zinc-950/60 border border-zinc-800 rounded-2xl flex items-center justify-between">
+                <!-- Rendered dynamically -->
+              </div>
+
+              <!-- Leaderboard Items List -->
+              <div id="streak-leaderboard-list" class="space-y-2.5 max-h-[380px] overflow-y-auto pr-1">
+                <!-- Rendered dynamically -->
+              </div>
+            </div>
+
+          </div>
+
         </section>
 
         <!-- Tab 2: Interactive Bible Study -->
@@ -2531,18 +2749,46 @@
                   </div>
                 </div>
 
-                <!-- Admin Quiz Import from JSON File -->
-                <div class="bg-gradient-to-tr from-purple-50 to-indigo-50 dark:from-purple-950/20 dark:to-indigo-950/20 border border-purple-200 dark:border-purple-900/40 rounded-3xl p-6 shadow-sm space-y-3">
+                <!-- Admin Quiz Import from JSON File or Paste JSON Code -->
+                <div class="bg-gradient-to-tr from-purple-50 via-indigo-50/50 to-slate-50 dark:from-purple-950/30 dark:via-indigo-950/20 dark:to-zinc-900 border border-purple-200 dark:border-purple-900/50 rounded-3xl p-6 shadow-sm space-y-4">
                   <div class="flex items-center justify-between flex-wrap gap-2">
-                    <h3 class="text-sm font-bold font-display text-purple-950 dark:text-purple-200 flex items-center gap-1.5">
-                      <span>📄</span> Create Quiz from JSON File
-                    </h3>
+                    <div>
+                      <h3 class="text-base font-black font-display text-purple-950 dark:text-purple-200 flex items-center gap-2">
+                        <i data-lucide="code" class="w-5 h-5 text-purple-600 dark:text-purple-400"></i> Create Quiz from JSON Code
+                      </h3>
+                      <p class="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">Paste raw JSON code or upload a JSON file to build or publish quizzes instantly.</p>
+                    </div>
                     <button type="button" onclick="window.downloadQuizJsonTemplate()" class="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-[10px] uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center gap-1 shadow-sm">
-                      📥 Download Sample JSON Template
+                      <i data-lucide="download" class="w-3.5 h-3.5"></i> Download Sample JSON Template
                     </button>
                   </div>
-                  <p class="text-xs text-slate-600 dark:text-zinc-300">Upload a JSON file containing quiz metadata and questions to populate the builder automatically.</p>
-                  <input type="file" id="admin-quiz-json-file" accept=".json" onchange="window.handleQuizJsonUpload(event)" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-extrabold file:bg-purple-600 file:text-white hover:file:bg-purple-700 file:cursor-pointer cursor-pointer" />
+
+                  <!-- Option Tabs / Toggle for Paste vs Upload -->
+                  <div class="space-y-3">
+                    <div>
+                      <div class="flex items-center justify-between mb-1">
+                        <label class="block text-xs font-bold text-slate-700 dark:text-zinc-200">Paste JSON Code Directly</label>
+                        <button type="button" onclick="window.copySampleQuizJsonToTextarea()" class="text-[10px] font-bold text-purple-600 hover:text-purple-700 dark:text-purple-400 cursor-pointer flex items-center gap-1">
+                          <i data-lucide="copy" class="w-3 h-3"></i> Insert Sample Template JSON
+                        </button>
+                      </div>
+                      <textarea id="admin-quiz-json-textarea" rows="6" class="w-full p-3.5 bg-white dark:bg-zinc-900 border border-purple-200 dark:border-zinc-700 rounded-2xl text-xs font-mono text-slate-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-inner" placeholder='{\n  "title": "Acts of the Apostles",\n  "topic": "New Testament",\n  "difficulty": "Intermediate",\n  "coverEmoji": "🔥",\n  "coverGradient": "from-purple-600 to-indigo-700",\n  "description": "Explore the explosive growth of the early church following Pentecost.",\n  "questions": [\n    {\n      "question": "On which festival did the Holy Spirit descend upon the apostles?",\n      "options": ["Passover", "Pentecost", "Tabernacles", "Unleavened Bread"],\n      "answerIdx": 1\n    }\n  ]\n}'></textarea>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-2">
+                      <button type="button" onclick="window.handleQuizJsonPasteSubmit()" class="px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-xl cursor-pointer shadow-sm flex items-center gap-1.5 transition-all">
+                        <i data-lucide="file-input" class="w-4 h-4"></i> Parse & Populate Builder
+                      </button>
+                      <button type="button" onclick="window.handleQuizJsonPasteDirectPublish()" class="px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-xs rounded-xl cursor-pointer shadow-sm flex items-center gap-1.5 transition-all">
+                        <i data-lucide="cloud-upload" class="w-4 h-4"></i> Publish Directly to Cloud
+                      </button>
+                    </div>
+
+                    <div class="pt-3 border-t border-purple-200/60 dark:border-purple-900/40">
+                      <span class="text-[11px] font-bold text-slate-500 dark:text-zinc-400 block mb-1">Or Upload JSON File:</span>
+                      <input type="file" id="admin-quiz-json-file" accept=".json" onchange="window.handleQuizJsonUpload(event)" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-extrabold file:bg-purple-600 file:text-white hover:file:bg-purple-700 file:cursor-pointer cursor-pointer" />
+                    </div>
+                  </div>
                 </div>
 
                 <!-- Live Question Add Form -->
@@ -3269,11 +3515,53 @@
       </div>
     </div>
 
+    <!-- Modal: Badge Details -->
+    <div id="badge-detail-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden items-center justify-center p-4">
+      <div class="bg-zinc-900 border border-zinc-800 rounded-3xl max-w-sm w-full p-6 space-y-5 text-white relative shadow-2xl animate-fade-in">
+        <button onclick="closeBadgeDetailModal()" class="absolute top-4 right-4 p-2 text-slate-400 hover:text-white rounded-full bg-zinc-800 cursor-pointer">
+          ✕
+        </button>
+        <div class="text-center space-y-2 pt-2">
+          <div id="badge-modal-icon" class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-amber-500 to-orange-600 text-white font-black text-3xl flex items-center justify-center mx-auto shadow-lg shadow-orange-500/30">
+            🏅
+          </div>
+          <h3 id="badge-modal-title" class="text-lg font-black font-display text-white">Badge Name</h3>
+          <span id="badge-modal-status" class="px-3 py-1 rounded-full text-xs font-black uppercase">Status</span>
+        </div>
+        <p id="badge-modal-desc" class="text-xs text-slate-300 text-center leading-relaxed">
+          Badge description goes here...
+        </p>
+        <div id="badge-modal-date" class="text-[11px] text-amber-400 text-center font-bold bg-zinc-950 p-2.5 rounded-xl border border-zinc-800">
+          Unlocked Date
+        </div>
+        <button onclick="closeBadgeDetailModal()" class="w-full py-3 bg-zinc-800 hover:bg-zinc-700 text-white font-bold rounded-2xl text-xs uppercase tracking-wider cursor-pointer transition-all">
+          Close Window
+        </button>
+      </div>
+    </div>
+
+    <!-- Modal: Calendar Day Record Details -->
+    <div id="calendar-day-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden items-center justify-center p-4">
+      <div class="bg-zinc-900 border border-zinc-800 rounded-3xl max-w-sm w-full p-6 space-y-4 text-white relative shadow-2xl animate-fade-in">
+        <button onclick="closeCalendarDayModal()" class="absolute top-4 right-4 p-2 text-slate-400 hover:text-white rounded-full bg-zinc-800 cursor-pointer">
+          ✕
+        </button>
+        <h3 id="cal-modal-title" class="text-sm font-black font-display text-amber-400 uppercase tracking-wider">Date Record</h3>
+        <div id="cal-modal-details" class="space-y-3">
+          <!-- Rendered dynamically -->
+        </div>
+        <button onclick="closeCalendarDayModal()" class="w-full py-2.5 bg-zinc-800 hover:bg-zinc-700 text-white font-bold rounded-xl text-xs uppercase tracking-wider cursor-pointer transition-all">
+          Close
+        </button>
+      </div>
+    </div>
+
     <!-- Core App logic scripts link -->
     <script src="sound-engine.js"></script>
     <script src="firebase.js"></script>
     <script src="push-notification.js"></script>
     <script src="toast.js"></script>
+    <script src="streak.js"></script>
     <script src="dashboard.js"></script>
     <script src="bible.js"></script>
     <script src="quiz.js"></script>
