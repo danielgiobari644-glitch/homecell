@@ -50,6 +50,10 @@ function initFeedEngine() {
 
   // Load Member Journeys in Sidebar
   loadSidebarJourneys();
+
+  // Load Daily Devotionals and Upcoming Events
+  syncFeedDailyDevotionals();
+  syncFeedUpcomingEvents();
 }
 
 window.setFeedFilter = function(filter) {
@@ -1047,3 +1051,125 @@ window.submitPostComment = submitPostComment;
 window.deleteFeedPost = deleteFeedPost;
 window.getMediaHTML = getMediaHTML;
 window.scrollToComposerAndSelectTestimony = window.scrollToComposerAndSelectTestimony;
+
+let feedDevotionalListener = null;
+function syncFeedDailyDevotionals() {
+  const container = document.getElementById('feed-daily-devotional-container');
+  if (!container) return;
+
+  if (feedDevotionalListener) feedDevotionalListener();
+
+  feedDevotionalListener = window.db.collection('daily_devotionals')
+    .orderBy('devotionalDate', 'desc')
+    .limit(1)
+    .onSnapshot(snap => {
+      container.innerHTML = '';
+      if (snap.empty) return;
+
+      snap.forEach(doc => {
+        const d = doc.data();
+        const card = document.createElement('div');
+        card.className = "bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent border border-amber-200 dark:border-amber-900/50 rounded-[2rem] p-6 shadow-sm space-y-4 animate-fade-in relative overflow-hidden";
+        
+        card.innerHTML = `
+          <div class="flex items-center justify-between border-b border-amber-200/50 dark:border-amber-900/40 pb-3">
+            <div class="flex items-center gap-2">
+              <span class="p-2 bg-amber-500 text-white rounded-xl shadow-xs">
+                <i data-lucide="sun" class="w-4 h-4"></i>
+              </span>
+              <div>
+                <span class="text-[10px] uppercase font-black tracking-widest text-amber-600 dark:text-amber-400 block">Today's Daily Devotional</span>
+                <span class="text-xs font-bold text-slate-500 dark:text-zinc-400">${d.devotionalDate} • ${d.scripture}</span>
+              </div>
+            </div>
+            <span class="text-[10px] font-bold px-2.5 py-1 bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 rounded-full border border-amber-200 dark:border-amber-800">
+              Spiritual Food
+            </span>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+            ${d.imageUrl ? `
+              <div class="md:col-span-1 rounded-2xl overflow-hidden shadow-sm border border-amber-200/60 dark:border-amber-900/40 h-44">
+                <img src="${d.imageUrl}" class="w-full h-full object-cover hover:scale-105 transition-transform duration-300" alt="${d.title}" />
+              </div>
+            ` : ''}
+            <div class="${d.imageUrl ? 'md:col-span-2' : 'md:col-span-3'} space-y-2">
+              <h3 class="text-xl font-black font-display text-slate-900 dark:text-zinc-50 tracking-tight">${d.title}</h3>
+              <div class="inline-flex items-center gap-1.5 px-3 py-1 bg-white dark:bg-zinc-800/80 rounded-xl border border-amber-200 dark:border-amber-800/50 text-xs font-bold text-amber-700 dark:text-amber-300 shadow-2xs">
+                <i data-lucide="book-open" class="w-3.5 h-3.5"></i> ${d.scripture}
+              </div>
+              <p class="text-xs text-slate-700 dark:text-zinc-300 leading-relaxed line-clamp-4 whitespace-pre-wrap">${d.body}</p>
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+      if (window.lucide) window.lucide.createIcons();
+    }, err => console.warn("Feed devotional listener error:", err));
+}
+
+let feedEventsListener = null;
+function syncFeedUpcomingEvents() {
+  const container = document.getElementById('feed-upcoming-events-container');
+  if (!container) return;
+
+  if (feedEventsListener) feedEventsListener();
+
+  feedEventsListener = window.db.collection('upcoming_events')
+    .orderBy('eventDate', 'asc')
+    .limit(3)
+    .onSnapshot(snap => {
+      container.innerHTML = '';
+      if (snap.empty) return;
+
+      const section = document.createElement('div');
+      section.className = "bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-[2rem] p-6 shadow-sm space-y-4 animate-fade-in";
+      
+      let eventsHTML = '';
+      snap.forEach(doc => {
+        const ev = doc.data();
+        const dateObj = new Date(ev.eventDate);
+        const formattedDate = dateObj.toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+        eventsHTML += `
+          <div class="p-4 bg-slate-50 dark:bg-zinc-800/50 border border-slate-100 dark:border-zinc-800 rounded-2xl flex flex-col md:flex-row gap-4 items-start md:items-center justify-between hover:border-purple-300 dark:hover:border-purple-800 transition-all">
+            <div class="flex items-center gap-4">
+              ${ev.imageUrl ? `
+                <img src="${ev.imageUrl}" class="w-20 h-20 rounded-xl object-cover border border-slate-200 dark:border-zinc-700 shadow-2xs shrink-0" alt="${ev.title}" />
+              ` : `
+                <div class="w-16 h-16 rounded-xl bg-purple-100 dark:bg-purple-950/60 text-purple-600 dark:text-purple-300 flex flex-col items-center justify-center font-bold text-xs shrink-0 border border-purple-200 dark:border-purple-800">
+                  <i data-lucide="calendar" class="w-6 h-6"></i>
+                </div>
+              `}
+              <div class="space-y-1">
+                <span class="px-2.5 py-0.5 rounded-md text-[9px] font-mono font-black uppercase tracking-wider bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300">
+                  📅 ${formattedDate}
+                </span>
+                <h4 class="font-black text-slate-900 dark:text-zinc-100 text-base font-display">${ev.title}</h4>
+                <p class="text-xs text-slate-500 dark:text-zinc-400 line-clamp-1">${ev.description}</p>
+                <span class="text-[10px] font-semibold text-slate-400 block">📍 ${ev.location}</span>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+
+      section.innerHTML = `
+        <div class="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800 pb-3">
+          <h3 class="font-black font-display text-slate-900 dark:text-zinc-100 text-sm uppercase tracking-wider flex items-center gap-2 text-purple-600 dark:text-purple-400">
+            <i data-lucide="calendar-heart" class="w-4.5 h-4.5"></i> Upcoming Parish Events
+          </h3>
+          <button onclick="switchTab('calendar')" class="text-xs font-bold text-purple-600 hover:text-purple-800 dark:text-purple-400 transition-colors flex items-center gap-1 cursor-pointer">
+            View All <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+        <div class="space-y-3">
+          ${eventsHTML}
+        </div>
+      `;
+
+      container.appendChild(section);
+      if (window.lucide) window.lucide.createIcons();
+    }, err => console.warn("Feed events listener error:", err));
+}

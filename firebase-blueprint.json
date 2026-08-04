@@ -192,6 +192,37 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["userUid", "userEmail", "userName", "senderUid", "senderName", "text", "createdAt"]
+    },
+    "UpcomingEvent": {
+      "title": "UpcomingEvent",
+      "description": "Upcoming parish or community event created by Super Admin with picture.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "date": { "type": "string" },
+        "location": { "type": "string" },
+        "description": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "title", "date", "description", "createdAt"]
+    },
+    "DailyDevotional": {
+      "title": "DailyDevotional",
+      "description": "Daily devotional guide created by Super Admin with picture.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "scripture": { "type": "string" },
+        "content": { "type": "string" },
+        "date": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "authorName": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "title", "content", "date", "createdAt"]
     }
   },
   "firestore": {
@@ -246,6 +277,14 @@
     "support_chats/{msgId}": {
       "schema": "SupportMessage",
       "description": "Direct chat between a user and the Super Admin."
+    },
+    "upcoming_events/{eventId}": {
+      "schema": "UpcomingEvent",
+      "description": "Upcoming events set by Super Admin with photos."
+    },
+    "daily_devotionals/{devotionalId}": {
+      "schema": "DailyDevotional",
+      "description": "Daily devotionals created by Super Admin with photos."
     }
   }
 }

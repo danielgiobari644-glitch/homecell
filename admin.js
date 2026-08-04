@@ -27,6 +27,8 @@ function initAdminModule() {
   syncMembershipRegistry();
   syncAdminCells();
   syncAdminEvents();
+  syncAdminUpcomingEvents();
+  syncAdminDailyDevotionals();
   syncAdminTrivia();
   syncAdminQuizzes();
   syncAdminBundles();
@@ -836,7 +838,7 @@ function resetStreamForm() {
 
 // Admin Panel Sub Tab switches
 function setAdminSubTab(subTabId) {
-  const subTabs = ['users', 'cells', 'trivia', 'bundles', 'configs', 'stream'];
+  const subTabs = ['users', 'cells', 'events', 'devotionals', 'trivia', 'bundles', 'configs', 'stream'];
   subTabs.forEach(tab => {
     const pane = document.getElementById(`atab-${tab}`);
     const btn = document.getElementById(`btn-atab-${tab}`);
@@ -853,6 +855,323 @@ function setAdminSubTab(subTabId) {
     }
   });
 }
+
+// Helper function: Compress image to small base64 JPEG
+function compressAndResizeImage(file, maxWidth = 800, quality = 0.75) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// 7. Upcoming Events Manager Functions
+let adminEventImageBase64 = '';
+
+window.previewAdminEventImage = function(event) {
+  const file = event.target.files ? event.target.files[0] : null;
+  if (!file) return;
+  compressAndResizeImage(file, 800, 0.75).then(base64 => {
+    adminEventImageBase64 = base64;
+    const box = document.getElementById('admin-event-img-preview-box');
+    const img = document.getElementById('admin-event-img-preview');
+    if (box && img) {
+      img.src = base64;
+      box.classList.remove('hidden');
+    }
+  }).catch(err => {
+    window.showToast?.("Error processing image file: " + err.message, "error");
+  });
+};
+
+window.previewAdminEventUrl = function(url) {
+  if (!url) return;
+  adminEventImageBase64 = url.trim();
+  const box = document.getElementById('admin-event-img-preview-box');
+  const img = document.getElementById('admin-event-img-preview');
+  if (box && img) {
+    img.src = url.trim();
+    box.classList.remove('hidden');
+  }
+};
+
+window.clearAdminEventImage = function() {
+  adminEventImageBase64 = '';
+  const fileInput = document.getElementById('admin-event-file');
+  const urlInput = document.getElementById('admin-event-url');
+  const box = document.getElementById('admin-event-img-preview-box');
+  if (fileInput) fileInput.value = '';
+  if (urlInput) urlInput.value = '';
+  if (box) box.classList.add('hidden');
+};
+
+window.handleAdminEventSubmit = function(event) {
+  if (event) event.preventDefault();
+  const title = document.getElementById('admin-event-title').value.trim();
+  const eventDate = document.getElementById('admin-event-date').value;
+  const location = document.getElementById('admin-event-location').value.trim();
+  const description = document.getElementById('admin-event-desc').value.trim();
+  const submitBtn = document.getElementById('btn-save-event');
+
+  const imageUrl = adminEventImageBase64 || document.getElementById('admin-event-url')?.value.trim();
+
+  if (!title || !eventDate || !location || !description) {
+    window.showToast?.("Please complete all event fields.", "error");
+    return;
+  }
+  if (!imageUrl) {
+    window.showToast?.("Please attach an event banner picture (file or URL).", "error");
+    return;
+  }
+
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.innerText = "Publishing Event...";
+  }
+
+  const docId = window.db.collection('upcoming_events').doc().id;
+  window.db.collection('upcoming_events').doc(docId).set({
+    id: docId,
+    title,
+    eventDate,
+    location,
+    description,
+    imageUrl,
+    createdBy: window.currentUserProfile?.displayName || 'Super Admin',
+    createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
+  }).then(() => {
+    window.showToast?.("🎉 Upcoming Event published successfully!", "success");
+    document.getElementById('admin-event-form')?.reset();
+    window.clearAdminEventImage();
+  }).catch(err => {
+    window.handleFirestoreError(err, 'create', `upcoming_events/${docId}`);
+  }).finally(() => {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = `<i data-lucide="calendar-plus" class="w-4 h-4"></i> Publish Upcoming Event`;
+      if (window.lucide) window.lucide.createIcons();
+    }
+  });
+};
+
+let adminUpcomingEventsListener = null;
+function syncAdminUpcomingEvents() {
+  const container = document.getElementById('admin-upcoming-events-list');
+  if (!container) return;
+
+  if (adminUpcomingEventsListener) adminUpcomingEventsListener();
+
+  adminUpcomingEventsListener = window.db.collection('upcoming_events')
+    .orderBy('eventDate', 'asc')
+    .onSnapshot(snap => {
+      container.innerHTML = '';
+      if (snap.empty) {
+        container.innerHTML = `<p class="text-xs text-slate-400 italic">No upcoming events published yet.</p>`;
+        return;
+      }
+
+      snap.forEach(doc => {
+        const ev = doc.data();
+        const evId = doc.id;
+        const card = document.createElement('div');
+        card.className = "p-4 bg-slate-50 dark:bg-zinc-800/40 border border-slate-200 dark:border-zinc-800 rounded-2xl flex flex-col justify-between space-y-3";
+        
+        card.innerHTML = `
+          <div class="space-y-2">
+            ${ev.imageUrl ? `<img src="${ev.imageUrl}" class="w-full h-32 object-cover rounded-xl border border-slate-200 dark:border-zinc-700 shadow-xs" />` : ''}
+            <div>
+              <span class="px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase tracking-widest bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300">
+                ${new Date(ev.eventDate).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
+              </span>
+              <h5 class="font-extrabold text-slate-900 dark:text-zinc-100 text-sm mt-1">${ev.title}</h5>
+              <p class="text-xs text-slate-500 dark:text-zinc-400 line-clamp-2 mt-0.5">${ev.description}</p>
+              <div class="text-[10px] text-slate-400 font-bold mt-1">📍 ${ev.location}</div>
+            </div>
+          </div>
+          <div class="pt-2 border-t border-slate-200 dark:border-zinc-800 flex justify-end">
+            <button onclick="window.deleteUpcomingEvent('${evId}')" class="px-3 py-1.5 text-xs font-bold bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/30 text-rose-600 rounded-lg transition-all cursor-pointer flex items-center gap-1">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Delete Event
+            </button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+      if (window.lucide) window.lucide.createIcons();
+    }, err => window.handleFirestoreError(err, 'list', 'upcoming_events'));
+}
+
+window.deleteUpcomingEvent = function(eventId) {
+  const isConfirmed = confirm("Are you sure you want to delete this upcoming event?");
+  if (!isConfirmed) return;
+
+  window.db.collection('upcoming_events').doc(eventId).delete()
+    .then(() => window.showToast?.("Upcoming event deleted."))
+    .catch(err => window.handleFirestoreError(err, 'delete', `upcoming_events/${eventId}`));
+};
+
+// 8. Daily Devotionals Manager Functions
+let adminDevotionalImageBase64 = '';
+
+window.previewAdminDevotionalImage = function(event) {
+  const file = event.target.files ? event.target.files[0] : null;
+  if (!file) return;
+  compressAndResizeImage(file, 800, 0.75).then(base64 => {
+    adminDevotionalImageBase64 = base64;
+    const box = document.getElementById('admin-devotional-img-preview-box');
+    const img = document.getElementById('admin-devotional-img-preview');
+    if (box && img) {
+      img.src = base64;
+      box.classList.remove('hidden');
+    }
+  }).catch(err => {
+    window.showToast?.("Error processing devotional image: " + err.message, "error");
+  });
+};
+
+window.previewAdminDevotionalUrl = function(url) {
+  if (!url) return;
+  adminDevotionalImageBase64 = url.trim();
+  const box = document.getElementById('admin-devotional-img-preview-box');
+  const img = document.getElementById('admin-devotional-img-preview');
+  if (box && img) {
+    img.src = url.trim();
+    box.classList.remove('hidden');
+  }
+};
+
+window.clearAdminDevotionalImage = function() {
+  adminDevotionalImageBase64 = '';
+  const fileInput = document.getElementById('admin-devotional-file');
+  const urlInput = document.getElementById('admin-devotional-url');
+  const box = document.getElementById('admin-devotional-img-preview-box');
+  if (fileInput) fileInput.value = '';
+  if (urlInput) urlInput.value = '';
+  if (box) box.classList.add('hidden');
+};
+
+window.handleAdminDevotionalSubmit = function(event) {
+  if (event) event.preventDefault();
+  const title = document.getElementById('admin-devotional-title').value.trim();
+  const scripture = document.getElementById('admin-devotional-scripture').value.trim();
+  const devotionalDate = document.getElementById('admin-devotional-date').value;
+  const body = document.getElementById('admin-devotional-body').value.trim();
+  const submitBtn = document.getElementById('btn-save-devotional');
+
+  const imageUrl = adminDevotionalImageBase64 || document.getElementById('admin-devotional-url')?.value.trim();
+
+  if (!title || !scripture || !devotionalDate || !body) {
+    window.showToast?.("Please fill out all devotional fields.", "error");
+    return;
+  }
+  if (!imageUrl) {
+    window.showToast?.("Please attach a devotional picture (file or URL).", "error");
+    return;
+  }
+
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.innerText = "Publishing Devotional...";
+  }
+
+  const docId = window.db.collection('daily_devotionals').doc().id;
+  window.db.collection('daily_devotionals').doc(docId).set({
+    id: docId,
+    title,
+    scripture,
+    devotionalDate,
+    body,
+    imageUrl,
+    createdBy: window.currentUserProfile?.displayName || 'Super Admin',
+    createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
+  }).then(() => {
+    window.showToast?.("☀️ Daily Devotional published successfully!", "success");
+    document.getElementById('admin-devotional-form')?.reset();
+    window.clearAdminDevotionalImage();
+  }).catch(err => {
+    window.handleFirestoreError(err, 'create', `daily_devotionals/${docId}`);
+  }).finally(() => {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = `<i data-lucide="sun" class="w-4 h-4"></i> Publish Daily Devotional`;
+      if (window.lucide) window.lucide.createIcons();
+    }
+  });
+};
+
+let adminDailyDevotionalsListener = null;
+function syncAdminDailyDevotionals() {
+  const container = document.getElementById('admin-daily-devotionals-list');
+  if (!container) return;
+
+  if (adminDailyDevotionalsListener) adminDailyDevotionalsListener();
+
+  adminDailyDevotionalsListener = window.db.collection('daily_devotionals')
+    .orderBy('devotionalDate', 'desc')
+    .onSnapshot(snap => {
+      container.innerHTML = '';
+      if (snap.empty) {
+        container.innerHTML = `<p class="text-xs text-slate-400 italic">No daily devotionals published yet.</p>`;
+        return;
+      }
+
+      snap.forEach(doc => {
+        const d = doc.data();
+        const dId = doc.id;
+        const card = document.createElement('div');
+        card.className = "p-4 bg-slate-50 dark:bg-zinc-800/40 border border-slate-200 dark:border-zinc-800 rounded-2xl flex flex-col justify-between space-y-3";
+        
+        card.innerHTML = `
+          <div class="space-y-2">
+            ${d.imageUrl ? `<img src="${d.imageUrl}" class="w-full h-32 object-cover rounded-xl border border-slate-200 dark:border-zinc-700 shadow-xs" />` : ''}
+            <div>
+              <span class="px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase tracking-widest bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
+                ${d.devotionalDate} • ${d.scripture}
+              </span>
+              <h5 class="font-extrabold text-slate-900 dark:text-zinc-100 text-sm mt-1">${d.title}</h5>
+              <p class="text-xs text-slate-500 dark:text-zinc-400 line-clamp-3 mt-0.5 leading-relaxed">${d.body}</p>
+            </div>
+          </div>
+          <div class="pt-2 border-t border-slate-200 dark:border-zinc-800 flex justify-end">
+            <button onclick="window.deleteDailyDevotional('${dId}')" class="px-3 py-1.5 text-xs font-bold bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/30 text-rose-600 rounded-lg transition-all cursor-pointer flex items-center gap-1">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Delete Devotional
+            </button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+      if (window.lucide) window.lucide.createIcons();
+    }, err => window.handleFirestoreError(err, 'list', 'daily_devotionals'));
+}
+
+window.deleteDailyDevotional = function(devotionalId) {
+  const isConfirmed = confirm("Are you sure you want to delete this daily devotional?");
+  if (!isConfirmed) return;
+
+  window.db.collection('daily_devotionals').doc(devotionalId).delete()
+    .then(() => window.showToast?.("Daily devotional deleted."))
+    .catch(err => window.handleFirestoreError(err, 'delete', `daily_devotionals/${devotionalId}`));
+};
 
 // Form Listeners
 document.addEventListener("DOMContentLoaded", () => {
