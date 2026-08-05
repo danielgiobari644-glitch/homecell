@@ -1200,6 +1200,88 @@ function dismissWidget(id) {
   }
 }
 
+// Global Full Devotional Reader Engine
+window.activeDevotionalData = null;
+
+window.openFullDevotionalModal = function(d) {
+  if (typeof d === 'string') {
+    try {
+      d = JSON.parse(d);
+    } catch (e) {
+      console.error("Failed to parse devotional JSON:", e);
+      return;
+    }
+  }
+
+  if (!d) return;
+  window.activeDevotionalData = d;
+
+  const modal = document.getElementById('devotional-reader-modal');
+  const titleEl = document.getElementById('devotional-modal-title');
+  const scriptureTextEl = document.getElementById('devotional-modal-scripture-text');
+  const dateBadgeEl = document.getElementById('devotional-modal-date-badge');
+  const bodyEl = document.getElementById('devotional-modal-body');
+  const imgContainer = document.getElementById('devotional-modal-img-container');
+  const imgEl = document.getElementById('devotional-modal-img');
+
+  if (titleEl) titleEl.innerText = d.title || "Daily Devotional";
+  if (scriptureTextEl) scriptureTextEl.innerText = d.scripture || "Holy Scripture";
+  if (dateBadgeEl) {
+    dateBadgeEl.innerHTML = `<i data-lucide="sun" class="w-3.5 h-3.5"></i> ${d.devotionalDate || 'Daily Devotional'}`;
+  }
+
+  if (bodyEl) {
+    bodyEl.innerText = d.body || "";
+  }
+
+  if (imgContainer && imgEl) {
+    if (d.imageUrl) {
+      imgEl.src = d.imageUrl;
+      imgContainer.classList.remove('hidden');
+    } else {
+      imgContainer.classList.add('hidden');
+    }
+  }
+
+  if (modal) {
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+
+  if (window.lucide) window.lucide.createIcons();
+};
+
+window.closeDevotionalModal = function() {
+  const modal = document.getElementById('devotional-reader-modal');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+};
+
+window.shareCurrentDevotionalModal = function() {
+  const d = window.activeDevotionalData;
+  if (!d) return;
+
+  const shareText = `☀️ Today's Devotional: "${d.title}" (${d.scripture})\n\n"${(d.body || '').substring(0, 200)}..."\n\nRead full devotion on HomeCell Assembly!`;
+  
+  if (navigator.share) {
+    navigator.share({
+      title: d.title,
+      text: shareText,
+      url: window.location.href
+    }).catch(err => console.log("Share dismissed"));
+  } else if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(shareText).then(() => {
+      window.showToast?.("🕊️ Devotional copied to clipboard! Share it with family & friends.", "success");
+    }).catch(() => {
+      prompt("Copy Devotional to share:", shareText);
+    });
+  } else {
+    prompt("Copy Devotional to share:", shareText);
+  }
+};
+
 // Expose globally
 window.openAuthModal = openAuthModal;
 window.closeAuthModal = closeAuthModal;

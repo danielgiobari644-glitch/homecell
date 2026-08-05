@@ -1048,8 +1048,13 @@ function syncDashboardDailyDevotionals() {
       container.innerHTML = '';
       if (snap.empty) return;
 
+      window.devotionalsCache = window.devotionalsCache || {};
+
       snap.forEach(doc => {
         const d = doc.data();
+        d.id = doc.id;
+        window.devotionalsCache[doc.id] = d;
+
         const card = document.createElement('div');
         card.className = "bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-200 dark:border-amber-900/50 rounded-3xl p-6 shadow-sm space-y-4 animate-fade-in";
         
@@ -1071,16 +1076,23 @@ function syncDashboardDailyDevotionals() {
 
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
             ${d.imageUrl ? `
-              <div class="md:col-span-1 rounded-2xl overflow-hidden shadow-sm border border-amber-200/60 dark:border-amber-900/40 h-44">
-                <img src="${d.imageUrl}" class="w-full h-full object-cover hover:scale-105 transition-transform duration-300" alt="${d.title}" />
+              <div onclick="window.openFullDevotionalModal(window.devotionalsCache['${doc.id}'])" class="md:col-span-1 rounded-2xl overflow-hidden shadow-sm border border-amber-200/60 dark:border-amber-900/40 h-44 cursor-pointer group">
+                <img src="${d.imageUrl}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" alt="${d.title}" />
               </div>
             ` : ''}
             <div class="${d.imageUrl ? 'md:col-span-2' : 'md:col-span-3'} space-y-2">
-              <h3 class="text-xl font-black font-display text-slate-900 dark:text-zinc-50 tracking-tight">${d.title}</h3>
+              <h3 onclick="window.openFullDevotionalModal(window.devotionalsCache['${doc.id}'])" class="text-xl font-black font-display text-slate-900 dark:text-zinc-50 tracking-tight cursor-pointer hover:text-amber-600 dark:hover:text-amber-400 transition-colors">${d.title}</h3>
               <div class="inline-flex items-center gap-1.5 px-3 py-1 bg-white dark:bg-zinc-800/80 rounded-xl border border-amber-200 dark:border-amber-800/50 text-xs font-bold text-amber-700 dark:text-amber-300 shadow-2xs">
                 <i data-lucide="book-open" class="w-3.5 h-3.5"></i> ${d.scripture}
               </div>
-              <p class="text-xs text-slate-700 dark:text-zinc-300 leading-relaxed line-clamp-4 whitespace-pre-wrap">${d.body}</p>
+              <p class="text-xs text-slate-700 dark:text-zinc-300 leading-relaxed line-clamp-3 whitespace-pre-wrap">${d.body}</p>
+
+              <div class="pt-2">
+                <button onclick="window.openFullDevotionalModal(window.devotionalsCache['${doc.id}'])" class="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-xs hover:shadow-md">
+                  <span>Read Full Devotional</span>
+                  <i data-lucide="book-open-check" class="w-4 h-4"></i>
+                </button>
+              </div>
             </div>
           </div>
         `;
@@ -1111,8 +1123,16 @@ function syncDashboardUpcomingEvents() {
       let eventsCards = '';
       snap.forEach(doc => {
         const ev = doc.data();
-        const dateObj = new Date(ev.eventDate);
-        const formattedDate = dateObj.toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        const formattedDate = window.formatEventDatesDisplay ? window.formatEventDatesDisplay(ev) : new Date(ev.eventDate).toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+        let extraDatesBadges = '';
+        if (ev.extraDates && Array.isArray(ev.extraDates) && ev.extraDates.length > 0) {
+          extraDatesBadges = `
+            <div class="flex flex-wrap gap-1 mt-1">
+              ${ev.extraDates.map(d => `<span class="px-1.5 py-0.5 rounded text-[8px] font-mono font-bold bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200/60 dark:border-purple-800/60">📅 ${new Date(d).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>`).join('')}
+            </div>
+          `;
+        }
 
         eventsCards += `
           <div class="bg-slate-50 dark:bg-zinc-800/50 border border-slate-200 dark:border-zinc-800 rounded-2xl p-4 flex flex-col justify-between space-y-3 hover:border-purple-300 dark:hover:border-purple-800 transition-all">
@@ -1121,12 +1141,13 @@ function syncDashboardUpcomingEvents() {
                 <img src="${ev.imageUrl}" class="w-full h-28 object-cover rounded-xl border border-slate-200 dark:border-zinc-700 shadow-2xs" alt="${ev.title}" />
               ` : ''}
               <div>
-                <span class="px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase tracking-widest bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300">
+                <span class="px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase tracking-widest bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 inline-block">
                   📅 ${formattedDate}
                 </span>
                 <h4 class="font-extrabold text-slate-900 dark:text-zinc-100 text-sm font-display mt-1">${ev.title}</h4>
                 <p class="text-xs text-slate-500 dark:text-zinc-400 line-clamp-2 mt-0.5">${ev.description}</p>
                 <div class="text-[10px] text-slate-400 font-bold mt-1">📍 ${ev.location}</div>
+                ${extraDatesBadges}
               </div>
             </div>
           </div>

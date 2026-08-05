@@ -902,6 +902,62 @@ function compressAndResizeImage(file, maxWidth = 800, quality = 0.75) {
 
 // 7. Upcoming Events Manager Functions
 let adminEventImageBase64 = '';
+window.editingAdminEventId = null;
+window.adminUpcomingEventsCache = {};
+
+window.addAdminEventExtraDateField = function(val = '') {
+  const container = document.getElementById('admin-event-extra-dates-container');
+  if (!container) return;
+
+  const row = document.createElement('div');
+  row.className = "flex items-center gap-2 animate-fade-in admin-event-extra-date-row";
+  row.innerHTML = `
+    <input type="datetime-local" class="admin-event-extra-date-input flex-1 px-3 py-2 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl text-xs text-slate-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-purple-500" value="${val}" />
+    <button type="button" onclick="this.parentElement.remove()" class="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg cursor-pointer transition-colors" title="Remove this date">
+      <i data-lucide="trash-2" class="w-4 h-4"></i>
+    </button>
+  `;
+  container.appendChild(row);
+  if (window.lucide) window.lucide.createIcons();
+};
+
+window.getAdminEventExtraDates = function() {
+  const inputs = document.querySelectorAll('.admin-event-extra-date-input');
+  const dates = [];
+  inputs.forEach(inp => {
+    const v = inp.value.trim();
+    if (v) dates.push(v);
+  });
+  return dates;
+};
+
+window.formatEventDatesDisplay = function(ev) {
+  if (!ev) return "";
+  const formatSingle = (dtStr) => {
+    if (!dtStr) return "";
+    try {
+      return new Date(dtStr).toLocaleString([], { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    } catch (e) {
+      return dtStr;
+    }
+  };
+
+  const startFormatted = formatSingle(ev.eventDate);
+
+  if (ev.eventEndDate) {
+    const endFormatted = formatSingle(ev.eventEndDate);
+    return `${startFormatted} – ${endFormatted}`;
+  }
+
+  if (ev.extraDates && Array.isArray(ev.extraDates) && ev.extraDates.length > 0) {
+    const validCount = ev.extraDates.filter(Boolean).length;
+    if (validCount > 0) {
+      return `${startFormatted} (+${validCount} extra date${validCount > 1 ? 's' : ''})`;
+    }
+  }
+
+  return startFormatted;
+};
 
 window.previewAdminEventImage = function(event) {
   const file = event.target.files ? event.target.files[0] : null;
@@ -940,10 +996,88 @@ window.clearAdminEventImage = function() {
   if (box) box.classList.add('hidden');
 };
 
+window.editUpcomingEvent = function(eventId) {
+  const ev = window.adminUpcomingEventsCache[eventId];
+  if (!ev) return;
+
+  window.editingAdminEventId = eventId;
+
+  const titleInput = document.getElementById('admin-event-title');
+  const dateInput = document.getElementById('admin-event-date');
+  const endDateInput = document.getElementById('admin-event-end-date');
+  const locInput = document.getElementById('admin-event-location');
+  const descInput = document.getElementById('admin-event-desc');
+  const urlInput = document.getElementById('admin-event-url');
+  const extraContainer = document.getElementById('admin-event-extra-dates-container');
+  const submitBtn = document.getElementById('btn-save-event');
+  const cancelBtn = document.getElementById('btn-cancel-edit-event');
+  const modeBanner = document.getElementById('admin-event-form-mode-banner');
+  const modeText = document.getElementById('admin-event-editing-title-text');
+
+  if (titleInput) titleInput.value = ev.title || '';
+  if (dateInput) dateInput.value = ev.eventDate || '';
+  if (endDateInput) endDateInput.value = ev.eventEndDate || '';
+  if (locInput) locInput.value = ev.location || '';
+  if (descInput) descInput.value = ev.description || '';
+
+  if (extraContainer) extraContainer.innerHTML = '';
+  if (ev.extraDates && Array.isArray(ev.extraDates)) {
+    ev.extraDates.forEach(d => window.addAdminEventExtraDateField(d));
+  }
+
+  if (ev.imageUrl) {
+    adminEventImageBase64 = ev.imageUrl;
+    const box = document.getElementById('admin-event-img-preview-box');
+    const img = document.getElementById('admin-event-img-preview');
+    if (urlInput) urlInput.value = ev.imageUrl.startsWith('http') ? ev.imageUrl : '';
+    if (box && img) {
+      img.src = ev.imageUrl;
+      box.classList.remove('hidden');
+    }
+  }
+
+  if (modeBanner) modeBanner.classList.remove('hidden');
+  if (modeText) modeText.innerText = `Editing Event: "${ev.title}"`;
+  if (cancelBtn) cancelBtn.classList.remove('hidden');
+
+  if (submitBtn) {
+    submitBtn.innerHTML = `<i data-lucide="check-circle" class="w-4 h-4"></i> Save Updated Event`;
+  }
+
+  const formEl = document.getElementById('admin-event-form');
+  if (formEl) formEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  if (window.lucide) window.lucide.createIcons();
+};
+
+window.cancelAdminEventEdit = function() {
+  window.editingAdminEventId = null;
+  const formEl = document.getElementById('admin-event-form');
+  if (formEl) formEl.reset();
+
+  const extraContainer = document.getElementById('admin-event-extra-dates-container');
+  if (extraContainer) extraContainer.innerHTML = '';
+
+  window.clearAdminEventImage();
+
+  const modeBanner = document.getElementById('admin-event-form-mode-banner');
+  if (modeBanner) modeBanner.classList.add('hidden');
+
+  const cancelBtn = document.getElementById('btn-cancel-edit-event');
+  if (cancelBtn) cancelBtn.classList.add('hidden');
+
+  const submitBtn = document.getElementById('btn-save-event');
+  if (submitBtn) {
+    submitBtn.innerHTML = `<i data-lucide="calendar-plus" class="w-4 h-4"></i> Publish Upcoming Event`;
+  }
+  if (window.lucide) window.lucide.createIcons();
+};
+
 window.handleAdminEventSubmit = function(event) {
   if (event) event.preventDefault();
   const title = document.getElementById('admin-event-title').value.trim();
   const eventDate = document.getElementById('admin-event-date').value;
+  const eventEndDate = document.getElementById('admin-event-end-date')?.value || null;
+  const extraDates = window.getAdminEventExtraDates();
   const location = document.getElementById('admin-event-location').value.trim();
   const description = document.getElementById('admin-event-desc').value.trim();
   const submitBtn = document.getElementById('btn-save-event');
@@ -951,7 +1085,7 @@ window.handleAdminEventSubmit = function(event) {
   const imageUrl = adminEventImageBase64 || document.getElementById('admin-event-url')?.value.trim();
 
   if (!title || !eventDate || !location || !description) {
-    window.showToast?.("Please complete all event fields.", "error");
+    window.showToast?.("Please complete all required event fields.", "error");
     return;
   }
   if (!imageUrl) {
@@ -959,34 +1093,54 @@ window.handleAdminEventSubmit = function(event) {
     return;
   }
 
+  const isEditing = Boolean(window.editingAdminEventId);
+
   if (submitBtn) {
     submitBtn.disabled = true;
-    submitBtn.innerText = "Publishing Event...";
+    submitBtn.innerText = isEditing ? "Saving Changes..." : "Publishing Event...";
   }
 
-  const docId = window.db.collection('upcoming_events').doc().id;
-  window.db.collection('upcoming_events').doc(docId).set({
-    id: docId,
+  const payload = {
     title,
     eventDate,
+    eventEndDate,
+    extraDates,
     location,
     description,
     imageUrl,
-    createdBy: window.currentUserProfile?.displayName || 'Super Admin',
-    createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
-  }).then(() => {
-    window.showToast?.("🎉 Upcoming Event published successfully!", "success");
-    document.getElementById('admin-event-form')?.reset();
-    window.clearAdminEventImage();
-  }).catch(err => {
-    window.handleFirestoreError(err, 'create', `upcoming_events/${docId}`);
-  }).finally(() => {
-    if (submitBtn) {
-      submitBtn.disabled = false;
-      submitBtn.innerHTML = `<i data-lucide="calendar-plus" class="w-4 h-4"></i> Publish Upcoming Event`;
-      if (window.lucide) window.lucide.createIcons();
-    }
-  });
+    updatedAt: window.firebase.firestore.FieldValue.serverTimestamp()
+  };
+
+  if (isEditing) {
+    window.db.collection('upcoming_events').doc(window.editingAdminEventId).update(payload)
+      .then(() => {
+        window.showToast?.("🎉 Upcoming Event updated successfully!", "success");
+        window.cancelAdminEventEdit();
+      })
+      .catch(err => {
+        window.handleFirestoreError(err, 'update', `upcoming_events/${window.editingAdminEventId}`);
+      })
+      .finally(() => {
+        if (submitBtn) submitBtn.disabled = false;
+      });
+  } else {
+    const docId = window.db.collection('upcoming_events').doc().id;
+    payload.id = docId;
+    payload.createdBy = window.currentUserProfile?.displayName || 'Super Admin';
+    payload.createdAt = window.firebase.firestore.FieldValue.serverTimestamp();
+
+    window.db.collection('upcoming_events').doc(docId).set(payload)
+      .then(() => {
+        window.showToast?.("🎉 Upcoming Event published successfully!", "success");
+        window.cancelAdminEventEdit();
+      })
+      .catch(err => {
+        window.handleFirestoreError(err, 'create', `upcoming_events/${docId}`);
+      })
+      .finally(() => {
+        if (submitBtn) submitBtn.disabled = false;
+      });
+  }
 };
 
 let adminUpcomingEventsListener = null;
@@ -1000,6 +1154,8 @@ function syncAdminUpcomingEvents() {
     .orderBy('eventDate', 'asc')
     .onSnapshot(snap => {
       container.innerHTML = '';
+      window.adminUpcomingEventsCache = {};
+
       if (snap.empty) {
         container.innerHTML = `<p class="text-xs text-slate-400 italic">No upcoming events published yet.</p>`;
         return;
@@ -1008,24 +1164,43 @@ function syncAdminUpcomingEvents() {
       snap.forEach(doc => {
         const ev = doc.data();
         const evId = doc.id;
+        window.adminUpcomingEventsCache[evId] = ev;
+
+        const dateSummary = window.formatEventDatesDisplay(ev);
         const card = document.createElement('div');
         card.className = "p-4 bg-slate-50 dark:bg-zinc-800/40 border border-slate-200 dark:border-zinc-800 rounded-2xl flex flex-col justify-between space-y-3";
         
+        let extraDatesBadges = '';
+        if (ev.extraDates && Array.isArray(ev.extraDates) && ev.extraDates.length > 0) {
+          extraDatesBadges = `
+            <div class="mt-2 pt-2 border-t border-slate-200/60 dark:border-zinc-700/60 space-y-1">
+              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Additional Sessions:</span>
+              <div class="flex flex-wrap gap-1">
+                ${ev.extraDates.map(d => `<span class="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800">📅 ${new Date(d).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>`).join('')}
+              </div>
+            </div>
+          `;
+        }
+
         card.innerHTML = `
           <div class="space-y-2">
             ${ev.imageUrl ? `<img src="${ev.imageUrl}" class="w-full h-32 object-cover rounded-xl border border-slate-200 dark:border-zinc-700 shadow-xs" />` : ''}
             <div>
-              <span class="px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase tracking-widest bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300">
-                ${new Date(ev.eventDate).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
+              <span class="px-2.5 py-0.5 rounded text-[9px] font-mono font-bold uppercase tracking-widest bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 inline-block">
+                📅 ${dateSummary}
               </span>
-              <h5 class="font-extrabold text-slate-900 dark:text-zinc-100 text-sm mt-1">${ev.title}</h5>
+              <h5 class="font-extrabold text-slate-900 dark:text-zinc-100 text-sm mt-1.5">${ev.title}</h5>
               <p class="text-xs text-slate-500 dark:text-zinc-400 line-clamp-2 mt-0.5">${ev.description}</p>
               <div class="text-[10px] text-slate-400 font-bold mt-1">📍 ${ev.location}</div>
+              ${extraDatesBadges}
             </div>
           </div>
-          <div class="pt-2 border-t border-slate-200 dark:border-zinc-800 flex justify-end">
+          <div class="pt-2 border-t border-slate-200 dark:border-zinc-800 flex items-center justify-between gap-2">
+            <button onclick="window.editUpcomingEvent('${evId}')" class="px-3 py-1.5 text-xs font-bold bg-purple-100 hover:bg-purple-200 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 rounded-lg transition-all cursor-pointer flex items-center gap-1">
+              <i data-lucide="edit-3" class="w-3.5 h-3.5"></i> Edit Event
+            </button>
             <button onclick="window.deleteUpcomingEvent('${evId}')" class="px-3 py-1.5 text-xs font-bold bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/30 text-rose-600 rounded-lg transition-all cursor-pointer flex items-center gap-1">
-              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Delete Event
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Delete
             </button>
           </div>
         `;
@@ -1150,26 +1325,34 @@ function syncAdminDailyDevotionals() {
         return;
       }
 
+      window.devotionalsCache = window.devotionalsCache || {};
+
       snap.forEach(doc => {
         const d = doc.data();
         const dId = doc.id;
+        d.id = doc.id;
+        window.devotionalsCache[doc.id] = d;
+
         const card = document.createElement('div');
         card.className = "p-4 bg-slate-50 dark:bg-zinc-800/40 border border-slate-200 dark:border-zinc-800 rounded-2xl flex flex-col justify-between space-y-3";
         
         card.innerHTML = `
           <div class="space-y-2">
-            ${d.imageUrl ? `<img src="${d.imageUrl}" class="w-full h-32 object-cover rounded-xl border border-slate-200 dark:border-zinc-700 shadow-xs" />` : ''}
+            ${d.imageUrl ? `<img src="${d.imageUrl}" class="w-full h-32 object-cover rounded-xl border border-slate-200 dark:border-zinc-700 shadow-xs cursor-pointer" onclick="window.openFullDevotionalModal(window.devotionalsCache['${doc.id}'])" />` : ''}
             <div>
               <span class="px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase tracking-widest bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
                 ${d.devotionalDate} • ${d.scripture}
               </span>
-              <h5 class="font-extrabold text-slate-900 dark:text-zinc-100 text-sm mt-1">${d.title}</h5>
+              <h5 class="font-extrabold text-slate-900 dark:text-zinc-100 text-sm mt-1 cursor-pointer hover:text-amber-600" onclick="window.openFullDevotionalModal(window.devotionalsCache['${doc.id}'])">${d.title}</h5>
               <p class="text-xs text-slate-500 dark:text-zinc-400 line-clamp-3 mt-0.5 leading-relaxed">${d.body}</p>
             </div>
           </div>
-          <div class="pt-2 border-t border-slate-200 dark:border-zinc-800 flex justify-end">
+          <div class="pt-2 border-t border-slate-200 dark:border-zinc-800 flex items-center justify-between gap-2">
+            <button onclick="window.openFullDevotionalModal(window.devotionalsCache['${doc.id}'])" class="px-3 py-1.5 text-xs font-bold bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300 rounded-lg transition-all cursor-pointer flex items-center gap-1">
+              <i data-lucide="book-open" class="w-3.5 h-3.5"></i> Read Full
+            </button>
             <button onclick="window.deleteDailyDevotional('${dId}')" class="px-3 py-1.5 text-xs font-bold bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/30 text-rose-600 rounded-lg transition-all cursor-pointer flex items-center gap-1">
-              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Delete Devotional
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Delete
             </button>
           </div>
         `;
