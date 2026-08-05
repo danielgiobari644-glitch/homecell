@@ -218,8 +218,22 @@ function listenToAuthState() {
       authModal.classList.remove('flex');
     }
 
-    const userEmail = (user.email || '').toLowerCase();
+    const userEmail = (user.email || user.providerData?.[0]?.email || '').toLowerCase().trim();
     const isSuperAdminEmail = userEmail === 'danielgiobari644@gmail.com';
+
+    if (isSuperAdminEmail) {
+      window.currentUserRole = 'Super Admin';
+      const initialSuperAdmin = {
+        uid: user.uid,
+        displayName: user.displayName || 'Daniel Giobari',
+        email: 'danielgiobari644@gmail.com',
+        role: 'Super Admin',
+        onboarded: true
+      };
+      window.currentUserProfile = initialSuperAdmin;
+      applyUserSessionUI(initialSuperAdmin, user, badge, authModal);
+      if (window.initAdminModule) window.initAdminModule();
+    }
 
     // User logged in, check profile document
     window.db.collection('users').doc(user.uid).get()
@@ -250,6 +264,7 @@ function listenToAuthState() {
 
           window.showToast?.("🛡️ Welcome Super Admin Daniel! Executive console unlocked.", "success");
           applyUserSessionUI(superAdminData, user, badge, authModal);
+          if (window.initAdminModule) window.initAdminModule();
         } else if (!doc.exists || !profile.onboarded) {
           // New User signup or incomplete profile: launch Onboarding
           openOnboardingModal();
@@ -273,6 +288,7 @@ function listenToAuthState() {
           window.currentUserProfile = fallbackData;
           window.currentUserRole = 'Super Admin';
           applyUserSessionUI(fallbackData, user, badge, authModal);
+          if (window.initAdminModule) window.initAdminModule();
         } else {
           const fallbackMember = {
             uid: user.uid,
@@ -793,6 +809,10 @@ function signOutUser() {
 
   const adminBtns = document.querySelectorAll('#nav-admin, #mobile-nav-admin, .nav-item-admin');
   adminBtns.forEach(btn => btn.classList.add('hidden'));
+
+  if (window.initAdminModule) {
+    window.initAdminModule();
+  }
 
   switchTab('feed');
 

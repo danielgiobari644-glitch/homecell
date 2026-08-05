@@ -2599,12 +2599,15 @@
                 <p class="text-xs text-slate-500 dark:text-zinc-400 leading-relaxed">
                   Update your display name, edit your personal spiritual testimony, and set your coordinates to let local cell groups discover you.
                 </p>
-                <div class="flex gap-2">
+                <div class="flex flex-wrap gap-2">
                   <button onclick="openProfileEditModal()" class="flex-1 py-2.5 bg-slate-900 hover:bg-slate-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-950 font-bold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-sm">
                     <i data-lucide="edit-3" class="w-4 h-4"></i> Edit Profile
                   </button>
                   <button onclick="restartOnboardingTutorial()" class="py-2.5 px-3 bg-blue-100 dark:bg-blue-950/50 hover:bg-blue-200 text-blue-700 dark:text-blue-300 font-bold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5" title="Re-open Onboarding Tutorial">
                     <i data-lucide="compass" class="w-4 h-4"></i> Tour
+                  </button>
+                  <button onclick="signOutUser()" class="py-2.5 px-3 bg-rose-100 dark:bg-rose-950/50 hover:bg-rose-200 text-rose-700 dark:text-rose-300 font-bold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5" title="Log Out of Account">
+                    <i data-lucide="log-out" class="w-4 h-4"></i> Log Out
                   </button>
                 </div>
               </div>
@@ -2660,6 +2663,18 @@
         <!-- Tab 7: Super Admin Console -->
         <section id="tab-admin" class="app-tab hidden space-y-8 animate-fade-in">
           
+          <div id="admin-unauthorized-banner" class="hidden p-12 text-center bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl text-slate-500 font-bold space-y-3 shadow-sm">
+            <div class="w-16 h-16 bg-purple-100 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 rounded-2xl flex items-center justify-center mx-auto text-2xl font-black">
+              <i data-lucide="shield-alert" class="w-8 h-8"></i>
+            </div>
+            <h3 class="text-xl font-black font-display text-slate-900 dark:text-zinc-100">Super Admin Access Required</h3>
+            <p class="text-xs text-slate-400 max-w-md mx-auto">This executive console is strictly reserved for Super Admin <span class="font-mono text-purple-500 font-bold">danielgiobari644@gmail.com</span>.</p>
+            <button onclick="openAuthModal()" class="mt-2 px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-xl shadow-sm cursor-pointer transition-all">
+              Sign In as Super Admin
+            </button>
+          </div>
+
+          <div id="admin-main-content" class="space-y-8">
           <div class="border-b border-slate-200 dark:border-zinc-800 pb-4">
             <h1 class="text-3xl font-black font-display tracking-tight text-purple-600 dark:text-purple-400 flex items-center gap-2">
               <i data-lucide="shield-alert" class="w-8 h-8"></i> Super Admin Console
@@ -3358,6 +3373,7 @@
             </div>
           </div>
 
+        </div>
         </section>
 
       </main>

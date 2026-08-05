@@ -8,18 +8,34 @@ let adminTriviaListener = null;
 let adminBundlesListener = null;
 
 function initAdminModule() {
-  if (window.currentUserRole !== 'Super Admin') {
-    const adminBtn = document.getElementById('nav-admin');
-    if (adminBtn) adminBtn.classList.add('hidden');
-    
-    const sec = document.getElementById('tab-admin');
-    if (sec) sec.innerHTML = `<div class="p-12 text-center text-slate-400">Unauthorized. This panel is reserved for the Super Admin.</div>`;
+  const adminBtns = document.querySelectorAll('#nav-admin, #mobile-nav-admin, .nav-item-admin');
+  const unauthBanner = document.getElementById('admin-unauthorized-banner');
+  const mainContent = document.getElementById('admin-main-content');
+
+  const authEmail = (window.auth?.currentUser?.email || window.auth?.currentUser?.providerData?.[0]?.email || '').toLowerCase().trim();
+  const profileEmail = (window.currentUserProfile?.email || '').toLowerCase().trim();
+  const isSuperAdmin = window.currentUserRole === 'Super Admin' ||
+                       authEmail === 'danielgiobari644@gmail.com' ||
+                       profileEmail === 'danielgiobari644@gmail.com';
+
+  if (!isSuperAdmin) {
+    if (usersListListener) { usersListListener(); usersListListener = null; }
+    if (adminCellsListener) { adminCellsListener(); adminCellsListener = null; }
+    if (adminEventsListener) { adminEventsListener(); adminEventsListener = null; }
+    if (adminTriviaListener) { adminTriviaListener(); adminTriviaListener = null; }
+    if (adminBundlesListener) { adminBundlesListener(); adminBundlesListener = null; }
+
+    adminBtns.forEach(btn => btn.classList.add('hidden'));
+    if (unauthBanner) unauthBanner.classList.remove('hidden');
+    if (mainContent) mainContent.classList.add('hidden');
     return;
   }
 
-  // Show Admin pane sidebar button and separator if Super Admin
-  const adminBtn = document.getElementById('nav-admin');
-  if (adminBtn) adminBtn.classList.remove('hidden');
+  // User is confirmed Super Admin
+  window.currentUserRole = 'Super Admin';
+  adminBtns.forEach(btn => btn.classList.remove('hidden'));
+  if (unauthBanner) unauthBanner.classList.add('hidden');
+  if (mainContent) mainContent.classList.remove('hidden');
 
   const adminSep = document.getElementById('admin-nav-separator');
   if (adminSep) adminSep.classList.remove('hidden');
