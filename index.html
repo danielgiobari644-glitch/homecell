@@ -790,9 +790,14 @@
           </button>
         </div>
 
-        <button onclick="signOutUser()" class="w-full py-2.5 text-xs font-bold text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/30 dark:hover:bg-rose-950/50 rounded-2xl transition-all cursor-pointer flex items-center justify-center gap-2">
+        <button id="btn-sidebar-signout" onclick="signOutUser()" class="w-full py-2.5 text-xs font-bold text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/30 dark:hover:bg-rose-950/50 rounded-2xl transition-all cursor-pointer flex items-center justify-center gap-2">
           <i data-lucide="log-out" class="w-4 h-4"></i>
           <span>Sign Out</span>
+        </button>
+
+        <button id="btn-sidebar-signin" onclick="openAuthModal()" class="hidden w-full py-2.5 text-xs font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/30 rounded-2xl transition-all cursor-pointer flex items-center justify-center gap-2">
+          <i data-lucide="log-in" class="w-4 h-4"></i>
+          <span>Sign In / Join</span>
         </button>
       </div>
     </aside>
@@ -887,9 +892,14 @@
           </button>
         </div>
 
-        <button onclick="signOutUser()" class="w-full py-3 text-xs font-bold text-rose-600 hover:text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/30 rounded-2xl transition-all cursor-pointer flex items-center justify-center gap-2">
+        <button id="btn-mobile-signout" onclick="signOutUser()" class="w-full py-3 text-xs font-bold text-rose-600 hover:text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/30 rounded-2xl transition-all cursor-pointer flex items-center justify-center gap-2">
           <i data-lucide="log-out" class="w-4 h-4"></i>
           <span>Sign Out</span>
+        </button>
+
+        <button id="btn-mobile-signin" onclick="openAuthModal()" class="hidden w-full py-3 text-xs font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 rounded-2xl transition-all cursor-pointer flex items-center justify-center gap-2">
+          <i data-lucide="log-in" class="w-4 h-4"></i>
+          <span>Sign In / Join</span>
         </button>
       </div>
     </aside>
@@ -931,6 +941,12 @@
           <button onclick="toggleTheme()" id="theme-toggle-btn" class="p-2 bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-200 rounded-xl hover:scale-105 active:scale-95 transition-all cursor-pointer" title="Switch high-contrast theme">
             <i data-lucide="sun" class="w-4 h-4 block dark:hidden"></i>
             <i data-lucide="moon" class="w-4 h-4 hidden dark:block"></i>
+          </button>
+
+          <!-- Sign In / Register Quick Action Button for Unauthenticated Guests -->
+          <button id="header-auth-btn" onclick="openAuthModal()" class="hidden px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer flex items-center gap-1.5">
+            <i data-lucide="log-in" class="w-4 h-4"></i>
+            <span>Sign In</span>
           </button>
 
           <!-- Current Logged User Profile card info -->

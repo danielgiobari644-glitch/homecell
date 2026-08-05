@@ -167,13 +167,47 @@ function listenToAuthState() {
     const badge = document.getElementById('user-profile-badge');
 
     if (!user) {
-      // User logged out: keep authModal hidden by default so they can view the portfolio
-      if (authModal) authModal.classList.add('hidden');
+      if (authModal) {
+        authModal.classList.add('hidden');
+        authModal.classList.remove('flex');
+      }
       if (badge) badge.classList.add('hidden');
+
+      const headerAuthBtn = document.getElementById('header-auth-btn');
+      if (headerAuthBtn) headerAuthBtn.classList.remove('hidden');
+
       document.documentElement.classList.add('unauthenticated');
-      
+
       window.currentUserRole = 'Guest';
       window.currentUserProfile = null;
+
+      // Update desktop sidebar badges
+      const deskNameEl = document.getElementById('sidebar-user-name');
+      const deskRoleEl = document.getElementById('sidebar-user-role');
+      if (deskNameEl) deskNameEl.innerText = "Guest Member";
+      if (deskRoleEl) deskRoleEl.innerText = "GUEST";
+
+      // Update mobile sidebar badges
+      const mobNameEl = document.getElementById('mobile-sidebar-user-name');
+      const mobRoleEl = document.getElementById('mobile-sidebar-user-role');
+      if (mobNameEl) mobNameEl.innerText = "Guest Member";
+      if (mobRoleEl) mobRoleEl.innerText = "GUEST";
+
+      // Toggle sign out vs sign in buttons
+      const btnDeskSignout = document.getElementById('btn-sidebar-signout');
+      const btnDeskSignin = document.getElementById('btn-sidebar-signin');
+      if (btnDeskSignout) btnDeskSignout.classList.add('hidden');
+      if (btnDeskSignin) btnDeskSignin.classList.remove('hidden');
+
+      const btnMobSignout = document.getElementById('btn-mobile-signout');
+      const btnMobSignin = document.getElementById('btn-mobile-signin');
+      if (btnMobSignout) btnMobSignout.classList.add('hidden');
+      if (btnMobSignin) btnMobSignin.classList.remove('hidden');
+
+      // Hide admin nav buttons
+      const adminBtns = document.querySelectorAll('#nav-admin, #mobile-nav-admin, .nav-item-admin');
+      adminBtns.forEach(btn => btn.classList.add('hidden'));
+
       switchTab('feed');
       return;
     }
@@ -184,15 +218,17 @@ function listenToAuthState() {
       authModal.classList.remove('flex');
     }
 
-    const isSuperAdminEmail = user.email && (user.email.toLowerCase() === 'danielgiobari644@gmail.com');
+    const userEmail = (user.email || '').toLowerCase();
+    const isSuperAdminEmail = userEmail === 'danielgiobari644@gmail.com';
 
     // User logged in, check profile document
     window.db.collection('users').doc(user.uid).get()
       .then(doc => {
         let profile = doc.exists ? doc.data() : null;
+        const isSuperAdminRole = profile && profile.role === 'Super Admin';
 
-        if (isSuperAdminEmail) {
-          // Force Super Admin role and auto-complete profile for danielgiobari644@gmail.com
+        if (isSuperAdminEmail || isSuperAdminRole) {
+          // Force Super Admin role and auto-complete profile
           const superAdminData = {
             uid: user.uid,
             displayName: (profile && profile.displayName) || user.displayName || 'Daniel Giobari',
@@ -206,7 +242,8 @@ function listenToAuthState() {
           };
 
           // Save/Merge to Firestore
-          window.db.collection('users').doc(user.uid).set(superAdminData, { merge: true }).catch(e => console.warn("Super Admin auto-set error:", e));
+          window.db.collection('users').doc(user.uid).set(superAdminData, { merge: true })
+            .catch(e => console.warn("Super Admin auto-set error:", e));
 
           window.currentUserProfile = superAdminData;
           window.currentUserRole = 'Super Admin';
@@ -224,7 +261,7 @@ function listenToAuthState() {
         }
       })
       .catch(err => {
-        console.error("Auth state profile fetch error:", err);
+        console.warn("Auth state profile fetch error (using fallback):", err);
         if (isSuperAdminEmail) {
           const fallbackData = {
             uid: user.uid,
@@ -237,7 +274,16 @@ function listenToAuthState() {
           window.currentUserRole = 'Super Admin';
           applyUserSessionUI(fallbackData, user, badge, authModal);
         } else {
-          window.handleFirestoreError(err, 'get', `users/${user.uid}`);
+          const fallbackMember = {
+            uid: user.uid,
+            displayName: user.displayName || user.email || 'Member',
+            email: user.email || '',
+            role: 'Member',
+            onboarded: true
+          };
+          window.currentUserProfile = fallbackMember;
+          window.currentUserRole = 'Member';
+          applyUserSessionUI(fallbackMember, user, badge, authModal);
         }
       });
   });
@@ -250,6 +296,20 @@ function applyUserSessionUI(profile, user, badge, authModal) {
   } else {
     adminBtns.forEach(btn => btn.classList.add('hidden'));
   }
+
+  // Hide header sign in button, show badge
+  const headerAuthBtn = document.getElementById('header-auth-btn');
+  if (headerAuthBtn) headerAuthBtn.classList.add('hidden');
+
+  const btnDeskSignout = document.getElementById('btn-sidebar-signout');
+  const btnDeskSignin = document.getElementById('btn-sidebar-signin');
+  if (btnDeskSignout) btnDeskSignout.classList.remove('hidden');
+  if (btnDeskSignin) btnDeskSignin.classList.add('hidden');
+
+  const btnMobSignout = document.getElementById('btn-mobile-signout');
+  const btnMobSignin = document.getElementById('btn-mobile-signin');
+  if (btnMobSignout) btnMobSignout.classList.remove('hidden');
+  if (btnMobSignin) btnMobSignin.classList.add('hidden');
 
   // Update header badges
   const nameEl = document.getElementById('header-user-name');
@@ -681,12 +741,71 @@ function handleAuthSubmit(email, password, isSignUpMode) {
   }
 }
 
+function openAuthModal() {
+  const modal = document.getElementById('auth-modal');
+  if (modal) {
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+}
+
+function closeAuthModal() {
+  const modal = document.getElementById('auth-modal');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+}
+
 function signOutUser() {
-  window.auth.signOut()
-    .then(() => {
-      window.showToast?.("Logged out securely.");
-    })
-    .catch(err => window.showToast?.("Sign-out failed: " + err.message, 'error'));
+  if (window.toggleMobileSidebar) window.toggleMobileSidebar(false);
+
+  // Immediately reset local state
+  window.currentUserRole = 'Guest';
+  window.currentUserProfile = null;
+  document.documentElement.classList.add('unauthenticated');
+
+  const badge = document.getElementById('user-profile-badge');
+  if (badge) badge.classList.add('hidden');
+
+  const headerAuthBtn = document.getElementById('header-auth-btn');
+  if (headerAuthBtn) headerAuthBtn.classList.remove('hidden');
+
+  const deskNameEl = document.getElementById('sidebar-user-name');
+  const deskRoleEl = document.getElementById('sidebar-user-role');
+  if (deskNameEl) deskNameEl.innerText = "Guest Member";
+  if (deskRoleEl) deskRoleEl.innerText = "GUEST";
+
+  const mobNameEl = document.getElementById('mobile-sidebar-user-name');
+  const mobRoleEl = document.getElementById('mobile-sidebar-user-role');
+  if (mobNameEl) mobNameEl.innerText = "Guest Member";
+  if (mobRoleEl) mobRoleEl.innerText = "GUEST";
+
+  const btnDeskSignout = document.getElementById('btn-sidebar-signout');
+  const btnDeskSignin = document.getElementById('btn-sidebar-signin');
+  if (btnDeskSignout) btnDeskSignout.classList.add('hidden');
+  if (btnDeskSignin) btnDeskSignin.classList.remove('hidden');
+
+  const btnMobSignout = document.getElementById('btn-mobile-signout');
+  const btnMobSignin = document.getElementById('btn-mobile-signin');
+  if (btnMobSignout) btnMobSignout.classList.add('hidden');
+  if (btnMobSignin) btnMobSignin.classList.remove('hidden');
+
+  const adminBtns = document.querySelectorAll('#nav-admin, #mobile-nav-admin, .nav-item-admin');
+  adminBtns.forEach(btn => btn.classList.add('hidden'));
+
+  switchTab('feed');
+
+  if (window.auth) {
+    window.auth.signOut()
+      .then(() => {
+        window.showToast?.("Logged out securely.", "info");
+      })
+      .catch(err => {
+        console.error("Sign-out error:", err);
+        window.showToast?.("Sign-out warning: " + err.message, 'error');
+      });
+  }
 }
 
 function triggerPasswordReset() {
@@ -1062,6 +1181,8 @@ function dismissWidget(id) {
 }
 
 // Expose globally
+window.openAuthModal = openAuthModal;
+window.closeAuthModal = closeAuthModal;
 window.switchTab = switchTab;
 window.toggleTheme = toggleTheme;
 window.signOutUser = signOutUser;

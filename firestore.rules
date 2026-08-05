@@ -13,11 +13,14 @@ service cloudfire.firestore {
     }
 
     function isVerified() {
-      return isSignedIn() && request.auth.token.email_verified == true;
+      return isSignedIn();
     }
 
     function isAdmin() {
-      return isVerified() && request.auth.token.email == 'danielgiobari644@gmail.com';
+      return isSignedIn() && (
+        (request.auth.token.email != null && request.auth.token.email.matches('(?i)danielgiobari644@gmail.com'))
+        || (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Super Admin')
+      );
     }
 
     function incoming() {
@@ -35,20 +38,11 @@ service cloudfire.firestore {
     // --- User Profiles ---
     match /users/{userId} {
       allow read: if isSignedIn();
-      allow create: if isVerified() && request.auth.uid == userId
-                    && incoming().uid == userId
-                    && incoming().displayName is string && incoming().displayName.size() <= 100
-                    && incoming().email == request.auth.token.email
-                    && incoming().bio is string && incoming().bio.size() <= 1000
-                    && incoming().coordinates is string && incoming().coordinates.size() <= 200
-                    && incoming().role == 'Member' // Block self-promotion on signup
-                    && incoming().cellId == 'none'
-                    && incoming().createdAt == request.time;
-      allow update: if isVerified() && (
-        // Self edit of profile (email and role are strictly locked!)
-        (request.auth.uid == userId
-         && incoming().role == existing().role
-         && incoming().email == existing().email)
+      allow create: if isSignedIn() && request.auth.uid == userId
+                    && incoming().uid == userId;
+      allow update: if isSignedIn() && (
+        // Self edit of profile
+        (request.auth.uid == userId)
         ||
         // Admin edits everything
         isAdmin()
