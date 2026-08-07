@@ -1,5 +1,5 @@
 rules_version = '2';
-service cloudfire.firestore {
+service cloud.firestore {
   match /databases/{database}/documents {
 
     // Global Safety Net default-deny
@@ -18,7 +18,7 @@ service cloudfire.firestore {
 
     function isAdmin() {
       return isSignedIn() && (
-        (request.auth.token.email != null && request.auth.token.email.matches('(?i)danielgiobari644@gmail.com'))
+        (request.auth.token.email != null && request.auth.token.email.lower() == 'danielgiobari644@gmail.com')
         || (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Super Admin')
       );
     }
@@ -32,27 +32,24 @@ service cloudfire.firestore {
     }
 
     function isValidId(id) {
-      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+      return id is string && id.size() <= 128;
     }
 
     // --- User Profiles ---
     match /users/{userId} {
-      allow read: if isSignedIn();
+      allow read: if true;
       allow create: if isSignedIn() && request.auth.uid == userId
                     && incoming().uid == userId;
       allow update: if isSignedIn() && (
-        // Self edit of profile
         (request.auth.uid == userId)
-        ||
-        // Admin edits everything
-        isAdmin()
+        || isAdmin()
       );
       allow delete: if isAdmin();
     }
 
     // --- Cell Groups ---
     match /cells/{cellId} {
-      allow read: if isSignedIn();
+      allow read: if true;
       allow create: if isVerified()
                     && incoming().id == cellId
                     && incoming().name is string && incoming().name.size() <= 100
@@ -63,8 +60,7 @@ service cloudfire.firestore {
                     && incoming().status == 'active'
                     && incoming().createdAt == request.time;
       allow update: if isVerified() && (
-        // Cell leader or co-leader updating details or coLeaders list
-        ((existing().leaderUid == request.auth.uid || request.auth.token.email in existing().coLeaders)
+        ((existing().leaderUid == request.auth.uid || (existing().coLeaders is list && request.auth.token.email in existing().coLeaders))
          && incoming().id == existing().id
          && incoming().leaderUid == existing().leaderUid
          && incoming().leaderEmail == existing().leaderEmail
@@ -73,16 +69,13 @@ service cloudfire.firestore {
          && incoming().city is string && incoming().city.size() <= 100
          && incoming().description is string && incoming().description.size() <= 500
          && incoming().coLeaders is list && incoming().coLeaders.size() <= 10)
-        ||
-        // Admin full control
-        isAdmin()
+        || isAdmin()
       );
       allow delete: if isAdmin();
 
       // Subcollection: Cell chat messages
       match /messages/{messageId} {
         allow read: if isVerified() && (
-          // Must be active and a member of the cell group
           get(/databases/$(database)/documents/cells/$(cellId)).data.status == 'active'
           && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.cellId == cellId || isAdmin())
         );
@@ -91,13 +84,27 @@ service cloudfire.firestore {
           && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.cellId == cellId
           && incoming().senderUid == request.auth.uid
           && incoming().senderName is string && incoming().senderName.size() <= 100
-          && incoming().text is string && incoming().text.size() <= 1000
+          && incoming().text is string && incoming().text.size() <= 2000
           && incoming().createdAt == request.time
         );
-        allow update, delete: if isVerified() && (
-          // Allow message creator, cell leader, or admin to delete messages
+        allow update: if isVerified() && (
+          (existing().senderUid == request.auth.uid)
+          || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.cellId == cellId
+          || isAdmin()
+        );
+        allow delete: if isVerified() && (
           (existing().senderUid == request.auth.uid)
           || get(/databases/$(database)/documents/cells/$(cellId)).data.leaderUid == request.auth.uid
+          || isAdmin()
+        );
+      }
+
+      // Subcollection: Cell announcements
+      match /announcements/{announcementId} {
+        allow read: if isVerified();
+        allow create, update, delete: if isVerified() && (
+          get(/databases/$(database)/documents/cells/$(cellId)).data.leaderUid == request.auth.uid
+          || (get(/databases/$(database)/documents/cells/$(cellId)).data.coLeaders is list && request.auth.token.email in get(/databases/$(database)/documents/cells/$(cellId)).data.coLeaders)
           || isAdmin()
         );
       }
@@ -108,14 +115,14 @@ service cloudfire.firestore {
           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.cellId == cellId || isAdmin()
         );
         allow create: if isVerified() && (
-          (get(/databases/$(database)/documents/cells/$(cellId)).data.leaderUid == request.auth.uid || request.auth.token.email in get(/databases/$(database)/documents/cells/$(cellId)).data.coLeaders)
+          (get(/databases/$(database)/documents/cells/$(cellId)).data.leaderUid == request.auth.uid || (get(/databases/$(database)/documents/cells/$(cellId)).data.coLeaders is list && request.auth.token.email in get(/databases/$(database)/documents/cells/$(cellId)).data.coLeaders))
           && incoming().title is string && incoming().title.size() <= 100
           && incoming().date is string && incoming().date.size() <= 50
           && incoming().description is string && incoming().description.size() <= 500
           && incoming().createdAt == request.time
         );
         allow update, delete: if isVerified() && (
-          (get(/databases/$(database)/documents/cells/$(cellId)).data.leaderUid == request.auth.uid || request.auth.token.email in get(/databases/$(database)/documents/cells/$(cellId)).data.coLeaders)
+          (get(/databases/$(database)/documents/cells/$(cellId)).data.leaderUid == request.auth.uid || (get(/databases/$(database)/documents/cells/$(cellId)).data.coLeaders is list && request.auth.token.email in get(/databases/$(database)/documents/cells/$(cellId)).data.coLeaders))
           || isAdmin()
         );
       }
@@ -123,7 +130,7 @@ service cloudfire.firestore {
 
     // --- Prayer Petitions ---
     match /prayer_petitions/{petitionId} {
-      allow read: if isSignedIn();
+      allow read: if true;
       allow create: if isVerified()
                     && incoming().id == petitionId
                     && incoming().category in ['Health', 'Family', 'Career', 'Spiritual Growth', 'Wisdom', 'Gratitude', 'General Needs']
@@ -132,20 +139,17 @@ service cloudfire.firestore {
                     && incoming().authorUid == request.auth.uid
                     && incoming().authorName is string && incoming().authorName.size() <= 100
                     && incoming().agreementsCount == 0
-                    && incoming().agreements == {}
                     && incoming().createdAt == request.time;
       allow update: if isVerified() && (
-        // Agreement toggle action
         (incoming().id == existing().id
          && incoming().category == existing().category
          && incoming().text == existing().text
          && incoming().urgency == existing().urgency
          && incoming().authorUid == existing().authorUid
          && incoming().authorName == existing().authorName
-         && incoming().agreements is object
+         && incoming().agreements is map
          && incoming().agreementsCount is number)
-        ||
-        isAdmin()
+        || isAdmin()
       );
       allow delete: if isVerified() && (
         existing().authorUid == request.auth.uid || isAdmin()
@@ -154,33 +158,31 @@ service cloudfire.firestore {
 
     // --- Parish Calendar Events ---
     match /parish_events/{eventId} {
-      allow read: if isSignedIn();
+      allow read: if true;
       allow write: if isAdmin();
       allow update: if isVerified() && (
-        // Allow members to update only their RSVP status
         (incoming().id == existing().id
          && incoming().title == existing().title
          && incoming().date == existing().date
          && incoming().description == existing().description
-         && incoming().rsvps is object)
-        ||
-        isAdmin()
+         && incoming().rsvps is map)
+        || isAdmin()
       );
     }
 
     // --- Bible Trivia & Quizzes ---
     match /trivia_questions/{questionId} {
-      allow read: if isSignedIn();
+      allow read: if true;
       allow write: if isAdmin();
     }
 
     match /quizzes/{quizId} {
-      allow read: if isSignedIn();
+      allow read: if true;
       allow write: if isAdmin();
     }
 
     match /quiz_scores/{scoreId} {
-      allow read: if isSignedIn();
+      allow read: if true;
       allow create, update: if isVerified()
                             && incoming().userUid == request.auth.uid
                             && incoming().userName is string
@@ -189,7 +191,7 @@ service cloudfire.firestore {
     }
 
     match /quiz_reactions/{reactionId} {
-      allow read: if isSignedIn();
+      allow read: if true;
       allow create: if isVerified()
                     && incoming().senderUid == request.auth.uid
                     && incoming().text is string && incoming().text.size() <= 1000;
@@ -198,19 +200,19 @@ service cloudfire.firestore {
 
     // --- Downloads Hub Bundles ---
     match /download_bundles/{bundleId} {
-      allow read: if isSignedIn();
+      allow read: if true;
       allow write: if isAdmin();
     }
 
     // --- System Configuration Desk Setup & Live Stream Broadcast ---
     match /system_configs/{configId} {
-      allow read: if isSignedIn();
+      allow read: if true;
       allow write: if isAdmin();
     }
 
     // --- Community Feed & Social Center ---
     match /community_feed/{postId} {
-      allow read: if isSignedIn();
+      allow read: if true;
       allow create: if isVerified()
                     && incoming().id == postId
                     && incoming().text is string && incoming().text.size() <= 2000
@@ -219,23 +221,17 @@ service cloudfire.firestore {
                     && incoming().authorName is string && incoming().authorName.size() <= 100
                     && incoming().authorRole is string
                     && incoming().likesCount is number
-                    && incoming().likes is object
-                    && (incoming().imageUrl == null || (incoming().imageUrl is string && incoming().imageUrl.size() <= 6000000))
-                    && (incoming().videoUrl == null || (incoming().videoUrl is string && incoming().videoUrl.size() <= 6000000))
+                    && incoming().likes is map
                     && incoming().createdAt == request.time;
       allow update: if isVerified() && (
-        // Allow members to toggle likes or add comments (updates to comments list)
         (incoming().id == existing().id
          && incoming().text == existing().text
          && incoming().type == existing().type
          && incoming().authorUid == existing().authorUid
          && incoming().authorName == existing().authorName
-         && incoming().likes is object
-         && incoming().likesCount is number
-         && incoming().imageUrl == existing().imageUrl
-         && incoming().videoUrl == existing().videoUrl)
-        ||
-        isAdmin()
+         && incoming().likes is map
+         && incoming().likesCount is number)
+        || isAdmin()
       );
       allow delete: if isVerified() && (
         existing().authorUid == request.auth.uid || isAdmin()
@@ -244,7 +240,7 @@ service cloudfire.firestore {
 
     // --- User Reviews ---
     match /user_reviews/{reviewId} {
-      allow read: if true; // Public reviews can be seen by anyone
+      allow read: if true;
       allow create, update: if isVerified() && request.auth.uid == reviewId
                             && incoming().uid == request.auth.uid
                             && incoming().displayName is string
@@ -255,24 +251,22 @@ service cloudfire.firestore {
 
     // --- Featured Testimonies ---
     match /featured_testimonies/{testimonyId} {
-      allow read: if true; // Public testimonies seen by anyone
+      allow read: if true;
       allow write: if isAdmin();
     }
 
     // --- Live Streams ---
     match /live_streams/{streamId} {
-      allow read: if true; // Anyone can see current live stream status
+      allow read: if true;
       allow write: if isAdmin();
     }
 
     // --- Direct Admin Support Chat ---
     function isValidSupportChat(data) {
-      return data.keys().hasAll(['userUid', 'userEmail', 'userName', 'senderUid', 'senderName', 'text', 'createdAt'])
-        && data.keys().size() == 7
-        && data.userUid is string && data.userUid.size() <= 128 && isValidId(data.userUid)
+      return data.userUid is string && data.userUid.size() <= 128
         && data.userEmail is string && data.userEmail.size() <= 128
         && data.userName is string && data.userName.size() <= 128
-        && data.senderUid is string && data.senderUid.size() <= 128 && isValidId(data.senderUid)
+        && data.senderUid is string && data.senderUid.size() <= 128
         && data.senderName is string && data.senderName.size() <= 128
         && data.text is string && data.text.size() <= 1000
         && data.createdAt == request.time;
@@ -292,14 +286,41 @@ service cloudfire.firestore {
 
     // --- Upcoming Events ---
     match /upcoming_events/{eventId} {
-      allow read: if isSignedIn();
+      allow read: if true;
       allow write: if isAdmin();
     }
 
     // --- Daily Devotionals ---
     match /daily_devotionals/{devotionalId} {
-      allow read: if isSignedIn();
+      allow read: if true;
       allow write: if isAdmin();
+    }
+
+    // --- Champions Referrals ---
+    match /referrals/{referralId} {
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn();
+      allow delete: if isAdmin();
+    }
+
+    // --- Realtime Member Presence ---
+    match /presence/{userId} {
+      allow read: if isSignedIn();
+      allow create, update: if isVerified() && request.auth.uid == userId;
+      allow delete: if isVerified() && request.auth.uid == userId;
+    }
+
+    // --- Champions Rewards Library ---
+    match /user_rewards/{rewardId} {
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn();
+      allow delete: if isAdmin();
+    }
+
+    // --- Referral Link Clicks Tracker ---
+    match /referral_clicks/{clickId} {
+      allow read: if isSignedIn();
+      allow create: if true;
     }
   }
 }

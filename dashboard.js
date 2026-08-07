@@ -23,7 +23,6 @@ function initDashboard() {
   syncSystemConfigs();
   syncStreakChampionship();
   syncDashboardDailyDevotionals();
-  syncDashboardUpcomingEvents();
 }
 
 function startLiveClock() {
@@ -1107,67 +1106,6 @@ let dashboardEventsListener = null;
 function syncDashboardUpcomingEvents() {
   const container = document.getElementById('dashboard-upcoming-events-container');
   if (!container) return;
-
-  if (dashboardEventsListener) dashboardEventsListener();
-
-  dashboardEventsListener = window.db.collection('upcoming_events')
-    .orderBy('eventDate', 'asc')
-    .limit(4)
-    .onSnapshot(snap => {
-      container.innerHTML = '';
-      if (snap.empty) return;
-
-      const section = document.createElement('div');
-      section.className = "bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm space-y-4 animate-fade-in";
-
-      let eventsCards = '';
-      snap.forEach(doc => {
-        const ev = doc.data();
-        const formattedDate = window.formatEventDatesDisplay ? window.formatEventDatesDisplay(ev) : new Date(ev.eventDate).toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-
-        let extraDatesBadges = '';
-        if (ev.extraDates && Array.isArray(ev.extraDates) && ev.extraDates.length > 0) {
-          extraDatesBadges = `
-            <div class="flex flex-wrap gap-1 mt-1">
-              ${ev.extraDates.map(d => `<span class="px-1.5 py-0.5 rounded text-[8px] font-mono font-bold bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200/60 dark:border-purple-800/60">📅 ${new Date(d).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>`).join('')}
-            </div>
-          `;
-        }
-
-        eventsCards += `
-          <div class="bg-slate-50 dark:bg-zinc-800/50 border border-slate-200 dark:border-zinc-800 rounded-2xl p-4 flex flex-col justify-between space-y-3 hover:border-purple-300 dark:hover:border-purple-800 transition-all">
-            <div class="space-y-2">
-              ${ev.imageUrl ? `
-                <img src="${ev.imageUrl}" class="w-full h-28 object-cover rounded-xl border border-slate-200 dark:border-zinc-700 shadow-2xs" alt="${ev.title}" />
-              ` : ''}
-              <div>
-                <span class="px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase tracking-widest bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 inline-block">
-                  📅 ${formattedDate}
-                </span>
-                <h4 class="font-extrabold text-slate-900 dark:text-zinc-100 text-sm font-display mt-1">${ev.title}</h4>
-                <p class="text-xs text-slate-500 dark:text-zinc-400 line-clamp-2 mt-0.5">${ev.description}</p>
-                <div class="text-[10px] text-slate-400 font-bold mt-1">📍 ${ev.location}</div>
-                ${extraDatesBadges}
-              </div>
-            </div>
-          </div>
-        `;
-      });
-
-      section.innerHTML = `
-        <div class="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800 pb-3">
-          <h3 class="font-black font-display text-slate-900 dark:text-zinc-100 text-sm uppercase tracking-wider flex items-center gap-2 text-purple-600 dark:text-purple-400">
-            <i data-lucide="calendar-heart" class="w-4.5 h-4.5"></i> Upcoming Parish Events
-          </h3>
-          <span class="text-xs font-bold text-slate-400">Parish Schedule</span>
-        </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          ${eventsCards}
-        </div>
-      `;
-
-      container.appendChild(section);
-      if (window.lucide) window.lucide.createIcons();
-    }, err => console.warn("Dashboard events error:", err));
+  container.innerHTML = '';
 }
 

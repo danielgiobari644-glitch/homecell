@@ -5,10 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "node server.js",
-    "build": "mkdir -p dist && cp -r index.html *.js *.json netlify.toml dist/ 2>/dev/null || true",
+    "build": "node build.js",
     "start": "node server.js",
-    "clean": "rm -rf dist",
-    "lint": "echo 'Vanilla JS - no lint required'"
+    "clean": "node clean.js",
+    "lint": "node -e \"console.log('Vanilla JS - no lint required')\""
   },
   "dependencies": {
     "@google/genai": "^1.47.0",

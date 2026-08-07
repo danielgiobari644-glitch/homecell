@@ -1,9 +1,12 @@
 {
-  "apiKey": "AIzaSyBGDT1IZGFR0ravirAC-jpcuj4Y9Uuipks",
-  "authDomain": "adageorge-35236.firebaseapp.com",
-  "projectId": "adageorge-35236",
-  "storageBucket": "adageorge-35236.firebasestorage.app",
-  "messagingSenderId": "397933347333",
-  "appId": "1:397933347333:web:316bacd8dc69b56f7fd26c",
-  "measurementId": "G-6PPH3KWEXY"
+  "projectId": "emergent-net-8cf5x",
+  "appId": "1:671126310797:web:1a4b3a88f3375ce15437c4",
+  "apiKey": "AIzaSyBU3AqZsnHUwDIkzQ6ga3mz6qfANA5VyB4",
+  "authDomain": "emergent-net-8cf5x.firebaseapp.com",
+  "firestoreDatabaseId": "ai-studio-homecell-f5e9ce35-384e-4158-aa68-f4db816ee215",
+  "storageBucket": "emergent-net-8cf5x.firebasestorage.app",
+  "messagingSenderId": "671126310797",
+  "measurementId": "",
+  "oAuthClientId": "671126310797-73vc169go0k9vd0d5jogfkvngnaicug3.apps.googleusercontent.com",
+  "recaptchaSiteKey": ""
 }

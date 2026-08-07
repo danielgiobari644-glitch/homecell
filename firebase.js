@@ -54,15 +54,13 @@
 })();
 
 const firebaseConfig = {
-  "projectId": "hcell-f3797",
-  "appId": "1:940294292200:web:45e38c21c2ea950ba7bf5d",
-  "apiKey": "AIzaSyCL4siNSgWX0gH5QIbl7OtZFDvBiHH9oP0",
-  "authDomain": "hcell-f3797.firebaseapp.com",
-  "databaseURL": "https://hcell-f3797-default-rtdb.firebaseio.com",
-  "storageBucket": "hcell-f3797.firebasestorage.app",
-  "messagingSenderId": "940294292200",
-  "measurementId": "G-0YN4548C8Z",
-  "firestoreDatabaseId": ""
+  apiKey: "AIzaSyAzsQYW0YvR8KT_RkWnpCADv3Hvwnyqdmw",
+  authDomain: "homecell-net.firebaseapp.com",
+  projectId: "homecell-net",
+  storageBucket: "homecell-net.firebasestorage.app",
+  messagingSenderId: "615303092749",
+  appId: "1:615303092749:web:732246e106d71b38b49344",
+  measurementId: "G-MX95QZVWH5"
 };
 
 // Initialize Firebase Compat

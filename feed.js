@@ -1202,11 +1202,9 @@ function syncFeedUpcomingEvents() {
       section.innerHTML = `
         <div class="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800 pb-3">
           <h3 class="font-black font-display text-slate-900 dark:text-zinc-100 text-sm uppercase tracking-wider flex items-center gap-2 text-purple-600 dark:text-purple-400">
-            <i data-lucide="calendar-heart" class="w-4.5 h-4.5"></i> Upcoming Parish Events
+            <i data-lucide="calendar-heart" class="w-4.5 h-4.5"></i> Upcoming Events
           </h3>
-          <button onclick="switchTab('calendar')" class="text-xs font-bold text-purple-600 hover:text-purple-800 dark:text-purple-400 transition-colors flex items-center gap-1 cursor-pointer">
-            View All <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
-          </button>
+          <span class="text-xs font-bold text-slate-400">Community Schedule</span>
         </div>
         <div class="space-y-3">
           ${eventsHTML}

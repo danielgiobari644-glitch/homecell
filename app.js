@@ -6,27 +6,54 @@ let activeTab = 'feed';
 // Initialize Theme early to prevent flicker
 function initTheme() {
   const html = document.documentElement;
-  const savedTheme = localStorage.getItem('theme');
+  const savedEquippedTheme = localStorage.getItem('equipped_theme_id') || 'classic_light';
+  const savedThemeMode = localStorage.getItem('theme');
   const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
-  if (savedTheme === 'dark' || (!savedTheme && systemPrefersDark)) {
+  setAppTheme(savedEquippedTheme, false);
+
+  if (!localStorage.getItem('equipped_theme_id')) {
+    if (savedThemeMode === 'dark' || (!savedThemeMode && systemPrefersDark)) {
+      html.classList.add('dark');
+    } else {
+      html.classList.remove('dark');
+    }
+  }
+}
+
+function setAppTheme(themeId, showToast = true) {
+  const html = document.documentElement;
+  html.setAttribute('data-theme', themeId);
+  localStorage.setItem('equipped_theme_id', themeId);
+
+  const darkThemes = ['midnight_dark', 'champion_black', 'r_theme_purple', 'kingdom_purple', 'r_theme_gold', 'royal_gold', 'crimson_faith', 'emerald_dark'];
+  if (darkThemes.some(dt => themeId.includes(dt))) {
     html.classList.add('dark');
-  } else {
+    localStorage.setItem('theme', 'dark');
+  } else if (themeId === 'classic_light' || themeId === 'heavenly_white') {
     html.classList.remove('dark');
+    localStorage.setItem('theme', 'light');
   }
 
+  if (window.currentUserUid && window.db) {
+    window.db.collection('users').doc(window.currentUserUid).set({
+      equippedTheme: themeId,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true }).catch(err => console.warn("Theme sync skipped:", err));
+  }
+
+  if (showToast) {
+    const formattedName = themeId.replace('r_theme_', '').replace('_', ' ').toUpperCase();
+    window.showToast?.(`✨ Switched to ${formattedName} Theme!`, "success");
+  }
 }
 
 function toggleTheme() {
   const html = document.documentElement;
   if (html.classList.contains('dark')) {
-    html.classList.remove('dark');
-    localStorage.setItem('theme', 'light');
-    window.showToast?.("High-contrast Light Theme active.");
+    setAppTheme('classic_light');
   } else {
-    html.classList.add('dark');
-    localStorage.setItem('theme', 'dark');
-    window.showToast?.("High-contrast Dark Theme active.");
+    setAppTheme('midnight_dark');
   }
 }
 
@@ -38,6 +65,7 @@ function switchTab(tabId) {
     feed: 'Community Feed',
     dashboard: 'Faith Dashboard',
     streak: 'My Streak',
+    champions: 'Kingdom Champions Hub',
     bible: 'Scripture & Trivia',
     cells: 'Cell Fellowships',
     chat: 'Fellowship Lounge',
@@ -45,7 +73,9 @@ function switchTab(tabId) {
     calendar: 'Parish Events',
     downloads: 'Resource Hub',
     settings: 'Profile & Settings',
-    admin: 'Admin Console'
+    admin: 'Admin Console',
+    privacy: 'Privacy Policy',
+    terms: 'Terms of Service'
   };
 
   // Update top active tab badge
@@ -55,7 +85,7 @@ function switchTab(tabId) {
   }
 
   // List of all navigation tabs
-  const tabIds = ['feed', 'dashboard', 'streak', 'bible', 'cells', 'chat', 'prayers', 'calendar', 'downloads', 'admin', 'settings'];
+  const tabIds = ['feed', 'dashboard', 'streak', 'champions', 'bible', 'cells', 'chat', 'prayers', 'calendar', 'downloads', 'admin', 'settings', 'privacy', 'terms'];
 
   tabIds.forEach(id => {
     const pane = document.getElementById(`tab-${id}`);
@@ -79,6 +109,18 @@ function switchTab(tabId) {
             ? 'bg-purple-600 text-white shadow-md shadow-purple-500/20'
             : 'text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/30'
         }`;
+      } else if (id === 'champions') {
+        btn.className = `nav-item-${id} w-full flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-extrabold transition-all duration-200 cursor-pointer relative ${
+          isSelected
+            ? 'bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 text-slate-950 shadow-md shadow-amber-500/30 ring-2 ring-amber-400/50'
+            : 'bg-amber-50/90 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/60 hover:bg-amber-100 dark:hover:bg-amber-900/50 shadow-xs ring-1 ring-amber-400/20'
+        }`;
+      } else if (id === 'streak') {
+        btn.className = `nav-item-${id} w-full flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-extrabold transition-all duration-200 cursor-pointer relative ${
+          isSelected
+            ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/30 ring-2 ring-blue-400/50'
+            : 'bg-blue-50/80 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800/60 hover:bg-blue-100 dark:hover:bg-blue-900/40 shadow-xs ring-1 ring-blue-400/30'
+        }`;
       } else {
         btn.className = `nav-item-${id} w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-extrabold transition-all duration-200 cursor-pointer ${
           isSelected
@@ -93,6 +135,7 @@ function switchTab(tabId) {
   if (tabId === 'feed' && window.initFeedEngine) window.initFeedEngine();
   if (tabId === 'dashboard' && window.initDashboard) window.initDashboard();
   if (tabId === 'streak' && window.initStreakModule) window.initStreakModule();
+  if (tabId === 'champions' && window.initChampionsModule) window.initChampionsModule();
   if (tabId === 'bible' && window.initBibleEngine) window.initBibleEngine();
   if (tabId === 'cells' && window.initCellsModule) window.initCellsModule();
   if (tabId === 'chat' && window.initCellsModule) window.initCellsModule();
@@ -327,11 +370,29 @@ function applyUserSessionUI(profile, user, badge, authModal) {
   if (btnMobSignout) btnMobSignout.classList.remove('hidden');
   if (btnMobSignin) btnMobSignin.classList.add('hidden');
 
-  // Update header badges
+  // Update header badges & welcome greeting
   const nameEl = document.getElementById('header-user-name');
   const roleEl = document.getElementById('header-user-role');
-  const nameValue = profile.displayName || user.email;
+  const greetingEl = document.getElementById('header-greeting-text');
+  const dropdownNameEl = document.getElementById('dropdown-user-fullname');
+  const dropdownEmailEl = document.getElementById('dropdown-user-email');
+  const initialsEl = document.getElementById('header-avatar-initials');
+
+  const nameValue = profile.displayName || user.email || 'Member';
+  const initial = nameValue.charAt(0).toUpperCase();
+
   if (nameEl) nameEl.innerText = nameValue;
+  if (initialsEl) initialsEl.innerText = initial;
+  if (dropdownNameEl) dropdownNameEl.innerText = nameValue;
+  if (dropdownEmailEl) dropdownEmailEl.innerText = profile.email || user.email || '';
+
+  // Personalized Greeting
+  const hour = new Date().getHours();
+  let timeOfDay = "Good morning";
+  if (hour >= 12 && hour < 17) timeOfDay = "Good afternoon";
+  else if (hour >= 17) timeOfDay = "Good evening";
+  if (greetingEl) greetingEl.innerText = `${timeOfDay}, ${nameValue.split(' ')[0]}! 👋`;
+
   if (roleEl) {
     roleEl.innerText = window.currentUserRole.toUpperCase();
     if (window.currentUserRole === 'Super Admin') {
@@ -1282,11 +1343,68 @@ window.shareCurrentDevotionalModal = function() {
   }
 };
 
+window.toggleHeaderProfileMenu = function(forceState) {
+  const menu = document.getElementById('header-profile-dropdown');
+  if (!menu) return;
+  if (typeof forceState === 'boolean') {
+    if (forceState) menu.classList.remove('hidden');
+    else menu.classList.add('hidden');
+  } else {
+    menu.classList.toggle('hidden');
+  }
+};
+
+// Privacy Policy & Terms of Service Modal Helpers
+window.openPrivacyModal = function() {
+  const modal = document.getElementById('privacy-modal');
+  if (modal) {
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+  if (window.lucide) window.lucide.createIcons();
+};
+
+window.closePrivacyModal = function() {
+  const modal = document.getElementById('privacy-modal');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+};
+
+window.openTermsModal = function() {
+  const modal = document.getElementById('terms-modal');
+  if (modal) {
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+  if (window.lucide) window.lucide.createIcons();
+};
+
+window.closeTermsModal = function() {
+  const modal = document.getElementById('terms-modal');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+};
+
+window.openPrivacyPolicy = function() {
+  window.switchTab('privacy');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+window.openTermsOfService = function() {
+  window.switchTab('terms');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
 // Expose globally
 window.openAuthModal = openAuthModal;
 window.closeAuthModal = closeAuthModal;
 window.switchTab = switchTab;
 window.toggleTheme = toggleTheme;
+window.setAppTheme = setAppTheme;
 window.signOutUser = signOutUser;
 window.triggerPasswordReset = triggerPasswordReset;
 window.setAuthTab = setAuthTab;

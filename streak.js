@@ -18,10 +18,10 @@ const STREAK_BADGES_DEF = [
   },
   {
     id: "badge_7",
-    name: "🔥 On Fire",
+    name: "⚡ Momentum",
     daysRequired: 7,
     desc: "Maintained a 7-day consecutive devotion streak!",
-    icon: "🔥"
+    icon: "⚡"
   },
   {
     id: "badge_30",
@@ -164,7 +164,7 @@ function syncUserStreakData(uid) {
         actionBtn.className = "w-full sm:w-auto px-6 py-3 bg-zinc-800 text-zinc-400 font-bold text-xs rounded-2xl cursor-not-allowed border border-zinc-700/60 shadow-inner flex items-center justify-center gap-2";
         actionBtn.disabled = true;
       } else {
-        actionBtn.innerHTML = `<span>🔥 Complete Today's Devotional</span> <i data-lucide="arrow-right" class="w-4 h-4"></i>`;
+        actionBtn.innerHTML = `<span>✨ Complete Today's Devotional</span> <i data-lucide="arrow-right" class="w-4 h-4"></i>`;
         actionBtn.className = "w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-black text-xs uppercase tracking-wider rounded-2xl cursor-pointer shadow-lg shadow-orange-500/30 transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2";
         actionBtn.disabled = false;
       }
@@ -493,7 +493,7 @@ function completeStreakDevotional() {
       badgeUnlockedDates: unlockedDates
     }).then(() => {
       window.triggerConfetti?.();
-      window.showToast?.(`🔥 Daily Devotional Check-in Complete! Streak: ${newStreak} Days!`, "success");
+      window.showToast?.(`✨ Daily Devotional Check-in Complete! Streak: ${newStreak} Days!`, "success");
 
       if (newlyUnlockedBadges.length > 0) {
         setTimeout(() => {
@@ -569,7 +569,7 @@ function syncStreakLeaderboard(currentUid) {
 
           <div class="text-right">
             <div class="text-sm font-black font-mono text-amber-400 flex items-center justify-end gap-1">
-              <span>🔥</span> ${streakVal} <span class="text-[10px] font-normal text-slate-400 uppercase">Days</span>
+              <span>⚡</span> ${streakVal} <span class="text-[10px] font-normal text-slate-400 uppercase">Days</span>
             </div>
             <span class="text-[9px] text-slate-500 block">Rank #${rankIndex}</span>
           </div>
@@ -665,7 +665,7 @@ function renderMonthlyCalendar() {
     cell.className = cellClass;
     cell.innerHTML = `
       <span class="text-xs font-bold">${day}</span>
-      <span class="text-[9px] mt-0.5">${isCompleted ? '🔥' : isToday ? '⏳' : ''}</span>
+      <span class="text-[9px] mt-0.5">${isCompleted ? '✨' : isToday ? '⏳' : ''}</span>
     `;
 
     container.appendChild(cell);
@@ -705,7 +705,7 @@ function showCalendarDayPopover(dateStr, record, isCompleted, isToday) {
       detailsEl.innerHTML = `
         <div class="space-y-2 text-xs">
           <div class="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-300 font-bold flex items-center gap-2">
-            <span>🔥</span> Daily Devotional Successfully Completed!
+            <span>✨</span> Daily Devotional Successfully Completed!
           </div>
           <div class="text-slate-300"><strong class="text-slate-400">Devotion:</strong> ${record?.devotionTitle || 'Daily Bread Scripture Devotion'}</div>
           <div class="text-slate-300"><strong class="text-slate-400">Completion Time:</strong> ${record?.time || 'Recorded'}</div>
@@ -718,7 +718,7 @@ function showCalendarDayPopover(dateStr, record, isCompleted, isToday) {
           <div class="p-3 bg-blue-500/10 border border-blue-500/30 rounded-xl text-blue-300 font-bold flex items-center gap-2">
             <span>⏳</span> Today's Check-in Pending
           </div>
-          <p class="text-slate-400">Complete today's daily devotional to keep your streak burning hot!</p>
+          <p class="text-slate-400">Complete today's daily devotional to build your spiritual momentum!</p>
           <button onclick="closeCalendarDayModal(); completeStreakDevotional();" class="w-full py-2.5 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-xl cursor-pointer">
             Complete Today's Devotional Now
           </button>
@@ -773,7 +773,7 @@ function checkDailyStreakReminderToast() {
       if (lastCheckIn !== todayStr) {
         localStorage.setItem(reminderKey, 'true');
         setTimeout(() => {
-          window.showToast?.("Don't lose your streak today! 🔥 Complete today's devotional.", "warning");
+          window.showToast?.("Don't lose your streak today! ✨ Complete today's devotional.", "warning");
         }, 1500);
       }
     }

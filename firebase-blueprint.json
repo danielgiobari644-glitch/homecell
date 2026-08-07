@@ -223,6 +223,37 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "title", "content", "date", "createdAt"]
+    },
+    "Referral": {
+      "title": "Referral",
+      "description": "Referral connection between referrer and referee.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "referrerUid": { "type": "string" },
+        "referredUid": { "type": "string" },
+        "referredName": { "type": "string" },
+        "referralCode": { "type": "string" },
+        "status": { "type": "string" },
+        "rewardKC": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "referrerUid", "referredUid", "referralCode", "createdAt"]
+    },
+    "UserReward": {
+      "title": "UserReward",
+      "description": "Digital reward unlocked or claimed by user.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userUid": { "type": "string" },
+        "itemId": { "type": "string" },
+        "title": { "type": "string" },
+        "category": { "type": "string" },
+        "kcCost": { "type": "number" },
+        "claimedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userUid", "itemId", "title", "category", "kcCost", "claimedAt"]
     }
   },
   "firestore": {
@@ -285,6 +316,14 @@
     "daily_devotionals/{devotionalId}": {
       "schema": "DailyDevotional",
       "description": "Daily devotionals created by Super Admin with photos."
+    },
+    "referrals/{referralId}": {
+      "schema": "Referral",
+      "description": "Referral invitations and tracked connections."
+    },
+    "user_rewards/{rewardId}": {
+      "schema": "UserReward",
+      "description": "Unlocked digital store items and claimed rewards per user."
     }
   }
 }

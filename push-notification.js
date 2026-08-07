@@ -44,7 +44,7 @@ window.requestNotificationPermission = async function() {
     }
 
     // Register service worker safely
-    const registration = await navigator.serviceWorker.register('./sw.js').catch(err => {
+    const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(err => {
       console.warn("Service Worker registration skipped or restricted in sandbox/iframe:", err);
       return null;
     });
@@ -264,9 +264,18 @@ function updatePushUIState() {
   }
 }
 
-// Automatically update push UI on DOM load
+// Automatically update push UI on DOM load and register SW if granted
 document.addEventListener("DOMContentLoaded", () => {
-  setTimeout(updatePushUIState, 1500);
+  setTimeout(() => {
+    updatePushUIState();
+    if (window.isNotificationSupported() && Notification.permission === 'granted') {
+      navigator.serviceWorker.register('/sw.js', { scope: '/' }).then(() => {
+        window.updateSubscriptionOnServer?.();
+      }).catch(err => {
+        console.warn("Auto-SW registration skipped/failed:", err);
+      });
+    }
+  }, 1500);
 });
 
 window.updatePushUIState = updatePushUIState;

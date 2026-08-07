@@ -64,6 +64,46 @@
         animation: bounceSlow 3.5s ease-in-out infinite;
       }
 
+      /* Realistic Burning Flame Animation */
+      @keyframes flameBurn {
+        0% {
+          transform: scale(1) translateY(0) rotate(0deg);
+          filter: drop-shadow(0 0 3px #f97316) drop-shadow(0 -2px 6px #ef4444);
+          color: #f97316;
+        }
+        20% {
+          transform: scale(1.18) translateY(-2px) rotate(-4deg);
+          filter: drop-shadow(0 0 8px #f59e0b) drop-shadow(0 -4px 10px #f97316);
+          color: #fbbf24;
+        }
+        40% {
+          transform: scale(1.05) translateY(-1px) rotate(3deg);
+          filter: drop-shadow(0 0 6px #ea580c) drop-shadow(0 -3px 8px #dc2626);
+          color: #f97316;
+        }
+        60% {
+          transform: scale(1.22) translateY(-3px) rotate(-3deg);
+          filter: drop-shadow(0 0 10px #fbbf24) drop-shadow(0 -5px 12px #f97316);
+          color: #fbbf24;
+        }
+        80% {
+          transform: scale(1.1) translateY(-1px) rotate(2deg);
+          filter: drop-shadow(0 0 7px #f97316) drop-shadow(0 -3px 9px #ef4444);
+          color: #f59e0b;
+        }
+        100% {
+          transform: scale(1) translateY(0) rotate(0deg);
+          filter: drop-shadow(0 0 3px #f97316) drop-shadow(0 -2px 6px #ef4444);
+          color: #f97316;
+        }
+      }
+
+      .animate-flame-burn {
+        animation: flameBurn 1.2s ease-in-out infinite;
+        display: inline-block;
+        transform-origin: bottom center;
+      }
+
       /* Glow & Glassmorphism helpers */
       .glow-blue-active {
         box-shadow: 0 15px 45px -5px rgba(37, 99, 235, 0.35), 0 0 30px 2px rgba(59, 130, 246, 0.15);
@@ -126,6 +166,45 @@
       .dark .text-zinc-50,
       .dark .text-zinc-100 {
         color: #f8fafc !important;
+      }
+
+      /* Custom Theme Accents */
+      html[data-theme="r_theme_gold"] .dark body {
+        background-color: #120e06 !important;
+      }
+      html[data-theme="r_theme_gold"] .bg-blue-600 {
+        background-color: #d97706 !important;
+      }
+      html[data-theme="r_theme_gold"] .border-blue-500 {
+        border-color: #f59e0b !important;
+      }
+
+      html[data-theme="r_theme_emerald"] .dark body {
+        background-color: #06120e !important;
+      }
+      html[data-theme="r_theme_emerald"] .bg-blue-600 {
+        background-color: #059669 !important;
+      }
+
+      html[data-theme="r_theme_purple"] .dark body {
+        background-color: #0f0817 !important;
+      }
+      html[data-theme="r_theme_purple"] .bg-blue-600 {
+        background-color: #7c3aed !important;
+      }
+
+      html[data-theme="r_theme_crimson"] .dark body {
+        background-color: #17080b !important;
+      }
+      html[data-theme="r_theme_crimson"] .bg-blue-600 {
+        background-color: #e11d48 !important;
+      }
+
+      html[data-theme="champion_black"] body {
+        background-color: #000000 !important;
+      }
+      html[data-theme="heavenly_white"] body {
+        background-color: #f8fafc !important;
       }
       
       /* High-Contrast Electric Blue Accents for active states in Dark Mode */
@@ -697,6 +776,13 @@
           <button type="submit" id="auth-submit-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl cursor-pointer transition-all flex items-center justify-center gap-2">
             Sign In <i data-lucide="arrow-right" class="w-5 h-5"></i>
           </button>
+          
+          <div class="text-[11px] text-center text-slate-400 dark:text-zinc-500 pt-2">
+            By continuing, you agree to Home.cell's
+            <a onclick="window.openTermsModal()" class="text-blue-600 dark:text-blue-400 font-bold underline cursor-pointer hover:opacity-80">Terms of Service</a>
+            and
+            <a onclick="window.openPrivacyModal()" class="text-blue-600 dark:text-blue-400 font-bold underline cursor-pointer hover:opacity-80">Privacy Policy</a>.
+          </div>
         </form>
       </div>
     </div>
@@ -730,9 +816,27 @@
             <span>Faith Dashboard</span>
           </button>
 
-          <button onclick="switchTab('streak')" id="nav-streak" class="nav-item-streak w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800/60 transition-all cursor-pointer">
-            <i data-lucide="flame" class="w-4.5 h-4.5 text-orange-500"></i>
-            <span>My Streak</span>
+          <button onclick="switchTab('streak')" id="nav-streak" class="nav-item-streak w-full flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-extrabold text-blue-700 dark:text-blue-300 bg-blue-50/80 dark:bg-blue-950/30 border border-blue-200/80 dark:border-blue-800/60 hover:bg-blue-100 dark:hover:bg-blue-900/40 shadow-xs ring-1 ring-blue-400/30 transition-all cursor-pointer relative">
+            <div class="flex items-center gap-3">
+              <i data-lucide="zap" class="w-4.5 h-4.5 text-blue-500"></i>
+              <span>My Streak</span>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0">
+              <span class="relative flex h-2 w-2">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-2 w-2 bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.9)]"></span>
+              </span>
+            </div>
+          </button>
+
+          <button onclick="switchTab('champions')" id="nav-champions" class="nav-item-champions w-full flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-extrabold text-amber-900 dark:text-amber-200 bg-gradient-to-r from-amber-100/90 via-yellow-100/90 to-amber-200/90 dark:from-amber-950/60 dark:via-yellow-950/50 dark:to-amber-900/60 border border-amber-300 dark:border-amber-700 hover:scale-[1.02] active:scale-[0.98] shadow-md shadow-amber-500/10 ring-1 ring-amber-400/30 transition-all cursor-pointer relative overflow-hidden group">
+            <div class="flex items-center gap-3 relative z-10">
+              <i data-lucide="trophy" class="w-4.5 h-4.5 text-amber-600 dark:text-amber-400"></i>
+              <span class="font-black">Champions</span>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0 relative z-10">
+              <span class="px-2 py-0.5 rounded-full bg-amber-500/20 dark:bg-amber-400/20 text-amber-700 dark:text-amber-300 text-[9px] font-black uppercase tracking-wider border border-amber-400/40">HUB</span>
+            </div>
           </button>
 
           <button onclick="switchTab('bible')" id="nav-bible" class="nav-item-bible w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800/60 transition-all cursor-pointer">
@@ -753,11 +857,6 @@
           <button onclick="switchTab('prayers')" id="nav-prayers" class="nav-item-prayers w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800/60 transition-all cursor-pointer">
             <i data-lucide="flame" class="w-4.5 h-4.5"></i>
             <span>Prayer Desk</span>
-          </button>
-
-          <button onclick="switchTab('calendar')" id="nav-calendar" class="nav-item-calendar w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800/60 transition-all cursor-pointer">
-            <i data-lucide="calendar" class="w-4.5 h-4.5"></i>
-            <span>Parish Events</span>
           </button>
 
           <button onclick="switchTab('downloads')" id="nav-downloads" class="nav-item-downloads w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800/60 transition-all cursor-pointer">
@@ -799,6 +898,12 @@
           <i data-lucide="log-in" class="w-4 h-4"></i>
           <span>Sign In / Join</span>
         </button>
+
+        <div class="text-[10px] text-center text-slate-400 dark:text-zinc-500 pt-1 flex items-center justify-center gap-2 font-medium">
+          <button onclick="window.openPrivacyPolicy()" class="hover:underline cursor-pointer">Privacy Policy</button>
+          <span>•</span>
+          <button onclick="window.openTermsOfService()" class="hover:underline cursor-pointer">Terms of Service</button>
+        </div>
       </div>
     </aside>
 
@@ -833,9 +938,25 @@
             <span>Faith Dashboard</span>
           </button>
 
-          <button onclick="switchTab('streak')" class="nav-item-streak w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl text-xs font-bold text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800/60 transition-all cursor-pointer">
-            <i data-lucide="flame" class="w-4.5 h-4.5 text-orange-500"></i>
-            <span>My Streak</span>
+          <button onclick="switchTab('streak')" class="nav-item-streak w-full flex items-center justify-between gap-3 px-3.5 py-3 rounded-2xl text-xs font-extrabold text-blue-700 dark:text-blue-300 bg-blue-50/80 dark:bg-blue-950/30 border border-blue-200/80 dark:border-blue-800/60 hover:bg-blue-100 dark:hover:bg-blue-900/40 shadow-xs ring-1 ring-blue-400/30 transition-all cursor-pointer relative">
+            <div class="flex items-center gap-3">
+              <i data-lucide="zap" class="w-4.5 h-4.5 text-blue-500"></i>
+              <span>My Streak</span>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0">
+              <span class="relative flex h-2 w-2">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-2 w-2 bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.9)]"></span>
+              </span>
+            </div>
+          </button>
+
+          <button onclick="switchTab('champions')" class="nav-item-champions w-full flex items-center justify-between gap-3 px-3.5 py-3 rounded-2xl text-xs font-extrabold text-amber-900 dark:text-amber-200 bg-gradient-to-r from-amber-100/90 via-yellow-100/90 to-amber-200/90 dark:from-amber-950/60 dark:via-yellow-950/50 dark:to-amber-900/60 border border-amber-300 dark:border-amber-700 shadow-md shadow-amber-500/10 transition-all cursor-pointer relative">
+            <div class="flex items-center gap-3">
+              <i data-lucide="trophy" class="w-4.5 h-4.5 text-amber-600 dark:text-amber-400"></i>
+              <span class="font-black">Champions</span>
+            </div>
+            <span class="px-2 py-0.5 rounded-full bg-amber-500/20 dark:bg-amber-400/20 text-amber-700 dark:text-amber-300 text-[9px] font-black uppercase tracking-wider">HUB</span>
           </button>
 
           <button onclick="switchTab('bible')" class="nav-item-bible w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl text-xs font-bold text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800/60 transition-all cursor-pointer">
@@ -856,11 +977,6 @@
           <button onclick="switchTab('prayers')" class="nav-item-prayers w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl text-xs font-bold text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800/60 transition-all cursor-pointer">
             <i data-lucide="flame" class="w-4.5 h-4.5"></i>
             <span>Prayer Desk</span>
-          </button>
-
-          <button onclick="switchTab('calendar')" class="nav-item-calendar w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl text-xs font-bold text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800/60 transition-all cursor-pointer">
-            <i data-lucide="calendar" class="w-4.5 h-4.5"></i>
-            <span>Parish Events</span>
           </button>
 
           <button onclick="switchTab('downloads')" class="nav-item-downloads w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl text-xs font-bold text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800/60 transition-all cursor-pointer">
@@ -901,20 +1017,26 @@
           <i data-lucide="log-in" class="w-4 h-4"></i>
           <span>Sign In / Join</span>
         </button>
+
+        <div class="text-[10px] text-center text-slate-400 dark:text-zinc-500 pt-1 flex items-center justify-center gap-2 font-medium">
+          <button onclick="window.openPrivacyPolicy()" class="hover:underline cursor-pointer">Privacy Policy</button>
+          <span>•</span>
+          <button onclick="window.openTermsOfService()" class="hover:underline cursor-pointer">Terms of Service</button>
+        </div>
       </div>
     </aside>
 
-    <!-- Core Layout Header -->
+    <!-- Core Layout Header (Welcome Navigation Header) -->
     <header class="bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border-b border-slate-200 dark:border-zinc-800 sticky top-0 z-30 transition-colors lg:pl-64">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
         
-        <!-- Logo and Platform name with mobile menu toggle -->
-        <div class="flex items-center gap-3">
-          <button onclick="toggleMobileSidebar(true)" class="lg:hidden p-2 bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-200 rounded-xl hover:scale-105 active:scale-95 transition-all cursor-pointer" title="Open Navigation Menu">
+        <!-- Left: Mobile Menu Toggle & Active Page Badge & Personalized Greeting -->
+        <div class="flex items-center gap-3 min-w-0">
+          <button onclick="toggleMobileSidebar(true)" class="lg:hidden p-2 bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-200 rounded-xl hover:scale-105 active:scale-95 transition-all cursor-pointer shrink-0" title="Open Navigation Menu">
             <i data-lucide="menu" class="w-5 h-5"></i>
           </button>
 
-          <div class="flex items-center gap-2 cursor-pointer lg:hidden" onclick="switchTab('feed')">
+          <div class="flex items-center gap-2 cursor-pointer lg:hidden shrink-0" onclick="switchTab('feed')">
             <div class="p-1.5 bg-blue-600 text-white rounded-xl shadow-md">
               <i data-lucide="home" class="w-4 h-4"></i>
             </div>
@@ -923,42 +1045,81 @@
             </span>
           </div>
 
-          <!-- Active Page Title Badge -->
-          <span id="active-tab-title-badge" class="px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 text-xs font-black uppercase tracking-wider border border-blue-200/50 dark:border-blue-900/50 hidden sm:inline-flex items-center gap-1.5">
-            <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
-            <span id="active-tab-title-text">Community Feed</span>
-          </span>
+          <!-- Active Page Title Badge & Personalized Welcome Greeting -->
+          <div class="hidden sm:flex items-center gap-2.5 min-w-0">
+            <span id="active-tab-title-badge" class="px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 text-xs font-black uppercase tracking-wider border border-blue-200/50 dark:border-blue-900/50 inline-flex items-center gap-1.5 shrink-0">
+              <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+              <span id="active-tab-title-text">Community Feed</span>
+            </span>
+
+            <div id="header-personalized-greeting" class="text-xs font-bold text-slate-700 dark:text-zinc-200 truncate hidden md:block border-l border-slate-200 dark:border-zinc-800 pl-2.5">
+              <span id="header-greeting-text">Welcome to Home.cell 👋</span>
+            </div>
+          </div>
         </div>
 
-        <!-- Toolbar controls -->
-        <div class="flex items-center gap-2 sm:gap-3">
-          <!-- Direct Installer Download Quick Action -->
+        <!-- Right Toolbar controls -->
+        <div class="flex items-center gap-2 sm:gap-2.5 shrink-0">
+          <!-- Notification Bell with Unread Counter Badge -->
+          <button onclick="switchTab('prayers')" id="header-notification-bell" class="p-2 bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-200 rounded-xl hover:scale-105 active:scale-95 transition-all cursor-pointer relative" title="Prayer Desk & Notifications">
+            <i data-lucide="bell" class="w-4 h-4"></i>
+            <span id="header-notif-count" class="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white text-[9px] font-black rounded-full flex items-center justify-center animate-pulse shadow-xs">3</span>
+          </button>
+
+          <!-- Direct Installer Quick Action -->
           <button onclick="window.openDownloadModal()" class="p-2 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/30 text-blue-600 dark:text-blue-400 rounded-xl hover:scale-105 active:scale-95 transition-all cursor-pointer" title="Install Native App / Download Hub">
             <i data-lucide="download" class="w-4 h-4"></i>
           </button>
 
-          <!-- Light/Dark Contrast Theme Switcher -->
+          <!-- Theme Contrast Toggle Button -->
           <button onclick="toggleTheme()" id="theme-toggle-btn" class="p-2 bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-200 rounded-xl hover:scale-105 active:scale-95 transition-all cursor-pointer" title="Switch high-contrast theme">
             <i data-lucide="sun" class="w-4 h-4 block dark:hidden"></i>
             <i data-lucide="moon" class="w-4 h-4 hidden dark:block"></i>
           </button>
 
-          <!-- Sign In / Register Quick Action Button for Unauthenticated Guests -->
+          <!-- Sign In Quick Action Button for Unauthenticated Guests -->
           <button id="header-auth-btn" onclick="openAuthModal()" class="hidden px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer flex items-center gap-1.5">
             <i data-lucide="log-in" class="w-4 h-4"></i>
             <span>Sign In</span>
           </button>
 
-          <!-- Current Logged User Profile card info -->
-          <div id="user-profile-badge" class="hidden sm:flex items-center gap-2.5 bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 px-3 py-1 rounded-xl">
-            <div class="text-right">
-              <span id="header-user-name" class="text-xs font-bold block text-slate-900 dark:text-zinc-100">Member</span>
-              <span id="header-user-role" class="text-[9px] uppercase font-bold text-slate-400 bg-slate-200 dark:bg-zinc-700 px-1.5 py-0.5 rounded tracking-widest">USER</span>
-            </div>
-            <button onclick="signOutUser()" class="text-rose-500 hover:text-rose-700 p-1 rounded hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors" title="Log Out">
-              <i data-lucide="log-out" class="w-4 h-4"></i>
+          <!-- Current Logged User Profile Dropdown Badge -->
+          <div id="user-profile-badge" class="hidden relative">
+            <button onclick="window.toggleHeaderProfileMenu()" class="flex items-center gap-2 bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 px-2.5 py-1 rounded-2xl hover:border-blue-500/50 transition-all cursor-pointer">
+              <div id="header-avatar-circle" class="w-7 h-7 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-black text-xs flex items-center justify-center shadow-inner relative">
+                <span id="header-avatar-initials">M</span>
+                <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-zinc-900"></span>
+              </div>
+              <div class="text-left hidden sm:block">
+                <span id="header-user-name" class="text-xs font-bold block text-slate-900 dark:text-zinc-100 truncate max-w-[100px]">Member</span>
+                <span id="header-user-role" class="text-[9px] uppercase font-bold text-slate-400 block tracking-widest">USER</span>
+              </div>
+              <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400"></i>
             </button>
+
+            <!-- Profile Dropdown Menu -->
+            <div id="header-profile-dropdown" class="hidden absolute right-0 mt-2 w-56 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-2xl py-2 z-50 text-slate-800 dark:text-zinc-100 animate-fadeIn space-y-1">
+              <div class="px-4 py-2 border-b border-slate-100 dark:border-zinc-800">
+                <p id="dropdown-user-fullname" class="text-xs font-black text-slate-900 dark:text-zinc-100">Member</p>
+                <p id="dropdown-user-email" class="text-[10px] text-slate-400 truncate">user@homecell.com</p>
+              </div>
+              <button onclick="switchTab('settings'); window.toggleHeaderProfileMenu(false);" class="w-full px-4 py-2 text-left text-xs font-semibold hover:bg-slate-100 dark:hover:bg-zinc-800 flex items-center gap-2 cursor-pointer">
+                <i data-lucide="user" class="w-4 h-4 text-blue-500"></i> Profile & Settings
+              </button>
+              <button onclick="switchTab('champions'); window.toggleHeaderProfileMenu(false);" class="w-full px-4 py-2 text-left text-xs font-semibold hover:bg-slate-100 dark:hover:bg-zinc-800 text-amber-600 dark:text-amber-400 flex items-center gap-2 cursor-pointer">
+                <i data-lucide="crown" class="w-4 h-4 text-amber-500"></i> Champions Hub
+              </button>
+              <button onclick="switchTab('settings'); window.toggleHeaderProfileMenu(false);" class="w-full px-4 py-2 text-left text-xs font-semibold hover:bg-slate-100 dark:hover:bg-zinc-800 flex items-center gap-2 cursor-pointer">
+                <i data-lucide="palette" class="w-4 h-4 text-purple-500"></i> Theme Suite
+              </button>
+              <div class="border-t border-slate-100 dark:border-zinc-800 my-1 pt-1">
+                <button onclick="signOutUser(); window.toggleHeaderProfileMenu(false);" class="w-full px-4 py-2 text-left text-xs font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 flex items-center gap-2 cursor-pointer">
+                  <i data-lucide="log-out" class="w-4 h-4 text-rose-500"></i> Sign Out
+                </button>
+              </div>
+            </div>
           </div>
+
         </div>
 
       </div>
@@ -1008,7 +1169,7 @@
             <!-- Rendered dynamically -->
           </div>
 
-          <!-- Upcoming Parish Events Section for Feed -->
+          <!-- Upcoming Events Section for Feed -->
           <div id="feed-upcoming-events-container" class="space-y-4">
             <!-- Rendered dynamically -->
           </div>
@@ -1408,11 +1569,6 @@
             <!-- Loaded dynamically -->
           </div>
 
-          <!-- Featured Upcoming Events Grid on Faith Dashboard -->
-          <div id="dashboard-upcoming-events-container" class="space-y-4">
-            <!-- Loaded dynamically -->
-          </div>
-
           <!-- Bento Grid Container -->
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             
@@ -1764,6 +1920,358 @@
               </div>
             </div>
 
+          </div>
+
+        </section>
+
+        <!-- Tab: 🏆 Champions Hub -->
+        <section id="tab-champions" class="app-tab hidden space-y-8 animate-fade-in">
+          
+          <!-- Welcome & Level Card -->
+          <div class="bg-gradient-to-br from-zinc-900 via-zinc-950 to-black border border-amber-500/30 rounded-[2.5rem] p-6 sm:p-8 shadow-2xl relative overflow-hidden text-white space-y-6">
+            <div class="absolute -right-20 -top-20 w-80 h-80 bg-amber-500/15 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="absolute -left-20 -bottom-20 w-80 h-80 bg-yellow-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+            <!-- Top Row: Welcome & Badge -->
+            <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative z-10">
+              <div class="space-y-1">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs font-black uppercase tracking-wider">
+                  <i data-lucide="crown" class="w-4 h-4 text-amber-400"></i> Kingdom Champions Hub
+                </div>
+                <h1 class="text-2xl sm:text-3xl font-black font-display tracking-tight text-white flex items-center gap-2">
+                  Welcome, <span id="champ-welcome-name">Champion</span>!
+                </h1>
+                <p class="text-xs text-slate-400">Earn Kingdom Coins (KC), invite friends, climb the ranks, and redeem exclusive rewards.</p>
+              </div>
+
+              <!-- Kingdom Coins Display Badge -->
+              <div class="bg-gradient-to-r from-amber-500/20 via-yellow-500/20 to-amber-600/20 border-2 border-amber-400/40 p-4 rounded-3xl flex items-center gap-4 shadow-xl backdrop-blur-md">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-yellow-500 text-zinc-950 font-black flex items-center justify-center text-2xl shadow-lg ring-2 ring-amber-300">
+                  🪙
+                </div>
+                <div>
+                  <span class="text-[10px] font-black uppercase tracking-widest text-amber-300/80 block">Kingdom Coins</span>
+                  <span id="champ-kc-balance" class="text-2xl sm:text-3xl font-black font-mono text-amber-300 tracking-tight">0 KC</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Quick Metrics Grid -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 pt-2 relative z-10">
+              <div class="bg-zinc-900/80 border border-zinc-800 p-3.5 rounded-2xl text-center space-y-1">
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Champion Level</span>
+                <span id="champ-level-badge" class="text-sm font-black text-amber-400 block truncate">🥇 Bronze</span>
+              </div>
+              <div class="bg-zinc-900/80 border border-zinc-800 p-3.5 rounded-2xl text-center space-y-1">
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Current Rank</span>
+                <span id="champ-overall-rank" class="text-sm font-black text-blue-400 font-mono block">#--</span>
+              </div>
+              <div class="bg-zinc-900/80 border border-zinc-800 p-3.5 rounded-2xl text-center space-y-1">
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Weekly Rank</span>
+                <span id="champ-weekly-rank" class="text-sm font-black text-purple-400 font-mono block">#--</span>
+              </div>
+              <div class="bg-zinc-900/80 border border-zinc-800 p-3.5 rounded-2xl text-center space-y-1">
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Friends Invited</span>
+                <span id="champ-total-referrals" class="text-sm font-black text-emerald-400 font-mono block">0</span>
+              </div>
+              <div class="bg-zinc-900/80 border border-zinc-800 p-3.5 rounded-2xl text-center space-y-1 col-span-2 sm:col-span-1">
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Current Streak</span>
+                <span id="champ-current-streak" class="text-sm font-black text-orange-400 font-mono block">0 Days</span>
+              </div>
+            </div>
+
+            <!-- Level Progress Bar -->
+            <div class="space-y-2 pt-2 relative z-10 border-t border-zinc-800/80">
+              <div class="flex items-center justify-between text-xs">
+                <span id="champ-next-level-label" class="font-bold text-slate-300">Level Progress</span>
+                <span id="champ-next-level-target" class="font-bold font-mono text-amber-400">0 / 100 KC</span>
+              </div>
+              <div class="w-full h-3 bg-zinc-800 rounded-full overflow-hidden p-0.5 border border-zinc-700">
+                <div id="champ-level-progress-bar" class="h-full bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 rounded-full transition-all duration-500 shadow-[0_0_10px_rgba(251,191,36,0.5)]" style="width: 0%"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Champions Sub-Navigation Tabs -->
+          <div class="flex items-center gap-2 overflow-x-auto pb-2 border-b border-slate-200 dark:border-zinc-800 no-scrollbar">
+            <button onclick="window.switchChampionsSubTab('referrals')" id="tab-btn-referrals" class="champ-subtab-btn px-4 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 shrink-0 bg-amber-500 text-slate-950 shadow-md">
+              <i data-lucide="users-plus" class="w-4 h-4"></i> Invite & Earn
+            </button>
+            <button onclick="window.switchChampionsSubTab('leaderboards')" id="tab-btn-leaderboards" class="champ-subtab-btn px-4 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 shrink-0 text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800">
+              <i data-lucide="trophy" class="w-4 h-4"></i> Leaderboards
+            </button>
+            <button onclick="window.switchChampionsSubTab('missions')" id="tab-btn-missions" class="champ-subtab-btn px-4 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 shrink-0 text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800">
+              <i data-lucide="target" class="w-4 h-4"></i> Missions & Challenges
+            </button>
+            <button onclick="window.switchChampionsSubTab('store')" id="tab-btn-store" class="champ-subtab-btn px-4 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 shrink-0 text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800">
+              <i data-lucide="shopping-bag" class="w-4 h-4"></i> Rewards Store
+            </button>
+          </div>
+
+          <!-- Sub-Tab 1: Referrals & Rewards System -->
+          <div id="champ-subtab-referrals" class="champ-subtab-panel space-y-6">
+            <!-- Referral Header & Code Box -->
+            <div class="bg-gradient-to-br from-amber-500/10 via-yellow-500/10 to-orange-500/10 border border-amber-500/30 rounded-3xl p-6 space-y-6">
+              <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div class="space-y-1">
+                  <h2 class="text-xl font-black font-display text-slate-900 dark:text-zinc-100 flex items-center gap-2">
+                    <i data-lucide="share-2" class="w-5 h-5 text-amber-500"></i> Champions Referral Link & Code
+                  </h2>
+                  <p class="text-xs text-slate-600 dark:text-zinc-400">Share your unique link with family, church members, and friends to earn Kingdom Coins!</p>
+                </div>
+                <button onclick="window.showReferralQRCodeModal()" class="px-4 py-2 bg-slate-900 dark:bg-zinc-100 text-white dark:text-slate-900 font-bold text-xs rounded-xl shadow-sm hover:scale-105 transition-all flex items-center gap-2 cursor-pointer">
+                  <i data-lucide="qr-code" class="w-4 h-4"></i> View QR Code
+                </button>
+              </div>
+
+              <!-- Referral Link & Code Controls -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Code Box -->
+                <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 p-4 rounded-2xl space-y-2">
+                  <span class="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Your Unique Champions Referral Code</span>
+                  <div class="flex items-center justify-between gap-2 bg-slate-50 dark:bg-zinc-950 p-2.5 rounded-xl border border-slate-200 dark:border-zinc-800">
+                    <span id="champ-referral-code-text" class="font-mono font-black text-amber-600 dark:text-amber-400 text-base tracking-widest">LOADING...</span>
+                    <button onclick="window.copyReferralCode()" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-lg cursor-pointer transition-all flex items-center gap-1">
+                      <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copy Code
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Link Box -->
+                <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 p-4 rounded-2xl space-y-2">
+                  <span class="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Your Personal Referral Link</span>
+                  <div class="flex items-center gap-2">
+                    <input id="champ-referral-link-input" readonly type="text" value="https://homecell.net/?ref=..." class="flex-1 bg-slate-50 dark:bg-zinc-950 text-xs font-mono p-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-zinc-300 truncate" />
+                    <button onclick="window.copyReferralLink()" class="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl cursor-pointer transition-all shrink-0 flex items-center gap-1">
+                      <i data-lucide="link" class="w-3.5 h-3.5"></i> Copy Link
+                    </button>
+                    <button onclick="window.shareReferralNative()" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl cursor-pointer transition-all shrink-0 flex items-center gap-1">
+                      <i data-lucide="share" class="w-3.5 h-3.5"></i> Share
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Referral Performance Counter -->
+              <div class="grid grid-cols-3 gap-3 pt-2 text-center">
+                <div class="bg-white/60 dark:bg-zinc-900/60 p-3 rounded-2xl border border-slate-200/60 dark:border-zinc-800/60">
+                  <span id="champ-stat-clicks" class="text-lg font-black font-mono text-blue-600 dark:text-blue-400 block">0</span>
+                  <span class="text-[10px] font-bold text-slate-500 uppercase">Link Clicks</span>
+                </div>
+                <div class="bg-white/60 dark:bg-zinc-900/60 p-3 rounded-2xl border border-slate-200/60 dark:border-zinc-800/60">
+                  <span id="champ-stat-signups" class="text-lg font-black font-mono text-emerald-600 dark:text-emerald-400 block">0</span>
+                  <span class="text-[10px] font-bold text-slate-500 uppercase">Successful Signups</span>
+                </div>
+                <div class="bg-white/60 dark:bg-zinc-900/60 p-3 rounded-2xl border border-slate-200/60 dark:border-zinc-800/60">
+                  <span id="champ-stat-kc" class="text-lg font-black font-mono text-amber-600 dark:text-amber-400 block">0 KC</span>
+                  <span class="text-[10px] font-bold text-slate-500 uppercase">Referral KC Earned</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Referral Rewards Matrix -->
+            <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 space-y-4 shadow-sm">
+              <h3 class="text-base font-black font-display text-slate-900 dark:text-zinc-100 flex items-center gap-2">
+                <i data-lucide="gift" class="w-5 h-5 text-amber-500"></i> Referral Rewards Matrix
+              </h3>
+              <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 flex items-center gap-3">
+                  <div class="p-2.5 bg-blue-500/20 text-blue-500 rounded-xl font-bold text-sm">📲</div>
+                  <div>
+                    <span class="text-xs font-bold block text-slate-900 dark:text-zinc-100">Share Link</span>
+                    <span class="text-[10px] text-amber-500 font-mono font-bold">+5 KC per share</span>
+                  </div>
+                </div>
+                <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 flex items-center gap-3">
+                  <div class="p-2.5 bg-emerald-500/20 text-emerald-500 rounded-xl font-bold text-sm">🎯</div>
+                  <div>
+                    <span class="text-xs font-bold block text-slate-900 dark:text-zinc-100">Link Click</span>
+                    <span class="text-[10px] text-amber-500 font-mono font-bold">+10 KC per unique visitor</span>
+                  </div>
+                </div>
+                <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 flex items-center gap-3">
+                  <div class="p-2.5 bg-purple-500/20 text-purple-500 rounded-xl font-bold text-sm">🎉</div>
+                  <div>
+                    <span class="text-xs font-bold block text-slate-900 dark:text-zinc-100">Friend Signs Up</span>
+                    <span class="text-[10px] text-amber-500 font-mono font-bold">+100 KC both bonus</span>
+                  </div>
+                </div>
+                <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 flex items-center gap-3">
+                  <div class="p-2.5 bg-indigo-500/20 text-indigo-500 rounded-xl font-bold text-sm">👤</div>
+                  <div>
+                    <span class="text-xs font-bold block text-slate-900 dark:text-zinc-100">Friend Profile Setup</span>
+                    <span class="text-[10px] text-amber-500 font-mono font-bold">+50 KC</span>
+                  </div>
+                </div>
+                <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 flex items-center gap-3">
+                  <div class="p-2.5 bg-rose-500/20 text-rose-500 rounded-xl font-bold text-sm">🏠</div>
+                  <div>
+                    <span class="text-xs font-bold block text-slate-900 dark:text-zinc-100">Friend Joins Cell</span>
+                    <span class="text-[10px] text-amber-500 font-mono font-bold">+150 KC</span>
+                  </div>
+                </div>
+                <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 flex items-center gap-3">
+                  <div class="p-2.5 bg-amber-500/20 text-amber-500 rounded-xl font-bold text-sm">⚡</div>
+                  <div>
+                    <span class="text-xs font-bold block text-slate-900 dark:text-zinc-100">Friend Active 7 Days</span>
+                    <span class="text-[10px] text-amber-500 font-mono font-bold">+300 KC</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sub-Tab 2: Leaderboards Hub -->
+          <div id="champ-subtab-leaderboards" class="champ-subtab-panel hidden space-y-6">
+            <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 space-y-6 shadow-sm">
+              
+              <!-- Timeframe & Category Selectors -->
+              <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-200 dark:border-zinc-800 pb-4">
+                <!-- Timeframe Pills -->
+                <div class="flex items-center gap-1.5 bg-slate-100 dark:bg-zinc-950 p-1 rounded-2xl">
+                  <button onclick="window.switchLeaderboardTimeframe('weekly')" id="timeframe-weekly" class="leaderboard-time-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-xs">
+                    Weekly
+                  </button>
+                  <button onclick="window.switchLeaderboardTimeframe('monthly')" id="timeframe-monthly" class="leaderboard-time-btn px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 dark:text-zinc-400">
+                    Monthly
+                  </button>
+                  <button onclick="window.switchLeaderboardTimeframe('alltime')" id="timeframe-alltime" class="leaderboard-time-btn px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 dark:text-zinc-400">
+                    All-Time
+                  </button>
+                </div>
+
+                <!-- Category Selector Dropdown -->
+                <div class="flex items-center gap-2 overflow-x-auto w-full md:w-auto no-scrollbar">
+                  <select id="leaderboard-category-select" onchange="window.renderLeaderboardView()" class="bg-slate-100 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 text-xs font-bold rounded-2xl px-3.5 py-2 text-slate-800 dark:text-zinc-200 focus:outline-none cursor-pointer">
+                    <option value="kc">🪙 Kingdom Coins</option>
+                    <option value="referrals">👥 Friends Invited</option>
+                    <option value="streak">⚡ Devotion Streak</option>
+                    <option value="trivia">🧩 Bible Quiz Score</option>
+                    <option value="championScore">🏆 Overall Champion Score</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Top 3 Podium Cards -->
+              <div id="champ-podium-container" class="grid grid-cols-3 gap-3 pt-2 items-end">
+                <!-- Rendered dynamically -->
+              </div>
+
+              <!-- Leaderboard List -->
+              <div class="space-y-2 pt-4 border-t border-slate-200 dark:border-zinc-800">
+                <h4 class="text-xs font-black uppercase tracking-wider text-slate-400">Congregation Rankings</h4>
+                <div id="champ-leaderboard-list" class="space-y-2">
+                  <!-- Rendered dynamically -->
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sub-Tab 3: Missions & Challenges -->
+          <div id="champ-subtab-missions" class="champ-subtab-panel hidden space-y-6">
+            <!-- Daily Missions Card -->
+            <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 space-y-4 shadow-sm">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h3 class="text-base font-black font-display text-slate-900 dark:text-zinc-100 flex items-center gap-2">
+                    <i data-lucide="check-square" class="w-5 h-5 text-amber-500"></i> Daily Kingdom Missions
+                  </h3>
+                  <p class="text-xs text-slate-500 dark:text-zinc-400">Complete tasks daily to earn Kingdom Coins and build spiritual habits.</p>
+                </div>
+                <span class="px-3 py-1 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-bold rounded-full border border-amber-500/20">
+                  Resets Daily
+                </span>
+              </div>
+
+              <div id="daily-missions-container" class="space-y-2.5">
+                <!-- Rendered dynamically -->
+              </div>
+
+              <!-- Claim Daily All-Complete Bonus -->
+              <div class="p-4 bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-500/30 rounded-2xl flex items-center justify-between gap-4">
+                <div>
+                  <span class="text-xs font-black text-slate-900 dark:text-zinc-100 block">Daily Perfect Sweep Bonus!</span>
+                  <span class="text-[11px] text-slate-600 dark:text-zinc-400">Complete all 6 daily missions to unlock +100 KC bonus!</span>
+                </div>
+                <button onclick="window.claimDailyMissionsBonus()" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition-all cursor-pointer shrink-0">
+                  Claim +100 KC
+                </button>
+              </div>
+            </div>
+
+            <!-- Weekly Challenges Card -->
+            <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 space-y-4 shadow-sm">
+              <h3 class="text-base font-black font-display text-slate-900 dark:text-zinc-100 flex items-center gap-2">
+                <i data-lucide="target" class="w-5 h-5 text-purple-500"></i> Weekly Kingdom Challenges
+              </h3>
+              <div id="weekly-challenges-container" class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <!-- Rendered dynamically -->
+              </div>
+            </div>
+
+            <!-- Achievements Badge Gallery -->
+            <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 space-y-4 shadow-sm">
+              <h3 class="text-base font-black font-display text-slate-900 dark:text-zinc-100 flex items-center gap-2">
+                <i data-lucide="award" class="w-5 h-5 text-blue-500"></i> Lifetime Achievements
+              </h3>
+              <div id="champ-achievements-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                <!-- Rendered dynamically -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Sub-Tab 4: Rewards Store -->
+          <div id="champ-subtab-store" class="champ-subtab-panel hidden space-y-6">
+            <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 space-y-6 shadow-sm">
+              
+              <!-- Store Header & Category Filter -->
+              <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-200 dark:border-zinc-800 pb-4">
+                <div>
+                  <h3 class="text-base font-black font-display text-slate-900 dark:text-zinc-100 flex items-center gap-2">
+                    <i data-lucide="shopping-bag" class="w-5 h-5 text-amber-500"></i> Kingdom Digital Rewards Store
+                  </h3>
+                  <p class="text-xs text-slate-500 dark:text-zinc-400">Redeem your hard-earned Kingdom Coins for exclusive digital perks and downloads!</p>
+                </div>
+
+                <!-- Filter Categories -->
+                <div class="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto no-scrollbar">
+                  <button onclick="window.filterStoreItems('all')" id="store-cat-all" class="store-cat-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500 text-slate-950">
+                    All
+                  </button>
+                  <button onclick="window.filterStoreItems('theme')" id="store-cat-theme" class="store-cat-btn px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800">
+                    Themes
+                  </button>
+                  <button onclick="window.filterStoreItems('badge')" id="store-cat-badge" class="store-cat-btn px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800">
+                    Badges
+                  </button>
+                  <button onclick="window.filterStoreItems('ebook')" id="store-cat-ebook" class="store-cat-btn px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800">
+                    Devotionals
+                  </button>
+                  <button onclick="window.filterStoreItems('wallpaper')" id="store-cat-wallpaper" class="store-cat-btn px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800">
+                    Wallpapers
+                  </button>
+                  <button onclick="window.filterStoreItems('mystery')" id="store-cat-mystery" class="store-cat-btn px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800">
+                    Mystery Box
+                  </button>
+                </div>
+              </div>
+
+              <!-- Store Catalog Grid -->
+              <div id="rewards-store-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                <!-- Rendered dynamically -->
+              </div>
+
+              <!-- My Unlocked Rewards Library Section -->
+              <div class="pt-6 border-t border-slate-200 dark:border-zinc-800 space-y-4">
+                <h4 class="text-sm font-black text-slate-900 dark:text-zinc-100 flex items-center gap-2">
+                  <i data-lucide="package-check" class="w-4 h-4 text-emerald-500"></i> My Unlocked Rewards Library
+                </h4>
+                <div id="my-rewards-library-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                  <!-- Rendered dynamically -->
+                </div>
+              </div>
+
+            </div>
           </div>
 
         </section>
@@ -2301,31 +2809,233 @@
             </div>
 
             <!-- Active Chat Lounge (Visible only when joined) -->
-            <div id="chat-active-box" class="hidden bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm flex flex-col justify-between max-w-4xl mx-auto h-[600px]">
-              <div class="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800 pb-3 mb-4">
-                <div class="flex items-center gap-2">
-                  <i data-lucide="message-square" class="w-5 h-5 text-emerald-500"></i>
-                  <h3 class="font-bold font-display tracking-tight text-slate-800 dark:text-zinc-100 flex items-center gap-2">
-                    <span id="chat-active-cell-name" class="font-black">Group Chat Lounge</span>
-                  </h3>
+            <div id="chat-active-box" class="hidden bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-4 sm:p-6 shadow-sm flex flex-col justify-between max-w-4xl mx-auto min-h-[680px] space-y-4">
+              
+              <!-- 1. Hero Header (Community Style with Blue Gradient) -->
+              <div class="bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white rounded-3xl p-5 sm:p-6 shadow-md shadow-blue-500/10 relative overflow-hidden space-y-4">
+                <!-- Background Accent Glows -->
+                <div class="absolute -right-10 -top-10 w-48 h-48 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
+                <div class="absolute -left-10 -bottom-10 w-48 h-48 bg-indigo-500/20 rounded-full blur-2xl pointer-events-none"></div>
+
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 relative z-10">
+                  <div class="space-y-1">
+                    <div class="flex items-center gap-2 flex-wrap">
+                      <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]"></span>
+                      <h3 class="text-xl sm:text-2xl font-black font-display tracking-tight text-white flex items-center gap-2">
+                        <span id="chat-active-cell-name">Cell Group Chat</span>
+                      </h3>
+                      <span id="chat-connection-badge" class="text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-200 border border-emerald-400/30 font-mono tracking-wider">SYNC ACTIVE</span>
+                    </div>
+                    <p id="chat-active-cell-motto" class="text-xs text-blue-100/90 font-medium leading-relaxed max-w-xl">
+                      Love God. Love People. Grow Together.
+                    </p>
+                  </div>
+
+                  <!-- Right Side: Online Counter, Avatars & Quick Actions Dropdown -->
+                  <div class="flex items-center gap-3 shrink-0 self-end sm:self-auto">
+                    <!-- Overlapping Member Avatars & Live Member Counter -->
+                    <div class="flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/20 px-3 py-1.5 rounded-2xl">
+                      <div id="chat-online-avatars" class="flex -space-x-2 overflow-hidden">
+                        <!-- Avatars populated dynamically -->
+                      </div>
+                      <span id="chat-online-count" class="text-xs font-black text-emerald-300 font-mono flex items-center gap-1">
+                        1 online
+                      </span>
+                    </div>
+
+                    <!-- Quick Actions 3-Dot Button -->
+                    <div class="relative">
+                      <button onclick="window.toggleCellQuickActionsMenu()" class="p-2.5 bg-white/15 hover:bg-white/25 text-white rounded-2xl transition-all cursor-pointer backdrop-blur-sm" title="Cell Options">
+                        <i data-lucide="more-vertical" class="w-5 h-5"></i>
+                      </button>
+
+                      <!-- Quick Actions Dropdown Menu -->
+                      <div id="cell-quick-actions-menu" class="hidden absolute right-0 mt-2 w-56 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-2xl py-2 z-50 text-slate-800 dark:text-zinc-100 animate-fadeIn space-y-1">
+                        <div class="px-4 py-2 border-b border-slate-100 dark:border-zinc-800">
+                          <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Quick Cell Actions</p>
+                        </div>
+                        <button onclick="window.switchCellSubTab('info'); window.toggleCellQuickActionsMenu(false);" class="w-full px-4 py-2 text-left text-xs font-semibold hover:bg-slate-100 dark:hover:bg-zinc-800 flex items-center gap-2 cursor-pointer">
+                          <i data-lucide="info" class="w-4 h-4 text-blue-500"></i> View Cell Info
+                        </button>
+                        <button onclick="window.switchCellSubTab('members'); window.toggleCellQuickActionsMenu(false);" class="w-full px-4 py-2 text-left text-xs font-semibold hover:bg-slate-100 dark:hover:bg-zinc-800 flex items-center gap-2 cursor-pointer">
+                          <i data-lucide="users" class="w-4 h-4 text-emerald-500"></i> View Members
+                        </button>
+                        <button onclick="window.switchCellSubTab('events'); window.toggleCellQuickActionsMenu(false);" class="w-full px-4 py-2 text-left text-xs font-semibold hover:bg-slate-100 dark:hover:bg-zinc-800 flex items-center gap-2 cursor-pointer">
+                          <i data-lucide="calendar" class="w-4 h-4 text-amber-500"></i> Cell Gatherings
+                        </button>
+                        <button onclick="window.copyCellInviteCode(); window.toggleCellQuickActionsMenu(false);" class="w-full px-4 py-2 text-left text-xs font-semibold hover:bg-slate-100 dark:hover:bg-zinc-800 flex items-center gap-2 cursor-pointer">
+                          <i data-lucide="user-plus" class="w-4 h-4 text-purple-500"></i> Copy Invite Link
+                        </button>
+                        <button onclick="window.toggleCellMute(); window.toggleCellQuickActionsMenu(false);" class="w-full px-4 py-2 text-left text-xs font-semibold hover:bg-slate-100 dark:hover:bg-zinc-800 flex items-center gap-2 cursor-pointer">
+                          <i data-lucide="bell-off" class="w-4 h-4 text-zinc-400"></i> Mute Notifications
+                        </button>
+                        <div class="border-t border-slate-100 dark:border-zinc-800 my-1 pt-1">
+                          <button onclick="leaveActiveCell(); window.toggleCellQuickActionsMenu(false);" class="w-full px-4 py-2 text-left text-xs font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 flex items-center gap-2 cursor-pointer">
+                            <i data-lucide="log-out" class="w-4 h-4 text-rose-500"></i> Leave Cell
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <span class="text-[10px] font-bold text-emerald-500 uppercase tracking-wider flex items-center gap-1">
-                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Sync Active
-                </span>
               </div>
 
-              <!-- Messages Frame -->
-              <div id="cell-chat-messages" class="flex-grow overflow-y-auto space-y-3 pr-2 mb-4 custom-scrollbar">
-                <!-- Loaded dynamically -->
+              <!-- 2. Rotating Scripture & Cell Announcements Banner -->
+              <div id="chat-scripture-banner" class="bg-gradient-to-r from-amber-500/10 via-yellow-500/10 to-amber-500/10 border border-amber-500/30 rounded-2xl p-3 sm:px-4 text-xs flex items-center justify-between gap-3 text-amber-900 dark:text-amber-200 transition-all">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <span class="p-1.5 bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-xl shrink-0">
+                    <i data-lucide="book-open" class="w-4 h-4"></i>
+                  </span>
+                  <p id="chat-banner-text" class="font-semibold truncate transition-all">
+                    "Let everything that has breath praise the Lord. – Psalm 150:6"
+                  </p>
+                </div>
+                <div class="flex items-center gap-1 shrink-0">
+                  <button onclick="window.rotateScriptureBanner()" class="p-1 text-amber-700 dark:text-amber-300 hover:bg-amber-500/20 rounded-lg transition-all cursor-pointer" title="Next Encouragement">
+                    <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                  </button>
+                  <button onclick="document.getElementById('chat-scripture-banner').classList.add('hidden')" class="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 rounded-lg transition-all cursor-pointer" title="Dismiss Banner">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                  </button>
+                </div>
               </div>
 
-              <!-- Input form -->
-              <form id="cell-chat-form" class="flex gap-2">
-                <input type="text" id="cell-chat-input" required class="flex-1 px-4 py-3 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl text-sm focus:outline-none text-slate-900 dark:text-zinc-100" placeholder="Speak to cell fellowship..." />
-                <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white p-3.5 rounded-xl transition-all cursor-pointer">
-                  <i data-lucide="send" class="w-5 h-5"></i>
+              <!-- 3. Cell Sub-Navigation Segment Tabs -->
+              <div class="flex items-center gap-2 border-b border-slate-100 dark:border-zinc-800 pb-2 text-xs font-bold uppercase tracking-wider overflow-x-auto custom-scrollbar">
+                <button onclick="window.switchCellSubTab('chat')" id="cell-tab-btn-chat" class="px-4 py-2 rounded-xl transition-all flex items-center gap-1.5 shrink-0 bg-blue-600 text-white shadow-xs cursor-pointer">
+                  <i data-lucide="message-circle" class="w-4 h-4"></i> Chat Stream
                 </button>
-              </form>
+                <button onclick="window.switchCellSubTab('members')" id="cell-tab-btn-members" class="px-4 py-2 rounded-xl text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all flex items-center gap-1.5 shrink-0 cursor-pointer">
+                  <i data-lucide="users" class="w-4 h-4"></i> Members (<span id="cell-tab-members-count">1</span>)
+                </button>
+                <button onclick="window.switchCellSubTab('events')" id="cell-tab-btn-events" class="px-4 py-2 rounded-xl text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all flex items-center gap-1.5 shrink-0 cursor-pointer">
+                  <i data-lucide="calendar" class="w-4 h-4"></i> Gatherings
+                </button>
+                <button onclick="window.switchCellSubTab('info')" id="cell-tab-btn-info" class="px-4 py-2 rounded-xl text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all flex items-center gap-1.5 shrink-0 cursor-pointer">
+                  <i data-lucide="info" class="w-4 h-4"></i> Cell Details
+                </button>
+              </div>
+
+              <!-- 4. SUB-PANEL A: MAIN CHAT STREAM -->
+              <div id="cell-subpanel-chat" class="flex-grow flex flex-col justify-between space-y-3 min-h-[380px]">
+                <!-- Pinned Announcement (Optional) -->
+                <div id="cell-pinned-announcement" class="hidden bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/50 rounded-2xl p-3 text-xs flex items-center justify-between gap-2">
+                  <div class="flex items-center gap-2">
+                    <i data-lucide="pin" class="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0"></i>
+                    <div>
+                      <span class="font-bold text-blue-900 dark:text-blue-300 block">Pinned Announcement:</span>
+                      <p id="pinned-announcement-text" class="text-slate-600 dark:text-zinc-300"></p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Chat Messages Stream Container -->
+                <div id="cell-chat-messages" class="flex-grow overflow-y-auto space-y-3.5 pr-2 custom-scrollbar max-h-[420px]">
+                  <!-- Messages populated dynamically -->
+                </div>
+
+                <!-- Typing Indicator Banner -->
+                <div id="chat-typing-indicator" class="hidden text-[11px] text-blue-500 font-bold italic flex items-center gap-1.5 px-2 animate-pulse">
+                  <span class="flex gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-blue-500 animate-bounce"></span>
+                    <span class="w-1.5 h-1.5 rounded-full bg-blue-500 animate-bounce [animation-delay:0.2s]"></span>
+                    <span class="w-1.5 h-1.5 rounded-full bg-blue-500 animate-bounce [animation-delay:0.4s]"></span>
+                  </span>
+                  <span id="chat-typing-users-text">Someone is typing...</span>
+                </div>
+
+                <!-- Reply Preview Bar (when replying to a message) -->
+                <div id="cell-reply-preview" class="hidden bg-slate-100 dark:bg-zinc-800 border-l-4 border-blue-600 p-2.5 rounded-r-xl text-xs flex items-center justify-between">
+                  <div class="truncate pr-2">
+                    <span class="text-[10px] font-bold text-blue-600 dark:text-blue-400 block">Replying to <span id="reply-target-sender">Member</span></span>
+                    <p id="reply-target-text" class="text-slate-600 dark:text-zinc-300 truncate"></p>
+                  </div>
+                  <button onclick="window.cancelReply()" class="text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 p-1 cursor-pointer">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                  </button>
+                </div>
+
+                <!-- Sticky Message Composer -->
+                <div class="bg-slate-50 dark:bg-zinc-950/60 p-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800 space-y-2">
+                  <!-- Quick Reaction Praise Bar -->
+                  <div class="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0">Quick Praise:</span>
+                    <button type="button" onclick="window.insertQuickPraise('🙏 Amen!')" class="px-2 py-0.5 rounded-lg bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-300 font-bold text-[11px] hover:scale-105 transition-all cursor-pointer shrink-0">🙏 Amen!</button>
+                    <button type="button" onclick="window.insertQuickPraise('🙌 Hallelujah!')" class="px-2 py-0.5 rounded-lg bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-300 font-bold text-[11px] hover:scale-105 transition-all cursor-pointer shrink-0">🙌 Hallelujah!</button>
+                    <button type="button" onclick="window.insertQuickPraise('❤️ God bless you!')" class="px-2 py-0.5 rounded-lg bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-300 font-bold text-[11px] hover:scale-105 transition-all cursor-pointer shrink-0">❤️ Blessings!</button>
+                    <button type="button" onclick="window.insertQuickPraise('🔥 Glory to God!')" class="px-2 py-0.5 rounded-lg bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-300 font-bold text-[11px] hover:scale-105 transition-all cursor-pointer shrink-0">🔥 Glory!</button>
+                  </div>
+
+                  <form id="cell-chat-form" class="flex gap-2 items-center">
+                    <input type="text" id="cell-chat-input" required class="flex-1 px-4 py-3 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-900 dark:text-zinc-100" placeholder="Speak to cell fellowship..." oninput="window.handleChatTyping()" />
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl transition-all cursor-pointer font-bold text-xs flex items-center gap-1.5 shadow-md shadow-blue-500/20">
+                      <span>Send</span>
+                      <i data-lucide="send" class="w-4 h-4"></i>
+                    </button>
+                  </form>
+                </div>
+              </div>
+
+              <!-- 5. SUB-PANEL B: CELL MEMBERS TAB -->
+              <div id="cell-subpanel-members" class="hidden flex-grow space-y-4">
+                <div class="flex items-center justify-between gap-2">
+                  <div class="relative flex-1">
+                    <i data-lucide="search" class="w-4 h-4 absolute left-3 top-3 text-slate-400"></i>
+                    <input type="text" id="member-search-input" oninput="window.filterCellMembers(this.value)" placeholder="Search cell members..." class="w-full pl-9 pr-4 py-2.5 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl text-xs text-slate-900 dark:text-zinc-100 focus:outline-none" />
+                  </div>
+                  <button onclick="window.copyCellInviteCode()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shrink-0">
+                    <i data-lucide="user-plus" class="w-4 h-4"></i> Invite
+                  </button>
+                </div>
+
+                <div id="cell-members-list" class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[400px] overflow-y-auto custom-scrollbar pr-1">
+                  <!-- Members rendered dynamically -->
+                </div>
+              </div>
+
+              <!-- 6. SUB-PANEL C: GATHERINGS & EVENTS TAB -->
+              <div id="cell-subpanel-events" class="hidden flex-grow space-y-4">
+                <div class="flex items-center justify-between">
+                  <h4 class="text-sm font-black font-display text-slate-800 dark:text-zinc-100">Cell Gatherings & Meetings</h4>
+                  <button id="btn-add-cell-event" onclick="window.openAddCellEventModal()" class="hidden px-3.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center gap-1">
+                    <i data-lucide="plus" class="w-4 h-4"></i> Add Gathering
+                  </button>
+                </div>
+                <div id="active-cell-events" class="space-y-3 max-h-[400px] overflow-y-auto custom-scrollbar pr-1">
+                  <!-- Events loaded dynamically -->
+                </div>
+              </div>
+
+              <!-- 7. SUB-PANEL D: CELL DETAILS TAB -->
+              <div id="cell-subpanel-info" class="hidden flex-grow space-y-4 text-xs">
+                <div class="p-4 bg-slate-50 dark:bg-zinc-800/60 rounded-2xl border border-slate-200 dark:border-zinc-800 space-y-3">
+                  <div>
+                    <span class="text-[10px] font-black uppercase text-slate-400">Cell Group Name</span>
+                    <h4 id="active-cell-name-info" class="text-lg font-black font-display text-slate-900 dark:text-zinc-100">Cell Name</h4>
+                  </div>
+                  <div>
+                    <span class="text-[10px] font-black uppercase text-slate-400">City / Location</span>
+                    <p id="active-cell-city-info" class="font-bold text-slate-700 dark:text-zinc-300">City</p>
+                  </div>
+                  <div>
+                    <span class="text-[10px] font-black uppercase text-slate-400">Cell Motto & Description</span>
+                    <p id="active-cell-desc-info" class="text-slate-600 dark:text-zinc-400 leading-relaxed"></p>
+                  </div>
+                </div>
+
+                <div id="co-leader-appointment" class="hidden p-4 bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-900/40 rounded-2xl space-y-3">
+                  <div class="flex items-center gap-2 text-purple-700 dark:text-purple-300 font-bold">
+                    <i data-lucide="shield" class="w-4 h-4"></i> Primary Leader Desk: Appoint Co-Leaders
+                  </div>
+                  <div class="flex gap-2">
+                    <input type="email" id="co-leader-email" placeholder="Co-leader user email..." class="flex-1 px-3 py-2 bg-white dark:bg-zinc-900 border border-purple-200 dark:border-purple-800 rounded-xl text-xs text-slate-900 dark:text-zinc-100" />
+                    <button onclick="appointCoLeader()" class="px-4 py-2 bg-purple-600 text-white font-bold rounded-xl text-xs hover:bg-purple-700 transition-all cursor-pointer">
+                      Appoint
+                    </button>
+                  </div>
+                </div>
+              </div>
+
             </div>
           </div>
 
@@ -2649,6 +3359,343 @@
                   <span id="settings-push-status" class="text-[9px] text-slate-400 font-bold block text-center uppercase tracking-wider">⚪ Offline push inactive</span>
                   <button onclick="window.requestNotificationPermission()" class="w-full py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-sm">
                     <i data-lucide="bell" class="w-4 h-4"></i> Enable Offline Push Alert Sync
+                  </button>
+                </div>
+              </div>
+
+              <!-- Premium Theme Suite Bento -->
+              <div class="md:col-span-2 bg-slate-50 dark:bg-zinc-950 border border-slate-200/60 dark:border-zinc-800 rounded-3xl p-6 space-y-4">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-3">
+                    <div class="p-2 bg-amber-500/10 text-amber-500 rounded-xl">
+                      <i data-lucide="palette" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                      <h3 class="text-sm font-black font-display text-slate-900 dark:text-zinc-50">App Appearance & Theme Suite</h3>
+                      <p class="text-[10px] text-slate-400">Select your active aesthetic theme</p>
+                    </div>
+                  </div>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 pt-1">
+                  <button onclick="window.setAppTheme('classic_light')" class="p-3 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white hover:border-amber-500 text-left transition-all cursor-pointer flex flex-col justify-between h-20 shadow-xs">
+                    <span class="text-xs font-bold text-slate-900">Classic Light</span>
+                    <span class="text-[10px] text-slate-400 font-mono">#FFFFFF</span>
+                  </button>
+                  <button onclick="window.setAppTheme('midnight_dark')" class="p-3 rounded-2xl border border-zinc-800 bg-zinc-900 hover:border-amber-500 text-left transition-all cursor-pointer flex flex-col justify-between h-20 shadow-xs">
+                    <span class="text-xs font-bold text-zinc-100">Midnight Dark</span>
+                    <span class="text-[10px] text-zinc-400 font-mono">#0C0E12</span>
+                  </button>
+                  <button onclick="window.setAppTheme('r_theme_gold')" class="p-3 rounded-2xl border border-amber-500/40 bg-gradient-to-br from-amber-950 to-zinc-900 hover:border-amber-400 text-left transition-all cursor-pointer flex flex-col justify-between h-20 shadow-xs">
+                    <span class="text-xs font-bold text-amber-300">Royal Gold</span>
+                    <span class="text-[10px] text-amber-400/70 font-mono">#F59E0B</span>
+                  </button>
+                  <button onclick="window.setAppTheme('r_theme_emerald')" class="p-3 rounded-2xl border border-emerald-500/40 bg-gradient-to-br from-emerald-950 to-zinc-900 hover:border-emerald-400 text-left transition-all cursor-pointer flex flex-col justify-between h-20 shadow-xs">
+                    <span class="text-xs font-bold text-emerald-300">Emerald</span>
+                    <span class="text-[10px] text-emerald-400/70 font-mono">#10B981</span>
+                  </button>
+                  <button onclick="window.setAppTheme('r_theme_sapphire')" class="p-3 rounded-2xl border border-blue-500/40 bg-gradient-to-br from-blue-950 to-zinc-900 hover:border-blue-400 text-left transition-all cursor-pointer flex flex-col justify-between h-20 shadow-xs">
+                    <span class="text-xs font-bold text-blue-300">Sapphire Blue</span>
+                    <span class="text-[10px] text-blue-400/70 font-mono">#3B82F6</span>
+                  </button>
+                  <button onclick="window.setAppTheme('r_theme_purple')" class="p-3 rounded-2xl border border-purple-500/40 bg-gradient-to-br from-purple-950 to-zinc-900 hover:border-purple-400 text-left transition-all cursor-pointer flex flex-col justify-between h-20 shadow-xs">
+                    <span class="text-xs font-bold text-purple-300">Kingdom Purple</span>
+                    <span class="text-[10px] text-purple-400/70 font-mono">#8B5CF6</span>
+                  </button>
+                  <button onclick="window.setAppTheme('r_theme_crimson')" class="p-3 rounded-2xl border border-rose-500/40 bg-gradient-to-br from-rose-950 to-zinc-900 hover:border-rose-400 text-left transition-all cursor-pointer flex flex-col justify-between h-20 shadow-xs">
+                    <span class="text-xs font-bold text-rose-300">Crimson Faith</span>
+                    <span class="text-[10px] text-rose-400/70 font-mono">#F43F5E</span>
+                  </button>
+                  <button onclick="window.setAppTheme('champion_black')" class="p-3 rounded-2xl border border-zinc-700 bg-black hover:border-amber-500 text-left transition-all cursor-pointer flex flex-col justify-between h-20 shadow-xs">
+                    <span class="text-xs font-bold text-white">Champion Black</span>
+                    <span class="text-[10px] text-zinc-400 font-mono">#000000</span>
+                  </button>
+                  <button onclick="window.setAppTheme('heavenly_white')" class="p-3 rounded-2xl border border-slate-300 bg-slate-50 hover:border-blue-500 text-left transition-all cursor-pointer flex flex-col justify-between h-20 shadow-xs">
+                    <span class="text-xs font-bold text-slate-800">Heavenly White</span>
+                    <span class="text-[10px] text-slate-500 font-mono">#F8FAFC</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Legal, Governance & Policy Center Bento -->
+              <div class="md:col-span-2 bg-slate-50 dark:bg-zinc-950 border border-slate-200/60 dark:border-zinc-800 rounded-3xl p-6 space-y-4">
+                <div class="flex items-center gap-3">
+                  <div class="p-2 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded-xl">
+                    <i data-lucide="shield-check" class="w-5 h-5"></i>
+                  </div>
+                  <div>
+                    <h3 class="text-sm font-black font-display text-slate-900 dark:text-zinc-50">Legal, Governance & Privacy Center</h3>
+                    <p class="text-[10px] text-slate-400">Review community guidelines, data protection policies, and terms of service</p>
+                  </div>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-zinc-400 leading-relaxed">
+                  Home.cell is committed to protecting member privacy, safeguarding spiritual data, and fostering a secure, uplifting Christian fellowship environment.
+                </p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                  <button onclick="window.openPrivacyPolicy()" class="py-3 px-4 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 hover:border-blue-500 text-slate-800 dark:text-zinc-200 font-bold text-xs rounded-2xl transition-all cursor-pointer flex items-center justify-between shadow-xs">
+                    <div class="flex items-center gap-2">
+                      <i data-lucide="lock" class="w-4 h-4 text-blue-600 dark:text-blue-400"></i>
+                      <span>Privacy Policy Page</span>
+                    </div>
+                    <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+                  </button>
+
+                  <button onclick="window.openTermsOfService()" class="py-3 px-4 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 hover:border-blue-500 text-slate-800 dark:text-zinc-200 font-bold text-xs rounded-2xl transition-all cursor-pointer flex items-center justify-between shadow-xs">
+                    <div class="flex items-center gap-2">
+                      <i data-lucide="file-text" class="w-4 h-4 text-purple-600 dark:text-purple-400"></i>
+                      <span>Terms of Service Page</span>
+                    </div>
+                    <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+                  </button>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+        </section>
+
+        <!-- Tab: Privacy Policy Page -->
+        <section id="tab-privacy" class="app-tab hidden space-y-6 animate-fade-in">
+          <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-[2.5rem] p-6 sm:p-10 shadow-sm space-y-8">
+            
+            <!-- Header Header -->
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-200 dark:border-zinc-800 pb-6">
+              <div class="space-y-2">
+                <div class="flex items-center gap-2">
+                  <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-blue-100 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                    Official Governance Document
+                  </span>
+                  <span class="text-xs text-slate-400 dark:text-zinc-500 font-mono">Effective: August 2026</span>
+                </div>
+                <h1 class="text-3xl sm:text-4xl font-black font-display tracking-tight text-slate-900 dark:text-zinc-50 flex items-center gap-3">
+                  <i data-lucide="shield-check" class="w-8 h-8 text-blue-600"></i> Privacy Policy
+                </h1>
+                <p class="text-sm text-slate-500 dark:text-zinc-400 max-w-2xl">
+                  Your privacy and faith journey data protection are foundational to Home.cell. This policy details how we collect, safeguard, and respect your personal information.
+                </p>
+              </div>
+
+              <button onclick="switchTab('dashboard')" class="py-2.5 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 font-bold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center gap-2">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i> Back to Dashboard
+              </button>
+            </div>
+
+            <!-- Content Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+              
+              <!-- Main Policy Content -->
+              <div class="md:col-span-2 space-y-8 text-slate-700 dark:text-zinc-300 text-sm leading-relaxed">
+                
+                <!-- Section 1 -->
+                <div class="bg-slate-50 dark:bg-zinc-950 border border-slate-200/80 dark:border-zinc-800 rounded-3xl p-6 space-y-3">
+                  <h2 class="text-lg font-black font-display text-slate-900 dark:text-zinc-50 flex items-center gap-2">
+                    <span class="w-7 h-7 rounded-xl bg-blue-600 text-white font-bold text-xs flex items-center justify-center">1</span>
+                    Our Commitment to Member Privacy
+                  </h2>
+                  <p>
+                    Home.cell ("we", "our", or "the Platform") provides digital fellowship infrastructure for church members, cell groups, and Christian believers. We are committed to maintaining the confidentiality, integrity, and security of your personal data and spiritual records.
+                  </p>
+                  <p class="font-bold text-slate-900 dark:text-zinc-100">
+                    We do NOT sell, rent, or monetize your personal information or spiritual activity to third-party advertisers.
+                  </p>
+                </div>
+
+                <!-- Section 2 -->
+                <div class="bg-slate-50 dark:bg-zinc-950 border border-slate-200/80 dark:border-zinc-800 rounded-3xl p-6 space-y-3">
+                  <h2 class="text-lg font-black font-display text-slate-900 dark:text-zinc-50 flex items-center gap-2">
+                    <span class="w-7 h-7 rounded-xl bg-blue-600 text-white font-bold text-xs flex items-center justify-center">2</span>
+                    Information We Collect
+                  </h2>
+                  <ul class="space-y-2 list-disc list-inside">
+                    <li><strong class="text-slate-900 dark:text-zinc-100">Account Credentials:</strong> Display name, email address, password hashes managed via Google Firebase Authentication, and profile avatar settings.</li>
+                    <li><strong class="text-slate-900 dark:text-zinc-100">Fellowship Profile Data:</strong> Assigned cell group ID, personal testimony, spiritual goals, role badge, and optional location coordinates for cell discovery.</li>
+                    <li><strong class="text-slate-900 dark:text-zinc-100">Spiritual Activity & Progress:</strong> Daily devotional check-ins, prayer petitions, scripture bookmarks, trivia quiz scores, streak counts, and Champions Hub rewards.</li>
+                    <li><strong class="text-slate-900 dark:text-zinc-100">Communication & Audio Logs:</strong> Fellowship Lounge messages, intercession requests, and direct support chat histories with leadership.</li>
+                    <li><strong class="text-slate-900 dark:text-zinc-100">Technical Diagnostics:</strong> Web Push notification tokens, browser device type, and encrypted Firestore session logs for real-time synchronization.</li>
+                  </ul>
+                </div>
+
+                <!-- Section 3 -->
+                <div class="bg-slate-50 dark:bg-zinc-950 border border-slate-200/80 dark:border-zinc-800 rounded-3xl p-6 space-y-3">
+                  <h2 class="text-lg font-black font-display text-slate-900 dark:text-zinc-50 flex items-center gap-2">
+                    <span class="w-7 h-7 rounded-xl bg-blue-600 text-white font-bold text-xs flex items-center justify-center">3</span>
+                    How Your Information Is Used
+                  </h2>
+                  <p>Your data is processed strictly to enable home cell features and enhance community fellowship:</p>
+                  <ul class="space-y-1.5 list-disc list-inside text-xs">
+                    <li>Coordinating cell group attendance, leader check-ins, and parish calendar RSVPs.</li>
+                    <li>Delivering daily scripture notifications and prayer desk intercession alerts.</li>
+                    <li>Computing streak milestones, Champions Hub leaderboards, and referral badges.</li>
+                    <li>Enabling direct spiritual support chats with church leadership and cell leaders.</li>
+                  </ul>
+                </div>
+
+                <!-- Section 4 -->
+                <div class="bg-slate-50 dark:bg-zinc-950 border border-slate-200/80 dark:border-zinc-800 rounded-3xl p-6 space-y-3">
+                  <h2 class="text-lg font-black font-display text-slate-900 dark:text-zinc-50 flex items-center gap-2">
+                    <span class="w-7 h-7 rounded-xl bg-blue-600 text-white font-bold text-xs flex items-center justify-center">4</span>
+                    Security & Infrastructure
+                  </h2>
+                  <p>
+                    All database operations are secured using Google Cloud Firestore Security Rules, enforcing authentication verification and strict role-based access control (RBAC). Data transmission uses end-to-end TLS/SSL encryption.
+                  </p>
+                </div>
+
+                <!-- Section 5 -->
+                <div class="bg-slate-50 dark:bg-zinc-950 border border-slate-200/80 dark:border-zinc-800 rounded-3xl p-6 space-y-3">
+                  <h2 class="text-lg font-black font-display text-slate-900 dark:text-zinc-50 flex items-center gap-2">
+                    <span class="w-7 h-7 rounded-xl bg-blue-600 text-white font-bold text-xs flex items-center justify-center">5</span>
+                    Your Data Control & Rights
+                  </h2>
+                  <p>
+                    You maintain complete ownership of your profile. You may update your display information, clear your testimony, or request account deletion at any time by contacting our leadership team or visiting Profile Settings.
+                  </p>
+                </div>
+
+              </div>
+
+              <!-- Sidebar Quick Navigation & Contact -->
+              <div class="space-y-6">
+                <div class="bg-gradient-to-tr from-blue-600 to-indigo-700 text-white p-6 rounded-3xl space-y-4 shadow-lg">
+                  <i data-lucide="shield" class="w-8 h-8 text-blue-200"></i>
+                  <h3 class="text-lg font-black font-display">Data Privacy Officer</h3>
+                  <p class="text-xs text-blue-100 leading-relaxed">
+                    Have questions regarding your data privacy or wish to request data export or erasure? Reach out to our leadership desk directly.
+                  </p>
+                  <div class="pt-2 border-t border-white/20 text-xs font-mono space-y-1">
+                    <p>📧 support@homecell.net</p>
+                    <p>📧 danielgiobari644@gmail.com</p>
+                  </div>
+                  <button onclick="window.openSupportChat ? window.openSupportChat() : switchTab('settings')" class="w-full py-2.5 bg-white text-blue-700 hover:bg-blue-50 font-bold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer">
+                    Contact Support Desk
+                  </button>
+                </div>
+
+                <div class="bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 p-6 rounded-3xl space-y-3">
+                  <h4 class="text-xs font-black uppercase tracking-wider text-slate-400">Related Governance</h4>
+                  <button onclick="switchTab('terms')" class="w-full py-2.5 px-3 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 hover:border-purple-500 rounded-xl text-left font-bold text-xs text-slate-800 dark:text-zinc-200 flex items-center justify-between cursor-pointer">
+                    <span>Terms of Service</span>
+                    <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+                  </button>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+        </section>
+
+        <!-- Tab: Terms of Service Page -->
+        <section id="tab-terms" class="app-tab hidden space-y-6 animate-fade-in">
+          <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-[2.5rem] p-6 sm:p-10 shadow-sm space-y-8">
+            
+            <!-- Header -->
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-200 dark:border-zinc-800 pb-6">
+              <div class="space-y-2">
+                <div class="flex items-center gap-2">
+                  <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-purple-100 dark:bg-purple-950/80 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                    Official Community Agreement
+                  </span>
+                  <span class="text-xs text-slate-400 dark:text-zinc-500 font-mono">Effective: August 2026</span>
+                </div>
+                <h1 class="text-3xl sm:text-4xl font-black font-display tracking-tight text-slate-900 dark:text-zinc-50 flex items-center gap-3">
+                  <i data-lucide="file-text" class="w-8 h-8 text-purple-600"></i> Terms of Service
+                </h1>
+                <p class="text-sm text-slate-500 dark:text-zinc-400 max-w-2xl">
+                  Welcome to Home.cell. These terms govern your participation in our digital fellowship, cell group networks, daily devotions, and community lounge.
+                </p>
+              </div>
+
+              <button onclick="switchTab('dashboard')" class="py-2.5 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 font-bold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center gap-2">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i> Back to Dashboard
+              </button>
+            </div>
+
+            <!-- Content Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+              
+              <!-- Main Terms Content -->
+              <div class="md:col-span-2 space-y-8 text-slate-700 dark:text-zinc-300 text-sm leading-relaxed">
+                
+                <!-- Section 1 -->
+                <div class="bg-slate-50 dark:bg-zinc-950 border border-slate-200/80 dark:border-zinc-800 rounded-3xl p-6 space-y-3">
+                  <h2 class="text-lg font-black font-display text-slate-900 dark:text-zinc-50 flex items-center gap-2">
+                    <span class="w-7 h-7 rounded-xl bg-purple-600 text-white font-bold text-xs flex items-center justify-center">1</span>
+                    Acceptance of Agreement
+                  </h2>
+                  <p>
+                    By creating an account, accessing, or participating in Home.cell, you agree to comply with these Terms of Service and our Privacy Policy. If you do not agree to these terms, you may not use the service.
+                  </p>
+                </div>
+
+                <!-- Section 2 -->
+                <div class="bg-slate-50 dark:bg-zinc-950 border border-slate-200/80 dark:border-zinc-800 rounded-3xl p-6 space-y-3">
+                  <h2 class="text-lg font-black font-display text-slate-900 dark:text-zinc-50 flex items-center gap-2">
+                    <span class="w-7 h-7 rounded-xl bg-purple-600 text-white font-bold text-xs flex items-center justify-center">2</span>
+                    Community Standards & Christian Conduct
+                  </h2>
+                  <p>Home.cell is a sanctuary dedicated to Christian growth, mutual encouragement, and spiritual fellowship. Members agree to:</p>
+                  <ul class="space-y-2 list-disc list-inside">
+                    <li>Maintain respectful, gracious, and uplifting discourse in all feeds, lounges, and prayer petitions.</li>
+                    <li>Refrain from posting profanity, hate speech, harassment, political hostility, or unauthorized commercial spam.</li>
+                    <li>Honor privacy by maintaining confidentiality regarding personal prayer burdens shared within cell groups.</li>
+                  </ul>
+                </div>
+
+                <!-- Section 3 -->
+                <div class="bg-slate-50 dark:bg-zinc-950 border border-slate-200/80 dark:border-zinc-800 rounded-3xl p-6 space-y-3">
+                  <h2 class="text-lg font-black font-display text-slate-900 dark:text-zinc-50 flex items-center gap-2">
+                    <span class="w-7 h-7 rounded-xl bg-purple-600 text-white font-bold text-xs flex items-center justify-center">3</span>
+                    Account Responsibilities & Moderation
+                  </h2>
+                  <p>
+                    You are responsible for safeguarding your login credentials. Cell leaders and platform Super Admins reserve the right to review reported content, issue warnings, or restrict account access for violations of community standards.
+                  </p>
+                </div>
+
+                <!-- Section 4 -->
+                <div class="bg-slate-50 dark:bg-zinc-950 border border-slate-200/80 dark:border-zinc-800 rounded-3xl p-6 space-y-3">
+                  <h2 class="text-lg font-black font-display text-slate-900 dark:text-zinc-50 flex items-center gap-2">
+                    <span class="w-7 h-7 rounded-xl bg-purple-600 text-white font-bold text-xs flex items-center justify-center">4</span>
+                    Devotions, Streaks & Rewards
+                  </h2>
+                  <p>
+                    Streak counts, Champions Hub badges, and Kingdom Mystery Box rewards are engagement recognition tools provided for encouragement. They carry no real-world financial or monetary value and may not be sold or transferred.
+                  </p>
+                </div>
+
+                <!-- Section 5 -->
+                <div class="bg-slate-50 dark:bg-zinc-950 border border-slate-200/80 dark:border-zinc-800 rounded-3xl p-6 space-y-3">
+                  <h2 class="text-lg font-black font-display text-slate-900 dark:text-zinc-50 flex items-center gap-2">
+                    <span class="w-7 h-7 rounded-xl bg-purple-600 text-white font-bold text-xs flex items-center justify-center">5</span>
+                    Intellectual Property
+                  </h2>
+                  <p>
+                    All app design, custom graphics, and software code are the property of Home.cell. Scripture content is curated from public and licensed translations. Users retain ownership of personal posts and testimonies.
+                  </p>
+                </div>
+
+              </div>
+
+              <!-- Sidebar -->
+              <div class="space-y-6">
+                <div class="bg-gradient-to-tr from-purple-700 to-indigo-800 text-white p-6 rounded-3xl space-y-4 shadow-lg">
+                  <i data-lucide="scale" class="w-8 h-8 text-purple-200"></i>
+                  <h3 class="text-lg font-black font-display">Legal Inquiries</h3>
+                  <p class="text-xs text-purple-100 leading-relaxed">
+                    For legal questions, licensing inquiries, or terms clarification, please contact our administration.
+                  </p>
+                  <div class="pt-2 border-t border-white/20 text-xs font-mono space-y-1">
+                    <p>📧 legal@homecell.net</p>
+                    <p>📧 danielgiobari644@gmail.com</p>
+                  </div>
+                </div>
+
+                <div class="bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 p-6 rounded-3xl space-y-3">
+                  <h4 class="text-xs font-black uppercase tracking-wider text-slate-400">Related Governance</h4>
+                  <button onclick="switchTab('privacy')" class="w-full py-2.5 px-3 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 hover:border-blue-500 rounded-xl text-left font-bold text-xs text-slate-800 dark:text-zinc-200 flex items-center justify-between cursor-pointer">
+                    <span>Privacy Policy</span>
+                    <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
                   </button>
                 </div>
               </div>
@@ -3600,6 +4647,84 @@
       </div>
     </div>
 
+    <!-- Fixed Bottom Mobile Navigation Bar for Quick Single-Tap Access -->
+    <nav class="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border-t border-slate-200/80 dark:border-zinc-800/80 px-2 py-1.5 flex items-center justify-around shadow-2xl">
+      <button onclick="switchTab('feed')" id="mobile-bottom-nav-feed" class="flex flex-col items-center justify-center py-1 px-2.5 rounded-xl text-slate-500 dark:text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 transition-all cursor-pointer">
+        <i data-lucide="newspaper" class="w-5 h-5"></i>
+        <span class="text-[10px] font-bold mt-0.5">Feed</span>
+      </button>
+
+      <button onclick="switchTab('champions')" id="mobile-bottom-nav-champions" class="flex flex-col items-center justify-center py-1 px-2.5 rounded-xl text-amber-600 dark:text-amber-400 font-extrabold hover:text-amber-500 transition-all cursor-pointer relative">
+        <div class="relative">
+          <i data-lucide="trophy" class="w-5 h-5 text-amber-500"></i>
+          <span class="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+        </div>
+        <span class="text-[10px] font-black mt-0.5 tracking-tight">Champions</span>
+      </button>
+
+      <button onclick="switchTab('streak')" id="mobile-bottom-nav-streak" class="flex flex-col items-center justify-center py-1 px-2.5 rounded-xl text-blue-600 dark:text-blue-400 font-extrabold hover:text-blue-500 transition-all cursor-pointer">
+        <i data-lucide="zap" class="w-5 h-5"></i>
+        <span class="text-[10px] font-bold mt-0.5">Streak</span>
+      </button>
+
+      <button onclick="switchTab('cells')" id="mobile-bottom-nav-cells" class="flex flex-col items-center justify-center py-1 px-2.5 rounded-xl text-slate-500 dark:text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 transition-all cursor-pointer">
+        <i data-lucide="users" class="w-5 h-5"></i>
+        <span class="text-[10px] font-bold mt-0.5">Cells</span>
+      </button>
+
+      <button onclick="switchTab('settings')" id="mobile-bottom-nav-settings" class="flex flex-col items-center justify-center py-1 px-2.5 rounded-xl text-slate-500 dark:text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 transition-all cursor-pointer">
+        <i data-lucide="user" class="w-5 h-5"></i>
+        <span class="text-[10px] font-bold mt-0.5">Profile</span>
+      </button>
+    </nav>
+
+    <!-- Modal: Mystery Box Reveal -->
+    <div id="mystery-box-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden items-center justify-center p-4">
+      <div class="bg-gradient-to-br from-zinc-900 via-zinc-950 to-black border-2 border-amber-500/40 rounded-3xl max-w-sm w-full p-6 space-y-5 text-white text-center relative shadow-2xl animate-fade-in">
+        <button onclick="window.closeMysteryBoxModal()" class="absolute top-4 right-4 p-2 text-slate-400 hover:text-white rounded-full bg-zinc-800 cursor-pointer">
+          ✕
+        </button>
+        <div class="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-br from-amber-400 to-yellow-500 text-zinc-950 text-4xl flex items-center justify-center shadow-2xl ring-4 ring-amber-400/30 animate-bounce">
+          🎁
+        </div>
+        <div>
+          <h3 class="text-xl font-black font-display text-amber-400">Kingdom Mystery Box</h3>
+          <p id="mystery-box-desc" class="text-xs text-slate-300 mt-1">Open to unlock a surprise Kingdom reward!</p>
+        </div>
+        <div id="mystery-box-reward-display" class="hidden p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl space-y-1">
+          <span class="text-xs font-bold text-amber-300 block">YOU UNLOCKED:</span>
+          <span id="mystery-reward-title" class="text-lg font-black text-white font-display block">--</span>
+        </div>
+        <button id="btn-open-mystery-box" onclick="window.openMysteryBoxAction()" class="w-full py-3.5 bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 hover:from-amber-500 hover:to-yellow-500 text-zinc-950 font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl transition-all cursor-pointer">
+          Open Mystery Box Now 🎁
+        </button>
+      </div>
+    </div>
+
+    <!-- Modal: Referral QR Code -->
+    <div id="referral-qrcode-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden items-center justify-center p-4">
+      <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl max-w-sm w-full p-6 space-y-5 text-slate-900 dark:text-zinc-100 text-center relative shadow-2xl animate-fade-in">
+        <button onclick="window.closeReferralQRCodeModal()" class="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 rounded-full bg-slate-100 dark:bg-zinc-800 cursor-pointer">
+          ✕
+        </button>
+        <div>
+          <h3 class="text-lg font-black font-display text-slate-900 dark:text-zinc-100">Scan to Join Home.cell</h3>
+          <p class="text-xs text-slate-500 dark:text-zinc-400 mt-1">Show this QR code to a friend to instantly connect your referral!</p>
+        </div>
+        <div class="p-4 bg-white rounded-2xl border-2 border-amber-400 inline-block shadow-inner mx-auto">
+          <div id="referral-qr-code-img" class="w-48 h-48 bg-slate-100 flex items-center justify-center font-bold text-xs text-slate-400 rounded-xl">
+            Generating QR Code...
+          </div>
+        </div>
+        <div class="p-3 bg-amber-50 dark:bg-amber-950/40 rounded-xl border border-amber-200 dark:border-amber-800/60 text-xs font-mono font-bold text-amber-700 dark:text-amber-300">
+          Code: <span id="modal-qr-ref-code">---</span>
+        </div>
+        <button onclick="window.copyReferralLink()" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2">
+          <i data-lucide="copy" class="w-4 h-4"></i> Copy Link Instead
+        </button>
+      </div>
+    </div>
+
     <!-- Modal: Calendar Day Record Details -->
     <div id="calendar-day-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden items-center justify-center p-4">
       <div class="bg-zinc-900 border border-zinc-800 rounded-3xl max-w-sm w-full p-6 space-y-4 text-white relative shadow-2xl animate-fade-in">
@@ -3664,11 +4789,84 @@
       </div>
     </div>
 
+    <!-- Modal: Privacy Policy Quick Modal -->
+    <div id="privacy-modal" class="fixed inset-0 z-[110] bg-slate-950/80 backdrop-blur-md hidden items-center justify-center p-4 overflow-y-auto">
+      <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl w-full max-w-2xl p-6 sm:p-8 space-y-6 shadow-2xl relative my-auto max-h-[85vh] flex flex-col">
+        <button onclick="window.closePrivacyModal()" class="absolute top-5 right-5 p-2 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 rounded-full hover:bg-slate-100 dark:hover:bg-zinc-800 cursor-pointer">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+
+        <div class="flex items-center gap-3 border-b border-slate-100 dark:border-zinc-800 pb-4 pr-10">
+          <div class="p-2.5 bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 rounded-2xl">
+            <i data-lucide="shield-check" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <h3 class="text-xl font-black font-display text-slate-900 dark:text-zinc-50">Privacy Policy Summary</h3>
+            <p class="text-xs text-slate-400">Home.cell Data Governance & Protection</p>
+          </div>
+        </div>
+
+        <div class="overflow-y-auto pr-1 space-y-4 text-xs sm:text-sm text-slate-600 dark:text-zinc-300 leading-relaxed flex-grow">
+          <p><strong class="text-slate-900 dark:text-zinc-100">1. Data Ownership & Protection:</strong> Your personal profile and faith milestones are private. We never monetize, share, or sell member data to third-party advertisers.</p>
+          <p><strong class="text-slate-900 dark:text-zinc-100">2. Collected Data:</strong> Account email, display name, cell fellowship group, daily devotional check-ins, prayer requests, and optional location coordinates for cell discovery.</p>
+          <p><strong class="text-slate-900 dark:text-zinc-100">3. Purpose of Processing:</strong> Coordinating cell group meetings, delivering intercession notifications, calculating streak milestones, and supporting fellowship lounge chats.</p>
+          <p><strong class="text-slate-900 dark:text-zinc-100">4. Infrastructure Security:</strong> Secured with Google Cloud Firestore Security Rules and TLS encryption.</p>
+          <p><strong class="text-slate-900 dark:text-zinc-100">5. Your Control:</strong> You can edit or purge your profile data anytime via Profile Settings or support requests.</p>
+        </div>
+
+        <div class="pt-4 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-between gap-3">
+          <button onclick="window.closePrivacyModal(); window.openPrivacyPolicy();" class="py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center gap-1.5">
+            View Full Privacy Page <i data-lucide="arrow-right" class="w-4 h-4"></i>
+          </button>
+          <button onclick="window.closePrivacyModal()" class="py-2.5 px-4 bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 font-bold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Terms of Service Quick Modal -->
+    <div id="terms-modal" class="fixed inset-0 z-[110] bg-slate-950/80 backdrop-blur-md hidden items-center justify-center p-4 overflow-y-auto">
+      <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl w-full max-w-2xl p-6 sm:p-8 space-y-6 shadow-2xl relative my-auto max-h-[85vh] flex flex-col">
+        <button onclick="window.closeTermsModal()" class="absolute top-5 right-5 p-2 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 rounded-full hover:bg-slate-100 dark:hover:bg-zinc-800 cursor-pointer">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+
+        <div class="flex items-center gap-3 border-b border-slate-100 dark:border-zinc-800 pb-4 pr-10">
+          <div class="p-2.5 bg-purple-100 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 rounded-2xl">
+            <i data-lucide="file-text" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <h3 class="text-xl font-black font-display text-slate-900 dark:text-zinc-50">Terms of Service Summary</h3>
+            <p class="text-xs text-slate-400">Community Agreement & Conduct</p>
+          </div>
+        </div>
+
+        <div class="overflow-y-auto pr-1 space-y-4 text-xs sm:text-sm text-slate-600 dark:text-zinc-300 leading-relaxed flex-grow">
+          <p><strong class="text-slate-900 dark:text-zinc-100">1. Acceptance:</strong> Using Home.cell constitutes agreement to these Terms and our Privacy Policy.</p>
+          <p><strong class="text-slate-900 dark:text-zinc-100">2. Fellowship Conduct:</strong> Maintain uplifting, respectful Christian discourse. Profanity, hate speech, harassment, and spam are strictly prohibited.</p>
+          <p><strong class="text-slate-900 dark:text-zinc-100">3. Account Integrity:</strong> You are responsible for account security. Moderation action or suspension may occur for community standard breaches.</p>
+          <p><strong class="text-slate-900 dark:text-zinc-100">4. Engagement Rewards:</strong> Streaks, badges, and Champions Hub rewards are non-monetary engagement tools.</p>
+          <p><strong class="text-slate-900 dark:text-zinc-100">5. Content Ownership:</strong> Members retain ownership of their posted testimonies while granting Home.cell operational display rights.</p>
+        </div>
+
+        <div class="pt-4 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-between gap-3">
+          <button onclick="window.closeTermsModal(); window.openTermsOfService();" class="py-2.5 px-4 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center gap-1.5">
+            View Full Terms Page <i data-lucide="arrow-right" class="w-4 h-4"></i>
+          </button>
+          <button onclick="window.closeTermsModal()" class="py-2.5 px-4 bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 font-bold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Core App logic scripts link -->
     <script src="sound-engine.js"></script>
     <script src="firebase.js"></script>
     <script src="push-notification.js"></script>
     <script src="toast.js"></script>
+    <script src="champions.js"></script>
     <script src="streak.js"></script>
     <script src="dashboard.js"></script>
     <script src="bible.js"></script>
