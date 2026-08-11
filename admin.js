@@ -50,6 +50,9 @@ function initAdminModule() {
   syncAdminBundles();
   syncAdminApkConfig();
   syncAdminStreams();
+  syncAdminStoreProducts();
+  syncAdminCustomRequests();
+  syncAdminFeedbackHub();
   loadGlobalDeskSettings();
 }
 
@@ -854,7 +857,7 @@ function resetStreamForm() {
 
 // Admin Panel Sub Tab switches
 function setAdminSubTab(subTabId) {
-  const subTabs = ['users', 'cells', 'events', 'devotionals', 'trivia', 'bundles', 'configs', 'stream'];
+  const subTabs = ['users', 'store', 'custom-requests', 'feedback-hub', 'cells', 'events', 'devotionals', 'trivia', 'bundles', 'configs', 'stream'];
   subTabs.forEach(tab => {
     const pane = document.getElementById(`atab-${tab}`);
     const btn = document.getElementById(`btn-atab-${tab}`);
@@ -2137,6 +2140,347 @@ function sendUserPasswordResetEmail(email) {
       window.showToast?.("Failed to send reset email: " + err.message, "error");
     });
 }
+
+// ---------------------------------------------------------------------------
+// SUPER ADMIN KINGDOM STORE PRODUCTS MANAGER 🏪
+// ---------------------------------------------------------------------------
+
+function syncAdminStoreProducts() {
+  const container = document.getElementById('admin-products-catalog');
+  if (!container) return;
+
+  const db = window.db;
+  if (!db) return;
+
+  db.collection('products').onSnapshot(snap => {
+    container.innerHTML = '';
+    if (snap.empty) {
+      container.innerHTML = `<div class="col-span-full text-center py-6 text-slate-400">No store products found. Add one above!</div>`;
+      return;
+    }
+
+    snap.forEach(doc => {
+      const p = doc.data();
+      const pid = doc.id;
+
+      const card = document.createElement('div');
+      card.className = "p-4 bg-slate-50 dark:bg-zinc-850 border border-slate-200 dark:border-zinc-700 rounded-2xl flex flex-col justify-between space-y-3";
+
+      card.innerHTML = `
+        <div class="space-y-2">
+          <div class="relative h-28 rounded-xl overflow-hidden bg-slate-200">
+            <img src="${p.coverUrl || 'https://images.unsplash.com/photo-1509021436468-d0f075e24b7a?auto=format&fit=crop&w=800&q=80'}" class="w-full h-full object-cover" />
+            <span class="absolute top-2 left-2 px-2 py-0.5 rounded bg-slate-900/80 text-amber-400 text-[9px] font-black uppercase">
+              ${p.category}
+            </span>
+          </div>
+
+          <h5 class="font-bold text-slate-900 dark:text-zinc-100 text-sm line-clamp-1">${p.title}</h5>
+          <p class="text-xs text-amber-500 font-bold">🪙 ${p.priceKC} KC</p>
+        </div>
+
+        <button onclick="deleteAdminProduct('${pid}')" class="w-full py-2 bg-rose-100 hover:bg-rose-200 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 font-bold text-xs rounded-xl transition-all cursor-pointer">
+          Delete Product
+        </button>
+      `;
+
+      container.appendChild(card);
+    });
+  }, err => console.warn("Admin products snapshot error:", err));
+}
+
+// Submit New Store Product
+async function handleAdminProductSubmit(e) {
+  e.preventDefault();
+
+  const title = document.getElementById('admin-prod-title')?.value?.trim();
+  const category = document.getElementById('admin-prod-category')?.value || 'Wallpapers';
+  const collectionName = document.getElementById('admin-prod-collection')?.value?.trim() || 'General';
+  const priceKC = parseInt(document.getElementById('admin-prod-price')?.value || '50');
+  const coverUrl = document.getElementById('admin-prod-cover-url')?.value?.trim() || '';
+  const fileUrl = document.getElementById('admin-prod-file-url')?.value?.trim() || coverUrl;
+  const description = document.getElementById('admin-prod-desc')?.value?.trim() || '';
+  const tagsStr = document.getElementById('admin-prod-tags')?.value?.trim() || '';
+  const tags = tagsStr.split(',').map(t => t.trim()).filter(t => t.length > 0);
+
+  if (!title || !priceKC) {
+    window.showToast?.("Please enter a title and Kingdom Coin price!", "error");
+    return;
+  }
+
+  const db = window.db;
+  if (!db) return;
+
+  const prodRef = db.collection('products').doc();
+
+  try {
+    await prodRef.set({
+      id: prodRef.id,
+      title: title,
+      category: category,
+      collectionName: collectionName,
+      priceKC: priceKC,
+      coverUrl: coverUrl || 'https://images.unsplash.com/photo-1509021436468-d0f075e24b7a?auto=format&fit=crop&w=800&q=80',
+      fileUrl: fileUrl || coverUrl,
+      description: description,
+      author: "Super Admin",
+      tags: tags.length ? tags : ["Kingdom", "Digital"],
+      featured: true,
+      published: true,
+      downloadable: true,
+      createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    document.getElementById('admin-product-form')?.reset();
+    window.showToast?.(`🎉 Store product "${title}" published to Kingdom Store!`, "success");
+    syncAdminStoreProducts();
+  } catch (err) {
+    console.error("Admin product submit error:", err);
+    window.showToast?.("Error publishing store product.", "error");
+  }
+}
+
+// Delete Admin Product
+async function deleteAdminProduct(prodId) {
+  if (!confirm("Are you sure you want to delete this store product?")) return;
+
+  const db = window.db;
+  if (!db) return;
+
+  try {
+    await db.collection('products').doc(prodId).delete();
+    window.showToast?.("Product deleted.", "info");
+    syncAdminStoreProducts();
+  } catch (e) {
+    console.error("Delete product error:", e);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// SUPER ADMIN CUSTOM REQUESTS MANAGER ✨
+// ---------------------------------------------------------------------------
+
+function syncAdminCustomRequests() {
+  const container = document.getElementById('admin-custom-requests-rows');
+  if (!container) return;
+
+  const db = window.db;
+  if (!db) return;
+
+  db.collection('custom_requests').onSnapshot(snap => {
+    container.innerHTML = '';
+    if (snap.empty) {
+      container.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-slate-400">No custom creation requests found.</td></tr>`;
+      return;
+    }
+
+    snap.forEach(doc => {
+      const r = doc.data();
+      const reqId = doc.id;
+
+      const tr = document.createElement('tr');
+      tr.className = "border-b border-slate-100 dark:border-zinc-800 text-slate-800 dark:text-zinc-200 text-xs";
+
+      tr.innerHTML = `
+        <td class="p-3 font-mono font-bold">${reqId}</td>
+        <td class="p-3 font-bold">${r.userName || 'Member'} <span class="block text-[10px] text-slate-400">${r.userEmail || ''}</span></td>
+        <td class="p-3 capitalize font-bold text-purple-600 dark:text-purple-400">${r.type}</td>
+        <td class="p-3">
+          <p class="font-bold line-clamp-1">${r.desiredResult}</p>
+          <p class="text-[11px] text-slate-400 line-clamp-2">${r.description}</p>
+        </td>
+        <td class="p-3">
+          <select onchange="updateAdminRequestStatus('${reqId}', this.value)" class="px-2 py-1 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg text-xs font-bold text-slate-800 dark:text-zinc-200">
+            <option value="Submitted" ${r.status === 'Submitted' ? 'selected' : ''}>🟡 Submitted</option>
+            <option value="In Progress" ${r.status === 'In Progress' ? 'selected' : ''}>🔵 In Progress</option>
+            <option value="Ready" ${r.status === 'Ready' ? 'selected' : ''}>🟢 Ready</option>
+            <option value="Completed" ${r.status === 'Completed' ? 'selected' : ''}>⚪ Completed</option>
+            <option value="Needs Information" ${r.status === 'Needs Information' ? 'selected' : ''}>🔴 Needs Info</option>
+          </select>
+        </td>
+        <td class="p-3 space-y-1">
+          <button onclick="promptUploadRequestResultModal('${reqId}')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-[11px] uppercase cursor-pointer">
+            Upload Result
+          </button>
+        </td>
+      `;
+
+      container.appendChild(tr);
+    });
+  }, err => console.warn("Admin requests snapshot error:", err));
+}
+
+// Update Request Status
+async function updateAdminRequestStatus(reqId, status) {
+  const db = window.db;
+  if (!db) return;
+
+  try {
+    await db.collection('custom_requests').doc(reqId).update({ status: status });
+    window.showToast?.(`Updated request status to ${status}`, "success");
+  } catch (e) {
+    console.error("Update request status error:", e);
+  }
+}
+
+// Prompt Upload Request Result Modal
+function promptUploadRequestResultModal(reqId) {
+  window.showModalHtml?.(`
+    <div class="space-y-4 p-1">
+      <h3 class="text-lg font-black text-slate-900 dark:text-zinc-100">Fulfill Request ${reqId}</h3>
+      <p class="text-xs text-slate-500 dark:text-zinc-400">Provide the final result URL or note to complete this creation request.</p>
+
+      <div class="space-y-2">
+        <label class="text-xs font-bold text-slate-700 dark:text-zinc-300">Result Image / File URL</label>
+        <input type="url" id="modal-req-result-url" class="w-full px-3 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl text-xs text-slate-900 dark:text-zinc-100" placeholder="https://images.unsplash.com/... or link" />
+      </div>
+
+      <div class="space-y-2">
+        <label class="text-xs font-bold text-slate-700 dark:text-zinc-300">Admin Note for User</label>
+        <textarea id="modal-req-admin-note" rows="3" class="w-full px-3 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl text-xs text-slate-900 dark:text-zinc-100" placeholder="Praise God! Here is your requested custom wallpaper..."></textarea>
+      </div>
+
+      <div class="flex gap-2 pt-2">
+        <button onclick="window.closeModal?.()" class="flex-1 py-2.5 bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 font-bold rounded-xl text-xs cursor-pointer">Cancel</button>
+        <button onclick="saveAdminRequestResult('${reqId}')" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-xl text-xs uppercase cursor-pointer">Publish Result</button>
+      </div>
+    </div>
+  `);
+}
+
+// Save Admin Request Result
+async function saveAdminRequestResult(reqId) {
+  const resultUrl = document.getElementById('modal-req-result-url')?.value?.trim();
+  const adminNote = document.getElementById('modal-req-admin-note')?.value?.trim();
+
+  if (!resultUrl) {
+    window.showToast?.("Please enter a result file URL!", "error");
+    return;
+  }
+
+  const db = window.db;
+  if (!db) return;
+
+  try {
+    await db.collection('custom_requests').doc(reqId).update({
+      resultUrl: resultUrl,
+      adminNotes: adminNote || '',
+      status: "Ready"
+    });
+
+    window.closeModal?.();
+    window.showToast?.("🎉 Custom request result published!", "success");
+    syncAdminCustomRequests();
+  } catch (e) {
+    console.error("Save request result error:", e);
+    window.showToast?.("Error saving result.", "error");
+  }
+}
+
+// ---------------------------------------------------------------------------
+// SUPER ADMIN FEEDBACK HUB MANAGER 💡
+// ---------------------------------------------------------------------------
+
+function syncAdminFeedbackHub() {
+  const container = document.getElementById('admin-feedback-rows');
+  if (!container) return;
+
+  const db = window.db;
+  if (!db) return;
+
+  db.collection('feedback_items').onSnapshot(snap => {
+    container.innerHTML = '';
+    if (snap.empty) {
+      container.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-slate-400">No suggestions submitted yet.</td></tr>`;
+      return;
+    }
+
+    snap.forEach(doc => {
+      const f = doc.data();
+      const fid = doc.id;
+
+      const tr = document.createElement('tr');
+      tr.className = "border-b border-slate-100 dark:border-zinc-800 text-slate-800 dark:text-zinc-200 text-xs";
+
+      tr.innerHTML = `
+        <td class="p-3 font-bold">${f.title} <span class="block text-[10px] font-normal text-slate-400">${f.description}</span></td>
+        <td class="p-3 font-bold">${f.userName || 'Member'}</td>
+        <td class="p-3 font-mono font-bold text-purple-600">▲ ${f.upvotesCount || 0}</td>
+        <td class="p-3">
+          <select onchange="updateAdminFeedbackStatus('${fid}', this.value)" class="px-2 py-1 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg text-xs font-bold text-slate-800 dark:text-zinc-200">
+            <option value="Under Review" ${f.status === 'Under Review' ? 'selected' : ''}>🟣 Under Review</option>
+            <option value="Planned" ${f.status === 'Planned' ? 'selected' : ''}>🔵 Planned</option>
+            <option value="In Development" ${f.status === 'In Development' ? 'selected' : ''}>🟡 In Development</option>
+            <option value="Completed" ${f.status === 'Completed' ? 'selected' : ''}>🟢 Completed</option>
+            <option value="Declined" ${f.status === 'Declined' ? 'selected' : ''}>🔴 Declined</option>
+          </select>
+        </td>
+        <td class="p-3">
+          ${f.rewardAwarded ? `<span class="text-emerald-500 font-bold">✨ +10 KC Awarded</span>` : `
+            <button onclick="rewardAdminFeedbackUser('${fid}', '${f.userUid}')" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black rounded-lg text-[10px] uppercase cursor-pointer">
+              Award +10 KC
+            </button>
+          `}
+        </td>
+      `;
+
+      container.appendChild(tr);
+    });
+  }, err => console.warn("Admin feedback snapshot error:", err));
+}
+
+// Update Feedback Status
+async function updateAdminFeedbackStatus(fid, status) {
+  const db = window.db;
+  if (!db) return;
+
+  try {
+    await db.collection('feedback_items').doc(fid).update({ status: status });
+    window.showToast?.(`Feedback status updated to ${status}`, "success");
+  } catch (e) {
+    console.error("Update feedback status error:", e);
+  }
+}
+
+// Award KC to User for Approved Feedback
+async function rewardAdminFeedbackUser(fid, userUid) {
+  if (!userUid) return;
+
+  const db = window.db;
+  if (!db) return;
+
+  try {
+    const userRef = db.collection('users').doc(userUid);
+    const itemRef = db.collection('feedback_items').doc(fid);
+
+    await db.runTransaction(async (transaction) => {
+      const userDoc = await transaction.get(userRef);
+      if (!userDoc.exists) return;
+
+      const currentKc = userDoc.data().kingdomCoins || 0;
+      transaction.update(userRef, { kingdomCoins: currentKc + 10 });
+      transaction.update(itemRef, { rewardAwarded: true });
+    });
+
+    window.showToast?.("✨ Awarded +10 Kingdom Coins to user for great feedback!", "success");
+    syncAdminFeedbackHub();
+  } catch (e) {
+    console.error("Reward feedback error:", e);
+  }
+}
+
+// Expose globally
+window.syncAdminStoreProducts = syncAdminStoreProducts;
+window.handleAdminProductSubmit = handleAdminProductSubmit;
+window.deleteAdminProduct = deleteAdminProduct;
+window.syncAdminCustomRequests = syncAdminCustomRequests;
+window.updateAdminRequestStatus = updateAdminRequestStatus;
+window.promptUploadRequestResultModal = promptUploadRequestResultModal;
+window.saveAdminRequestResult = saveAdminRequestResult;
+window.syncAdminFeedbackHub = syncAdminFeedbackHub;
+window.updateAdminFeedbackStatus = updateAdminFeedbackStatus;
+window.rewardAdminFeedbackUser = rewardAdminFeedbackUser;
+
 
 // Expose globally
 window.initAdminModule = initAdminModule;

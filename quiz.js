@@ -1120,6 +1120,33 @@ function completeTriviaSession() {
   // Trigger Streak increment
   if (userScore > 0) {
     window.incrementUserStreak?.(`taking Live Trivia: ${currentQuiz.title}`);
+
+    // Award Kingdom Coins securely for completing quiz
+    const baseKcReward = 25;
+    const rankBonusKc = (userRank === 1) ? 25 : (userRank === 2) ? 15 : 5;
+    const totalKcEarned = baseKcReward + rankBonusKc;
+
+    const user = window.auth?.currentUser;
+    const db = window.db;
+    if (user && db) {
+      db.collection('users').doc(user.uid).get().then(doc => {
+        if (doc.exists) {
+          const uData = doc.data();
+          const curKc = uData.kingdomCoins || 0;
+          const wins = (uData.quizWinsCount || 0) + 1;
+
+          doc.ref.update({
+            kingdomCoins: curKc + totalKcEarned,
+            quizWinsCount: wins,
+            completedQuizToday: true
+          });
+
+          if (window.currentUserProfile) window.currentUserProfile.kingdomCoins = curKc + totalKcEarned;
+          window.recordKcTransaction?.('credit', totalKcEarned, `Completed Quiz: ${currentQuiz.title}`, `Earned ${totalKcEarned} KC (#${userRank} rank)`);
+          window.showToast?.(`🪙 Earned +${totalKcEarned} Kingdom Coins for finishing quiz!`, "success");
+        }
+      }).catch(e => console.warn("Quiz KC reward update error:", e));
+    }
   }
 
   // Trigger celebration Confetti

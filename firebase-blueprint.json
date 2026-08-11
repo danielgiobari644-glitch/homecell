@@ -254,6 +254,86 @@
         "claimedAt": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "userUid", "itemId", "title", "category", "kcCost", "claimedAt"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "Kingdom Store digital products created by Super Admin.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "category": { "type": "string" },
+        "collectionName": { "type": "string" },
+        "coverUrl": { "type": "string" },
+        "fileUrl": { "type": "string" },
+        "priceKC": { "type": "number" },
+        "author": { "type": "string" },
+        "tags": { "type": "array" },
+        "featured": { "type": "boolean" },
+        "published": { "type": "boolean" },
+        "downloadable": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "title", "category", "priceKC", "published", "createdAt"]
+    },
+    "CustomRequest": {
+      "title": "CustomRequest",
+      "description": "Custom creation request submitted by user.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userUid": { "type": "string" },
+        "userName": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "type": { "type": "string" },
+        "description": { "type": "string" },
+        "desiredResult": { "type": "string" },
+        "sourceImageUrl": { "type": "string" },
+        "costKC": { "type": "number" },
+        "status": { "type": "string" },
+        "resultUrl": { "type": "string" },
+        "adminNotes": { "type": "string" },
+        "rating": { "type": "number" },
+        "review": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userUid", "userName", "type", "description", "costKC", "status", "createdAt"]
+    },
+    "FeedbackItem": {
+      "title": "FeedbackItem",
+      "description": "User suggestions and feedback items in the Feedback Hub.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userUid": { "type": "string" },
+        "userName": { "type": "string" },
+        "type": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "upvotesCount": { "type": "number" },
+        "upvotes": { "type": "object" },
+        "status": { "type": "string" },
+        "adminNotes": { "type": "string" },
+        "rewardAwarded": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userUid", "type", "title", "description", "upvotesCount", "status", "createdAt"]
+    },
+    "KcTransaction": {
+      "title": "KcTransaction",
+      "description": "Transparent transaction record of earned or spent Kingdom Coins.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userUid": { "type": "string" },
+        "type": { "type": "string" },
+        "amount": { "type": "number" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userUid", "type", "amount", "title", "createdAt"]
     }
   },
   "firestore": {
@@ -324,6 +404,22 @@
     "user_rewards/{rewardId}": {
       "schema": "UserReward",
       "description": "Unlocked digital store items and claimed rewards per user."
+    },
+    "products/{productId}": {
+      "schema": "Product",
+      "description": "Digital items for sale in the Kingdom Store."
+    },
+    "custom_requests/{requestId}": {
+      "schema": "CustomRequest",
+      "description": "Custom creation requests submitted by users."
+    },
+    "feedback_items/{feedbackId}": {
+      "schema": "FeedbackItem",
+      "description": "Community suggestions and feedback hub submissions."
+    },
+    "kc_transactions/{transactionId}": {
+      "schema": "KcTransaction",
+      "description": "Kingdom coin credit and debit audit records."
     }
   }
 }

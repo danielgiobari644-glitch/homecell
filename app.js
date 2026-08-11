@@ -135,13 +135,19 @@ function switchTab(tabId) {
   if (tabId === 'feed' && window.initFeedEngine) window.initFeedEngine();
   if (tabId === 'dashboard' && window.initDashboard) window.initDashboard();
   if (tabId === 'streak' && window.initStreakModule) window.initStreakModule();
-  if (tabId === 'champions' && window.initChampionsModule) window.initChampionsModule();
+  if (tabId === 'champions') {
+    if (window.initChampionsModule) window.initChampionsModule();
+    if (window.initHallOfFameModule) window.initHallOfFameModule();
+  }
   if (tabId === 'bible' && window.initBibleEngine) window.initBibleEngine();
   if (tabId === 'cells' && window.initCellsModule) window.initCellsModule();
   if (tabId === 'chat' && window.initCellsModule) window.initCellsModule();
   if (tabId === 'prayers' && window.initPrayersModule) window.initPrayersModule();
   if (tabId === 'calendar' && window.initCalendarModule) window.initCalendarModule();
-  if (tabId === 'downloads' && window.initDownloadsModule) window.initDownloadsModule();
+  if (tabId === 'downloads') {
+    if (window.initDownloadsModule) window.initDownloadsModule();
+    if (window.initKingdomStoreModule) window.initKingdomStoreModule();
+  }
   if (tabId === 'admin' && window.initAdminModule) window.initAdminModule();
 
   // Close mobile sidebar if active
@@ -521,33 +527,45 @@ function renderOnboardingSlide(slideNum) {
 }
 
 function nextOnboardingSlide() {
-  window.soundEngine?.playClick();
-  if (currentObSlide < totalObSlides) {
-    renderOnboardingSlide(currentObSlide + 1);
+  if (window.nextTutorialStep) {
+    window.nextTutorialStep();
   } else {
-    // Focus on display name on slide 7
-    const input = document.getElementById('ob-display-name');
-    if (input) input.focus();
+    window.soundEngine?.playClick();
+    if (currentObSlide < totalObSlides) {
+      renderOnboardingSlide(currentObSlide + 1);
+    }
   }
 }
 
 function prevOnboardingSlide() {
-  window.soundEngine?.playClick();
-  if (currentObSlide > 1) {
-    renderOnboardingSlide(currentObSlide - 1);
+  if (window.prevTutorialStep) {
+    window.prevTutorialStep();
+  } else {
+    window.soundEngine?.playClick();
+    if (currentObSlide > 1) {
+      renderOnboardingSlide(currentObSlide - 1);
+    }
   }
 }
 
 function skipOnboardingToSetup() {
-  window.soundEngine?.playClick();
-  renderOnboardingSlide(totalObSlides);
+  if (window.skipTutorial) {
+    window.skipTutorial();
+  } else {
+    window.soundEngine?.playClick();
+    renderOnboardingSlide(totalObSlides);
+  }
 }
 
 function openOnboardingModal() {
   const ob = document.getElementById('onboarding-modal');
   if (ob) ob.classList.remove('hidden');
 
-  renderOnboardingSlide(1);
+  if (window.renderTutorialStep) {
+    window.renderTutorialStep(1);
+  } else {
+    renderOnboardingSlide(1);
+  }
 
   // Attach touch gesture listeners for swiping
   const viewport = document.getElementById('ob-slides-viewport');

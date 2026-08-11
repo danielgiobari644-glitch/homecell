@@ -322,5 +322,36 @@ service cloud.firestore {
       allow read: if isSignedIn();
       allow create: if true;
     }
+
+    // --- Kingdom Store Products ---
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // --- Custom Creation Requests ---
+    match /custom_requests/{requestId} {
+      allow read: if isSignedIn() && (resource.data.userUid == request.auth.uid || isAdmin());
+      allow create: if isVerified() && incoming().userUid == request.auth.uid;
+      allow update: if isVerified() && (
+        (existing().userUid == request.auth.uid) || isAdmin()
+      );
+      allow delete: if isAdmin();
+    }
+
+    // --- Feedback Hub Items ---
+    match /feedback_items/{feedbackId} {
+      allow read: if true;
+      allow create: if isVerified() && incoming().userUid == request.auth.uid;
+      allow update: if isVerified();
+      allow delete: if isAdmin();
+    }
+
+    // --- Kingdom Coin Transactions ---
+    match /kc_transactions/{transactionId} {
+      allow read: if isVerified() && (resource.data.userUid == request.auth.uid || isAdmin());
+      allow create: if isVerified() && incoming().userUid == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
   }
 }

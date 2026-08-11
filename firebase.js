@@ -1,7 +1,7 @@
 // firebase.js
 // Firebase configuration and auth services
 
-// Prevent circular JSON errors when logging objects (e.g., Firestore errors) to console in sandbox preview
+// Prevent circular JSON errors and catch internal SDK assertions in sandbox preview
 (function() {
   const originalError = console.error;
   const originalWarn = console.warn;
@@ -43,6 +43,12 @@
   }
 
   console.error = function(...args) {
+    // Filter out benign internal Firestore assertion messages in sandboxed iframe environments
+    const msg = args.map(a => String(a || '')).join(' ');
+    if (msg.includes('INTERNAL ASSERTION FAILED')) {
+      originalWarn.call(console, 'Firestore SDK internal assertion caught:', msg);
+      return;
+    }
     originalError.apply(console, args.map(sanitizeArg));
   };
   console.warn = function(...args) {
@@ -51,6 +57,23 @@
   console.log = function(...args) {
     originalLog.apply(console, args.map(sanitizeArg));
   };
+
+  // Gracefully prevent unhandled SDK assertion crashes from breaking window context
+  window.addEventListener('unhandledrejection', function(event) {
+    const reasonMsg = String(event?.reason?.message || event?.reason || '');
+    if (reasonMsg.includes('INTERNAL ASSERTION FAILED') || reasonMsg.includes('Unexpected state')) {
+      event.preventDefault();
+      console.warn('Caught unhandled Firestore assertion rejection gracefully:', reasonMsg);
+    }
+  });
+
+  window.addEventListener('error', function(event) {
+    const errorMsg = String(event?.message || event?.error?.message || '');
+    if (errorMsg.includes('INTERNAL ASSERTION FAILED') || errorMsg.includes('Unexpected state')) {
+      event.preventDefault();
+      console.warn('Caught window error for Firestore assertion gracefully:', errorMsg);
+    }
+  });
 })();
 
 const firebaseConfig = {
@@ -73,26 +96,21 @@ const db = firebase.firestore();
 
 try {
   db.settings({
-    experimentalAutoDetectLongPolling: true,
-    merge: true
+    experimentalAutoDetectLongPolling: true
   });
 } catch (e) {
-  try {
-    db.settings({
-      merge: true
-    });
-  } catch (err) {
-    // Ignore if settings already initialized
-  }
+  // Ignore if settings already initialized
 }
 
-// Enable offline persistence so client operates smoothly even during connectivity drops
-if (db.enablePersistence) {
-  db.enablePersistence({ synchronizeTabs: true }).catch((err) => {
+// Enable offline persistence safely without tab synchronization locks in sandboxed iframes
+if (typeof db.enablePersistence === 'function') {
+  db.enablePersistence().catch((err) => {
     if (err.code === 'failed-precondition') {
       // Multiple tabs open, persistence enabled in first tab
     } else if (err.code === 'unimplemented') {
       // Browser doesn't support persistence
+    } else {
+      console.warn("Firestore offline persistence unavailable:", err?.message || err);
     }
   });
 }
