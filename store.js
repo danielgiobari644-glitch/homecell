@@ -464,20 +464,131 @@ async function executeProductPurchase(productId, costKC, title, fileUrl) {
 }
 
 // Download Store Product Direct
-function downloadStoreProductDirect(productId, url) {
+function downloadBase64Resource(dataUrl, fileName = 'HomeCell_Kingdom_Resource.jpg') {
+  try {
+    const parts = dataUrl.split(';base64,');
+    if (parts.length < 2) {
+      window.open(dataUrl, '_blank');
+      return;
+    }
+    const contentType = parts[0].split(':')[1] || 'image/jpeg';
+    const raw = window.atob(parts[1]);
+    const rawLength = raw.length;
+    const uInt8Array = new Uint8Array(rawLength);
+
+    for (let i = 0; i < rawLength; ++i) {
+      uInt8Array[i] = raw.charCodeAt(i);
+    }
+
+    const blob = new Blob([uInt8Array], { type: contentType });
+    const blobUrl = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    setTimeout(() => {
+      URL.revokeObjectURL(blobUrl);
+    }, 1500);
+  } catch (err) {
+    console.error("Base64 Blob download error:", err);
+    window.open(dataUrl, '_blank');
+  }
+}
+
+function downloadStoreProductDirect(productId, url, fileName = 'HomeCell_Resource') {
   window.showToast?.("📥 Starting direct resource download...", "success");
-  if (url && url.startsWith('http')) {
+  if (!url) return;
+
+  if (url.startsWith('data:')) {
+    downloadBase64Resource(url, `${fileName}_${productId}.jpg`);
+  } else if (url.startsWith('http')) {
     const link = document.createElement('a');
     link.href = url;
     link.target = "_blank";
-    link.download = `HomeCell_Resource_${productId}.jpg`;
+    link.download = `${fileName}_${productId}.jpg`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   } else {
-    window.triggerDirectFileDownload?.('pwa');
+    window.open(url, '_blank');
   }
 }
+window.downloadBase64Resource = downloadBase64Resource;
+window.downloadStoreProductDirect = downloadStoreProductDirect;
+
+// Client-side Canvas Image Compression for Firestore Storage
+async function compressImageForFirestore(file, maxWidth = 1200, maxHeight = 1200, quality = 0.8) {
+  return new Promise((resolve, reject) => {
+    if (!file || !file.type.startsWith('image/')) {
+      reject(new Error("Selected file is not an image. Please select a JPG, PNG, or WebP file."));
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth || height > maxHeight) {
+          if (width / height > maxWidth / maxHeight) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          } else {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const mimeType = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+        const dataUrl = canvas.toDataURL(mimeType, quality);
+
+        const stringLength = dataUrl.length - dataUrl.indexOf(',') - 1;
+        const sizeInBytes = 4 * Math.ceil(stringLength / 3) * 0.5624896;
+        const sizeInKB = Math.round(sizeInBytes / 1024);
+
+        if (sizeInKB > 850) {
+          reject(new Error(`Optimized image size (${sizeInKB} KB) exceeds the safe 850 KB limit for Firestore documents. Please crop or resize before uploading.`));
+        } else {
+          // Generate small thumbnail (~240px)
+          const thumbCanvas = document.createElement('canvas');
+          const thumbWidth = Math.min(width, 240);
+          const thumbHeight = Math.round((height * thumbWidth) / width);
+          thumbCanvas.width = thumbWidth;
+          thumbCanvas.height = thumbHeight;
+          const thumbCtx = thumbCanvas.getContext('2d');
+          thumbCtx.drawImage(img, 0, 0, thumbWidth, thumbHeight);
+          const previewData = thumbCanvas.toDataURL('image/jpeg', 0.6);
+
+          resolve({
+            dataUrl,
+            previewData,
+            sizeInKB,
+            width,
+            height,
+            fileName: file.name
+          });
+        }
+      };
+      img.onerror = () => reject(new Error("Failed to load image file into canvas."));
+      img.src = e.target.result;
+    };
+    reader.onerror = () => reject(new Error("Failed to read image file."));
+    reader.readAsDataURL(file);
+  });
+}
+window.compressImageForFirestore = compressImageForFirestore;
 
 // ---------------------------------------------------------------------------
 // 3. CUSTOM CREATION REQUESTS SYSTEM ✨

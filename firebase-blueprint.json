@@ -334,9 +334,36 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "userUid", "type", "amount", "title", "createdAt"]
+    },
+    "LoadingScreenSetting": {
+      "title": "LoadingScreenSetting",
+      "description": "Active custom loading screen video and animation configuration.",
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "videoUrl": { "type": "string" },
+        "videoType": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "tagline": { "type": "string" },
+        "loop": { "type": "boolean" },
+        "minDisplayDuration": { "type": "number" },
+        "maxDisplayDuration": { "type": "number" },
+        "updatedAt": { "type": "string" },
+        "updatedBy": { "type": "string" }
+      },
+      "required": ["enabled", "minDisplayDuration", "maxDisplayDuration", "updatedAt", "updatedBy"]
     }
   },
   "firestore": {
+    "appSettings/{settingId}": {
+      "schema": "LoadingScreenSetting",
+      "description": "Application settings including active loading screen configuration."
+    },
+    "loading_screen_history/{historyId}": {
+      "schema": "LoadingScreenSetting",
+      "description": "History log of custom loading screen configurations."
+    },
     "users/{userId}": {
       "schema": "User",
       "description": "User profile store."

@@ -26,6 +26,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js" crossorigin="anonymous"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js" crossorigin="anonymous"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js" crossorigin="anonymous"></script>
+    <script src="loading-screen.js"></script>
 
     <!-- Custom CSS Variables & High-Contrast Style -->
     <style type="text/css">
@@ -64,44 +65,102 @@
         animation: bounceSlow 3.5s ease-in-out infinite;
       }
 
-      /* Realistic Burning Flame Animation */
-      @keyframes flameBurn {
-        0% {
-          transform: scale(1) translateY(0) rotate(0deg);
-          filter: drop-shadow(0 0 3px #f97316) drop-shadow(0 -2px 6px #ef4444);
-          color: #f97316;
-        }
-        20% {
-          transform: scale(1.18) translateY(-2px) rotate(-4deg);
-          filter: drop-shadow(0 0 8px #f59e0b) drop-shadow(0 -4px 10px #f97316);
-          color: #fbbf24;
-        }
-        40% {
-          transform: scale(1.05) translateY(-1px) rotate(3deg);
-          filter: drop-shadow(0 0 6px #ea580c) drop-shadow(0 -3px 8px #dc2626);
-          color: #f97316;
-        }
-        60% {
-          transform: scale(1.22) translateY(-3px) rotate(-3deg);
-          filter: drop-shadow(0 0 10px #fbbf24) drop-shadow(0 -5px 12px #f97316);
-          color: #fbbf24;
-        }
-        80% {
-          transform: scale(1.1) translateY(-1px) rotate(2deg);
-          filter: drop-shadow(0 0 7px #f97316) drop-shadow(0 -3px 9px #ef4444);
-          color: #f59e0b;
-        }
-        100% {
-          transform: scale(1) translateY(0) rotate(0deg);
-          filter: drop-shadow(0 0 3px #f97316) drop-shadow(0 -2px 6px #ef4444);
-          color: #f97316;
-        }
+      /* Orbital Consistency & Kingdom Coin Keyframe Animations */
+      @keyframes orbitalRotate {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      @keyframes orbitalRotateRev {
+        0% { transform: rotate(360deg); }
+        100% { transform: rotate(0deg); }
+      }
+      @keyframes orbitalPulse {
+        0%, 100% { transform: scale(1); opacity: 0.9; filter: drop-shadow(0 0 12px rgba(59, 130, 246, 0.4)); }
+        50% { transform: scale(1.06); opacity: 1; filter: drop-shadow(0 0 24px rgba(245, 158, 11, 0.65)); }
+      }
+      @keyframes kcFloatUp {
+        0% { opacity: 0; transform: translateY(12px) scale(0.85); }
+        20% { opacity: 1; transform: translateY(0) scale(1.1); }
+        80% { opacity: 1; transform: translateY(-30px) scale(1); }
+        100% { opacity: 0; transform: translateY(-48px) scale(0.85); }
+      }
+      @keyframes atmosphericGlow {
+        0%, 100% { transform: translate(0, 0) scale(1); }
+        50% { transform: translate(40px, -25px) scale(1.12); }
       }
 
-      .animate-flame-burn {
-        animation: flameBurn 1.2s ease-in-out infinite;
-        display: inline-block;
-        transform-origin: bottom center;
+      .animate-orbital-rotate {
+        animation: orbitalRotate 12s linear infinite;
+      }
+      .animate-orbital-rotate-rev {
+        animation: orbitalRotateRev 16s linear infinite;
+      }
+      .animate-orbital-pulse {
+        animation: orbitalPulse 3.5s ease-in-out infinite;
+      }
+      .animate-kc-float {
+        animation: kcFloatUp 2.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+      .animate-atmospheric-glow {
+        animation: atmosphericGlow 20s ease-in-out infinite;
+      }
+
+      /* Layered Glassmorphism Aesthetic System */
+      .glass-primary {
+        background: rgba(18, 24, 38, 0.75);
+        backdrop-filter: blur(18px) saturate(180%);
+        -webkit-backdrop-filter: blur(18px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+      }
+
+      .glass-secondary {
+        background: rgba(28, 36, 54, 0.6);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+      }
+
+      .glass-floating {
+        background: rgba(12, 16, 26, 0.85);
+        backdrop-filter: blur(20px) saturate(200%);
+        -webkit-backdrop-filter: blur(20px) saturate(200%);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.5), 0 0 30px rgba(59, 130, 246, 0.15);
+      }
+
+      /* Light mode glass overrides for high WCAG contrast */
+      html:not(.dark) .glass-primary {
+        background: rgba(255, 255, 255, 0.88);
+        backdrop-filter: blur(18px);
+        -webkit-backdrop-filter: blur(18px);
+        border: 1px solid rgba(226, 232, 240, 0.9);
+        box-shadow: 0 20px 40px rgba(15, 23, 42, 0.06);
+      }
+
+      html:not(.dark) .glass-secondary {
+        background: rgba(248, 250, 252, 0.8);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(226, 232, 240, 0.7);
+      }
+
+      html:not(.dark) .glass-floating {
+        background: rgba(255, 255, 255, 0.94);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(203, 213, 225, 0.9);
+        box-shadow: 0 25px 50px -10px rgba(15, 23, 42, 0.12), 0 0 20px rgba(37, 99, 235, 0.08);
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .animate-orbital-rotate,
+        .animate-orbital-rotate-rev,
+        .animate-orbital-pulse,
+        .animate-atmospheric-glow,
+        .animate-kc-float {
+          animation: none !important;
+        }
       }
 
       /* Glow & Glassmorphism helpers */
@@ -341,8 +400,69 @@
       }
     </style>
   </head>
-  <body class="bg-slate-50 text-slate-900 dark:bg-zinc-950 dark:text-zinc-50 min-h-screen flex flex-col transition-colors duration-300">
+  <body class="bg-slate-50 text-slate-900 dark:bg-zinc-950 dark:text-zinc-50 min-h-screen flex flex-col transition-colors duration-300 relative">
     
+    <!-- Atmospheric Animated Ambient Background Layer -->
+    <div id="atmospheric-bg" class="fixed inset-0 pointer-events-none z-[-1] overflow-hidden">
+      <div class="absolute -top-40 -left-40 w-[500px] h-[500px] bg-blue-600/10 dark:bg-blue-600/15 rounded-full blur-[120px] animate-atmospheric-glow"></div>
+      <div class="absolute top-1/3 -right-40 w-[600px] h-[600px] bg-indigo-600/10 dark:bg-indigo-600/15 rounded-full blur-[140px] animate-atmospheric-glow" style="animation-delay: -6s;"></div>
+      <div class="absolute -bottom-40 left-1/4 w-[550px] h-[550px] bg-amber-500/10 dark:bg-amber-500/10 rounded-full blur-[130px] animate-atmospheric-glow" style="animation-delay: -12s;"></div>
+    </div>
+    
+    <!-- Production Cinematic Home.cell Loading Screen Overlay -->
+    <div id="app-loading-screen" class="fixed inset-0 z-[99999] bg-slate-950 text-white flex flex-col items-center justify-center overflow-hidden transition-all duration-700 pointer-events-auto">
+      
+      <!-- Custom Video Player Element (Controlled by Super Admin) -->
+      <video id="loading-video-element" class="absolute inset-0 w-full h-full object-cover hidden opacity-0 transition-opacity duration-700" autoplay muted playsinline loop preload="auto"></video>
+      
+      <!-- Fallback Cinematic Canvas: Earth Horizon & Connected Cell Network -->
+      <canvas id="loading-cell-canvas" class="absolute inset-0 w-full h-full opacity-70 pointer-events-none"></canvas>
+
+      <!-- Ambient Glow Atmosphere Overlay -->
+      <div class="absolute inset-0 bg-gradient-to-b from-slate-950/40 via-transparent to-slate-950 pointer-events-none"></div>
+
+      <!-- Center Cinematic Card -->
+      <div id="loading-content-card" class="relative z-10 flex flex-col items-center text-center p-6 sm:p-10 max-w-lg w-full mx-auto">
+        
+        <!-- Logo Badge with Glowing Aura -->
+        <div class="relative mb-5 group">
+          <div class="absolute -inset-1 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-3xl blur-xl opacity-80 animate-pulse"></div>
+          <img src="favicon.jpg" alt="Home.cell Logo" class="relative w-20 h-20 sm:w-24 sm:h-24 rounded-3xl object-cover border-2 border-white/20 shadow-2xl shadow-blue-500/50" />
+        </div>
+
+        <!-- App Name -->
+        <h1 class="text-3xl sm:text-4xl font-black font-display tracking-tight text-white drop-shadow-md mb-1">
+          Home.cell
+        </h1>
+        
+        <p class="text-[11px] font-black uppercase tracking-widest text-blue-400 mb-6 flex items-center gap-2 justify-center">
+          <span class="w-2 h-2 rounded-full bg-blue-500 animate-ping"></span>
+          Home Fellowship Sanctuary
+        </p>
+
+        <!-- Dynamic Tagline -->
+        <p id="loading-screen-tagline" class="text-xs sm:text-sm text-slate-300 font-medium max-w-sm text-center leading-relaxed mb-6 min-h-[40px] flex items-center justify-center px-4">
+          Connecting fellowship cell network...
+        </p>
+
+        <!-- Progress Indicator -->
+        <div class="w-56 sm:w-64 space-y-2">
+          <div class="w-full h-2 bg-slate-900/90 rounded-full overflow-hidden border border-slate-800 shadow-inner p-0.5">
+            <div id="loading-progress-bar" class="h-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 rounded-full transition-all duration-300 shadow-md shadow-blue-500/50" style="width: 15%;"></div>
+          </div>
+          <p id="loading-status-text" class="text-[11px] font-mono font-semibold text-slate-400 text-center tracking-wide">
+            Initializing Home.cell core...
+          </p>
+        </div>
+
+        <!-- Optional Skip Button for Long Waiting Times -->
+        <button id="loading-skip-btn" onclick="window.dismissLoadingScreen(true)" class="mt-8 px-5 py-2 bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/80 text-xs font-bold rounded-xl transition-all opacity-0 pointer-events-none cursor-pointer flex items-center gap-2 shadow-lg backdrop-blur-md">
+          Enter Sanctuary <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+    </div>
+
     <!-- Dynamic Stream Broadcast Notification Banner -->
     <div id="live-broadcast-banner" class="hidden w-full bg-rose-600 text-white font-semibold py-3 px-4 flex items-center justify-between shadow-md animate-pulse">
       <div class="flex items-center gap-2 max-w-[80%]">
@@ -855,7 +975,7 @@
           </button>
 
           <button onclick="switchTab('prayers')" id="nav-prayers" class="nav-item-prayers w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800/60 transition-all cursor-pointer">
-            <i data-lucide="flame" class="w-4.5 h-4.5"></i>
+            <i data-lucide="heart-handshake" class="w-4.5 h-4.5"></i>
             <span>Prayer Desk</span>
           </button>
 
@@ -975,7 +1095,7 @@
           </button>
 
           <button onclick="switchTab('prayers')" class="nav-item-prayers w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl text-xs font-bold text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800/60 transition-all cursor-pointer">
-            <i data-lucide="flame" class="w-4.5 h-4.5"></i>
+            <i data-lucide="heart-handshake" class="w-4.5 h-4.5"></i>
             <span>Prayer Desk</span>
           </button>
 
@@ -1719,44 +1839,74 @@
         <!-- Tab: My Streak -->
         <section id="tab-streak" class="app-tab hidden space-y-6 animate-fade-in">
           
-          <!-- Modern Dark Glassmorphism Header & Daily Check-In Banner -->
-          <div class="bg-gradient-to-br from-zinc-900 via-zinc-950 to-black border border-zinc-800 rounded-[2.5rem] p-6 sm:p-10 shadow-2xl relative overflow-hidden text-white space-y-8">
+          <!-- Concentric Orbital Ring Progress & Daily Check-In Banner -->
+          <div class="glass-primary rounded-[2.5rem] p-6 sm:p-10 shadow-2xl relative overflow-hidden text-white space-y-8">
             <!-- Background Glow FX -->
-            <div class="absolute -right-20 -top-20 w-72 h-72 bg-orange-500/20 rounded-full blur-3xl pointer-events-none"></div>
-            <div class="absolute -left-20 -bottom-20 w-72 h-72 bg-blue-500/15 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="absolute -right-20 -top-20 w-80 h-80 bg-blue-600/20 rounded-full blur-3xl pointer-events-none animate-atmospheric-glow"></div>
+            <div class="absolute -left-20 -bottom-20 w-80 h-80 bg-amber-500/15 rounded-full blur-3xl pointer-events-none animate-atmospheric-glow" style="animation-delay: -5s;"></div>
 
-            <!-- Header Title & Main Streak Counter -->
-            <div class="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
-              <div class="text-center md:text-left space-y-2">
-                <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30 text-xs font-black uppercase tracking-wider">
-                  🔥 My Streak
-                </div>
-                <div class="flex items-baseline justify-center md:justify-start gap-3">
-                  <span id="streak-header-count" class="text-6xl sm:text-7xl font-black font-display tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500 drop-shadow-md">0</span>
-                  <div class="text-left">
-                    <span class="text-xl sm:text-2xl font-black font-display text-white block">Days in a Row</span>
-                    <span class="text-xs text-slate-400 font-medium">Keep going! Don't break the chain.</span>
+            <!-- Header Title & Concentric Orbital Ring Visualizer -->
+            <div class="flex flex-col md:flex-row items-center justify-between gap-8 relative z-10">
+              
+              <!-- Orbital Ring Graphic & Counter -->
+              <div class="flex items-center gap-6 text-center md:text-left">
+                <!-- Concentric Orbital Rings Graphic -->
+                <div class="relative w-28 h-28 sm:w-36 sm:h-36 flex items-center justify-center shrink-0">
+                  <!-- Ambient Glowing Core -->
+                  <div class="absolute inset-2 bg-gradient-to-tr from-blue-600 via-indigo-600 to-amber-500 rounded-full blur-lg opacity-60 animate-orbital-pulse"></div>
+                  
+                  <!-- Outer Rotating Dash Ring -->
+                  <svg class="absolute inset-0 w-full h-full animate-orbital-rotate text-blue-500/60" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" stroke-width="2.5" stroke-dasharray="6, 8" />
+                  </svg>
+
+                  <!-- Counter-Rotating Inner Dotted Ring -->
+                  <svg class="absolute inset-2 w-[calc(100%-16px)] h-[calc(100%-16px)] animate-orbital-rotate-rev text-amber-400/80" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="44" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="3, 10" />
+                  </svg>
+
+                  <!-- Solid Active Progress Ring -->
+                  <svg class="absolute inset-0 w-full h-full -rotate-90 text-blue-400 drop-shadow-[0_0_10px_rgba(59,130,246,0.6)]" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" stroke-width="4" stroke-dasharray="264" stroke-dashoffset="40" stroke-linecap="round" />
+                  </svg>
+
+                  <!-- Center Value Display -->
+                  <div class="relative z-10 flex flex-col items-center justify-center text-center">
+                    <span id="streak-header-count" class="text-3xl sm:text-4xl font-black font-display tracking-tight text-white drop-shadow">0</span>
+                    <span class="text-[9px] font-black uppercase tracking-widest text-blue-200">DAYS</span>
                   </div>
+                </div>
+
+                <div class="space-y-1">
+                  <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 text-xs font-black uppercase tracking-wider">
+                    <i data-lucide="orbit" class="w-3.5 h-3.5 text-blue-400"></i> Spiritual Consistency Orbit
+                  </div>
+                  <h2 class="text-2xl sm:text-3xl font-black font-display text-white">Daily Devotional Chain</h2>
+                  <p class="text-xs text-slate-300 font-medium">Keep your orbital momentum going. Daily devotion builds lasting fellowship strength.</p>
                 </div>
               </div>
 
               <!-- Today Check-in Action Button & Status -->
               <div class="flex flex-col items-center md:items-end gap-3 w-full md:w-auto relative z-10">
-                <div id="streak-today-status" class="px-3 py-1 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 text-xs font-bold inline-flex items-center gap-1.5">
-                  <span>⏳</span> Pending Today's Devotion
+                <div id="streak-today-status" class="px-3.5 py-1.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold inline-flex items-center gap-2">
+                  <i data-lucide="clock" class="w-3.5 h-3.5"></i>
+                  <span>Pending Today's Devotion</span>
                 </div>
-                <button id="btn-complete-streak-today" onclick="completeStreakDevotional()" class="w-full sm:w-auto px-6 py-3.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-black text-xs uppercase tracking-wider rounded-2xl cursor-pointer shadow-lg shadow-orange-500/30 transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2">
-                  <span>🔥 Complete Today's Devotional</span>
+                <button id="btn-complete-streak-today" onclick="completeStreakDevotional()" class="w-full sm:w-auto px-6 py-3.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-black text-xs uppercase tracking-wider rounded-2xl cursor-pointer shadow-lg shadow-blue-500/30 transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2.5">
+                  <i data-lucide="sparkles" class="w-4 h-4 text-amber-300"></i>
+                  <span>Complete Today's Devotional</span>
                   <i data-lucide="arrow-right" class="w-4 h-4"></i>
                 </button>
               </div>
             </div>
 
             <!-- Weekly Check-in Tracker (Mon - Sun) -->
-            <div class="pt-6 border-t border-zinc-800 relative z-10 space-y-3">
+            <div class="pt-6 border-t border-white/10 relative z-10 space-y-3">
               <div class="flex items-center justify-between">
-                <h3 class="text-xs font-black uppercase tracking-widest text-slate-400">Weekly Devotion Check-in Tracker</h3>
-                <span class="text-[10px] text-zinc-500">Auto-checkins on devotion completion</span>
+                <h3 class="text-xs font-black uppercase tracking-widest text-slate-300 flex items-center gap-2">
+                  <i data-lucide="calendar-check-2" class="w-4 h-4 text-blue-400"></i> Weekly Devotion Orbit Tracker
+                </h3>
+                <span class="text-[10px] text-slate-400">Auto-checks in when you finish devotions</span>
               </div>
               <div id="weekly-checkin-tracker" class="grid grid-cols-7 gap-1.5 sm:gap-3 text-center pt-2">
                 <!-- Dynamically rendered Mon-Sun circles -->
@@ -1767,40 +1917,40 @@
           <!-- Statistics Cards Grid -->
           <div class="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
             <!-- Current Streak Card -->
-            <div class="p-5 bg-zinc-900/80 backdrop-blur border border-zinc-800 rounded-3xl space-y-1 shadow-sm relative overflow-hidden">
+            <div class="glass-secondary p-5 rounded-3xl space-y-1 shadow-sm relative overflow-hidden">
               <div class="flex items-center justify-between text-slate-400 text-xs font-bold uppercase tracking-wider">
-                <span>Current Streak</span>
-                <span class="text-lg">🔥</span>
+                <span>Active Orbit</span>
+                <i data-lucide="orbit" class="w-4 h-4 text-blue-400"></i>
               </div>
               <div id="stat-streak-current" class="text-3xl font-black font-display text-white">0</div>
-              <p class="text-[10px] text-orange-400 font-semibold">Active Consecutive Days</p>
+              <p class="text-[10px] text-blue-400 font-semibold">Active Consecutive Days</p>
             </div>
 
             <!-- Longest Streak Card -->
-            <div class="p-5 bg-zinc-900/80 backdrop-blur border border-zinc-800 rounded-3xl space-y-1 shadow-sm relative overflow-hidden">
+            <div class="glass-secondary p-5 rounded-3xl space-y-1 shadow-sm relative overflow-hidden">
               <div class="flex items-center justify-between text-slate-400 text-xs font-bold uppercase tracking-wider">
-                <span>Longest Streak</span>
-                <span class="text-lg">🏆</span>
+                <span>Record Orbit</span>
+                <i data-lucide="trophy" class="w-4 h-4 text-amber-400"></i>
               </div>
               <div id="stat-streak-longest" class="text-3xl font-black font-display text-amber-400">0</div>
               <p class="text-[10px] text-slate-400">All-Time High Record</p>
             </div>
 
             <!-- Total Devotions Card -->
-            <div class="p-5 bg-zinc-900/80 backdrop-blur border border-zinc-800 rounded-3xl space-y-1 shadow-sm relative overflow-hidden">
+            <div class="glass-secondary p-5 rounded-3xl space-y-1 shadow-sm relative overflow-hidden">
               <div class="flex items-center justify-between text-slate-400 text-xs font-bold uppercase tracking-wider">
                 <span>Total Devotions</span>
-                <span class="text-lg">📚</span>
+                <i data-lucide="book-open" class="w-4 h-4 text-indigo-400"></i>
               </div>
-              <div id="stat-streak-total" class="text-3xl font-black font-display text-blue-400">0</div>
+              <div id="stat-streak-total" class="text-3xl font-black font-display text-indigo-400">0</div>
               <p class="text-[10px] text-slate-400">Scriptures Completed</p>
             </div>
 
             <!-- Active Days Card -->
-            <div class="p-5 bg-zinc-900/80 backdrop-blur border border-zinc-800 rounded-3xl space-y-1 shadow-sm relative overflow-hidden">
+            <div class="glass-secondary p-5 rounded-3xl space-y-1 shadow-sm relative overflow-hidden">
               <div class="flex items-center justify-between text-slate-400 text-xs font-bold uppercase tracking-wider">
                 <span>Days Active</span>
-                <span class="text-lg">📅</span>
+                <i data-lucide="calendar" class="w-4 h-4 text-emerald-400"></i>
               </div>
               <div id="stat-streak-active-days" class="text-3xl font-black font-display text-emerald-400">0</div>
               <p class="text-[10px] text-slate-400">Unique Check-in Days</p>
@@ -4010,6 +4160,7 @@
             <button onclick="setAdminSubTab('store')" id="btn-atab-store" class="px-4 py-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:text-zinc-400 dark:hover:bg-zinc-800">🏪 Kingdom Store</button>
             <button onclick="setAdminSubTab('custom-requests')" id="btn-atab-custom-requests" class="px-4 py-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:text-zinc-400 dark:hover:bg-zinc-800">✨ Custom Requests</button>
             <button onclick="setAdminSubTab('feedback-hub')" id="btn-atab-feedback-hub" class="px-4 py-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:text-zinc-400 dark:hover:bg-zinc-800">💡 Feedback Hub</button>
+            <button onclick="setAdminSubTab('loading-screen')" id="btn-atab-loading-screen" class="px-4 py-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:text-zinc-400 dark:hover:bg-zinc-800">🎬 Loading Screen</button>
             <button onclick="setAdminSubTab('cells')" id="btn-atab-cells" class="px-4 py-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:text-zinc-400 dark:hover:bg-zinc-800">Cells Oversight</button>
             <button onclick="setAdminSubTab('events')" id="btn-atab-events" class="px-4 py-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:text-zinc-400 dark:hover:bg-zinc-800">Upcoming Events</button>
             <button onclick="setAdminSubTab('devotionals')" id="btn-atab-devotionals" class="px-4 py-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:text-zinc-400 dark:hover:bg-zinc-800">Daily Devotional</button>
@@ -4017,6 +4168,200 @@
             <button onclick="setAdminSubTab('bundles')" id="btn-atab-bundles" class="px-4 py-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:text-zinc-400 dark:hover:bg-zinc-800">Custom Downloads</button>
             <button onclick="setAdminSubTab('configs')" id="btn-atab-configs" class="px-4 py-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:text-zinc-400 dark:hover:bg-zinc-800">Desk Setup</button>
             <button onclick="setAdminSubTab('stream')" id="btn-atab-stream" class="px-4 py-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:text-zinc-400 dark:hover:bg-zinc-800">YouTube Stream</button>
+          </div>
+
+          <!-- Admin Sub Tab: Loading Screen Management -->
+          <div id="atab-loading-screen" class="admin-sub-tab hidden space-y-8">
+            
+            <div class="p-6 sm:p-8 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-950 text-white rounded-3xl border border-indigo-500/30 shadow-xl space-y-6">
+              
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-6">
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span id="admin-ls-status-badge" class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
+                      ACTIVE
+                    </span>
+                    <span class="text-xs text-slate-400 font-mono">appSettings/loadingScreen</span>
+                  </div>
+                  <h3 class="text-2xl font-black font-display tracking-tight text-white mt-2">
+                    Cinematic Loading Screen Console
+                  </h3>
+                  <p class="text-xs sm:text-sm text-slate-300 mt-1 max-w-xl">
+                    Configure the custom video experience or built-in Earth Horizon animation displayed when users launch Home.cell. Restricted to Super Admin.
+                  </p>
+                </div>
+
+                <div class="flex flex-wrap gap-2.5 shrink-0">
+                  <button onclick="window.testLoadingScreenPreview()" class="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs rounded-xl transition-all shadow-md cursor-pointer flex items-center gap-1.5">
+                    <i data-lucide="play-circle" class="w-4 h-4"></i> Test Fullscreen Preview
+                  </button>
+                  <button id="admin-ls-toggle-btn" onclick="toggleLoadingScreenActive()" class="px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs rounded-xl transition-all shadow-md cursor-pointer flex items-center gap-1.5">
+                    <i data-lucide="power" class="w-4 h-4"></i> Disable Video
+                  </button>
+                  <button onclick="restoreDefaultLoadingScreen()" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-extrabold text-xs rounded-xl transition-all cursor-pointer flex items-center gap-1.5">
+                    <i data-lucide="rotate-ccw" class="w-4 h-4"></i> Restore Default
+                  </button>
+                </div>
+              </div>
+
+              <!-- Live Active Configuration Overview Card -->
+              <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+                
+                <!-- Video / Animation Live Preview Frame -->
+                <div class="lg:col-span-5 relative bg-slate-950 rounded-2xl overflow-hidden border border-slate-800 aspect-video shadow-inner flex items-center justify-center group">
+                  <video id="admin-ls-active-video-preview" class="w-full h-full object-cover hidden" autoplay muted playsinline loop></video>
+                  <div id="admin-ls-fallback-preview-box" class="w-full h-full flex flex-col items-center justify-center p-4 text-center bg-gradient-to-br from-blue-950 to-slate-950">
+                    <div class="w-12 h-12 rounded-2xl bg-blue-600/30 border border-blue-400/40 flex items-center justify-center text-2xl mb-2 animate-bounce-slow">
+                      🌍
+                    </div>
+                    <p class="text-xs font-bold text-blue-300">Built-in Home.cell Cinematic</p>
+                    <p class="text-[10px] text-slate-400">Earth Horizon & Connected Cells Canvas</p>
+                  </div>
+                  <div class="absolute bottom-3 left-3 bg-slate-950/80 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-mono text-slate-300 border border-slate-700">
+                    Live Status: <span id="admin-ls-preview-status" class="text-emerald-400 font-bold">Default Animation</span>
+                  </div>
+                </div>
+
+                <!-- Active Configuration Metadata Details -->
+                <div class="lg:col-span-7 space-y-3 text-xs">
+                  <div class="p-4 bg-slate-950/60 rounded-2xl border border-slate-800/80 space-y-2">
+                    <div class="flex justify-between items-center text-slate-400">
+                      <span>Video Title:</span>
+                      <span id="admin-ls-meta-title" class="font-bold text-white">Built-in Home.cell Horizon</span>
+                    </div>
+                    <div class="flex justify-between items-center text-slate-400">
+                      <span>Custom Tagline:</span>
+                      <span id="admin-ls-meta-tagline" class="font-bold text-blue-300 italic">"Connecting fellowship cell network..."</span>
+                    </div>
+                    <div class="flex justify-between items-center text-slate-400">
+                      <span>Looping Enabled:</span>
+                      <span id="admin-ls-meta-loop" class="font-mono text-emerald-400 font-bold">Yes (true)</span>
+                    </div>
+                    <div class="flex justify-between items-center text-slate-400">
+                      <span>Display Durations:</span>
+                      <span id="admin-ls-meta-durations" class="font-mono text-amber-400 font-bold">Min 2.2s • Max 5.5s</span>
+                    </div>
+                    <div class="flex justify-between items-center text-slate-400">
+                      <span>Last Updated:</span>
+                      <span id="admin-ls-meta-updated" class="font-mono text-slate-300">System Default</span>
+                    </div>
+                    <div class="flex justify-between items-center text-slate-400">
+                      <span>Updated By:</span>
+                      <span id="admin-ls-meta-author" class="font-mono text-purple-400 font-bold">danielgiobari644@gmail.com</span>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+            </div>
+
+            <!-- Upload & Video Configuration Form -->
+            <div class="p-6 sm:p-8 bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-3xl space-y-6 shadow-sm">
+              
+              <div>
+                <h4 class="text-xl font-black font-display text-slate-900 dark:text-zinc-50 flex items-center gap-2">
+                  <i data-lucide="upload-cloud" class="w-6 h-6 text-purple-600"></i> Upload or Replace Loading Video
+                </h4>
+                <p class="text-xs text-slate-500 dark:text-zinc-400 mt-1">
+                  Upload an MP4 or WebM video file from your computer, or specify a direct MP4/WebM video URL.
+                </p>
+              </div>
+
+              <form id="admin-ls-upload-form" onsubmit="handleAdminLoadingScreenSubmit(event)" class="space-y-5">
+                
+                <!-- Video File Upload vs URL Choice -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  
+                  <!-- Option 1: File Upload -->
+                  <div class="p-5 bg-slate-50 dark:bg-zinc-900 border-2 border-dashed border-slate-300 dark:border-zinc-700 rounded-2xl space-y-3 text-center">
+                    <div class="w-12 h-12 rounded-2xl bg-purple-100 text-purple-600 dark:bg-purple-950/50 dark:text-purple-300 flex items-center justify-center mx-auto text-xl">
+                      🎬
+                    </div>
+                    <div>
+                      <label class="block text-xs font-black text-slate-800 dark:text-zinc-200 cursor-pointer hover:text-purple-600 transition-colors">
+                        Choose Local Video File (.mp4, .webm)
+                        <input type="file" id="admin-ls-file-input" accept="video/mp4,video/webm" onchange="handleAdminVideoFileSelect(event)" class="hidden" />
+                      </label>
+                      <p class="text-[11px] text-slate-400 mt-1">High bitrate cinematic videos supported</p>
+                    </div>
+                    <div id="admin-ls-file-info" class="hidden text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 p-2 rounded-xl border border-emerald-200 dark:border-emerald-800"></div>
+                  </div>
+
+                  <!-- Option 2: Direct Video URL -->
+                  <div class="p-5 bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl space-y-3">
+                    <label class="block text-xs font-bold text-slate-700 dark:text-zinc-300">
+                      Or Direct Video URL (MP4 / WebM)
+                    </label>
+                    <input type="url" id="admin-ls-url-input" placeholder="https://cdn.example.com/cinematic_intro.mp4" oninput="handleAdminVideoUrlInput(event)" class="w-full px-3.5 py-2.5 bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-700 rounded-xl text-xs font-mono" />
+                    <p class="text-[11px] text-slate-400">Direct CDN or server hosted video link</p>
+                  </div>
+
+                </div>
+
+                <!-- Video Title & Custom Tagline -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div class="space-y-1">
+                    <label class="text-xs font-bold text-slate-700 dark:text-zinc-300">Video Title / Name</label>
+                    <input type="text" id="admin-ls-title-input" required placeholder="e.g. Earth Horizon Cell Connect" class="w-full px-3.5 py-2.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-xl text-xs font-semibold" />
+                  </div>
+                  <div class="space-y-1">
+                    <label class="text-xs font-bold text-slate-700 dark:text-zinc-300">Custom Tagline Displayed to Users</label>
+                    <input type="text" id="admin-ls-tagline-input" placeholder="e.g. Many cells. One connection. One Home.cell." class="w-full px-3.5 py-2.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-xl text-xs font-semibold" />
+                  </div>
+                </div>
+
+                <!-- Display Duration Controls -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div class="space-y-1">
+                    <label class="text-xs font-bold text-slate-700 dark:text-zinc-300">Min Display Duration (ms)</label>
+                    <input type="number" id="admin-ls-min-duration" value="2200" min="1000" max="10000" step="100" class="w-full px-3.5 py-2.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-xl text-xs font-mono font-bold" />
+                  </div>
+                  <div class="space-y-1">
+                    <label class="text-xs font-bold text-slate-700 dark:text-zinc-300">Max Timeout Duration (ms)</label>
+                    <input type="number" id="admin-ls-max-duration" value="5500" min="2000" max="15000" step="500" class="w-full px-3.5 py-2.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-xl text-xs font-mono font-bold" />
+                  </div>
+                  <div class="space-y-1 flex flex-col justify-end">
+                    <label class="flex items-center gap-2 p-2.5 bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl cursor-pointer">
+                      <input type="checkbox" id="admin-ls-loop-checkbox" checked class="w-4 h-4 rounded text-purple-600 focus:ring-purple-500" />
+                      <span class="text-xs font-bold text-slate-700 dark:text-zinc-300">Loop Video Playback</span>
+                    </label>
+                  </div>
+                </div>
+
+                <!-- Live Upload Progress Bar -->
+                <div id="admin-ls-upload-progress-container" class="hidden space-y-2">
+                  <div class="flex justify-between text-xs font-bold text-slate-700 dark:text-zinc-300">
+                    <span id="admin-ls-upload-status-text">Uploading video to server...</span>
+                    <span id="admin-ls-upload-pct-text">0%</span>
+                  </div>
+                  <div class="w-full h-2 bg-slate-200 dark:bg-zinc-800 rounded-full overflow-hidden">
+                    <div id="admin-ls-upload-progress-bar" class="h-full bg-purple-600 rounded-full transition-all duration-200" style="width: 0%;"></div>
+                  </div>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" id="admin-ls-submit-btn" class="w-full py-3.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-purple-500/20 transition-all cursor-pointer flex items-center justify-center gap-2">
+                  <i data-lucide="check-circle" class="w-4 h-4"></i> Save & Activate Custom Video Loading Screen
+                </button>
+
+              </form>
+
+            </div>
+
+            <!-- Video Configuration History List -->
+            <div class="space-y-4">
+              <h4 class="text-base font-bold font-display text-slate-900 dark:text-zinc-100 flex items-center gap-2">
+                <i data-lucide="history" class="w-5 h-5 text-purple-500"></i> Loading Screen History & Archive
+              </h4>
+              <div id="admin-ls-history-rows" class="space-y-3">
+                <!-- Loaded dynamically -->
+                <div class="p-6 text-center text-slate-400 text-xs font-bold bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl">
+                  Loading configuration history...
+                </div>
+              </div>
+            </div>
+
           </div>
 
           <!-- Admin Sub Tab: Kingdom Store Manager -->
@@ -4048,13 +4393,33 @@
                 </div>
               </div>
 
+              <!-- File Picker Upload Option (Firestore Base64 Storage) -->
+              <div class="p-4 bg-amber-500/10 border-2 border-dashed border-amber-500/30 rounded-2xl space-y-3">
+                <div class="flex items-center justify-between">
+                  <label class="block text-xs font-black text-amber-400 cursor-pointer hover:underline flex items-center gap-2">
+                    <i data-lucide="upload-cloud" class="w-4 h-4"></i>
+                    Upload Local Image File (Auto-Optimized for Firestore Document Storage)
+                    <input type="file" id="admin-prod-file-input" accept="image/*" onchange="handleAdminProductFileSelected(event)" class="hidden" />
+                  </label>
+                  <span class="text-[10px] font-bold text-slate-400">Max 850KB Compressed Base64</span>
+                </div>
+                
+                <div id="admin-prod-file-info" class="hidden flex items-center gap-3 p-3 bg-slate-900/80 rounded-xl border border-slate-800">
+                  <img id="admin-prod-file-preview-img" class="w-12 h-12 object-cover rounded-lg border border-amber-500/40" />
+                  <div>
+                    <span class="text-xs font-black text-amber-300 block">Image Optimized Successfully</span>
+                    <span id="admin-prod-file-size-text" class="text-[10px] font-mono text-slate-400"></span>
+                  </div>
+                </div>
+              </div>
+
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div class="space-y-1">
-                  <label class="text-xs font-bold text-slate-700 dark:text-zinc-300">Cover Image URL</label>
+                  <label class="text-xs font-bold text-slate-700 dark:text-zinc-300">Cover Image URL (Optional if file uploaded)</label>
                   <input type="url" id="admin-prod-cover-url" placeholder="https://images.unsplash.com/photo-..." class="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-xl text-xs text-slate-900 dark:text-zinc-100" />
                 </div>
                 <div class="space-y-1">
-                  <label class="text-xs font-bold text-slate-700 dark:text-zinc-300">Downloadable File / Image URL</label>
+                  <label class="text-xs font-bold text-slate-700 dark:text-zinc-300">Downloadable File / Image URL (Optional if file uploaded)</label>
                   <input type="url" id="admin-prod-file-url" placeholder="https://images.unsplash.com/photo-..." class="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-xl text-xs text-slate-900 dark:text-zinc-100" />
                 </div>
               </div>

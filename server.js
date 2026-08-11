@@ -21,7 +21,8 @@ function logMsg(msg) {
 const app = express();
 const PORT = 3000;
 
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Request logger
 app.use((req, res, next) => {
@@ -149,6 +150,47 @@ app.post('/api/broadcast-push', async (req, res) => {
   } catch (e) {
     logMsg(`Error in broadcast-push: ${e.message}`);
     res.status(500).json({ error: e.message });
+  }
+});
+
+// Video Upload Endpoint for Super Admin Loading Screen Videos
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+app.post('/api/upload-video', (req, res) => {
+  try {
+    const { videoData, fileName } = req.body;
+    if (!videoData) {
+      return res.status(400).json({ error: 'No video data provided' });
+    }
+
+    let base64Data = videoData;
+    let mimeType = 'video/mp4';
+    if (videoData.includes(';base64,')) {
+      const parts = videoData.split(';base64,');
+      mimeType = parts[0].replace('data:', '');
+      base64Data = parts[1];
+    }
+
+    const ext = mimeType.includes('webm') ? 'webm' : 'mp4';
+    const safeName = `loading_video_${Date.now()}.${ext}`;
+    const filePath = path.join(uploadsDir, safeName);
+
+    const buffer = Buffer.from(base64Data, 'base64');
+    fs.writeFileSync(filePath, buffer);
+
+    logMsg(`Saved custom video to ${filePath} (${buffer.length} bytes)`);
+    res.json({
+      success: true,
+      videoUrl: `/uploads/${safeName}`,
+      size: buffer.length,
+      mimeType: mimeType
+    });
+  } catch (err) {
+    logMsg(`Error saving video: ${err.message}`);
+    res.status(500).json({ error: err.message });
   }
 });
 

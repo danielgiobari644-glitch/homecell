@@ -160,14 +160,15 @@ function syncUserStreakData(uid) {
     const actionBtn = document.getElementById('btn-complete-streak-today');
     if (actionBtn) {
       if (isCheckedInToday) {
-        actionBtn.innerHTML = `<span>✨ Today's Devotion Completed</span> <i data-lucide="check" class="w-4 h-4"></i>`;
-        actionBtn.className = "w-full sm:w-auto px-6 py-3 bg-zinc-800 text-zinc-400 font-bold text-xs rounded-2xl cursor-not-allowed border border-zinc-700/60 shadow-inner flex items-center justify-center gap-2";
+        actionBtn.innerHTML = `<i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i><span>Today's Devotion Completed</span>`;
+        actionBtn.className = "w-full sm:w-auto px-6 py-3.5 bg-slate-800/80 text-slate-400 font-bold text-xs rounded-2xl cursor-not-allowed border border-slate-700/60 shadow-inner flex items-center justify-center gap-2";
         actionBtn.disabled = true;
       } else {
-        actionBtn.innerHTML = `<span>✨ Complete Today's Devotional</span> <i data-lucide="arrow-right" class="w-4 h-4"></i>`;
-        actionBtn.className = "w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-black text-xs uppercase tracking-wider rounded-2xl cursor-pointer shadow-lg shadow-orange-500/30 transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2";
+        actionBtn.innerHTML = `<i data-lucide="sparkles" class="w-4 h-4 text-amber-300"></i><span>Complete Today's Devotional</span> <i data-lucide="arrow-right" class="w-4 h-4"></i>`;
+        actionBtn.className = "w-full sm:w-auto px-6 py-3.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-black text-xs uppercase tracking-wider rounded-2xl cursor-pointer shadow-lg shadow-blue-500/30 transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2.5";
         actionBtn.disabled = false;
       }
+      if (window.lucide) window.lucide.createIcons();
     }
 
     // Render Weekly Check-in Circles

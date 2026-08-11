@@ -53,6 +53,7 @@ function initAdminModule() {
   syncAdminStoreProducts();
   syncAdminCustomRequests();
   syncAdminFeedbackHub();
+  syncAdminLoadingScreen();
   loadGlobalDeskSettings();
 }
 
@@ -857,7 +858,7 @@ function resetStreamForm() {
 
 // Admin Panel Sub Tab switches
 function setAdminSubTab(subTabId) {
-  const subTabs = ['users', 'store', 'custom-requests', 'feedback-hub', 'cells', 'events', 'devotionals', 'trivia', 'bundles', 'configs', 'stream'];
+  const subTabs = ['users', 'store', 'custom-requests', 'feedback-hub', 'loading-screen', 'cells', 'events', 'devotionals', 'trivia', 'bundles', 'configs', 'stream'];
   subTabs.forEach(tab => {
     const pane = document.getElementById(`atab-${tab}`);
     const btn = document.getElementById(`btn-atab-${tab}`);
@@ -2189,6 +2190,51 @@ function syncAdminStoreProducts() {
   }, err => console.warn("Admin products snapshot error:", err));
 }
 
+let currentAdminSelectedFileObj = null;
+
+async function handleAdminProductFileSelected(e) {
+  const file = e.target.files?.[0];
+  const infoContainer = document.getElementById('admin-prod-file-info');
+  const previewImg = document.getElementById('admin-prod-file-preview-img');
+  const sizeText = document.getElementById('admin-prod-file-size-text');
+
+  if (!file) {
+    currentAdminSelectedFileObj = null;
+    if (infoContainer) infoContainer.classList.add('hidden');
+    return;
+  }
+
+  window.showToast?.("Optimizing image for Firestore document storage...", "info");
+
+  try {
+    const res = await window.compressImageForFirestore(file, 1200, 1200, 0.8);
+    currentAdminSelectedFileObj = res;
+
+    if (infoContainer) infoContainer.classList.remove('hidden');
+    if (previewImg) previewImg.src = res.previewData;
+    if (sizeText) {
+      sizeText.innerText = `Dimensions: ${res.width}x${res.height}px | Firestore Base64 Size: ${res.sizeInKB} KB (Safe < 850 KB)`;
+    }
+
+    const coverUrlInput = document.getElementById('admin-prod-cover-url');
+    if (coverUrlInput && !coverUrlInput.value) {
+      coverUrlInput.value = res.previewData;
+    }
+    const fileUrlInput = document.getElementById('admin-prod-file-url');
+    if (fileUrlInput && !fileUrlInput.value) {
+      fileUrlInput.value = res.dataUrl;
+    }
+
+    window.showToast?.(`🎉 Image optimized to ${res.sizeInKB} KB! Ready for publish.`, "success");
+  } catch (err) {
+    console.error("Image optimization error:", err);
+    window.showToast?.(`File error: ${err.message}`, "error");
+    currentAdminSelectedFileObj = null;
+    if (infoContainer) infoContainer.classList.add('hidden');
+  }
+}
+window.handleAdminProductFileSelected = handleAdminProductFileSelected;
+
 // Submit New Store Product
 async function handleAdminProductSubmit(e) {
   e.preventDefault();
@@ -2197,14 +2243,24 @@ async function handleAdminProductSubmit(e) {
   const category = document.getElementById('admin-prod-category')?.value || 'Wallpapers';
   const collectionName = document.getElementById('admin-prod-collection')?.value?.trim() || 'General';
   const priceKC = parseInt(document.getElementById('admin-prod-price')?.value || '50');
-  const coverUrl = document.getElementById('admin-prod-cover-url')?.value?.trim() || '';
-  const fileUrl = document.getElementById('admin-prod-file-url')?.value?.trim() || coverUrl;
+  let coverUrl = document.getElementById('admin-prod-cover-url')?.value?.trim() || '';
+  let fileUrl = document.getElementById('admin-prod-file-url')?.value?.trim() || coverUrl;
   const description = document.getElementById('admin-prod-desc')?.value?.trim() || '';
   const tagsStr = document.getElementById('admin-prod-tags')?.value?.trim() || '';
   const tags = tagsStr.split(',').map(t => t.trim()).filter(t => t.length > 0);
 
+  if (currentAdminSelectedFileObj) {
+    if (!coverUrl) coverUrl = currentAdminSelectedFileObj.previewData;
+    if (!fileUrl) fileUrl = currentAdminSelectedFileObj.dataUrl;
+  }
+
   if (!title || !priceKC) {
     window.showToast?.("Please enter a title and Kingdom Coin price!", "error");
+    return;
+  }
+
+  if (!coverUrl && !fileUrl) {
+    window.showToast?.("Please select an image file or provide an image URL!", "error");
     return;
   }
 
@@ -2213,30 +2269,38 @@ async function handleAdminProductSubmit(e) {
 
   const prodRef = db.collection('products').doc();
 
+  const productData = {
+    id: prodRef.id,
+    title: title,
+    category: category,
+    collectionName: collectionName,
+    priceKC: priceKC,
+    coverUrl: coverUrl || fileUrl || 'https://images.unsplash.com/photo-1509021436468-d0f075e24b7a?auto=format&fit=crop&w=800&q=80',
+    fileUrl: fileUrl || coverUrl,
+    description: description,
+    author: "Super Admin",
+    tags: tags.length ? tags : ["Kingdom", "Digital"],
+    featured: true,
+    published: true,
+    downloadable: true,
+    storageType: currentAdminSelectedFileObj ? "firestore_base64" : "external_url",
+    createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
+  };
+
   try {
-    await prodRef.set({
-      id: prodRef.id,
-      title: title,
-      category: category,
-      collectionName: collectionName,
-      priceKC: priceKC,
-      coverUrl: coverUrl || 'https://images.unsplash.com/photo-1509021436468-d0f075e24b7a?auto=format&fit=crop&w=800&q=80',
-      fileUrl: fileUrl || coverUrl,
-      description: description,
-      author: "Super Admin",
-      tags: tags.length ? tags : ["Kingdom", "Digital"],
-      featured: true,
-      published: true,
-      downloadable: true,
-      createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
-    });
+    await prodRef.set(productData);
+    await db.collection('storeProducts').doc(prodRef.id).set(productData, { merge: true });
 
     document.getElementById('admin-product-form')?.reset();
+    currentAdminSelectedFileObj = null;
+    const infoContainer = document.getElementById('admin-prod-file-info');
+    if (infoContainer) infoContainer.classList.add('hidden');
+
     window.showToast?.(`🎉 Store product "${title}" published to Kingdom Store!`, "success");
     syncAdminStoreProducts();
   } catch (err) {
     console.error("Admin product submit error:", err);
-    window.showToast?.("Error publishing store product.", "error");
+    window.showToast?.("Error publishing store product: " + err.message, "error");
   }
 }
 
@@ -2481,9 +2545,360 @@ window.syncAdminFeedbackHub = syncAdminFeedbackHub;
 window.updateAdminFeedbackStatus = updateAdminFeedbackStatus;
 window.rewardAdminFeedbackUser = rewardAdminFeedbackUser;
 
+// --- Super Admin Loading Screen System Management ---
+let adminLoadingScreenListener = null;
+let adminLoadingHistoryListener = null;
+let selectedVideoBase64 = null;
+let selectedVideoFile = null;
+
+function syncAdminLoadingScreen() {
+  const statusBadge = document.getElementById('admin-ls-status-badge');
+  const toggleBtn = document.getElementById('admin-ls-toggle-btn');
+  const activeVideoPreview = document.getElementById('admin-ls-active-video-preview');
+  const fallbackPreviewBox = document.getElementById('admin-ls-fallback-preview-box');
+  const previewStatus = document.getElementById('admin-ls-preview-status');
+
+  const metaTitle = document.getElementById('admin-ls-meta-title');
+  const metaTagline = document.getElementById('admin-ls-meta-tagline');
+  const metaLoop = document.getElementById('admin-ls-meta-loop');
+  const metaDurations = document.getElementById('admin-ls-meta-durations');
+  const metaUpdated = document.getElementById('admin-ls-meta-updated');
+  const metaAuthor = document.getElementById('admin-ls-meta-author');
+
+  if (adminLoadingScreenListener) adminLoadingScreenListener();
+
+  adminLoadingScreenListener = window.db.collection('appSettings').doc('loadingScreen').onSnapshot(snap => {
+    if (!snap.exists) {
+      if (statusBadge) {
+        statusBadge.innerText = 'DEFAULT (Built-in Animation)';
+        statusBadge.className = 'px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-500/20 text-blue-400 border border-blue-500/40';
+      }
+      if (toggleBtn) {
+        toggleBtn.innerHTML = '<i data-lucide="power" class="w-4 h-4 inline"></i> Enable Custom Video';
+      }
+      if (activeVideoPreview) activeVideoPreview.classList.add('hidden');
+      if (fallbackPreviewBox) fallbackPreviewBox.classList.remove('hidden');
+      if (previewStatus) {
+        previewStatus.innerText = 'Built-in Earth Horizon';
+        previewStatus.className = 'text-blue-400 font-bold';
+      }
+      if (metaTitle) metaTitle.innerText = 'Built-in Home.cell Earth Horizon';
+      if (metaTagline) metaTagline.innerText = '"Connecting fellowship cell network..."';
+      if (metaLoop) metaLoop.innerText = 'Yes (true)';
+      if (metaDurations) metaDurations.innerText = 'Min 2.2s • Max 5.5s';
+      if (metaUpdated) metaUpdated.innerText = 'System Default';
+      if (metaAuthor) metaAuthor.innerText = 'danielgiobari644@gmail.com';
+      return;
+    }
+
+    const data = snap.data();
+    window.currentAdminLoadingConfig = data;
+
+    if (data.enabled && data.videoUrl) {
+      if (statusBadge) {
+        statusBadge.innerText = 'ACTIVE (Custom Video)';
+        statusBadge.className = 'px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/40';
+      }
+      if (toggleBtn) {
+        toggleBtn.innerHTML = '<i data-lucide="power-off" class="w-4 h-4 inline"></i> Disable Custom Video';
+      }
+      if (activeVideoPreview) {
+        activeVideoPreview.src = data.videoUrl;
+        activeVideoPreview.classList.remove('hidden');
+      }
+      if (fallbackPreviewBox) fallbackPreviewBox.classList.add('hidden');
+      if (previewStatus) {
+        previewStatus.innerText = 'Custom Video Active';
+        previewStatus.className = 'text-emerald-400 font-bold';
+      }
+    } else {
+      if (statusBadge) {
+        statusBadge.innerText = data.enabled ? 'ACTIVE (Built-in Fallback)' : 'DISABLED (Built-in Default)';
+        statusBadge.className = 'px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-400 border border-amber-500/40';
+      }
+      if (toggleBtn) {
+        toggleBtn.innerHTML = '<i data-lucide="power" class="w-4 h-4 inline"></i> Activate Video';
+      }
+      if (activeVideoPreview) activeVideoPreview.classList.add('hidden');
+      if (fallbackPreviewBox) fallbackPreviewBox.classList.remove('hidden');
+      if (previewStatus) {
+        previewStatus.innerText = 'Built-in Fallback Active';
+        previewStatus.className = 'text-amber-400 font-bold';
+      }
+    }
+
+    if (metaTitle) metaTitle.innerText = data.title || 'Custom Loading Screen';
+    if (metaTagline) metaTagline.innerText = `"${data.tagline || 'Connecting fellowship cell network...'}"`;
+    if (metaLoop) metaLoop.innerText = data.loop !== false ? 'Yes (true)' : 'No (false)';
+    if (metaDurations) metaDurations.innerText = `Min ${(data.minDisplayDuration || 2200)/1000}s • Max ${(data.maxDisplayDuration || 5500)/1000}s`;
+    if (metaUpdated) metaUpdated.innerText = data.updatedAt ? new Date(data.updatedAt).toLocaleString() : 'Just now';
+    if (metaAuthor) metaAuthor.innerText = data.updatedBy || 'danielgiobari644@gmail.com';
+
+    if (window.lucide) window.lucide.createIcons();
+  });
+
+  // History list listener
+  const historyContainer = document.getElementById('admin-ls-history-rows');
+  if (!historyContainer) return;
+
+  if (adminLoadingHistoryListener) adminLoadingHistoryListener();
+
+  adminLoadingHistoryListener = window.db.collection('loading_screen_history').orderBy('updatedAt', 'desc').limit(20).onSnapshot(snap => {
+    historyContainer.innerHTML = '';
+    if (snap.empty) {
+      historyContainer.innerHTML = `
+        <div class="p-6 text-center text-slate-400 text-xs font-bold bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl">
+          No previous custom video configurations archived yet.
+        </div>
+      `;
+      return;
+    }
+
+    snap.forEach(doc => {
+      const h = doc.data();
+      const id = doc.id;
+      const card = document.createElement('div');
+      card.className = "p-4 bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4";
+
+      const isCurrentActive = window.currentAdminLoadingConfig?.videoUrl && window.currentAdminLoadingConfig?.videoUrl === h.videoUrl && window.currentAdminLoadingConfig?.enabled;
+
+      card.innerHTML = `
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-xl bg-slate-900 overflow-hidden flex-shrink-0 flex items-center justify-center border border-slate-700">
+            ${h.videoUrl ? `<video src="${h.videoUrl}" class="w-full h-full object-cover" muted></video>` : '🌍'}
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h5 class="text-xs font-black text-slate-900 dark:text-zinc-100">${h.title || 'Custom Video'}</h5>
+              ${isCurrentActive ? `<span class="px-2 py-0.5 rounded-md text-[9px] font-black bg-emerald-500 text-slate-950">LIVE NOW</span>` : ''}
+            </div>
+            <p class="text-[11px] text-slate-500 italic">"${h.tagline || ''}"</p>
+            <p class="text-[10px] text-slate-400 font-mono mt-0.5">By ${h.updatedBy || 'Super Admin'} • ${h.updatedAt ? new Date(h.updatedAt).toLocaleDateString() : 'Previous'}</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 shrink-0">
+          <button onclick="activateLoadingScreenHistory('${id}')" class="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-xl transition-all shadow-xs cursor-pointer">
+            Reactivate
+          </button>
+          <button onclick="deleteLoadingScreenHistory('${id}')" class="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl transition-all cursor-pointer" title="Delete record">
+            <i data-lucide="trash-2" class="w-4 h-4"></i>
+          </button>
+        </div>
+      `;
+      historyContainer.appendChild(card);
+    });
+
+    if (window.lucide) window.lucide.createIcons();
+  });
+}
+
+function handleAdminVideoFileSelect(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  if (!file.type.includes('video/')) {
+    window.showToast?.("⚠️ Please select a valid video file (.mp4, .webm)", "error");
+    return;
+  }
+
+  selectedVideoFile = file;
+  const fileInfo = document.getElementById('admin-ls-file-info');
+  if (fileInfo) {
+    fileInfo.innerText = `🎬 Selected: ${file.name} (${(file.size / (1024 * 1024)).toFixed(2)} MB)`;
+    fileInfo.classList.remove('hidden');
+  }
+
+  const titleInput = document.getElementById('admin-ls-title-input');
+  if (titleInput && !titleInput.value) {
+    titleInput.value = file.name.replace(/\.[^/.]+$/, "").replace(/_/g, " ");
+  }
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    selectedVideoBase64 = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function handleAdminVideoUrlInput(event) {
+  const url = event.target.value;
+  if (url && url.startsWith('http')) {
+    selectedVideoBase64 = null;
+    selectedVideoFile = null;
+    const fileInfo = document.getElementById('admin-ls-file-info');
+    if (fileInfo) fileInfo.classList.add('hidden');
+  }
+}
+
+async function handleAdminLoadingScreenSubmit(event) {
+  event.preventDefault();
+
+  const title = document.getElementById('admin-ls-title-input').value.trim();
+  const tagline = document.getElementById('admin-ls-tagline-input').value.trim();
+  const urlInput = document.getElementById('admin-ls-url-input').value.trim();
+  const minDuration = parseInt(document.getElementById('admin-ls-min-duration').value) || 2200;
+  const maxDuration = parseInt(document.getElementById('admin-ls-max-duration').value) || 5500;
+  const loop = document.getElementById('admin-ls-loop-checkbox').checked;
+
+  const submitBtn = document.getElementById('admin-ls-submit-btn');
+  const progressContainer = document.getElementById('admin-ls-upload-progress-container');
+  const progressBar = document.getElementById('admin-ls-upload-progress-bar');
+  const progressPct = document.getElementById('admin-ls-upload-pct-text');
+  const progressStatus = document.getElementById('admin-ls-upload-status-text');
+
+  let finalVideoUrl = urlInput;
+
+  try {
+    if (submitBtn) submitBtn.disabled = true;
+
+    if (selectedVideoFile && selectedVideoBase64) {
+      if (progressContainer) progressContainer.classList.remove('hidden');
+      if (progressBar) progressBar.style.width = '30%';
+      if (progressPct) progressPct.innerText = '30%';
+      if (progressStatus) progressStatus.innerText = 'Uploading video file to server...';
+
+      const resp = await fetch('/api/upload-video', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          videoData: selectedVideoBase64,
+          fileName: selectedVideoFile.name
+        })
+      });
+
+      if (!resp.ok) {
+        const errData = await resp.json().catch(() => ({}));
+        throw new Error(errData.error || "Failed to upload video to server.");
+      }
+
+      const resData = await resp.json();
+      finalVideoUrl = resData.videoUrl;
+
+      if (progressBar) progressBar.style.width = '100%';
+      if (progressPct) progressPct.innerText = '100%';
+      if (progressStatus) progressStatus.innerText = 'Upload complete! Updating Firestore config...';
+    }
+
+    if (!finalVideoUrl) {
+      window.showToast?.("⚠️ Please choose a video file to upload or enter a video URL.", "error");
+      if (submitBtn) submitBtn.disabled = false;
+      return;
+    }
+
+    const payload = {
+      enabled: true,
+      videoUrl: finalVideoUrl,
+      title: title || 'Custom Loading Screen',
+      tagline: tagline || 'Connecting fellowship cell network...',
+      minDisplayDuration: minDuration,
+      maxDisplayDuration: maxDuration,
+      loop: loop,
+      updatedAt: new Date().toISOString(),
+      updatedBy: window.auth?.currentUser?.email || 'danielgiobari644@gmail.com'
+    };
+
+    await window.db.collection('appSettings').doc('loadingScreen').set(payload);
+    await window.db.collection('loading_screen_history').add(payload);
+
+    window.showToast?.("🎬 Custom Loading Screen Activated Successfully!", "success");
+
+    document.getElementById('admin-ls-upload-form').reset();
+    selectedVideoBase64 = null;
+    selectedVideoFile = null;
+    const fileInfo = document.getElementById('admin-ls-file-info');
+    if (fileInfo) fileInfo.classList.add('hidden');
+    if (progressContainer) progressContainer.classList.add('hidden');
+
+  } catch (err) {
+    console.error("Error saving loading screen config:", err);
+    window.showToast?.(`❌ Failed to save video config: ${err.message}`, "error");
+  } finally {
+    if (submitBtn) submitBtn.disabled = false;
+  }
+}
+
+async function toggleLoadingScreenActive() {
+  try {
+    const docRef = window.db.collection('appSettings').doc('loadingScreen');
+    const snap = await docRef.get();
+    if (!snap.exists) {
+      window.showToast?.("ℹ️ Currently using system built-in animation.", "info");
+      return;
+    }
+
+    const data = snap.data();
+    const newStatus = !data.enabled;
+    await docRef.update({
+      enabled: newStatus,
+      updatedAt: new Date().toISOString(),
+      updatedBy: window.auth?.currentUser?.email || 'danielgiobari644@gmail.com'
+    });
+
+    window.showToast?.(newStatus ? "✅ Loading Video Enabled!" : "⏸️ Loading Video Disabled - Default Fallback Active", "success");
+  } catch (e) {
+    window.handleFirestoreError(e, 'update', 'appSettings/loadingScreen');
+  }
+}
+
+async function restoreDefaultLoadingScreen() {
+  if (!confirm("Are you sure you want to restore the default Home.cell Earth Horizon loading animation?")) return;
+  try {
+    await window.db.collection('appSettings').doc('loadingScreen').set({
+      enabled: false,
+      videoUrl: "",
+      title: "Built-in Home.cell Earth Horizon",
+      tagline: "Connecting fellowship cell network...",
+      minDisplayDuration: 2200,
+      maxDisplayDuration: 5500,
+      loop: true,
+      updatedAt: new Date().toISOString(),
+      updatedBy: window.auth?.currentUser?.email || 'danielgiobari644@gmail.com'
+    });
+    window.showToast?.("✨ Restored Built-in Loading Screen Animation!", "success");
+  } catch (e) {
+    window.handleFirestoreError(e, 'write', 'appSettings/loadingScreen');
+  }
+}
+
+async function activateLoadingScreenHistory(id) {
+  try {
+    const snap = await window.db.collection('loading_screen_history').doc(id).get();
+    if (!snap.exists) return;
+    const data = snap.data();
+    const payload = {
+      ...data,
+      enabled: true,
+      updatedAt: new Date().toISOString(),
+      updatedBy: window.auth?.currentUser?.email || 'danielgiobari644@gmail.com'
+    };
+    await window.db.collection('appSettings').doc('loadingScreen').set(payload);
+    window.showToast?.(`🎬 Reactivated "${data.title || 'Video'}"!`, "success");
+  } catch (e) {
+    window.handleFirestoreError(e, 'write', 'appSettings/loadingScreen');
+  }
+}
+
+async function deleteLoadingScreenHistory(id) {
+  if (!confirm("Delete this archived video record?")) return;
+  try {
+    await window.db.collection('loading_screen_history').doc(id).delete();
+    window.showToast?.("🗑️ Archive record removed.", "info");
+  } catch (e) {
+    window.handleFirestoreError(e, 'delete', `loading_screen_history/${id}`);
+  }
+}
 
 // Expose globally
 window.initAdminModule = initAdminModule;
+window.syncAdminLoadingScreen = syncAdminLoadingScreen;
+window.handleAdminVideoFileSelect = handleAdminVideoFileSelect;
+window.handleAdminVideoUrlInput = handleAdminVideoUrlInput;
+window.handleAdminLoadingScreenSubmit = handleAdminLoadingScreenSubmit;
+window.toggleLoadingScreenActive = toggleLoadingScreenActive;
+window.restoreDefaultLoadingScreen = restoreDefaultLoadingScreen;
+window.activateLoadingScreenHistory = activateLoadingScreenHistory;
+window.deleteLoadingScreenHistory = deleteLoadingScreenHistory;
 window.toggleAdminQuestionFormat = toggleAdminQuestionFormat;
 window.addQuestionToActiveQuiz = addQuestionToActiveQuiz;
 window.reorderBuilderQuestion = reorderBuilderQuestion;

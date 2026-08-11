@@ -210,6 +210,17 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // --- Loading Screen Configuration & History ---
+    match /appSettings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /loading_screen_history/{historyId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // --- Community Feed & Social Center ---
     match /community_feed/{postId} {
       allow read: if true;
