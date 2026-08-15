@@ -200,16 +200,20 @@ function listenToAuthState() {
   }
 
   // Handle redirect result if user signed in via redirect (especially on mobile)
-  window.auth.getRedirectResult()
-    .then(result => {
-      if (result && result.user) {
-        window.showToast?.("Google authentication successful.");
-      }
-    })
-    .catch(err => {
-      console.error("Google redirect auth failed:", err);
-      window.showToast?.("Google redirect sign-in failed: " + err.message, 'error');
-    });
+  if (typeof window.auth.getRedirectResult === 'function') {
+    window.auth.getRedirectResult()
+      .then(result => {
+        if (result && result.user) {
+          window.showToast?.("Google authentication successful.", "success");
+        }
+      })
+      .catch(err => {
+        if (err.code === 'auth/cancelled-popup-request' || err.code === 'auth/popup-closed-by-user') {
+          return;
+        }
+        console.warn("Google redirect auth check:", err);
+      });
+  }
 
   window.auth.onAuthStateChanged(user => {
     const authModal = document.getElementById('auth-modal');
@@ -984,37 +988,62 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Google OAuth triggers
+  let isGoogleAuthPending = false;
   const googleBtn = document.getElementById('google-auth-btn');
   if (googleBtn) {
-    googleBtn.addEventListener('click', () => {
+    googleBtn.onclick = async (e) => {
+      e.preventDefault();
+      if (isGoogleAuthPending) {
+        console.log("Google Sign-In is already pending, skipping duplicate click.");
+        return;
+      }
+      isGoogleAuthPending = true;
+      googleBtn.disabled = true;
+      googleBtn.classList.add('opacity-60', 'pointer-events-none');
+
       const provider = new window.firebase.auth.GoogleAuthProvider();
       provider.addScope('profile');
       provider.addScope('email');
+      provider.setCustomParameters({ prompt: 'select_account' });
       const inIframe = window.self !== window.top;
 
       window.showToast?.("Opening Google Sign-In...", "info");
 
-      // Try Popup first on all devices for fastest execution (no full page reload)
-      window.auth.signInWithPopup(provider)
-        .then(() => {
-          window.showToast?.("Google authentication successful.", "success");
-        })
-        .catch(err => {
-          console.warn("Google Popup failed/blocked, trying redirect fallback:", err);
-          
+      try {
+        await window.auth.signInWithPopup(provider);
+        window.showToast?.("Google authentication successful.", "success");
+      } catch (err) {
+        if (err.code === 'auth/cancelled-popup-request') {
+          console.log("Conflicting popup request dismissed gracefully.");
+          return;
+        }
+        if (err.code === 'auth/popup-closed-by-user') {
+          window.showToast?.("Sign-in popup was closed.", "info");
+          return;
+        }
+        if (err.code === 'auth/popup-blocked') {
+          console.warn("Google Popup blocked by browser settings.");
           if (!inIframe) {
-            window.showToast?.("Redirecting to Google Sign-In...");
-            window.auth.signInWithRedirect(provider);
-          } else {
-            console.error("Google authentication failed:", err);
-            let friendlyMsg = "Google authentication failed: " + err.message;
-            if (inIframe) {
-              friendlyMsg += " Hint: If the popup is blocked or cookies are restricted in the iframe, try opening the application in a new window using the 'Open in New Tab' button on the top right, or use Email/Password sign up.";
-            }
-            window.showToast?.(friendlyMsg, 'error');
+            window.showToast?.("Redirecting to Google Sign-In...", "info");
+            await window.auth.signInWithRedirect(provider);
+            return;
           }
-        });
-    });
+        }
+
+        console.error("Google authentication error:", err);
+        let friendlyMsg = "Google authentication failed: " + (err.message || "Unknown error");
+        if (inIframe) {
+          friendlyMsg += " (Hint: If popups or third-party cookies are restricted in preview mode, please tap 'Open in New Tab' on the top right or sign in with Email).";
+        }
+        window.showToast?.(friendlyMsg, 'error');
+      } finally {
+        setTimeout(() => {
+          isGoogleAuthPending = false;
+          googleBtn.disabled = false;
+          googleBtn.classList.remove('opacity-60', 'pointer-events-none');
+        }, 600);
+      }
+    };
   }
 
   // Onboarding Form handler (Create/Join cell)
