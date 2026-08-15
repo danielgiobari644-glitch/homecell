@@ -153,6 +153,55 @@ app.post('/api/broadcast-push', async (req, res) => {
   }
 });
 
+// Store Asset Direct Upload Endpoint for Super Admin
+app.post('/api/upload-store-asset', (req, res) => {
+  try {
+    const { fileData, fileName, fileType } = req.body;
+    if (!fileData) {
+      return res.status(400).json({ error: 'No file data provided' });
+    }
+
+    let base64Data = fileData;
+    let mimeType = fileType || 'application/octet-stream';
+    if (fileData.includes(';base64,')) {
+      const parts = fileData.split(';base64,');
+      mimeType = parts[0].replace('data:', '');
+      base64Data = parts[1];
+    }
+
+    let ext = 'bin';
+    if (fileName && fileName.includes('.')) {
+      ext = fileName.split('.').pop().toLowerCase().replace(/[^a-z0-9]/g, '');
+    } else if (mimeType.includes('png')) ext = 'png';
+    else if (mimeType.includes('jpeg') || mimeType.includes('jpg')) ext = 'jpg';
+    else if (mimeType.includes('webp')) ext = 'webp';
+    else if (mimeType.includes('gif')) ext = 'gif';
+    else if (mimeType.includes('pdf')) ext = 'pdf';
+    else if (mimeType.includes('mp3') || mimeType.includes('audio/mpeg')) ext = 'mp3';
+    else if (mimeType.includes('wav')) ext = 'wav';
+    else if (mimeType.includes('zip')) ext = 'zip';
+
+    const safeBaseName = (fileName ? fileName.replace(/\.[^/.]+$/, '').replace(/[^a-zA-Z0-9_-]/g, '_') : 'asset').slice(0, 40);
+    const safeName = `store_${Date.now()}_${safeBaseName}.${ext}`;
+    const filePath = path.join(uploadsDir, safeName);
+
+    const buffer = Buffer.from(base64Data, 'base64');
+    fs.writeFileSync(filePath, buffer);
+
+    logMsg(`Saved store asset to ${filePath} (${buffer.length} bytes, type: ${mimeType})`);
+    res.json({
+      success: true,
+      fileUrl: `/uploads/${safeName}`,
+      fileName: fileName || safeName,
+      size: buffer.length,
+      mimeType: mimeType
+    });
+  } catch (err) {
+    logMsg(`Error saving store asset: ${err.message}`);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Video Upload Endpoint for Super Admin Loading Screen Videos
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {

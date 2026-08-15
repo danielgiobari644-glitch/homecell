@@ -45,6 +45,12 @@ service cloud.firestore {
         || isAdmin()
       );
       allow delete: if isAdmin();
+
+      match /user_rewards/{rewardId} {
+        allow read: if isSignedIn();
+        allow create, update: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+        allow delete: if isAdmin();
+      }
     }
 
     // --- Cell Groups ---

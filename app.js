@@ -945,6 +945,7 @@ function setAuthTab(mode) {
 // DOM Setup
 document.addEventListener("DOMContentLoaded", () => {
   initTheme();
+  if (window.checkUrlReferralCode) window.checkUrlReferralCode();
   listenToAuthState();
 
   // General Service Worker Registration for PWA installability on all devices
@@ -1099,6 +1100,11 @@ document.addEventListener("DOMContentLoaded", () => {
             closeOnboardingModal();
             window.updateSubscriptionOnServer?.();
 
+            // Process referral link connection if user was invited
+            if (window.processReferralForNewUser) {
+              window.processReferralForNewUser(user.uid, user.email, name);
+            }
+
             // Notify Super Admin of pending cell approval
             if (window.sendPushNotification && !isSuperAdminUser) {
               window.sendPushNotification(
@@ -1129,6 +1135,12 @@ document.addEventListener("DOMContentLoaded", () => {
             window.showToast?.("Onboarding successfully completed & Cell Group joined!", "success");
             closeOnboardingModal();
             window.updateSubscriptionOnServer?.();
+
+            // Process referral link connection if user was invited
+            if (window.processReferralForNewUser) {
+              window.processReferralForNewUser(user.uid, user.email, name);
+            }
+
             // Trigger first daily streak
             setTimeout(() => {
               window.incrementUserStreak?.("onboarding signup");

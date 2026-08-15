@@ -142,100 +142,18 @@ function syncSystemConfigs() {
 window.setupStreamPlayer = function(url, type) {
   const container = document.getElementById('stream-player-container');
   if (!container) return;
-  container.innerHTML = '';
 
-  if (!url) {
-    container.innerHTML = `
-      <div class="flex flex-col items-center justify-center p-8 text-center text-slate-500 space-y-2">
-        <i data-lucide="video-off" class="w-10 h-10 text-slate-400"></i>
-        <p class="text-xs font-bold">Broadcast Offline</p>
-        <p class="text-[10px] text-slate-400">No active stream URL configured.</p>
-      </div>
-    `;
-    if (window.lucide) window.lucide.createIcons();
-    return;
-  }
-
-  const isHls = type === 'hls' || url.includes('.m3u8') || url.includes('/hls/');
-
-  if (isHls) {
-    const video = document.createElement('video');
-    video.id = 'universal-stream-player';
-    video.controls = true;
-    video.autoplay = true;
-    video.playsInline = true;
-    video.className = 'w-full h-full rounded-2xl bg-slate-950 focus:outline-none';
-    container.appendChild(video);
-
-    if (window.Hls && window.Hls.isSupported()) {
-      const hls = new window.Hls();
-      hls.loadSource(url);
-      hls.attachMedia(video);
-      hls.on(window.Hls.Events.MANIFEST_PARSED, function() {
-        video.play().catch(e => console.log("Auto-play blocked: ", e));
-      });
-    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-      video.src = url;
-      video.addEventListener('loadedmetadata', function() {
-        video.play().catch(e => console.log("Auto-play blocked: ", e));
-      });
-    } else {
-      container.innerHTML = `
-        <div class="flex flex-col items-center justify-center p-8 text-center text-amber-500 space-y-2">
-          <i data-lucide="alert-triangle" class="w-10 h-10"></i>
-          <p class="text-xs font-bold">HLS Stream Unsupported</p>
-          <p class="text-[10px] text-slate-400">Your browser does not support HLS video playback natively.</p>
-        </div>
-      `;
-      if (window.lucide) window.lucide.createIcons();
-    }
-  } else if (type === 'rtmp') {
-    container.innerHTML = `
-      <div class="flex flex-col items-center justify-center p-8 text-center text-purple-400 space-y-3">
-        <div class="p-3 bg-purple-500/10 rounded-full">
-          <i data-lucide="hard-drive" class="w-8 h-8"></i>
-        </div>
-        <div>
-          <p class="text-xs font-bold">RTMP Broadcast Active</p>
-          <p class="text-[10px] text-slate-400 max-w-sm mt-1">To watch this feed, connect your media client (VLC, OBS) directly to our RTMP ingestion link below.</p>
-        </div>
-        <div class="flex items-center gap-2 bg-slate-900 border border-zinc-800 rounded-xl px-3 py-1.5 w-full max-w-md">
-          <input type="text" readonly value="${url}" class="bg-transparent text-slate-300 text-[10px] focus:outline-none flex-grow" />
-          <button onclick="navigator.clipboard.writeText('${url}'); window.showToast?.('RTMP link copied!');" class="p-1 text-purple-400 hover:text-purple-300 cursor-pointer">
-            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
-          </button>
-        </div>
-      </div>
-    `;
-    if (window.lucide) window.lucide.createIcons();
-  } else if (type === 'webrtc') {
-    container.innerHTML = `
-      <div class="flex flex-col items-center justify-center p-8 text-center text-blue-400 space-y-3">
-        <div class="p-3 bg-blue-500/10 rounded-full">
-          <i data-lucide="zap" class="w-8 h-8"></i>
-        </div>
-        <div>
-          <p class="text-xs font-bold">WebRTC Ultra-Low Latency Active</p>
-          <p class="text-[10px] text-slate-400 max-w-sm mt-1">Whip/Whep client broadcast is running. You can stream this feed with low latency.</p>
-        </div>
-        <div class="flex items-center gap-2 bg-slate-900 border border-zinc-800 rounded-xl px-3 py-1.5 w-full max-w-md">
-          <input type="text" readonly value="${url}" class="bg-transparent text-slate-300 text-[10px] focus:outline-none flex-grow" />
-          <button onclick="navigator.clipboard.writeText('${url}'); window.showToast?.('WebRTC stream URL copied!');" class="p-1 text-blue-400 hover:text-blue-300 cursor-pointer">
-            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
-          </button>
-        </div>
-      </div>
-    `;
-    if (window.lucide) window.lucide.createIcons();
+  if (window.setupUnifiedStreamPlayer) {
+    window.setupUnifiedStreamPlayer(container, {
+      streamUrl: url,
+      protocol: type || 'auto',
+      autoplay: true,
+      controls: true,
+      muted: false
+    });
   } else {
-    // Treat as iframe / embed
-    const iframe = document.createElement('iframe');
-    iframe.id = 'stream-iframe';
-    iframe.className = 'w-full h-full rounded-2xl overflow-hidden bg-slate-950 border-none';
-    iframe.src = url;
-    iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture";
-    iframe.allowFullscreen = true;
-    container.appendChild(iframe);
+    // Fallback if script is loading
+    container.innerHTML = `<p class="text-xs text-slate-400">Loading streaming engine...</p>`;
   }
 };
 
@@ -619,6 +537,9 @@ function syncLiveChat() {
     simulatedChatInterval = null;
   }
 
+  // Track initial load vs new incoming messages for floating emoji bursts
+  let isInitialChatLoad = true;
+
   // Subscribe to real-time chats from Firestore ordered by createdAt
   chatUnsubscribe = window.db.collection('stream_chats')
     .orderBy('createdAt', 'asc')
@@ -665,6 +586,21 @@ function syncLiveChat() {
         `;
         chatContainer.appendChild(msgDiv);
       });
+
+      // If new messages arrived after initial load, trigger emoji burst if message contains emojis
+      if (!isInitialChatLoad && snapshot.docChanges) {
+        snapshot.docChanges().forEach(change => {
+          if (change.type === 'added') {
+            const data = change.doc.data();
+            const text = data.message || '';
+            // Check if single emoji or emoji reaction
+            if (window.triggerFloatingEmoji) {
+              window.triggerFloatingEmoji(text, 'stream-player-container');
+            }
+          }
+        });
+      }
+      isInitialChatLoad = false;
       
       // Auto scroll to bottom
       chatContainer.scrollTop = chatContainer.scrollHeight;
@@ -704,6 +640,9 @@ window.likeStream = function() {
       } else {
         btn.classList.add('bg-blue-50', 'text-blue-600', 'border', 'border-blue-200');
         icon.classList.add('fill-current', 'text-blue-500');
+        if (window.triggerFloatingEmoji) {
+          window.triggerFloatingEmoji('🙌', 'stream-player-container');
+        }
         window.showToast?.("Liked the live stream! 🙌", "success");
       }
     });
@@ -751,6 +690,11 @@ window.sendQuickReaction = function(emoji) {
   if (!user) {
     window.showToast?.("Please log in to react.", "error");
     return;
+  }
+
+  // Instant local visual particle burst
+  if (window.triggerFloatingEmoji) {
+    window.triggerFloatingEmoji(emoji, 'stream-player-container');
   }
 
   const senderName = window.currentUserProfile?.displayName || user.email || "Fellow Believer";
@@ -922,39 +866,16 @@ window.playDashboardReplay = function(replayId, encodedUrl, streamType) {
   if (!box) return;
 
   const url = decodeURIComponent(encodedUrl);
-  box.innerHTML = '';
 
-  let isYoutube = false;
-  let embedUrl = '';
-  try {
-    if (url.includes('youtube.com') || url.includes('youtu.be')) {
-      isYoutube = true;
-      let videoId = '';
-      if (url.includes('youtu.be/')) videoId = url.split('youtu.be/')[1].split('?')[0];
-      else if (url.includes('v=')) videoId = url.split('v=')[1].split('&')[0];
-      else if (url.includes('embed/')) videoId = url.split('embed/')[1].split('?')[0];
-      if (videoId) embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
-    }
-  } catch (e) {}
-
-  if (isYoutube && embedUrl) {
-    box.innerHTML = `<iframe src="${embedUrl}" class="w-full h-full border-none" allow="autoplay; fullscreen" allowfullscreen></iframe>`;
+  if (window.setupUnifiedStreamPlayer) {
+    window.setupUnifiedStreamPlayer(box, {
+      streamUrl: url,
+      protocol: streamType || 'auto',
+      autoplay: true,
+      controls: true
+    });
   } else {
-    const video = document.createElement('video');
-    video.src = url;
-    video.controls = true;
-    video.autoplay = true;
-    video.playsInline = true;
-    video.className = "w-full h-full object-contain bg-black";
-    box.appendChild(video);
-
-    if (streamType === 'hls' || url.includes('.m3u8')) {
-      if (window.Hls && window.Hls.isSupported()) {
-        const hls = new window.Hls();
-        hls.loadSource(url);
-        hls.attachMedia(video);
-      }
-    }
+    box.innerHTML = `<video src="${url}" controls autoplay playsinline class="w-full h-full object-contain bg-black"></video>`;
   }
 
   // Increment views count in Firestore

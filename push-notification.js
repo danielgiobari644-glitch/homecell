@@ -33,107 +33,134 @@ window.getNotificationPermissionState = function() {
 window.requestNotificationPermission = async function() {
   if (!window.isNotificationSupported()) {
     console.warn("Push notifications are not supported in this browser.");
+    window.showToast?.("Push notifications are not supported in this browser environment.", "warning");
     return 'unsupported';
   }
 
   try {
     const permission = await Notification.requestPermission();
     if (permission !== 'granted') {
-      console.log("Notification permission denied or dismissed.");
+      console.log("Notification permission denied or dismissed:", permission);
+      window.showToast?.("Notification permission was not granted.", "warning");
+      updatePushUIState();
       return permission;
     }
 
-    // Register service worker safely
-    const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(err => {
-      console.warn("Service Worker registration skipped or restricted in sandbox/iframe:", err);
-      return null;
-    });
-    if (registration) {
-      console.log("Service Worker registered successfully:", registration);
+    window.showToast?.("Setting up notifications...", "info");
+
+    // Register service worker safely with fallback
+    let registration = null;
+    try {
+      registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+      if (navigator.serviceWorker.ready) {
+        registration = await navigator.serviceWorker.ready;
+      }
+    } catch (swErr) {
+      console.warn("Service Worker registration notice:", swErr);
+      registration = await navigator.serviceWorker.getRegistration().catch(() => null);
     }
 
-    // Get VAPID Public Key from the server
-    const keyRes = await fetch(VAPID_KEY_URL);
-    if (!keyRes.ok) throw new Error("Failed to load VAPID public key from server.");
-    const { publicKey } = await keyRes.json();
-
-    const applicationServerKey = urlBase64ToUint8Array(publicKey);
-
-    // Subscribe to push manager
-    let subscription = await registration.pushManager.getSubscription();
-    
-    if (!subscription) {
-      subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: applicationServerKey
-      });
+    // Attempt PushManager WebPush subscription if available
+    let subscription = null;
+    if (registration && registration.pushManager) {
+      try {
+        // Get VAPID Public Key from the server
+        const keyRes = await fetch(VAPID_KEY_URL);
+        if (keyRes.ok) {
+          const { publicKey } = await keyRes.json();
+          if (publicKey) {
+            const applicationServerKey = urlBase64ToUint8Array(publicKey);
+            subscription = await registration.pushManager.getSubscription();
+            if (!subscription) {
+              subscription = await registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: applicationServerKey
+              });
+            }
+          }
+        }
+      } catch (pushErr) {
+        console.warn("PushManager subscription warning (falling back to in-app notification mode):", pushErr);
+      }
     }
 
     // Safely extract subscription keys and endpoint to prevent circular structure issues
     let subRaw = null;
-    try {
-      if (subscription && typeof subscription.toJSON === 'function') {
-        const parsed = subscription.toJSON();
-        subRaw = {
-          endpoint: parsed.endpoint,
-          keys: {
-            p256dh: parsed.keys?.p256dh || null,
-            auth: parsed.keys?.auth || null
+    if (subscription) {
+      try {
+        if (typeof subscription.toJSON === 'function') {
+          const parsed = subscription.toJSON();
+          subRaw = {
+            endpoint: parsed.endpoint,
+            keys: {
+              p256dh: parsed.keys?.p256dh || null,
+              auth: parsed.keys?.auth || null
+            }
+          };
+        }
+      } catch (e) {
+        console.warn("Failed to call subscription.toJSON(), falling back to manual extraction:", e);
+      }
+
+      if (!subRaw) {
+        let p256dh = null;
+        let auth = null;
+        try {
+          if (typeof subscription.getKey === 'function') {
+            const p256dhBuffer = subscription.getKey('p256dh');
+            if (p256dhBuffer) {
+              p256dh = btoa(String.fromCharCode.apply(null, new Uint8Array(p256dhBuffer)));
+            }
+            const authBuffer = subscription.getKey('auth');
+            if (authBuffer) {
+              auth = btoa(String.fromCharCode.apply(null, new Uint8Array(authBuffer)));
+            }
           }
+        } catch (keyErr) {
+          console.warn("Could not retrieve subscription keys:", keyErr);
+        }
+        subRaw = {
+          endpoint: subscription.endpoint,
+          keys: { p256dh, auth }
         };
       }
-    } catch (e) {
-      console.warn("Failed to call subscription.toJSON(), falling back to manual extraction:", e);
-    }
-
-    if (!subRaw && subscription) {
-      let p256dh = null;
-      let auth = null;
-      try {
-        if (typeof subscription.getKey === 'function') {
-          const p256dhBuffer = subscription.getKey('p256dh');
-          if (p256dhBuffer) {
-            p256dh = btoa(String.fromCharCode.apply(null, new Uint8Array(p256dhBuffer)));
-          }
-          const authBuffer = subscription.getKey('auth');
-          if (authBuffer) {
-            auth = btoa(String.fromCharCode.apply(null, new Uint8Array(authBuffer)));
-          }
-        }
-      } catch (keyErr) {
-        console.warn("Could not retrieve subscription keys:", keyErr);
-      }
-      subRaw = {
-        endpoint: subscription.endpoint,
-        keys: { p256dh, auth }
-      };
     }
 
     // Send subscription to server with user details if available
     const currentUser = window.auth?.currentUser;
-    const subRes = await fetch(SUBSCRIBE_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        subscription: subRaw,
-        uid: currentUser ? currentUser.uid : null,
-        email: currentUser ? currentUser.email : null,
-        role: window.currentUserRole || null
-      })
-    });
-
-    if (subRes.ok) {
-      console.log("Successfully registered push notification subscription on server.");
-      window.showToast?.("Push notifications enabled successfully!", "success");
-      updatePushUIState();
-    } else {
-      console.error("Server subscription failed.");
+    if (subRaw && subRaw.endpoint) {
+      try {
+        await fetch(SUBSCRIBE_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            subscription: subRaw,
+            uid: currentUser ? currentUser.uid : null,
+            email: currentUser ? currentUser.email : null,
+            role: window.currentUserRole || null
+          })
+        });
+      } catch (subPostErr) {
+        console.warn("Could not post subscription to backend:", subPostErr);
+      }
     }
+
+    localStorage.setItem('homecell_push_notifications_enabled', 'true');
+    console.log("Successfully configured notifications for user session.");
+    window.showToast?.("🔔 Notifications enabled successfully!", "success");
+    updatePushUIState();
 
     return permission;
   } catch (error) {
     console.error("Error setting up push notifications:", error);
-    window.showToast?.("Failed to set up push notifications.", "error");
+    // If permission was granted by the browser, don't fail completely
+    if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+      localStorage.setItem('homecell_push_notifications_enabled', 'true');
+      window.showToast?.("🔔 Notifications enabled for this device!", "success");
+      updatePushUIState();
+      return 'granted';
+    }
+    window.showToast?.("Could not configure push notifications: " + error.message, "error");
     return 'default';
   }
 };

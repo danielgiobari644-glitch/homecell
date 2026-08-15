@@ -79,25 +79,18 @@ function checkUrlReferralCode() {
     console.warn("Referral URL check error:", e);
   }
 }
+window.checkUrlReferralCode = checkUrlReferralCode;
 
-// Record referral link click in Firestore (+10 KC to owner if anti-cheat valid)
+// Record referral link click in Firestore
 async function recordReferralLinkClick(code) {
   try {
     if (!window.db) return;
-    const snap = await window.db.collection('users').where('referralCode', '==', code).limit(1).get();
-    if (!snap.empty) {
-      const ownerDoc = snap.docs[0];
-      const ownerData = ownerDoc.data();
-      const currentClicks = ownerData.referralLinkClicks || 0;
-      const currentKc = ownerData.kingdomCoins || 0;
-
-      // Rate limit / check
-      ownerDoc.ref.update({
-        referralLinkClicks: currentClicks + 1,
-        kingdomCoins: currentKc + 10,
-        totalKcEarned: (ownerData.totalKcEarned || currentKc) + 10
-      });
-    }
+    await window.db.collection('referral_clicks').add({
+      referrerCode: code,
+      session: sessionStorage.getItem(`ref_click_session`) || Math.random().toString(36).substring(2),
+      createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
+    });
+    console.log("Referral link click recorded for code:", code);
   } catch (e) {
     console.warn("Failed to record referral click:", e);
   }
@@ -109,8 +102,12 @@ async function processReferralForNewUser(userUid, userEmail, userName) {
   if (!code || !window.db) return;
 
   try {
-    const snap = await window.db.collection('users').where('referralCode', '==', code).limit(1).get();
-    if (snap.empty) return;
+    const cleanCode = code.trim().toUpperCase();
+    const snap = await window.db.collection('users').where('referralCode', '==', cleanCode).limit(1).get();
+    if (snap.empty) {
+      localStorage.removeItem('homecell_referrer_code');
+      return;
+    }
 
     const referrerDoc = snap.docs[0];
     const referrerData = referrerDoc.data();
@@ -132,38 +129,41 @@ async function processReferralForNewUser(userUid, userEmail, userName) {
     // Record referral document
     const refDocId = `ref_${userUid}`;
     await window.db.collection('referrals').doc(refDocId).set({
+      id: refDocId,
       referrerUid: referrerDoc.id,
-      referrerCode: code,
+      referrerCode: cleanCode,
       referredUid: userUid,
       referredEmail: userEmail || '',
       referredName: userName || 'New Member',
       status: 'active',
-      rewardClaimed: true,
+      rewardClaimed: false,
       kcAwarded: 100,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
+      createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
 
-    // Update user doc with referredBy
+    // Grant +100 KC welcome bonus to the newly referred member
+    const currentKc = userDoc.exists ? (userDoc.data().kingdomCoins || 0) : 0;
     await userDocRef.update({
-      referredBy: code,
-      referredByUid: referrerDoc.id
-    });
-
-    // Award +100 KC and increment totalReferrals for referrer
-    const prevKc = referrerData.kingdomCoins || 0;
-    const prevRefs = referrerData.totalReferrals || 0;
-    await referrerDoc.ref.update({
-      kingdomCoins: prevKc + 100,
-      totalKcEarned: (referrerData.totalKcEarned || prevKc) + 100,
-      totalReferrals: prevRefs + 1
+      referredBy: cleanCode,
+      referredByUid: referrerDoc.id,
+      kingdomCoins: currentKc + 100,
+      totalKcEarned: currentKc + 100
+    }).catch(async () => {
+      await userDocRef.set({
+        referredBy: cleanCode,
+        referredByUid: referrerDoc.id,
+        kingdomCoins: currentKc + 100,
+        totalKcEarned: currentKc + 100
+      }, { merge: true });
     });
 
     localStorage.removeItem('homecell_referrer_code');
-    window.showToast?.(`🎉 Referral recorded! Welcome to Home.cell!`, 'success');
+    window.showToast?.(`🎉 Referral link connected! You received +100 Kingdom Coins welcome bonus!`, 'success');
   } catch (err) {
     console.warn("Process referral error:", err);
   }
 }
+window.processReferralForNewUser = processReferralForNewUser;
 
 // Synchronize User's Champions Data
 function syncChampionsUserData(uid) {
@@ -175,17 +175,66 @@ function syncChampionsUserData(uid) {
 
     const data = doc.data();
     currentChampionUserData = data;
+    if (window.currentUserProfile) {
+      window.currentUserProfile.kingdomCoins = data.kingdomCoins || 0;
+    }
 
     // Ensure referral code exists for current user
-    if (!data.referralCode) {
-      const generatedCode = 'HC-' + uid.substring(0, 6).toUpperCase();
-      userRef.update({ referralCode: generatedCode }).catch(e => console.warn("Ref code update err:", e));
-      data.referralCode = generatedCode;
+    let userReferralCode = data.referralCode;
+    if (!userReferralCode) {
+      userReferralCode = 'HC-' + uid.substring(0, 6).toUpperCase();
+      userRef.update({ referralCode: userReferralCode }).catch(e => console.warn("Ref code update err:", e));
+      data.referralCode = userReferralCode;
+    }
+
+    // Automatically check for unclaimed referral rewards
+    try {
+      const refSnap = await window.db.collection('referrals').where('referrerUid', '==', uid).get();
+      let pendingKc = 0;
+      let totalRefs = refSnap.size;
+      let batchClaims = [];
+
+      refSnap.forEach(rDoc => {
+        const rData = rDoc.data();
+        if (rData.rewardClaimed === false) {
+          pendingKc += (rData.kcAwarded || 100);
+          batchClaims.push(rDoc.ref);
+        }
+      });
+
+      if (pendingKc > 0) {
+        const updatedKc = (data.kingdomCoins || 0) + pendingKc;
+        const updatedTotalKc = (data.totalKcEarned || data.kingdomCoins || 0) + pendingKc;
+        await userRef.update({
+          kingdomCoins: updatedKc,
+          totalKcEarned: updatedTotalKc,
+          totalReferrals: totalRefs
+        });
+        for (const rRef of batchClaims) {
+          await rRef.update({ rewardClaimed: true }).catch(() => {});
+        }
+        window.showToast?.(`🎁 You received +${pendingKc} Kingdom Coins from your successful referrals!`, 'success');
+        data.kingdomCoins = updatedKc;
+        data.totalReferrals = totalRefs;
+      }
+    } catch (refCheckErr) {
+      console.warn("Referral sync check warning:", refCheckErr);
+    }
+
+    // Sync Click Count
+    let totalClicks = data.referralLinkClicks || 0;
+    try {
+      const clicksSnap = await window.db.collection('referral_clicks').where('referrerCode', '==', userReferralCode).get();
+      if (!clicksSnap.empty && clicksSnap.size > totalClicks) {
+        totalClicks = clicksSnap.size;
+        userRef.update({ referralLinkClicks: totalClicks }).catch(() => {});
+      }
+    } catch (cErr) {
+      console.warn("Clicks fetch warning:", cErr);
     }
 
     const kc = data.kingdomCoins || 0;
     const referrals = data.totalReferrals || 0;
-    const clicks = data.referralLinkClicks || 0;
     const streak = data.streak || 0;
     const levelInfo = getChampionLevelInfo(kc);
 
@@ -220,14 +269,15 @@ function syncChampionsUserData(uid) {
     const refClicksEl = document.getElementById('champ-ref-clicks');
     const refSignupsEl = document.getElementById('champ-ref-signups');
 
-    const shareUrl = `${window.location.origin}${window.location.pathname}?r=${data.referralCode}`;
-    if (refCodeInput) refCodeInput.value = data.referralCode;
+    const shareUrl = `${window.location.origin}${window.location.pathname}?r=${userReferralCode}`;
+    if (refCodeInput) refCodeInput.value = userReferralCode;
     if (refLinkInput) refLinkInput.value = shareUrl;
-    if (refClicksEl) refClicksEl.innerText = clicks;
+    if (refClicksEl) refClicksEl.innerText = totalClicks;
     if (refSignupsEl) refSignupsEl.innerText = referrals;
 
     // Render Equipped Theme/Frame
     applyEquippedUserCustomizations(data);
+    if (window.renderStoreKcHeader) window.renderStoreKcHeader();
 
     if (window.lucide) window.lucide.createIcons();
   }, err => console.warn("Champions user sync error:", err));

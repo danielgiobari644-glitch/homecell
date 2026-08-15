@@ -283,8 +283,8 @@ function renderFeedWithStreams() {
     if (s.status === 'scheduled' && s.schedule && Date.now() >= new Date(s.schedule).getTime()) {
       isLive = true;
     }
-    if (isLive && s.streamType === 'hls' && s.streamUrl) {
-      setupHlsPlayerInFeed(s.id, s.streamUrl);
+    if (isLive && s.streamUrl) {
+      setupPlayerInFeed(s.id, s.streamUrl, s.streamType);
     }
   });
 
@@ -327,8 +327,8 @@ function renderFeedWithStreams() {
         if (s.status === 'scheduled' && s.schedule && Date.now() >= new Date(s.schedule).getTime()) {
           isLive = true;
         }
-        if (isLive && s.streamType === 'hls' && s.streamUrl) {
-          setupHlsPlayerInFeed(s.id, s.streamUrl);
+        if (isLive && s.streamUrl) {
+          setupPlayerInFeed(s.id, s.streamUrl, s.streamType);
         }
       });
     }
@@ -343,30 +343,23 @@ function renderFeedWithStreams() {
   if (window.lucide) window.lucide.createIcons();
 }
 
-function setupHlsPlayerInFeed(streamId, url) {
-  // Let the DOM render first
+function setupPlayerInFeed(streamId, url, streamType) {
   setTimeout(() => {
-    const video = document.getElementById(`feed-player-${streamId}`);
-    if (!video) return;
+    const container = document.getElementById(`feed-player-container-${streamId}`);
+    if (!container) return;
 
-    if (window.Hls && window.Hls.isSupported()) {
-      const hls = new window.Hls();
-      hls.loadSource(url);
-      hls.attachMedia(video);
-      hls.on(window.Hls.Events.MANIFEST_PARSED, function() {
-        video.play().catch(e => console.log("Auto-play blocked: ", e));
-      });
-    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-      video.src = url;
-      video.addEventListener('loadedmetadata', function() {
-        video.play().catch(e => console.log("Auto-play blocked: ", e));
+    if (window.setupUnifiedStreamPlayer) {
+      window.setupUnifiedStreamPlayer(container, {
+        streamUrl: url,
+        protocol: streamType || 'auto',
+        autoplay: true,
+        controls: true
       });
     }
   }, 100);
 }
 
 function getLiveStreamCardHTML(s) {
-  const isHls = s.streamType === 'hls' || s.streamUrl?.includes('.m3u8') || s.streamUrl?.includes('/hls/');
   const hasThumbnail = !!s.thumbnail;
   
   let isLive = s.status === 'live';
@@ -383,33 +376,11 @@ function getLiveStreamCardHTML(s) {
   let mediaAreaHTML = '';
   if (isLive) {
     if (s.streamUrl) {
-      if (isHls) {
-        mediaAreaHTML = `
-          <div class="aspect-video w-full rounded-2xl overflow-hidden bg-slate-950 relative border border-slate-800 shadow-inner">
-            <video id="feed-player-${s.id}" controls autoplay playsinline class="w-full h-full object-contain"></video>
-          </div>
-        `;
-      } else if (s.streamType === 'rtmp') {
-        mediaAreaHTML = `
-          <div class="flex flex-col items-center justify-center p-6 text-center text-purple-400 bg-slate-950/90 rounded-2xl border border-slate-800 space-y-2">
-            <i data-lucide="hard-drive" class="w-8 h-8"></i>
-            <p class="text-xs font-bold">RTMP Stream Connected</p>
-            <p class="text-[10px] text-slate-400 max-w-sm">Watch using OBS or VLC:</p>
-            <div class="flex items-center gap-1 bg-slate-900 border border-zinc-800 rounded-lg px-2 py-1 w-full max-w-xs mx-auto">
-              <input type="text" readonly value="${s.streamUrl}" class="bg-transparent text-slate-300 text-[9px] focus:outline-none flex-grow" />
-              <button onclick="navigator.clipboard.writeText('${s.streamUrl}'); window.showToast?.('RTMP link copied!');" class="p-1 text-purple-400">
-                <i data-lucide="copy" class="w-3 h-3"></i>
-              </button>
-            </div>
-          </div>
-        `;
-      } else {
-        mediaAreaHTML = `
-          <div class="aspect-video w-full rounded-2xl overflow-hidden bg-slate-950 relative border border-slate-800">
-            <iframe src="${s.streamUrl}" class="w-full h-full border-none" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-          </div>
-        `;
-      }
+      mediaAreaHTML = `
+        <div id="feed-player-container-${s.id}" class="aspect-video w-full rounded-2xl overflow-hidden bg-slate-950 relative border border-slate-800 shadow-inner">
+          <!-- Loaded via setupPlayerInFeed -->
+        </div>
+      `;
     } else {
       mediaAreaHTML = `
         <div class="aspect-video w-full bg-slate-900/40 rounded-2xl flex flex-col items-center justify-center text-slate-400 p-6">

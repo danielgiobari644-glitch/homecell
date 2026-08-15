@@ -2204,31 +2204,103 @@ async function handleAdminProductFileSelected(e) {
     return;
   }
 
-  window.showToast?.("Optimizing image for Firestore document storage...", "info");
+  const titleInput = document.getElementById('admin-prod-title');
+  if (titleInput && !titleInput.value) {
+    const rawName = file.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' ');
+    titleInput.value = rawName.charAt(0).toUpperCase() + rawName.slice(1);
+  }
+
+  const isImage = file.type.startsWith('image/');
+  const isAudio = file.type.startsWith('audio/');
+  const isPdf = file.type.includes('pdf') || file.name.endsWith('.pdf');
+
+  // Auto-select category based on file type if still on default
+  const categorySelect = document.getElementById('admin-prod-category');
+  if (categorySelect) {
+    if (isAudio && categorySelect.value === 'Wallpapers') {
+      categorySelect.value = 'Scripture Collections';
+    } else if (isPdf && categorySelect.value === 'Wallpapers') {
+      categorySelect.value = 'Devotionals & Guides';
+    }
+  }
+
+  window.showToast?.(`Uploading "${file.name}" from your device...`, "info");
 
   try {
-    const res = await window.compressImageForFirestore(file, 1200, 1200, 0.8);
-    currentAdminSelectedFileObj = res;
+    const reader = new FileReader();
+    const fileDataUrl = await new Promise((resolve, reject) => {
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+    let uploadedServerUrl = null;
+    try {
+      const uploadRes = await fetch('/api/upload-store-asset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fileData: fileDataUrl,
+          fileName: file.name,
+          fileType: file.type
+        })
+      });
+      if (uploadRes.ok) {
+        const uploadData = await uploadRes.json();
+        if (uploadData.fileUrl) {
+          uploadedServerUrl = uploadData.fileUrl;
+        }
+      }
+    } catch (netErr) {
+      console.warn("Direct server upload endpoint bypassed, using data URL fallback:", netErr);
+    }
+
+    let previewDataUrl = fileDataUrl;
+    if (isImage) {
+      try {
+        const compressed = await window.compressImageForFirestore(file, 1200, 1200, 0.8);
+        previewDataUrl = compressed.previewData;
+      } catch (cErr) {
+        console.warn("Image compression fallback:", cErr);
+      }
+    } else if (isPdf) {
+      previewDataUrl = 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=800&q=80';
+    } else if (isAudio) {
+      previewDataUrl = 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=800&q=80';
+    } else {
+      previewDataUrl = 'https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=800&q=80';
+    }
+
+    const finalFileUrl = uploadedServerUrl || fileDataUrl;
+    currentAdminSelectedFileObj = {
+      file: file,
+      fileName: file.name,
+      fileType: file.type,
+      serverUrl: uploadedServerUrl,
+      dataUrl: fileDataUrl,
+      previewData: previewDataUrl,
+      sizeInKB: Math.round(file.size / 1024)
+    };
 
     if (infoContainer) infoContainer.classList.remove('hidden');
-    if (previewImg) previewImg.src = res.previewData;
+    if (previewImg) previewImg.src = previewDataUrl;
     if (sizeText) {
-      sizeText.innerText = `Dimensions: ${res.width}x${res.height}px | Firestore Base64 Size: ${res.sizeInKB} KB (Safe < 850 KB)`;
+      sizeText.innerText = `${file.name} | Size: ${Math.round(file.size / 1024)} KB ${uploadedServerUrl ? '• Stored on Server' : '• Ready'}`;
     }
 
     const coverUrlInput = document.getElementById('admin-prod-cover-url');
     if (coverUrlInput && !coverUrlInput.value) {
-      coverUrlInput.value = res.previewData;
+      coverUrlInput.value = isImage ? finalFileUrl : previewDataUrl;
     }
     const fileUrlInput = document.getElementById('admin-prod-file-url');
     if (fileUrlInput && !fileUrlInput.value) {
-      fileUrlInput.value = res.dataUrl;
+      fileUrlInput.value = finalFileUrl;
     }
 
-    window.showToast?.(`🎉 Image optimized to ${res.sizeInKB} KB! Ready for publish.`, "success");
+    window.showToast?.(`🎉 "${file.name}" loaded successfully from device!`, "success");
   } catch (err) {
-    console.error("Image optimization error:", err);
-    window.showToast?.(`File error: ${err.message}`, "error");
+    console.error("Device file upload error:", err);
+    window.showToast?.(`File upload error: ${err.message}`, "error");
     currentAdminSelectedFileObj = null;
     if (infoContainer) infoContainer.classList.add('hidden');
   }
@@ -2250,17 +2322,17 @@ async function handleAdminProductSubmit(e) {
   const tags = tagsStr.split(',').map(t => t.trim()).filter(t => t.length > 0);
 
   if (currentAdminSelectedFileObj) {
-    if (!coverUrl) coverUrl = currentAdminSelectedFileObj.previewData;
-    if (!fileUrl) fileUrl = currentAdminSelectedFileObj.dataUrl;
+    if (!coverUrl) coverUrl = currentAdminSelectedFileObj.previewData || currentAdminSelectedFileObj.serverUrl || currentAdminSelectedFileObj.dataUrl;
+    if (!fileUrl) fileUrl = currentAdminSelectedFileObj.serverUrl || currentAdminSelectedFileObj.dataUrl || coverUrl;
   }
 
-  if (!title || !priceKC) {
-    window.showToast?.("Please enter a title and Kingdom Coin price!", "error");
+  if (!title || isNaN(priceKC)) {
+    window.showToast?.("Please enter a title and valid Kingdom Coin price!", "error");
     return;
   }
 
   if (!coverUrl && !fileUrl) {
-    window.showToast?.("Please select an image file or provide an image URL!", "error");
+    window.showToast?.("Please select a file from your device or provide a resource URL!", "error");
     return;
   }
 
@@ -2283,13 +2355,13 @@ async function handleAdminProductSubmit(e) {
     featured: true,
     published: true,
     downloadable: true,
-    storageType: currentAdminSelectedFileObj ? "firestore_base64" : "external_url",
+    storageType: currentAdminSelectedFileObj ? (currentAdminSelectedFileObj.serverUrl ? "server_storage" : "firestore_base64") : "external_url",
     createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
   };
 
   try {
     await prodRef.set(productData);
-    await db.collection('storeProducts').doc(prodRef.id).set(productData, { merge: true });
+    await db.collection('storeProducts').doc(prodRef.id).set(productData, { merge: true }).catch(() => {});
 
     document.getElementById('admin-product-form')?.reset();
     currentAdminSelectedFileObj = null;
@@ -2298,6 +2370,7 @@ async function handleAdminProductSubmit(e) {
 
     window.showToast?.(`🎉 Store product "${title}" published to Kingdom Store!`, "success");
     syncAdminStoreProducts();
+    if (window.syncStoreProducts) window.syncStoreProducts();
   } catch (err) {
     console.error("Admin product submit error:", err);
     window.showToast?.("Error publishing store product: " + err.message, "error");

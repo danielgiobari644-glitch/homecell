@@ -4393,22 +4393,24 @@
                 </div>
               </div>
 
-              <!-- File Picker Upload Option (Firestore Base64 Storage) -->
-              <div class="p-4 bg-amber-500/10 border-2 border-dashed border-amber-500/30 rounded-2xl space-y-3">
-                <div class="flex items-center justify-between">
-                  <label class="block text-xs font-black text-amber-400 cursor-pointer hover:underline flex items-center gap-2">
-                    <i data-lucide="upload-cloud" class="w-4 h-4"></i>
-                    Upload Local Image File (Auto-Optimized for Firestore Document Storage)
-                    <input type="file" id="admin-prod-file-input" accept="image/*" onchange="handleAdminProductFileSelected(event)" class="hidden" />
+              <!-- File Picker Upload Option (Direct Device Upload for Images, PDFs, Audio, Wallpapers, etc.) -->
+              <div class="p-4 bg-amber-500/10 border-2 border-dashed border-amber-500/40 hover:border-amber-400/80 transition-all rounded-2xl space-y-3">
+                <div class="flex items-center justify-between flex-wrap gap-2">
+                  <label class="block text-xs font-black text-amber-500 dark:text-amber-400 cursor-pointer hover:underline flex items-center gap-2">
+                    <i data-lucide="upload-cloud" class="w-5 h-5 text-amber-500"></i>
+                    Upload Directly From Device (Images, Wallpapers, Devotional PDFs, Audio Sermons, ZIPs)
+                    <input type="file" id="admin-prod-file-input" accept="image/*,application/pdf,audio/*,.doc,.docx,.zip,.epub,.txt" onchange="handleAdminProductFileSelected(event)" class="hidden" />
                   </label>
-                  <span class="text-[10px] font-bold text-slate-400">Max 850KB Compressed Base64</span>
+                  <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400">All Formats Supported</span>
                 </div>
                 
-                <div id="admin-prod-file-info" class="hidden flex items-center gap-3 p-3 bg-slate-900/80 rounded-xl border border-slate-800">
-                  <img id="admin-prod-file-preview-img" class="w-12 h-12 object-cover rounded-lg border border-amber-500/40" />
-                  <div>
-                    <span class="text-xs font-black text-amber-300 block">Image Optimized Successfully</span>
-                    <span id="admin-prod-file-size-text" class="text-[10px] font-mono text-slate-400"></span>
+                <div id="admin-prod-file-info" class="hidden flex items-center gap-3 p-3 bg-slate-100 dark:bg-slate-900/90 rounded-xl border border-amber-500/30">
+                  <img id="admin-prod-file-preview-img" class="w-14 h-14 object-cover rounded-lg border border-amber-500/50 shadow-sm" />
+                  <div class="space-y-0.5">
+                    <span class="text-xs font-black text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                      <i data-lucide="check-circle" class="w-3.5 h-3.5"></i> File Attached From Device
+                    </span>
+                    <span id="admin-prod-file-size-text" class="text-[11px] font-mono text-slate-600 dark:text-slate-300 block"></span>
                   </div>
                 </div>
               </div>
@@ -4963,10 +4965,11 @@
                   <div>
                     <label class="block text-xs font-bold text-slate-400 mb-1">Stream Broadcast Protocol / Type</label>
                     <select id="admin-stream-type" class="w-full px-4 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg text-slate-800 dark:text-zinc-100 font-bold">
-                      <option value="hls">🎥 HLS (.m3u8) - MediaMTX, self-hosted, or premium CDN</option>
-                      <option value="rtmp">🔌 RTMP / RTMPS (Custom Media server URL)</option>
-                      <option value="webrtc">⚡ WebRTC (Whip / Whep low latency feed)</option>
-                      <option value="embed">📺 standard Embed / Iframe (YouTube, Twitch, Custom player)</option>
+                      <option value="auto">✨ Auto Protocol (Smart Detection from URL)</option>
+                      <option value="hls">🎥 HLS (.m3u8) - MediaMTX, self-hosted, or CDN</option>
+                      <option value="webrtc">⚡ WebRTC (WHEP low latency feed)</option>
+                      <option value="iframe">📺 Standard Embed / Iframe (YouTube, Twitch, Custom player)</option>
+                      <option value="mp4">🎬 Direct MP4 / WebM Video URL</option>
                     </select>
                   </div>
                   <div>
@@ -5619,6 +5622,7 @@
     <script src="toast.js"></script>
     <script src="champions.js"></script>
     <script src="streak.js"></script>
+    <script src="stream-player.js"></script>
     <script src="dashboard.js"></script>
     <script src="bible.js"></script>
     <script src="quiz.js"></script>

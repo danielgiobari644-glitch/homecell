@@ -394,7 +394,10 @@ async function promptBuyProductModal(productId) {
 // Execute Atomic Purchase
 async function executeProductPurchase(productId, costKC, title, fileUrl) {
   const user = window.auth?.currentUser;
-  if (!user) return;
+  if (!user) {
+    window.showToast?.("Please sign in to purchase items from the Kingdom Store.", "warning");
+    return;
+  }
 
   const db = window.db;
   if (!db) return;
@@ -405,53 +408,64 @@ async function executeProductPurchase(productId, costKC, title, fileUrl) {
   try {
     const userRef = db.collection('users').doc(user.uid);
     const rewardRef = db.collection('user_rewards').doc(`${user.uid}_${productId}`);
+    const subUserRewardRef = userRef.collection('user_rewards').doc(productId);
     const txnRef = db.collection('kc_transactions').doc();
 
-    await db.runTransaction(async (transaction) => {
-      const userDoc = await transaction.get(userRef);
-      if (!userDoc.exists) throw new Error("User profile not found.");
+    const userDoc = await userRef.get();
+    if (!userDoc.exists) throw new Error("User profile not found. Please complete onboarding first.");
 
-      const userData = userDoc.data();
-      const currentKc = userData.kingdomCoins || 0;
+    const userData = userDoc.data();
+    const currentKc = userData.kingdomCoins || 0;
 
-      if (currentKc < costKC) {
-        throw new Error("Insufficient Kingdom Coins balance.");
-      }
+    if (currentKc < costKC) {
+      throw new Error(`Insufficient Kingdom Coins. You have ${currentKc} KC, but this item costs ${costKC} KC.`);
+    }
 
-      const newKc = currentKc - costKC;
-      const storePurchases = (userData.storePurchases || 0) + 1;
+    const newKc = currentKc - costKC;
+    const storePurchases = (userData.storePurchases || 0) + 1;
 
-      transaction.update(userRef, {
-        kingdomCoins: newKc,
-        storePurchases: storePurchases
-      });
-
-      transaction.set(rewardRef, {
-        id: `${user.uid}_${productId}`,
-        userUid: user.uid,
-        itemId: productId,
-        title: title,
-        category: "Kingdom Store",
-        kcCost: costKC,
-        fileUrl: fileUrl,
-        claimedAt: window.firebase.firestore.FieldValue.serverTimestamp()
-      }, { merge: true });
-
-      transaction.set(txnRef, {
-        id: txnRef.id,
-        userUid: user.uid,
-        type: "debit",
-        amount: costKC,
-        title: `Purchased "${title}"`,
-        description: `Acquired resource from Kingdom Store for ${costKC} KC`,
-        createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
-      });
+    // Execute atomic write
+    const batch = db.batch();
+    batch.update(userRef, {
+      kingdomCoins: newKc,
+      storePurchases: storePurchases
     });
 
-    // Update local state
-    if (window.currentUserProfile) window.currentUserProfile.kingdomCoins = (window.currentUserProfile.kingdomCoins || costKC) - costKC;
-    if (window.currentUserPurchasedItemIds) window.currentUserPurchasedItemIds.push(productId);
+    const rewardPayload = {
+      id: `${user.uid}_${productId}`,
+      userUid: user.uid,
+      itemId: productId,
+      title: title,
+      category: "Kingdom Store",
+      kcCost: costKC,
+      fileUrl: fileUrl || '',
+      claimedAt: window.firebase.firestore.FieldValue.serverTimestamp()
+    };
 
+    batch.set(rewardRef, rewardPayload, { merge: true });
+    batch.set(subUserRewardRef, rewardPayload, { merge: true });
+
+    batch.set(txnRef, {
+      id: txnRef.id,
+      userUid: user.uid,
+      type: "debit",
+      amount: costKC,
+      title: `Purchased "${title}"`,
+      description: `Acquired resource from Kingdom Store for ${costKC} KC`,
+      createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    await batch.commit();
+
+    // Update local state immediately
+    if (window.currentUserProfile) window.currentUserProfile.kingdomCoins = newKc;
+    if (window.currentChampionUserData) window.currentChampionUserData.kingdomCoins = newKc;
+    if (!window.currentUserPurchasedItemIds) window.currentUserPurchasedItemIds = [];
+    if (!window.currentUserPurchasedItemIds.includes(productId)) {
+      window.currentUserPurchasedItemIds.push(productId);
+    }
+
+    window.triggerConfetti?.();
     window.showToast?.(`🎉 Purchased "${title}"! Check My Library to download anytime.`, "success");
     renderStoreKcHeader();
     syncStoreProducts();
@@ -500,16 +514,28 @@ function downloadBase64Resource(dataUrl, fileName = 'HomeCell_Kingdom_Resource.j
 }
 
 function downloadStoreProductDirect(productId, url, fileName = 'HomeCell_Resource') {
-  window.showToast?.("📥 Starting direct resource download...", "success");
-  if (!url) return;
+  window.showToast?.("📥 Starting direct resource download...", "info");
+  if (!url) {
+    window.showToast?.("Download link is unavailable for this item.", "warning");
+    return;
+  }
 
   if (url.startsWith('data:')) {
     downloadBase64Resource(url, `${fileName}_${productId}.jpg`);
+  } else if (url.startsWith('/uploads/')) {
+    const fullUrl = `${window.location.origin}${url}`;
+    const link = document.createElement('a');
+    link.href = fullUrl;
+    link.target = "_blank";
+    link.download = `${fileName}_${productId}`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   } else if (url.startsWith('http')) {
     const link = document.createElement('a');
     link.href = url;
     link.target = "_blank";
-    link.download = `${fileName}_${productId}.jpg`;
+    link.download = `${fileName}_${productId}`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
