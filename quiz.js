@@ -91,7 +91,7 @@ const PREMIUM_QUIZZES = [
     difficulty: "Medium",
     coverGradient: "from-blue-600 to-indigo-800",
     coverEmoji: "🌟",
-    coverImageUrl: "https://images.unsplash.com/photo-1507692877-66b9f2913e8b?auto=format&fit=crop&w=800&q=80",
+    coverImageUrl: "https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=800&q=80",
     description: "Journey through the four Gospels and test your knowledge of Jesus' teachings, miracles, and resurrection.",
     questions: [
       {

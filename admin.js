@@ -2187,7 +2187,7 @@ function syncAdminStoreProducts() {
       card.innerHTML = `
         <div class="space-y-2">
           <div class="relative h-28 rounded-xl overflow-hidden bg-slate-200">
-            <img src="${p.coverUrl || 'https://images.unsplash.com/photo-1507692877-66b9f2913e8b?auto=format&fit=crop&w=800&q=80'}" class="w-full h-full object-cover" />
+            <img src="${p.coverUrl || 'https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=800&q=80'}" class="w-full h-full object-cover" />
             <span class="absolute top-2 left-2 px-2 py-0.5 rounded bg-slate-900/80 text-amber-400 text-[9px] font-black uppercase">
               ${p.category}
             </span>
@@ -2364,7 +2364,7 @@ async function handleAdminProductSubmit(e) {
     category: category,
     collectionName: collectionName,
     priceKC: priceKC,
-    coverUrl: coverUrl || fileUrl || 'https://images.unsplash.com/photo-1507692877-66b9f2913e8b?auto=format&fit=crop&w=800&q=80',
+    coverUrl: coverUrl || fileUrl || 'https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=800&q=80',
     fileUrl: fileUrl || coverUrl,
     description: description,
     author: "Super Admin",

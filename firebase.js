@@ -52,6 +52,10 @@
     originalError.apply(console, args.map(sanitizeArg));
   };
   console.warn = function(...args) {
+    const msg = args.map(a => String(a || '')).join(' ');
+    if (msg.includes('enableIndexedDbPersistence() will be deprecated')) {
+      return;
+    }
     originalWarn.apply(console, args.map(sanitizeArg));
   };
   console.log = function(...args) {
@@ -77,13 +81,14 @@
 })();
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAzsQYW0YvR8KT_RkWnpCADv3Hvwnyqdmw",
-  authDomain: "homecell-net.firebaseapp.com",
-  projectId: "homecell-net",
-  storageBucket: "homecell-net.firebasestorage.app",
-  messagingSenderId: "615303092749",
-  appId: "1:615303092749:web:732246e106d71b38b49344",
-  measurementId: "G-MX95QZVWH5"
+  projectId: "emergent-net-8cf5x",
+  appId: "1:671126310797:web:1a4b3a88f3375ce15437c4",
+  apiKey: "AIzaSyBU3AqZsnHUwDIkzQ6ga3mz6qfANA5VyB4",
+  authDomain: "emergent-net-8cf5x.firebaseapp.com",
+  firestoreDatabaseId: "ai-studio-homecell-f5e9ce35-384e-4158-aa68-f4db816ee215",
+  storageBucket: "emergent-net-8cf5x.firebasestorage.app",
+  messagingSenderId: "671126310797",
+  measurementId: ""
 };
 
 // Initialize Firebase Compat
@@ -92,7 +97,9 @@ if (!window.firebase) {
 }
 
 const app = firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+const db = firebaseConfig.firestoreDatabaseId && typeof firebase.app().firestore === 'function'
+  ? firebase.app().firestore(firebaseConfig.firestoreDatabaseId)
+  : firebase.firestore();
 
 try {
   db.settings({
@@ -101,17 +108,6 @@ try {
   });
 } catch (e) {
   // Ignore if settings already initialized
-}
-
-// Enable offline persistence safely without tab synchronization locks in sandboxed iframes
-if (typeof db.enablePersistence === 'function') {
-  db.enablePersistence({ synchronizeTabs: false }).catch((err) => {
-    if (err.code === 'failed-precondition' || err.code === 'unimplemented') {
-      // Ignored for multi-tab or unsupported environments
-    } else {
-      console.warn("Firestore offline persistence unavailable:", err?.message || err);
-    }
-  });
 }
 
 const auth = firebase.auth();
