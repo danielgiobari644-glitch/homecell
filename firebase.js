@@ -96,7 +96,8 @@ const db = firebase.firestore();
 
 try {
   db.settings({
-    experimentalAutoDetectLongPolling: true
+    experimentalAutoDetectLongPolling: true,
+    merge: true
   });
 } catch (e) {
   // Ignore if settings already initialized
@@ -104,11 +105,9 @@ try {
 
 // Enable offline persistence safely without tab synchronization locks in sandboxed iframes
 if (typeof db.enablePersistence === 'function') {
-  db.enablePersistence().catch((err) => {
-    if (err.code === 'failed-precondition') {
-      // Multiple tabs open, persistence enabled in first tab
-    } else if (err.code === 'unimplemented') {
-      // Browser doesn't support persistence
+  db.enablePersistence({ synchronizeTabs: false }).catch((err) => {
+    if (err.code === 'failed-precondition' || err.code === 'unimplemented') {
+      // Ignored for multi-tab or unsupported environments
     } else {
       console.warn("Firestore offline persistence unavailable:", err?.message || err);
     }

@@ -51,7 +51,7 @@ window.requestNotificationPermission = async function() {
     // Register service worker safely with fallback
     let registration = null;
     try {
-      registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+      registration = await navigator.serviceWorker.register('sw.js');
       if (navigator.serviceWorker.ready) {
         registration = await navigator.serviceWorker.ready;
       }
@@ -296,7 +296,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setTimeout(() => {
     updatePushUIState();
     if (window.isNotificationSupported() && Notification.permission === 'granted') {
-      navigator.serviceWorker.register('/sw.js', { scope: '/' }).then(() => {
+      navigator.serviceWorker.register('sw.js').then(() => {
         window.updateSubscriptionOnServer?.();
       }).catch(err => {
         console.warn("Auto-SW registration skipped/failed:", err);

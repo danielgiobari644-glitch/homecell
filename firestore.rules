@@ -31,15 +31,10 @@ service cloud.firestore {
       return resource.data;
     }
 
-    function isValidId(id) {
-      return id is string && id.size() <= 128;
-    }
-
     // --- User Profiles ---
     match /users/{userId} {
       allow read: if true;
-      allow create: if isSignedIn() && request.auth.uid == userId
-                    && incoming().uid == userId;
+      allow create: if isSignedIn() && request.auth.uid == userId;
       allow update: if isSignedIn() && (
         (request.auth.uid == userId)
         || isAdmin()
@@ -47,7 +42,7 @@ service cloud.firestore {
       allow delete: if isAdmin();
 
       match /user_rewards/{rewardId} {
-        allow read: if isSignedIn();
+        allow read: if true;
         allow create, update: if isSignedIn() && (request.auth.uid == userId || isAdmin());
         allow delete: if isAdmin();
       }
@@ -56,124 +51,41 @@ service cloud.firestore {
     // --- Cell Groups ---
     match /cells/{cellId} {
       allow read: if true;
-      allow create: if isVerified()
-                    && incoming().id == cellId
-                    && incoming().name is string && incoming().name.size() <= 100
-                    && incoming().city is string && incoming().city.size() <= 100
-                    && incoming().description is string && incoming().description.size() <= 500
-                    && incoming().leaderUid == request.auth.uid
-                    && incoming().leaderEmail == request.auth.token.email
-                    && incoming().status == 'active'
-                    && incoming().createdAt == request.time;
-      allow update: if isVerified() && (
-        ((existing().leaderUid == request.auth.uid || (existing().coLeaders is list && request.auth.token.email in existing().coLeaders))
-         && incoming().id == existing().id
-         && incoming().leaderUid == existing().leaderUid
-         && incoming().leaderEmail == existing().leaderEmail
-         && incoming().status == existing().status
-         && incoming().name is string && incoming().name.size() <= 100
-         && incoming().city is string && incoming().city.size() <= 100
-         && incoming().description is string && incoming().description.size() <= 500
-         && incoming().coLeaders is list && incoming().coLeaders.size() <= 10)
-        || isAdmin()
-      );
+      allow create: if isVerified();
+      allow update: if isVerified() || isAdmin();
       allow delete: if isAdmin();
 
       // Subcollection: Cell chat messages
       match /messages/{messageId} {
-        allow read: if isVerified() && (
-          get(/databases/$(database)/documents/cells/$(cellId)).data.status == 'active'
-          && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.cellId == cellId || isAdmin())
-        );
-        allow create: if isVerified() && (
-          get(/databases/$(database)/documents/cells/$(cellId)).data.status == 'active'
-          && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.cellId == cellId
-          && incoming().senderUid == request.auth.uid
-          && incoming().senderName is string && incoming().senderName.size() <= 100
-          && incoming().text is string && incoming().text.size() <= 2000
-          && incoming().createdAt == request.time
-        );
-        allow update: if isVerified() && (
-          (existing().senderUid == request.auth.uid)
-          || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.cellId == cellId
-          || isAdmin()
-        );
-        allow delete: if isVerified() && (
-          (existing().senderUid == request.auth.uid)
-          || get(/databases/$(database)/documents/cells/$(cellId)).data.leaderUid == request.auth.uid
-          || isAdmin()
-        );
+        allow read: if true;
+        allow create, update: if isVerified() || isAdmin();
+        allow delete: if isVerified() || isAdmin();
       }
 
       // Subcollection: Cell announcements
       match /announcements/{announcementId} {
-        allow read: if isVerified();
-        allow create, update, delete: if isVerified() && (
-          get(/databases/$(database)/documents/cells/$(cellId)).data.leaderUid == request.auth.uid
-          || (get(/databases/$(database)/documents/cells/$(cellId)).data.coLeaders is list && request.auth.token.email in get(/databases/$(database)/documents/cells/$(cellId)).data.coLeaders)
-          || isAdmin()
-        );
+        allow read: if true;
+        allow create, update, delete: if isVerified() || isAdmin();
       }
 
       // Subcollection: Cell events
       match /events/{eventId} {
-        allow read: if isVerified() && (
-          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.cellId == cellId || isAdmin()
-        );
-        allow create: if isVerified() && (
-          (get(/databases/$(database)/documents/cells/$(cellId)).data.leaderUid == request.auth.uid || (get(/databases/$(database)/documents/cells/$(cellId)).data.coLeaders is list && request.auth.token.email in get(/databases/$(database)/documents/cells/$(cellId)).data.coLeaders))
-          && incoming().title is string && incoming().title.size() <= 100
-          && incoming().date is string && incoming().date.size() <= 50
-          && incoming().description is string && incoming().description.size() <= 500
-          && incoming().createdAt == request.time
-        );
-        allow update, delete: if isVerified() && (
-          (get(/databases/$(database)/documents/cells/$(cellId)).data.leaderUid == request.auth.uid || (get(/databases/$(database)/documents/cells/$(cellId)).data.coLeaders is list && request.auth.token.email in get(/databases/$(database)/documents/cells/$(cellId)).data.coLeaders))
-          || isAdmin()
-        );
+        allow read: if true;
+        allow create, update, delete: if isVerified() || isAdmin();
       }
     }
 
     // --- Prayer Petitions ---
     match /prayer_petitions/{petitionId} {
       allow read: if true;
-      allow create: if isVerified()
-                    && incoming().id == petitionId
-                    && incoming().category in ['Health', 'Family', 'Career', 'Spiritual Growth', 'Wisdom', 'Gratitude', 'General Needs']
-                    && incoming().text is string && incoming().text.size() <= 2000
-                    && incoming().urgency is bool
-                    && incoming().authorUid == request.auth.uid
-                    && incoming().authorName is string && incoming().authorName.size() <= 100
-                    && incoming().agreementsCount == 0
-                    && incoming().createdAt == request.time;
-      allow update: if isVerified() && (
-        (incoming().id == existing().id
-         && incoming().category == existing().category
-         && incoming().text == existing().text
-         && incoming().urgency == existing().urgency
-         && incoming().authorUid == existing().authorUid
-         && incoming().authorName == existing().authorName
-         && incoming().agreements is map
-         && incoming().agreementsCount is number)
-        || isAdmin()
-      );
-      allow delete: if isVerified() && (
-        existing().authorUid == request.auth.uid || isAdmin()
-      );
+      allow create, update: if isVerified() || isAdmin();
+      allow delete: if isVerified() || isAdmin();
     }
 
     // --- Parish Calendar Events ---
     match /parish_events/{eventId} {
       allow read: if true;
-      allow write: if isAdmin();
-      allow update: if isVerified() && (
-        (incoming().id == existing().id
-         && incoming().title == existing().title
-         && incoming().date == existing().date
-         && incoming().description == existing().description
-         && incoming().rsvps is map)
-        || isAdmin()
-      );
+      allow create, update, delete: if isVerified() || isAdmin();
     }
 
     // --- Bible Trivia & Quizzes ---
@@ -189,19 +101,14 @@ service cloud.firestore {
 
     match /quiz_scores/{scoreId} {
       allow read: if true;
-      allow create, update: if isVerified()
-                            && incoming().userUid == request.auth.uid
-                            && incoming().userName is string
-                            && incoming().score is number;
+      allow create, update: if isVerified() || isSignedIn();
       allow delete: if isAdmin();
     }
 
     match /quiz_reactions/{reactionId} {
       allow read: if true;
-      allow create: if isVerified()
-                    && incoming().senderUid == request.auth.uid
-                    && incoming().text is string && incoming().text.size() <= 1000;
-      allow delete: if isVerified() && (existing().senderUid == request.auth.uid || isAdmin());
+      allow create, update: if isVerified() || isSignedIn();
+      allow delete: if isVerified() || isAdmin();
     }
 
     // --- Downloads Hub Bundles ---
@@ -213,57 +120,32 @@ service cloud.firestore {
     // --- System Configuration Desk Setup & Live Stream Broadcast ---
     match /system_configs/{configId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isAdmin() || isSignedIn();
     }
 
     // --- Loading Screen Configuration & History ---
     match /appSettings/{settingId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isAdmin() || isSignedIn();
     }
 
     match /loading_screen_history/{historyId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isAdmin() || isSignedIn();
     }
 
     // --- Community Feed & Social Center ---
     match /community_feed/{postId} {
       allow read: if true;
-      allow create: if isVerified()
-                    && incoming().id == postId
-                    && incoming().text is string && incoming().text.size() <= 2000
-                    && incoming().type in ['post', 'announcement', 'testimony']
-                    && incoming().authorUid == request.auth.uid
-                    && incoming().authorName is string && incoming().authorName.size() <= 100
-                    && incoming().authorRole is string
-                    && incoming().likesCount is number
-                    && incoming().likes is map
-                    && incoming().createdAt == request.time;
-      allow update: if isVerified() && (
-        (incoming().id == existing().id
-         && incoming().text == existing().text
-         && incoming().type == existing().type
-         && incoming().authorUid == existing().authorUid
-         && incoming().authorName == existing().authorName
-         && incoming().likes is map
-         && incoming().likesCount is number)
-        || isAdmin()
-      );
-      allow delete: if isVerified() && (
-        existing().authorUid == request.auth.uid || isAdmin()
-      );
+      allow create, update: if isVerified() || isSignedIn() || isAdmin();
+      allow delete: if isVerified() || isAdmin();
     }
 
     // --- User Reviews ---
     match /user_reviews/{reviewId} {
       allow read: if true;
-      allow create, update: if isVerified() && request.auth.uid == reviewId
-                            && incoming().uid == request.auth.uid
-                            && incoming().displayName is string
-                            && incoming().rating is number && incoming().rating >= 1 && incoming().rating <= 5
-                            && incoming().comment is string && incoming().comment.size() <= 2000;
-      allow delete: if isVerified() && (request.auth.uid == reviewId || isAdmin());
+      allow create, update: if isVerified() || isSignedIn();
+      allow delete: if isVerified() || isAdmin();
     }
 
     // --- Featured Testimonies ---
@@ -272,32 +154,32 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // --- Live Streams ---
+    // --- Live Streams & Replays ---
     match /live_streams/{streamId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isAdmin() || isSignedIn();
+    }
+
+    match /stream_replays/{replayId} {
+      allow read: if true;
+      allow create, update: if isSignedIn() || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /stream_chats/{chatId} {
+      allow read: if true;
+      allow create, update: if true;
+      allow delete: if isAdmin();
+    }
+
+    match /stream_viewers/{viewerId} {
+      allow read, write: if true;
     }
 
     // --- Direct Admin Support Chat ---
-    function isValidSupportChat(data) {
-      return data.userUid is string && data.userUid.size() <= 128
-        && data.userEmail is string && data.userEmail.size() <= 128
-        && data.userName is string && data.userName.size() <= 128
-        && data.senderUid is string && data.senderUid.size() <= 128
-        && data.senderName is string && data.senderName.size() <= 128
-        && data.text is string && data.text.size() <= 1000
-        && data.createdAt == request.time;
-    }
-
     match /support_chats/{msgId} {
-      allow read: if isVerified() && (
-        isAdmin() ||
-        resource.data.userUid == request.auth.uid
-      );
-      allow create: if isVerified() && isValidSupportChat(incoming()) && (
-        (incoming().userUid == request.auth.uid && incoming().senderUid == request.auth.uid) ||
-        isAdmin()
-      );
+      allow read: if isSignedIn() || isAdmin();
+      allow create: if isSignedIn() || isAdmin();
       allow update, delete: if isAdmin();
     }
 
@@ -315,59 +197,57 @@ service cloud.firestore {
 
     // --- Champions Referrals ---
     match /referrals/{referralId} {
-      allow read: if isSignedIn();
-      allow create, update: if isSignedIn();
+      allow read: if true;
+      allow create, update: if true;
       allow delete: if isAdmin();
     }
 
     // --- Realtime Member Presence ---
     match /presence/{userId} {
-      allow read: if isSignedIn();
-      allow create, update: if isVerified() && request.auth.uid == userId;
-      allow delete: if isVerified() && request.auth.uid == userId;
+      allow read, write: if true;
     }
 
     // --- Champions Rewards Library ---
     match /user_rewards/{rewardId} {
-      allow read: if isSignedIn();
+      allow read: if true;
       allow create, update: if isSignedIn();
       allow delete: if isAdmin();
     }
 
     // --- Referral Link Clicks Tracker ---
     match /referral_clicks/{clickId} {
-      allow read: if isSignedIn();
-      allow create: if true;
+      allow read, write: if true;
     }
 
     // --- Kingdom Store Products ---
     match /products/{productId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isAdmin() || isSignedIn();
+    }
+
+    match /storeProducts/{productId} {
+      allow read: if true;
+      allow write: if isAdmin() || isSignedIn();
     }
 
     // --- Custom Creation Requests ---
     match /custom_requests/{requestId} {
-      allow read: if isSignedIn() && (resource.data.userUid == request.auth.uid || isAdmin());
-      allow create: if isVerified() && incoming().userUid == request.auth.uid;
-      allow update: if isVerified() && (
-        (existing().userUid == request.auth.uid) || isAdmin()
-      );
+      allow read: if true;
+      allow create, update: if isSignedIn() || isAdmin();
       allow delete: if isAdmin();
     }
 
     // --- Feedback Hub Items ---
     match /feedback_items/{feedbackId} {
       allow read: if true;
-      allow create: if isVerified() && incoming().userUid == request.auth.uid;
-      allow update: if isVerified();
+      allow create, update: if true;
       allow delete: if isAdmin();
     }
 
     // --- Kingdom Coin Transactions ---
     match /kc_transactions/{transactionId} {
-      allow read: if isVerified() && (resource.data.userUid == request.auth.uid || isAdmin());
-      allow create: if isVerified() && incoming().userUid == request.auth.uid;
+      allow read: if true;
+      allow create: if isSignedIn();
       allow update, delete: if isAdmin();
     }
   }

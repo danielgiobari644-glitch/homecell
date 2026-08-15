@@ -19,8 +19,8 @@ const DEFAULT_KINGDOM_PRODUCTS = [
     description: "4K High-Resolution Christian wallpaper featuring Psalm 143:8 in elegant golden typography.",
     category: "Wallpapers",
     collectionName: "Morning & Night Prayer",
-    coverUrl: "https://images.unsplash.com/photo-1509021436468-d0f075e24b7a?auto=format&fit=crop&w=800&q=80",
-    fileUrl: "https://images.unsplash.com/photo-1509021436468-d0f075e24b7a?auto=format&fit=crop&w=1920&q=80",
+    coverUrl: "https://images.unsplash.com/photo-1507692877-66b9f2913e8b?auto=format&fit=crop&w=800&q=80",
+    fileUrl: "https://images.unsplash.com/photo-1507692877-66b9f2913e8b?auto=format&fit=crop&w=1920&q=80",
     priceKC: 50,
     author: "Home.cell Creative",
     tags: ["Wallpaper", "Morning", "Psalm", "Scripture"],
@@ -213,7 +213,7 @@ function renderProductsGrid(products) {
       <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col justify-between group">
         <div>
           <div class="relative h-48 bg-slate-100 dark:bg-zinc-800 overflow-hidden">
-            <img src="${p.coverUrl || 'https://images.unsplash.com/photo-1509021436468-d0f075e24b7a?auto=format&fit=crop&w=800&q=80'}" alt="${p.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+            <img src="${p.coverUrl || 'https://images.unsplash.com/photo-1507692877-66b9f2913e8b?auto=format&fit=crop&w=800&q=80'}" alt="${p.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
             <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent"></div>
             
             <div class="absolute top-3 left-3 flex flex-wrap gap-1">

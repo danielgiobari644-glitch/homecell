@@ -6,6 +6,16 @@ let adminCellsListener = null;
 let adminEventsListener = null;
 let adminTriviaListener = null;
 let adminBundlesListener = null;
+let adminUpcomingEventsListener = null;
+let adminDailyDevotionalsListener = null;
+let adminQuizzesListener = null;
+let adminApkListener = null;
+let adminStreamsListener = null;
+let adminStoreProductsListener = null;
+let adminCustomRequestsListener = null;
+let adminFeedbackListener = null;
+let adminLoadingScreenListener = null;
+let adminLoadingHistoryListener = null;
 
 function initAdminModule() {
   const adminBtns = document.querySelectorAll('#nav-admin, #mobile-nav-admin, .nav-item-admin');
@@ -24,6 +34,16 @@ function initAdminModule() {
     if (adminEventsListener) { adminEventsListener(); adminEventsListener = null; }
     if (adminTriviaListener) { adminTriviaListener(); adminTriviaListener = null; }
     if (adminBundlesListener) { adminBundlesListener(); adminBundlesListener = null; }
+    if (adminUpcomingEventsListener) { adminUpcomingEventsListener(); adminUpcomingEventsListener = null; }
+    if (adminDailyDevotionalsListener) { adminDailyDevotionalsListener(); adminDailyDevotionalsListener = null; }
+    if (adminQuizzesListener) { adminQuizzesListener(); adminQuizzesListener = null; }
+    if (adminApkListener) { adminApkListener(); adminApkListener = null; }
+    if (adminStreamsListener) { adminStreamsListener(); adminStreamsListener = null; }
+    if (adminStoreProductsListener) { adminStoreProductsListener(); adminStoreProductsListener = null; }
+    if (adminCustomRequestsListener) { adminCustomRequestsListener(); adminCustomRequestsListener = null; }
+    if (adminFeedbackListener) { adminFeedbackListener(); adminFeedbackListener = null; }
+    if (adminLoadingScreenListener) { adminLoadingScreenListener(); adminLoadingScreenListener = null; }
+    if (adminLoadingHistoryListener) { adminLoadingHistoryListener(); adminLoadingHistoryListener = null; }
 
     adminBtns.forEach(btn => btn.classList.add('hidden'));
     if (unauthBanner) unauthBanner.classList.remove('hidden');
@@ -513,7 +533,6 @@ function deleteDownloadBundle(bundleId) {
 }
 
 // Admin Official Android APK Management
-let adminApkListener = null;
 
 function syncAdminApkConfig() {
   const badge = document.getElementById('admin-apk-status-badge');
@@ -728,7 +747,6 @@ function updateStreamDesk() {
     .catch(err => window.handleFirestoreError(err, 'write', `live_streams/${docId}`));
 }
 
-let adminStreamsListener = null;
 function syncAdminStreams() {
   const container = document.getElementById('admin-streams-list');
   if (!container) return;
@@ -1147,7 +1165,6 @@ window.handleAdminEventSubmit = function(event) {
   }
 };
 
-let adminUpcomingEventsListener = null;
 function syncAdminUpcomingEvents() {
   const container = document.getElementById('admin-upcoming-events-list');
   if (!container) return;
@@ -1313,7 +1330,6 @@ window.handleAdminDevotionalSubmit = function(event) {
   });
 };
 
-let adminDailyDevotionalsListener = null;
 function syncAdminDailyDevotionals() {
   const container = document.getElementById('admin-daily-devotionals-list');
   if (!container) return;
@@ -1984,7 +2000,6 @@ function copyDirectQuizLink(quizId) {
 }
 window.copyDirectQuizLink = copyDirectQuizLink;
 
-let adminQuizzesListener = null;
 function syncAdminQuizzes() {
   const catalogContainer = document.getElementById('admin-quizzes-catalog');
   if (!catalogContainer) return;
@@ -2153,7 +2168,9 @@ function syncAdminStoreProducts() {
   const db = window.db;
   if (!db) return;
 
-  db.collection('products').onSnapshot(snap => {
+  if (adminStoreProductsListener) adminStoreProductsListener();
+
+  adminStoreProductsListener = db.collection('products').onSnapshot(snap => {
     container.innerHTML = '';
     if (snap.empty) {
       container.innerHTML = `<div class="col-span-full text-center py-6 text-slate-400">No store products found. Add one above!</div>`;
@@ -2170,7 +2187,7 @@ function syncAdminStoreProducts() {
       card.innerHTML = `
         <div class="space-y-2">
           <div class="relative h-28 rounded-xl overflow-hidden bg-slate-200">
-            <img src="${p.coverUrl || 'https://images.unsplash.com/photo-1509021436468-d0f075e24b7a?auto=format&fit=crop&w=800&q=80'}" class="w-full h-full object-cover" />
+            <img src="${p.coverUrl || 'https://images.unsplash.com/photo-1507692877-66b9f2913e8b?auto=format&fit=crop&w=800&q=80'}" class="w-full h-full object-cover" />
             <span class="absolute top-2 left-2 px-2 py-0.5 rounded bg-slate-900/80 text-amber-400 text-[9px] font-black uppercase">
               ${p.category}
             </span>
@@ -2347,7 +2364,7 @@ async function handleAdminProductSubmit(e) {
     category: category,
     collectionName: collectionName,
     priceKC: priceKC,
-    coverUrl: coverUrl || fileUrl || 'https://images.unsplash.com/photo-1509021436468-d0f075e24b7a?auto=format&fit=crop&w=800&q=80',
+    coverUrl: coverUrl || fileUrl || 'https://images.unsplash.com/photo-1507692877-66b9f2913e8b?auto=format&fit=crop&w=800&q=80',
     fileUrl: fileUrl || coverUrl,
     description: description,
     author: "Super Admin",
@@ -2404,7 +2421,9 @@ function syncAdminCustomRequests() {
   const db = window.db;
   if (!db) return;
 
-  db.collection('custom_requests').onSnapshot(snap => {
+  if (adminCustomRequestsListener) adminCustomRequestsListener();
+
+  adminCustomRequestsListener = db.collection('custom_requests').onSnapshot(snap => {
     container.innerHTML = '';
     if (snap.empty) {
       container.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-slate-400">No custom creation requests found.</td></tr>`;
@@ -2525,7 +2544,9 @@ function syncAdminFeedbackHub() {
   const db = window.db;
   if (!db) return;
 
-  db.collection('feedback_items').onSnapshot(snap => {
+  if (adminFeedbackListener) adminFeedbackListener();
+
+  adminFeedbackListener = db.collection('feedback_items').onSnapshot(snap => {
     container.innerHTML = '';
     if (snap.empty) {
       container.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-slate-400">No suggestions submitted yet.</td></tr>`;
@@ -2619,8 +2640,6 @@ window.updateAdminFeedbackStatus = updateAdminFeedbackStatus;
 window.rewardAdminFeedbackUser = rewardAdminFeedbackUser;
 
 // --- Super Admin Loading Screen System Management ---
-let adminLoadingScreenListener = null;
-let adminLoadingHistoryListener = null;
 let selectedVideoBase64 = null;
 let selectedVideoFile = null;
 

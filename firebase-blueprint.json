@@ -436,6 +436,54 @@
       "schema": "Product",
       "description": "Digital items for sale in the Kingdom Store."
     },
+    "storeProducts/{productId}": {
+      "schema": "Product",
+      "description": "Digital items alias for sale in the Kingdom Store."
+    },
+    "stream_replays/{replayId}": {
+      "schema": "LiveStream",
+      "description": "Recorded live stream broadcast replays."
+    },
+    "stream_chats/{chatId}": {
+      "schema": "SupportMessage",
+      "description": "Realtime broadcast chat messages."
+    },
+    "stream_viewers/{viewerId}": {
+      "schema": "User",
+      "description": "Live broadcast concurrent audience presence."
+    },
+    "presence/{userId}": {
+      "schema": "User",
+      "description": "Realtime user online presence states."
+    },
+    "referral_clicks/{clickId}": {
+      "schema": "Referral",
+      "description": "Referral link click logs."
+    },
+    "appSettings/{settingId}": {
+      "schema": "SystemConfig",
+      "description": "App settings including loading screen."
+    },
+    "loading_screen_history/{historyId}": {
+      "schema": "SystemConfig",
+      "description": "Historical loading screen video and audio configurations."
+    },
+    "quizzes/{quizId}": {
+      "schema": "TriviaQuestion",
+      "description": "Interactive Bible quizzes and challenges."
+    },
+    "quiz_scores/{scoreId}": {
+      "schema": "KcTransaction",
+      "description": "User quiz participation and leaderboard scores."
+    },
+    "quiz_reactions/{reactionId}": {
+      "schema": "CellMessage",
+      "description": "Reactions and praise comments on quiz completions."
+    },
+    "community_feed/{postId}": {
+      "schema": "CellMessage",
+      "description": "Universal community feed announcements, testimonies, and posts."
+    },
     "custom_requests/{requestId}": {
       "schema": "CustomRequest",
       "description": "Custom creation requests submitted by users."
