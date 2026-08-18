@@ -81,14 +81,14 @@
 })();
 
 const firebaseConfig = {
-  projectId: "emergent-net-8cf5x",
-  appId: "1:671126310797:web:1a4b3a88f3375ce15437c4",
-  apiKey: "AIzaSyBU3AqZsnHUwDIkzQ6ga3mz6qfANA5VyB4",
-  authDomain: "emergent-net-8cf5x.firebaseapp.com",
-  firestoreDatabaseId: "ai-studio-homecell-f5e9ce35-384e-4158-aa68-f4db816ee215",
-  storageBucket: "emergent-net-8cf5x.firebasestorage.app",
-  messagingSenderId: "671126310797",
-  measurementId: ""
+  apiKey: "AIzaSyCL4siNSgWX0gH5QIbl7OtZFDvBiHH9oP0",
+  authDomain: "hcell-f3797.firebaseapp.com",
+  databaseURL: "https://hcell-f3797-default-rtdb.firebaseio.com",
+  projectId: "hcell-f3797",
+  storageBucket: "hcell-f3797.firebasestorage.app",
+  messagingSenderId: "940294292200",
+  appId: "1:940294292200:web:45e38c21c2ea950ba7bf5d",
+  measurementId: "G-0YN4548C8Z"
 };
 
 // Initialize Firebase Compat
@@ -97,7 +97,7 @@ if (!window.firebase) {
 }
 
 const app = firebase.initializeApp(firebaseConfig);
-const db = firebaseConfig.firestoreDatabaseId && typeof firebase.app().firestore === 'function'
+const db = (firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId !== '(default)' && typeof firebase.app().firestore === 'function')
   ? firebase.app().firestore(firebaseConfig.firestoreDatabaseId)
   : firebase.firestore();
 

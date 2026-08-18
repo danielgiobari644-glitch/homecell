@@ -1245,7 +1245,7 @@ function renderMyLibraryGrid(items) {
 
 // Inner Tab Switcher for Kingdom Store
 function switchStoreTab(tabKey) {
-  const sections = ['marketplace', 'custom-requests', 'feedback-hub', 'my-library', 'installers'];
+  const sections = ['marketplace', 'custom-requests', 'feedback-hub', 'my-library', 'rewards', 'installers'];
   sections.forEach(s => {
     const el = document.getElementById(`store-section-${s}`);
     const btn = document.getElementById(`store-tab-btn-${s}`);
@@ -1255,9 +1255,9 @@ function switchStoreTab(tabKey) {
     }
     if (btn) {
       if (s === tabKey) {
-        btn.className = "store-nav-btn px-4 py-2.5 rounded-2xl text-xs font-black bg-amber-500 text-slate-950 cursor-pointer shadow-sm transition-all flex items-center gap-2";
+        btn.className = "store-nav-btn px-4 py-2.5 rounded-2xl text-xs font-black bg-amber-500 text-slate-950 cursor-pointer shadow-sm transition-all flex items-center gap-2 shrink-0";
       } else {
-        btn.className = "store-nav-btn px-4 py-2.5 rounded-2xl text-xs font-extrabold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-700 cursor-pointer transition-all flex items-center gap-2";
+        btn.className = "store-nav-btn px-4 py-2.5 rounded-2xl text-xs font-extrabold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-700 cursor-pointer transition-all flex items-center gap-2 shrink-0";
       }
     }
   });

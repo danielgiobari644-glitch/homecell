@@ -59,6 +59,14 @@ function toggleTheme() {
 
 // Seamless Tab Routing Desk
 function switchTab(tabId) {
+  if (tabId === 'downloads') {
+    switchTab('champions');
+    if (window.switchChampionsSubTab) {
+      window.switchChampionsSubTab('store');
+    }
+    return;
+  }
+
   activeTab = tabId;
 
   const tabTitles = {
@@ -71,7 +79,6 @@ function switchTab(tabId) {
     chat: 'Fellowship Lounge',
     prayers: 'Prayer Desk',
     calendar: 'Parish Events',
-    downloads: 'Resource Hub',
     settings: 'Profile & Settings',
     admin: 'Admin Console',
     privacy: 'Privacy Policy',
@@ -85,7 +92,7 @@ function switchTab(tabId) {
   }
 
   // List of all navigation tabs
-  const tabIds = ['feed', 'dashboard', 'streak', 'champions', 'bible', 'cells', 'chat', 'prayers', 'calendar', 'downloads', 'admin', 'settings', 'privacy', 'terms'];
+  const tabIds = ['feed', 'dashboard', 'streak', 'champions', 'bible', 'cells', 'chat', 'prayers', 'calendar', 'admin', 'settings', 'privacy', 'terms'];
 
   tabIds.forEach(id => {
     const pane = document.getElementById(`tab-${id}`);
@@ -138,16 +145,14 @@ function switchTab(tabId) {
   if (tabId === 'champions') {
     if (window.initChampionsModule) window.initChampionsModule();
     if (window.initHallOfFameModule) window.initHallOfFameModule();
+    if (window.initKingdomStoreModule) window.initKingdomStoreModule();
+    if (window.initDownloadsModule) window.initDownloadsModule();
   }
   if (tabId === 'bible' && window.initBibleEngine) window.initBibleEngine();
   if (tabId === 'cells' && window.initCellsModule) window.initCellsModule();
   if (tabId === 'chat' && window.initCellsModule) window.initCellsModule();
   if (tabId === 'prayers' && window.initPrayersModule) window.initPrayersModule();
   if (tabId === 'calendar' && window.initCalendarModule) window.initCalendarModule();
-  if (tabId === 'downloads') {
-    if (window.initDownloadsModule) window.initDownloadsModule();
-    if (window.initKingdomStoreModule) window.initKingdomStoreModule();
-  }
   if (tabId === 'admin' && window.initAdminModule) window.initAdminModule();
 
   // Close mobile sidebar if active
@@ -806,41 +811,93 @@ function closeProfileModal() {
 }
 
 // Standard Auth Actions
+function setAuthAlert(msg) {
+  const alertBox = document.getElementById('auth-alert-box');
+  const alertText = document.getElementById('auth-alert-text');
+  if (alertBox && alertText) {
+    if (msg) {
+      alertText.innerHTML = msg;
+      alertBox.classList.remove('hidden');
+      if (window.lucide) window.lucide.createIcons();
+    } else {
+      alertBox.classList.add('hidden');
+      alertText.innerHTML = '';
+    }
+  }
+}
+window.setAuthAlert = setAuthAlert;
+
 function handleAuthSubmit(email, password, isSignUpMode) {
+  setAuthAlert(null);
+  const submitBtn = document.getElementById('auth-submit-btn');
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.classList.add('opacity-70');
+  }
+
   if (isSignUpMode) {
     window.auth.createUserWithEmailAndPassword(email, password)
       .then(cred => {
-        window.showToast?.("Account created successfully!");
+        window.showToast?.("Account created successfully!", "success");
+        closeAuthModal();
       })
       .catch(err => {
         console.error("Signup failed:", err);
         let friendlyMsg = err.message;
-        if (err.code === 'auth/email-already-in-use') {
+        if (err.code === 'auth/operation-not-allowed') {
+          friendlyMsg = "Email/Password sign-up is disabled for this Firebase project. Please enable Email/Password in the Firebase Console under Authentication > Sign-in method.";
+          setAuthAlert(`<strong>Sign-in Provider Disabled:</strong> Email/Password authentication is not yet enabled for this project.<br/><br/><a href="https://console.firebase.google.com/project/hcell-f3797/authentication/providers" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-bold text-[11px] transition-all"><i data-lucide="external-link" class="w-3.5 h-3.5"></i> Open Firebase Auth Settings to Enable</a>`);
+        } else if (err.code === 'auth/email-already-in-use') {
           friendlyMsg = "An account with this email already exists. Please use the 'Sign In' tab.";
+          setAuthAlert(friendlyMsg);
         } else if (err.code === 'auth/weak-password') {
           friendlyMsg = "The password is too weak. Please use at least 6 characters.";
+          setAuthAlert(friendlyMsg);
         } else if (err.code === 'auth/invalid-email') {
           friendlyMsg = "Please enter a valid email address.";
+          setAuthAlert(friendlyMsg);
+        } else {
+          setAuthAlert(friendlyMsg);
         }
         window.showToast?.(friendlyMsg, 'error');
+      })
+      .finally(() => {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.classList.remove('opacity-70');
+        }
       });
   } else {
     window.auth.signInWithEmailAndPassword(email, password)
       .then(() => {
-        window.showToast?.("Signed in successfully.");
+        window.showToast?.("Signed in successfully.", "success");
+        closeAuthModal();
       })
       .catch(err => {
         console.error("Sign-in failed:", err);
         let friendlyMsg = err.message;
-        if (err.code === 'auth/invalid-credential' || (err.message && err.message.includes('invalid-credential'))) {
+        if (err.code === 'auth/operation-not-allowed') {
+          friendlyMsg = "Email/Password sign-in is disabled in your Firebase project. Please enable Email/Password in the Firebase Console under Authentication > Sign-in method.";
+          setAuthAlert(`<strong>Sign-in Provider Disabled:</strong> Email/Password authentication is disabled in this Firebase project.<br/><br/><a href="https://console.firebase.google.com/project/hcell-f3797/authentication/providers" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-bold text-[11px] transition-all"><i data-lucide="external-link" class="w-3.5 h-3.5"></i> Open Firebase Auth Settings to Enable</a>`);
+        } else if (err.code === 'auth/invalid-credential' || (err.message && err.message.includes('invalid-credential')) || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
           friendlyMsg = "Incorrect password or no account found. If you are a new member, please tap the 'Sign Up' tab first!";
+          setAuthAlert(friendlyMsg);
+        } else {
+          setAuthAlert(friendlyMsg);
         }
         window.showToast?.(friendlyMsg, 'error');
+      })
+      .finally(() => {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.classList.remove('opacity-70');
+        }
       });
   }
 }
 
 function openAuthModal() {
+  setAuthAlert(null);
   const modal = document.getElementById('auth-modal');
   if (modal) {
     modal.classList.remove('hidden');
@@ -849,6 +906,7 @@ function openAuthModal() {
 }
 
 function closeAuthModal() {
+  setAuthAlert(null);
   const modal = document.getElementById('auth-modal');
   if (modal) {
     modal.classList.add('hidden');
@@ -930,6 +988,7 @@ function triggerPasswordReset() {
 let authMode = 'signin';
 function setAuthTab(mode) {
   authMode = mode;
+  setAuthAlert(null);
   const tabSignin = document.getElementById('btn-tab-signin');
   const tabSignup = document.getElementById('btn-tab-signup');
   const submitBtn = document.getElementById('auth-submit-btn');
@@ -1007,11 +1066,13 @@ document.addEventListener("DOMContentLoaded", () => {
       provider.setCustomParameters({ prompt: 'select_account' });
       const inIframe = window.self !== window.top;
 
+      setAuthAlert(null);
       window.showToast?.("Opening Google Sign-In...", "info");
 
       try {
         await window.auth.signInWithPopup(provider);
         window.showToast?.("Google authentication successful.", "success");
+        closeAuthModal();
       } catch (err) {
         if (err.code === 'auth/cancelled-popup-request') {
           console.log("Conflicting popup request dismissed gracefully.");
@@ -1019,6 +1080,13 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         if (err.code === 'auth/popup-closed-by-user') {
           window.showToast?.("Sign-in popup was closed.", "info");
+          return;
+        }
+        if (err.code === 'auth/operation-not-allowed') {
+          const msg = "Google Sign-In is disabled for this Firebase project. Please enable 'Google' in your Firebase Console under Authentication > Sign-in method.";
+          console.warn(msg);
+          setAuthAlert(`<strong>Google Sign-In Disabled:</strong> The Google provider is not yet enabled for this Firebase project.<br/><br/><a href="https://console.firebase.google.com/project/hcell-f3797/authentication/providers" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-bold text-[11px] transition-all"><i data-lucide="external-link" class="w-3.5 h-3.5"></i> Open Firebase Auth Settings to Enable Google</a>`);
+          window.showToast?.(msg, 'error');
           return;
         }
         if (err.code === 'auth/popup-blocked') {
@@ -1035,6 +1103,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (inIframe) {
           friendlyMsg += " (Hint: If popups or third-party cookies are restricted in preview mode, please tap 'Open in New Tab' on the top right or sign in with Email).";
         }
+        setAuthAlert(friendlyMsg);
         window.showToast?.(friendlyMsg, 'error');
       } finally {
         setTimeout(() => {

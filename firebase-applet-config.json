@@ -1,12 +1,13 @@
 {
-  "projectId": "emergent-net-8cf5x",
-  "appId": "1:671126310797:web:1a4b3a88f3375ce15437c4",
-  "apiKey": "AIzaSyBU3AqZsnHUwDIkzQ6ga3mz6qfANA5VyB4",
-  "authDomain": "emergent-net-8cf5x.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-homecell-f5e9ce35-384e-4158-aa68-f4db816ee215",
-  "storageBucket": "emergent-net-8cf5x.firebasestorage.app",
-  "messagingSenderId": "671126310797",
-  "measurementId": "",
-  "oAuthClientId": "671126310797-73vc169go0k9vd0d5jogfkvngnaicug3.apps.googleusercontent.com",
+  "projectId": "hcell-f3797",
+  "appId": "1:940294292200:web:45e38c21c2ea950ba7bf5d",
+  "apiKey": "AIzaSyCL4siNSgWX0gH5QIbl7OtZFDvBiHH9oP0",
+  "authDomain": "hcell-f3797.firebaseapp.com",
+  "databaseURL": "https://hcell-f3797-default-rtdb.firebaseio.com",
+  "storageBucket": "hcell-f3797.firebasestorage.app",
+  "messagingSenderId": "940294292200",
+  "measurementId": "G-0YN4548C8Z",
+  "firestoreDatabaseId": "(default)",
+  "oAuthClientId": "",
   "recaptchaSiteKey": ""
 }

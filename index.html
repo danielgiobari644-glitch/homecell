@@ -463,17 +463,6 @@
 
     </div>
 
-    <!-- Dynamic Stream Broadcast Notification Banner -->
-    <div id="live-broadcast-banner" class="hidden w-full bg-rose-600 text-white font-semibold py-3 px-4 flex items-center justify-between shadow-md animate-pulse">
-      <div class="flex items-center gap-2 max-w-[80%]">
-        <i data-lucide="radio" class="w-5 h-5 flex-shrink-0"></i>
-        <span class="truncate" id="broadcast-banner-title">Gathering Live Now! Watch fellowship live stream:</span>
-      </div>
-      <button onclick="switchTab('dashboard')" class="bg-white text-rose-700 font-bold px-4 py-1.5 rounded-full hover:bg-rose-50 text-sm flex items-center gap-1.5 transition-all cursor-pointer">
-        Tune In <i data-lucide="play" class="w-4 h-4"></i>
-      </button>
-    </div>
-
     <!-- Onboarding / Welcome Modal overlay (7-Step Interactive Responsive Wizard) -->
     <div id="onboarding-modal" class="hidden fixed inset-0 bg-slate-950/90 backdrop-blur-xl z-[100] flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
       <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl relative flex flex-col min-h-[540px] sm:min-h-[580px] max-h-[92vh] animate-fadeIn">
@@ -863,6 +852,14 @@
           <button onclick="setAuthTab('signup')" id="btn-tab-signup" class="flex-1 pb-3 text-center border-b-2 border-transparent text-slate-500 dark:text-zinc-400">Sign Up</button>
         </div>
 
+        <!-- Auth Alert / Error Banner -->
+        <div id="auth-alert-box" class="hidden p-3.5 mb-4 rounded-xl text-xs font-medium bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-200">
+          <div class="flex items-start gap-2">
+            <i data-lucide="alert-circle" class="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"></i>
+            <div id="auth-alert-text" class="flex-1 leading-relaxed"></div>
+          </div>
+        </div>
+
         <!-- Google OAuth Trigger Button -->
         <button id="google-auth-btn" class="w-full py-3 border border-slate-300 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-800 rounded-xl flex items-center justify-center gap-3 font-semibold text-sm transition-all mb-4 cursor-pointer text-slate-700 dark:text-zinc-200">
           <svg class="w-5 h-5" viewBox="0 0 24 24">
@@ -979,11 +976,6 @@
             <span>Prayer Desk</span>
           </button>
 
-          <button onclick="switchTab('downloads')" id="nav-downloads" class="nav-item-downloads w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800/60 transition-all cursor-pointer">
-            <i data-lucide="download" class="w-4.5 h-4.5"></i>
-            <span>Resource Hub</span>
-          </button>
-
           <button onclick="switchTab('settings')" id="nav-settings" class="nav-item-settings w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800/60 transition-all cursor-pointer">
             <i data-lucide="settings" class="w-4.5 h-4.5"></i>
             <span>Profile & Settings</span>
@@ -1097,11 +1089,6 @@
           <button onclick="switchTab('prayers')" class="nav-item-prayers w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl text-xs font-bold text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800/60 transition-all cursor-pointer">
             <i data-lucide="heart-handshake" class="w-4.5 h-4.5"></i>
             <span>Prayer Desk</span>
-          </button>
-
-          <button onclick="switchTab('downloads')" class="nav-item-downloads w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl text-xs font-bold text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800/60 transition-all cursor-pointer">
-            <i data-lucide="download" class="w-4.5 h-4.5"></i>
-            <span>Resource Hub</span>
           </button>
 
           <button onclick="switchTab('settings')" class="nav-item-settings w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl text-xs font-bold text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800/60 transition-all cursor-pointer">
@@ -1468,113 +1455,6 @@
         <!-- Tab 1: Fellowship Dashboard (Bento Grid) -->
         <section id="tab-dashboard" class="app-tab hidden space-y-8 animate-fade-in">
           
-          <!-- Universal Live Stream Broadcast Pane -->
-          <div id="live-stream-pane" class="hidden bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-[2.5rem] p-6 shadow-md space-y-4">
-            
-            <!-- Header section of the stream -->
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 dark:border-zinc-800/60 pb-4">
-              <div>
-                <div class="flex items-center gap-2 text-rose-600 font-bold text-xs uppercase tracking-wider">
-                  <span class="w-2.5 h-2.5 bg-rose-600 rounded-full animate-ping"></span>
-                  Live Fellowship Stream Broadcast
-                </div>
-                <h2 id="stream-pane-title" class="text-2xl font-black font-display text-slate-900 dark:text-zinc-50 mt-1">Stream Title</h2>
-                <p id="stream-pane-desc" class="text-sm text-slate-500 dark:text-zinc-400 mt-1">Description</p>
-              </div>
-              <!-- Stats/Actions counter similar to YouTube -->
-              <div class="flex items-center gap-4 text-xs font-bold text-slate-500 dark:text-zinc-400">
-                <!-- Stop Stream Button (Visible only to Super Admin, managed via JS) -->
-                <div id="superadmin-stop-stream-container" class="hidden">
-                  <button onclick="window.stopLiveStream()" class="flex items-center gap-1.5 bg-rose-100 hover:bg-rose-200 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400 px-3 py-1.5 rounded-full transition-all cursor-pointer">
-                    <i data-lucide="stop-circle" class="w-4 h-4 text-rose-600"></i>
-                    <span>Stop Broadcast</span>
-                  </button>
-                </div>
-                
-                <div class="flex items-center gap-1.5 bg-rose-50 dark:bg-rose-950/20 text-rose-600 px-3 py-1.5 rounded-full">
-                  <span class="w-1.5 h-1.5 bg-rose-600 rounded-full animate-ping"></span>
-                  <span id="stream-viewer-count">Live</span>
-                </div>
-                <button onclick="window.likeStream()" id="btn-like-stream" class="flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 px-3 py-1.5 rounded-full transition-all cursor-pointer">
-                  <i data-lucide="thumbs-up" id="stream-like-icon" class="w-4 h-4"></i>
-                  <span id="stream-likes-count">48 likes</span>
-                </button>
-              </div>
-            </div>
-
-            <!-- YouTube-style main column + chat column grid -->
-            <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-stretch">
-              
-              <!-- Video Player Column (Col span 8 on xl) -->
-              <div class="xl:col-span-8 flex flex-col justify-between">
-                <div id="stream-player-container" class="aspect-video w-full rounded-3xl overflow-hidden bg-slate-950 shadow-inner relative flex items-center justify-center">
-                  <!-- Instantiated dynamically in dashboard.js -->
-                </div>
-              </div>
-
-              <!-- Live Chat Column (Col span 4 on xl) -->
-              <div class="xl:col-span-4 flex flex-col h-[400px] xl:h-[420px] border border-slate-200 dark:border-zinc-800 rounded-3xl overflow-hidden bg-slate-50 dark:bg-zinc-950/40 shadow-sm">
-                <!-- Chat Header -->
-                <div class="px-4 py-3 border-b border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex items-center justify-between">
-                  <div class="flex items-center gap-2">
-                    <span class="w-2 h-2 bg-rose-500 rounded-full animate-pulse"></span>
-                    <span class="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-zinc-200">Live Chat</span>
-                  </div>
-                  <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest" id="chat-status">Connected</span>
-                </div>
-
-                <!-- Chat Messages Scroll Container -->
-                <div id="stream-chat-messages" class="flex-grow overflow-y-auto p-4 space-y-3 text-xs">
-                  <!-- Messages loaded dynamically -->
-                </div>
-
-                <!-- Chat Quick Reactions -->
-                <div class="px-4 py-2 border-t border-slate-100 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/50 flex items-center justify-between gap-1">
-                  <button onclick="window.sendQuickReaction('🙏')" class="hover:scale-125 transition-transform cursor-pointer text-base">🙏</button>
-                  <button onclick="window.sendQuickReaction('🙌')" class="hover:scale-125 transition-transform cursor-pointer text-base">🙌</button>
-                  <button onclick="window.sendQuickReaction('❤️')" class="hover:scale-125 transition-transform cursor-pointer text-base">❤️</button>
-                  <button onclick="window.sendQuickReaction('🔥')" class="hover:scale-125 transition-transform cursor-pointer text-base">🔥</button>
-                  <button onclick="window.sendQuickReaction('👑')" class="hover:scale-125 transition-transform cursor-pointer text-base">👑</button>
-                  <button onclick="window.sendQuickReaction('✨')" class="hover:scale-125 transition-transform cursor-pointer text-base">✨</button>
-                  <button onclick="window.sendQuickReaction('😭')" class="hover:scale-125 transition-transform cursor-pointer text-base">😭</button>
-                  <button onclick="window.sendQuickReaction('💯')" class="hover:scale-125 transition-transform cursor-pointer text-base">💯</button>
-                </div>
-
-                <!-- Chat Input area -->
-                <form id="stream-chat-form" onsubmit="window.sendStreamChatMessage(event)" class="p-3 border-t border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex items-center gap-2">
-                  <input type="text" id="stream-chat-input" required placeholder="Say something in Fellowship Chat..." class="flex-grow px-3 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 text-slate-800 dark:text-zinc-100" />
-                  <button type="submit" class="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-all hover:scale-105 active:scale-95 cursor-pointer flex items-center justify-center">
-                    <i data-lucide="send" class="w-3.5 h-3.5"></i>
-                  </button>
-                </form>
-              </div>
-
-            </div>
-          </div>
-
-          <!-- Stream Replays & Recorded Sermons Archive -->
-          <div id="stream-replays-archive-section" class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-[2.5rem] p-6 shadow-sm space-y-4">
-            <div class="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800/60 pb-4 flex-wrap gap-2">
-              <div class="flex items-center gap-2.5">
-                <div class="w-9 h-9 rounded-full bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold">
-                  <i data-lucide="film" class="w-4 h-4"></i>
-                </div>
-                <div>
-                  <h3 class="text-lg font-black font-display text-slate-900 dark:text-zinc-50">Stream Replays & Sermons</h3>
-                  <p class="text-xs text-slate-500 dark:text-zinc-400">Watch saved broadcasts, replay worship sessions, pause, seek & comment</p>
-                </div>
-              </div>
-              <span id="replays-count-badge" class="px-3 py-1 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 rounded-full text-xs font-bold border border-indigo-100 dark:border-indigo-900/40">
-                0 Replays Saved
-              </span>
-            </div>
-
-            <!-- Replays Grid -->
-            <div id="stream-replays-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              <!-- Replay cards rendered dynamically -->
-            </div>
-          </div>
-
           <!-- Champion Celebration & Personal Streak Arena -->
           <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
             
@@ -2154,7 +2034,7 @@
               <i data-lucide="target" class="w-4 h-4"></i> Missions & Challenges
             </button>
             <button onclick="window.switchChampionsSubTab('store')" id="tab-btn-store" class="champ-subtab-btn px-4 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 shrink-0 text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800">
-              <i data-lucide="shopping-bag" class="w-4 h-4"></i> Rewards Store
+              <i data-lucide="shopping-bag" class="w-4 h-4"></i> Store & Resource Hub
             </button>
           </div>
 
@@ -2398,58 +2278,355 @@
             </div>
           </div>
 
-          <!-- Sub-Tab 4: Rewards Store -->
+          <!-- Sub-Tab 4: Store & Resource Hub -->
           <div id="champ-subtab-store" class="champ-subtab-panel hidden space-y-6">
             
             <!-- Kingdom Store Contextual Tip -->
             <div id="store-contextual-tip"></div>
 
-            <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 space-y-6 shadow-sm">
+            <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 sm:p-8 space-y-6 shadow-sm">
               
-              <!-- Store Header & Category Filter -->
-              <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-200 dark:border-zinc-800 pb-4">
-                <div>
-                  <h3 class="text-base font-black font-display text-slate-900 dark:text-zinc-100 flex items-center gap-2">
-                    <i data-lucide="shopping-bag" class="w-5 h-5 text-amber-500"></i> Kingdom Digital Rewards Store
-                  </h3>
-                  <p class="text-xs text-slate-500 dark:text-zinc-400">Redeem your hard-earned Kingdom Coins for exclusive digital perks and downloads!</p>
+              <!-- Store Header Banner -->
+              <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 p-6 bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 rounded-3xl text-slate-950 shadow-md">
+                <div class="space-y-1">
+                  <div class="inline-flex items-center gap-2 px-3 py-1 bg-slate-950/20 rounded-full text-xs font-black uppercase tracking-wider text-slate-950">
+                    <i data-lucide="shopping-bag" class="w-4 h-4"></i> Kingdom Store & Resource Hub
+                  </div>
+                  <h2 class="text-2xl sm:text-3xl font-black font-display tracking-tight text-slate-950">Digital Resource Hub & Request Hub</h2>
+                  <p class="text-xs sm:text-sm font-bold text-slate-900/80">Acquire digital wallpapers, quote collections, and custom creations powered by Kingdom Coins.</p>
                 </div>
 
-                <!-- Filter Categories -->
-                <div class="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto no-scrollbar">
-                  <button onclick="window.filterStoreItems('all')" id="store-cat-all" class="store-cat-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500 text-slate-950">
-                    All
-                  </button>
-                  <button onclick="window.filterStoreItems('theme')" id="store-cat-theme" class="store-cat-btn px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800">
-                    Themes
-                  </button>
-                  <button onclick="window.filterStoreItems('badge')" id="store-cat-badge" class="store-cat-btn px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800">
-                    Badges
-                  </button>
-                  <button onclick="window.filterStoreItems('ebook')" id="store-cat-ebook" class="store-cat-btn px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800">
-                    Devotionals
-                  </button>
-                  <button onclick="window.filterStoreItems('wallpaper')" id="store-cat-wallpaper" class="store-cat-btn px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800">
-                    Wallpapers
-                  </button>
-                  <button onclick="window.filterStoreItems('mystery')" id="store-cat-mystery" class="store-cat-btn px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800">
-                    Mystery Box
-                  </button>
+                <div class="px-5 py-3 bg-slate-950 text-white rounded-2xl flex items-center gap-3 shrink-0 shadow-lg border border-amber-400/30">
+                  <div class="p-2 bg-amber-400/20 text-amber-400 rounded-xl">
+                    <i data-lucide="coins" class="w-6 h-6"></i>
+                  </div>
+                  <div>
+                    <span class="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Your KC Balance</span>
+                    <span class="text-xl font-black font-mono text-amber-400 store-kc-balance-display">0 KC</span>
+                  </div>
                 </div>
               </div>
 
-              <!-- Store Catalog Grid -->
-              <div id="rewards-store-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                <!-- Rendered dynamically -->
+              <!-- Kingdom Store Sub-Navigation Tabs -->
+              <div class="flex items-center gap-2 overflow-x-auto pb-2 border-b border-slate-200 dark:border-zinc-800 no-scrollbar">
+                <button id="store-tab-btn-marketplace" onclick="switchStoreTab('marketplace')" class="store-nav-btn px-4 py-2.5 rounded-2xl text-xs font-black bg-amber-500 text-slate-950 cursor-pointer shadow-sm transition-all flex items-center gap-2 shrink-0">
+                  <i data-lucide="store" class="w-4 h-4"></i> Store Marketplace
+                </button>
+                <button id="store-tab-btn-custom-requests" onclick="switchStoreTab('custom-requests')" class="store-nav-btn px-4 py-2.5 rounded-2xl text-xs font-extrabold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-700 cursor-pointer transition-all flex items-center gap-2 shrink-0">
+                  <i data-lucide="sparkles" class="w-4 h-4"></i> Custom Requests ✨
+                </button>
+                <button id="store-tab-btn-feedback-hub" onclick="switchStoreTab('feedback-hub')" class="store-nav-btn px-4 py-2.5 rounded-2xl text-xs font-extrabold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-700 cursor-pointer transition-all flex items-center gap-2 shrink-0">
+                  <i data-lucide="lightbulb" class="w-4 h-4"></i> Feedback Hub 💡
+                </button>
+                <button id="store-tab-btn-my-library" onclick="switchStoreTab('my-library')" class="store-nav-btn px-4 py-2.5 rounded-2xl text-xs font-extrabold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-700 cursor-pointer transition-all flex items-center gap-2 shrink-0">
+                  <i data-lucide="book-open" class="w-4 h-4"></i> My Library 📚
+                </button>
+                <button id="store-tab-btn-rewards" onclick="switchStoreTab('rewards')" class="store-nav-btn px-4 py-2.5 rounded-2xl text-xs font-extrabold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-700 cursor-pointer transition-all flex items-center gap-2 shrink-0">
+                  <i data-lucide="gift" class="w-4 h-4"></i> Mystery Box & Perks 🎁
+                </button>
+                <button id="store-tab-btn-installers" onclick="switchStoreTab('installers')" class="store-nav-btn px-4 py-2.5 rounded-2xl text-xs font-extrabold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-700 cursor-pointer transition-all flex items-center gap-2 shrink-0">
+                  <i data-lucide="download" class="w-4 h-4"></i> App Installers 📱
+                </button>
               </div>
 
-              <!-- My Unlocked Rewards Library Section -->
-              <div class="pt-6 border-t border-slate-200 dark:border-zinc-800 space-y-4">
-                <h4 class="text-sm font-black text-slate-900 dark:text-zinc-100 flex items-center gap-2">
-                  <i data-lucide="package-check" class="w-4 h-4 text-emerald-500"></i> My Unlocked Rewards Library
-                </h4>
-                <div id="my-rewards-library-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+              <!-- SECTION 1: STORE MARKETPLACE -->
+              <div id="store-section-marketplace" class="space-y-6">
+                <!-- Search & Filters -->
+                <div class="flex flex-col sm:flex-row gap-4 items-center justify-between">
+                  <div class="relative w-full sm:w-80">
+                    <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400"></i>
+                    <input type="text" id="store-search-input" oninput="handleStoreSearch(this.value)" placeholder="Search the Kingdom Store..." class="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-zinc-850 border border-slate-200 dark:border-zinc-800 rounded-2xl text-xs font-medium text-slate-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-amber-500" />
+                  </div>
+
+                  <div class="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 no-scrollbar">
+                    <button onclick="selectStoreCategory('all')" data-category="all" class="store-category-pill px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 text-slate-950 cursor-pointer transition-all">All</button>
+                    <button onclick="selectStoreCategory('wallpapers')" data-category="wallpapers" class="store-category-pill px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-700 cursor-pointer transition-all">Wallpapers</button>
+                    <button onclick="selectStoreCategory('quotes')" data-category="quotes" class="store-category-pill px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-700 cursor-pointer transition-all">Quotes</button>
+                    <button onclick="selectStoreCategory('scripture collections')" data-category="scripture collections" class="store-category-pill px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-700 cursor-pointer transition-all">Scriptures</button>
+                    <button onclick="selectStoreCategory('devotionals & guides')" data-category="devotionals & guides" class="store-category-pill px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-700 cursor-pointer transition-all">Devotionals</button>
+                  </div>
+                </div>
+
+                <!-- Products Grid -->
+                <div id="store-products-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <!-- Loaded dynamically via store.js -->
+                </div>
+              </div>
+
+              <!-- SECTION 2: CUSTOM CREATION REQUESTS -->
+              <div id="store-section-custom-requests" class="hidden space-y-8">
+                <div class="p-6 bg-gradient-to-br from-purple-900/90 to-slate-900 border border-purple-500/30 rounded-3xl text-white space-y-3 shadow-lg">
+                  <span class="px-3 py-1 rounded-full bg-purple-500/20 text-purple-300 border border-purple-400/30 text-xs font-black uppercase tracking-wider inline-block">
+                    ✨ Custom Creation Marketplace
+                  </span>
+                  <h3 class="text-2xl font-black">Want Something Made Specifically For You?</h3>
+                  <p class="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-2xl">
+                    Tell us what you want and our Super Admin team will design it for you! Spend your Kingdom Coins to request custom phone wallpapers, church event posters, quote graphics, or image editing.
+                  </p>
+                </div>
+
+                <!-- Request Form & Pricing Calculator -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                  <form id="custom-req-form" onsubmit="handleCustomRequestSubmit(event)" class="lg:col-span-2 space-y-4 p-6 bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-3xl">
+                    <h3 class="text-lg font-black text-slate-900 dark:text-zinc-100">Submit Creation Request</h3>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div class="space-y-1.5">
+                        <label class="text-xs font-extrabold text-slate-700 dark:text-zinc-300">Request Type</label>
+                        <select id="custom-req-type" class="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-2xl text-xs font-bold text-slate-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-amber-500">
+                          <option value="wallpaper">📱 Personal Phone Wallpaper (150 KC)</option>
+                          <option value="poster">🖼️ Christian Poster Design (200 KC)</option>
+                          <option value="quote">💬 Custom Quote Graphic (100 KC)</option>
+                          <option value="scripture">📖 Scripture Art Collection (120 KC)</option>
+                          <option value="social">📲 Social Media Banner (150 KC)</option>
+                          <option value="birthday">🎂 Birthday Blessing Graphic (180 KC)</option>
+                          <option value="event">⛪ Church Event Flyer (250 KC)</option>
+                          <option value="editing">🪄 Image Touchup / Background Removal (200 KC)</option>
+                          <option value="other">✨ Other Custom Creation (200 KC)</option>
+                        </select>
+                      </div>
+
+                      <div class="space-y-1.5">
+                        <label class="text-xs font-extrabold text-slate-700 dark:text-zinc-300">Reference Image / URL (Optional)</label>
+                        <input type="url" id="custom-req-url" placeholder="https://images.unsplash.com/... or paste link" class="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-2xl text-xs text-slate-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-amber-500" />
+                      </div>
+                    </div>
+
+                    <div class="space-y-1.5">
+                      <label class="text-xs font-extrabold text-slate-700 dark:text-zinc-300">Detailed Description</label>
+                      <textarea id="custom-req-desc" required rows="3" placeholder="Specify colors, scripture text, theme, orientation, or style preferences..." class="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-2xl text-xs text-slate-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-amber-500"></textarea>
+                    </div>
+
+                    <div class="space-y-1.5">
+                      <label class="text-xs font-extrabold text-slate-700 dark:text-zinc-300">Target / Desired Result</label>
+                      <input type="text" id="custom-req-desired" required placeholder="e.g. 4K Mobile Wallpaper with Psalm 23 in Gold Typography" class="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-2xl text-xs text-slate-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-amber-500" />
+                    </div>
+
+                    <div class="space-y-1.5">
+                      <label class="text-xs font-extrabold text-slate-700 dark:text-zinc-300">Upload Reference Image File</label>
+                      <input type="file" accept="image/*" onchange="previewCustomRequestSourceImage(event)" class="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-amber-500 file:text-slate-950 hover:file:bg-amber-600 cursor-pointer" />
+                      <div id="custom-req-img-preview-box" class="hidden relative max-w-xs rounded-2xl overflow-hidden shadow border border-slate-200 dark:border-zinc-700 mt-2">
+                        <img id="custom-req-img-preview" src="" class="w-full h-36 object-cover" />
+                      </div>
+                    </div>
+
+                    <button type="submit" class="w-full py-3.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-black text-xs uppercase tracking-wider rounded-2xl transition-all cursor-pointer shadow-md flex items-center justify-center gap-2">
+                      <i data-lucide="sparkles" class="w-4 h-4"></i> Submit Creation Request
+                    </button>
+                  </form>
+
+                  <!-- Pricing Calculator Box -->
+                  <div class="p-6 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl space-y-4 flex flex-col justify-between shadow-xs">
+                    <div class="space-y-3">
+                      <h4 class="font-black text-slate-900 dark:text-zinc-100 text-base">Kingdom Coins Quote Calculator</h4>
+                      <p class="text-xs text-slate-500 dark:text-zinc-400">Kingdom Coins are securely reserved upon request submission. Super Admin will review and fulfill your request!</p>
+
+                      <div class="p-4 bg-slate-50 dark:bg-zinc-850 rounded-2xl space-y-2 text-xs border border-slate-200 dark:border-zinc-800 font-mono">
+                        <div class="flex justify-between text-slate-600 dark:text-zinc-400">
+                          <span>Your KC Balance:</span>
+                          <span id="custom-req-user-balance" class="font-bold text-slate-900 dark:text-zinc-100">0 KC</span>
+                        </div>
+                        <div class="flex justify-between text-amber-500 font-bold">
+                          <span>Estimated Cost:</span>
+                          <span id="custom-req-cost-display">150 KC</span>
+                        </div>
+                        <div class="pt-2 border-t border-slate-200 dark:border-zinc-700 flex justify-between font-black">
+                          <span class="text-slate-700 dark:text-zinc-300">Balance After Request:</span>
+                          <span id="custom-req-after-balance" class="text-emerald-500">0 KC</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-2xl text-[11px] text-amber-800 dark:text-amber-300">
+                      💡 <strong>Revision Guarantee:</strong> If a request needs adjustment, Super Admin will update it or refund your Kingdom Coins!
+                    </div>
+                  </div>
+                </div>
+
+                <!-- My Requests Section -->
+                <div class="space-y-4">
+                  <h3 class="text-xl font-black text-slate-900 dark:text-zinc-100">My Custom Requests Tracker</h3>
+                  <div id="my-custom-requests-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Loaded dynamically via store.js -->
+                  </div>
+                </div>
+              </div>
+
+              <!-- SECTION 3: FEEDBACK HUB -->
+              <div id="store-section-feedback-hub" class="hidden space-y-8">
+                <div class="p-6 bg-gradient-to-br from-blue-900/90 to-slate-900 border border-blue-500/30 rounded-3xl text-white space-y-2 shadow-lg">
+                  <span class="px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 border border-blue-400/30 text-xs font-black uppercase tracking-wider inline-block">
+                    💡 Community Feedback Hub
+                  </span>
+                  <h3 class="text-2xl font-black">You Use Home.cell. You Help Shape Home.cell.</h3>
+                  <p class="text-xs sm:text-sm text-slate-300">Suggest new app features, store resources, or content additions. Community members can upvote your ideas!</p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                  <!-- Submit Suggestion Form -->
+                  <form id="feedback-form" onsubmit="handleFeedbackSubmit(event)" class="space-y-4 p-6 bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-3xl">
+                    <h3 class="text-lg font-black text-slate-900 dark:text-zinc-100">Post a Suggestion</h3>
+
+                    <div class="space-y-1.5">
+                      <label class="text-xs font-extrabold text-slate-700 dark:text-zinc-300">Feedback Category</label>
+                      <select id="feedback-type" class="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-2xl text-xs font-bold text-slate-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="Feature Request">💡 Feature Request</option>
+                        <option value="Store Request">🛍️ Kingdom Store Item Request</option>
+                        <option value="Content Request">📖 Scripture / Devotional Content</option>
+                        <option value="Bug Report">🐛 Bug Report</option>
+                        <option value="Design Feedback">🎨 Design Feedback</option>
+                        <option value="General Feedback">❤️ General Feedback</option>
+                      </select>
+                    </div>
+
+                    <div class="space-y-1.5">
+                      <label class="text-xs font-extrabold text-slate-700 dark:text-zinc-300">Suggestion Title</label>
+                      <input type="text" id="feedback-title" required placeholder="e.g. Add Audio Bible Narrator" class="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-2xl text-xs text-slate-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    </div>
+
+                    <div class="space-y-1.5">
+                      <label class="text-xs font-extrabold text-slate-700 dark:text-zinc-300">Description / Details</label>
+                      <textarea id="feedback-desc" required rows="3" placeholder="Explain why this feature or resource would benefit the Home.cell fellowship..." class="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-2xl text-xs text-slate-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                    </div>
+
+                    <button type="submit" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs uppercase tracking-wider rounded-2xl transition-all cursor-pointer shadow-md flex items-center justify-center gap-2">
+                      <i data-lucide="send" class="w-4 h-4"></i> Post Suggestion
+                    </button>
+                  </form>
+
+                  <!-- Feedback List & Filters -->
+                  <div class="lg:col-span-2 space-y-4">
+                    <div class="flex items-center justify-between gap-2 overflow-x-auto pb-1 no-scrollbar">
+                      <button onclick="filterFeedback('all')" data-filter="all" class="feedback-filter-pill px-3 py-1.5 rounded-xl text-xs font-bold bg-purple-600 text-white cursor-pointer">All Ideas</button>
+                      <button onclick="filterFeedback('popular')" data-filter="popular" class="feedback-filter-pill px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 cursor-pointer hover:bg-slate-200 dark:hover:bg-zinc-700">🔥 Most Requested</button>
+                      <button onclick="filterFeedback('under_review')" data-filter="under_review" class="feedback-filter-pill px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 cursor-pointer hover:bg-slate-200 dark:hover:bg-zinc-700">🟣 Under Review</button>
+                      <button onclick="filterFeedback('planned')" data-filter="planned" class="feedback-filter-pill px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 cursor-pointer hover:bg-slate-200 dark:hover:bg-zinc-700">🔵 Planned</button>
+                      <button onclick="filterFeedback('completed')" data-filter="completed" class="feedback-filter-pill px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 cursor-pointer hover:bg-slate-200 dark:hover:bg-zinc-700">🟢 Completed</button>
+                    </div>
+
+                    <div id="feedback-hub-list" class="space-y-3">
+                      <!-- Loaded dynamically via store.js -->
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- SECTION 4: MY LIBRARY -->
+              <div id="store-section-my-library" class="hidden space-y-6">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <h3 class="text-xl font-black text-slate-900 dark:text-zinc-100">My Digital Library 📚</h3>
+                    <p class="text-xs text-slate-500 dark:text-zinc-400">All your unlocked wallpapers, quote cards, scripture packs, and custom creation deliverables.</p>
+                  </div>
+                </div>
+
+                <div id="my-library-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <!-- Loaded dynamically via store.js -->
+                </div>
+              </div>
+
+              <!-- SECTION 5: MYSTERY BOX & DIGITAL PERKS -->
+              <div id="store-section-rewards" class="hidden space-y-6">
+                <div class="bg-gradient-to-br from-purple-900/90 via-slate-900 to-amber-950/80 border border-amber-500/30 rounded-3xl p-6 text-white space-y-3 shadow-lg">
+                  <span class="px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/30 text-xs font-black uppercase tracking-wider inline-block">
+                    🎁 Mystery Box & Digital Perks
+                  </span>
+                  <h3 class="text-2xl font-black">Kingdom Mystery Boxes & Special Badges</h3>
+                  <p class="text-xs sm:text-sm text-slate-300">Unlock mystery perks, custom badge frames, and exclusive themes using your Kingdom Coins.</p>
+                </div>
+
+                <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-200 dark:border-zinc-800 pb-4">
+                  <div>
+                    <h3 class="text-base font-black font-display text-slate-900 dark:text-zinc-100 flex items-center gap-2">
+                      <i data-lucide="gift" class="w-5 h-5 text-amber-500"></i> Perks & Badges Catalog
+                    </h3>
+                  </div>
+
+                  <!-- Filter Categories -->
+                  <div class="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto no-scrollbar">
+                    <button onclick="window.filterStoreItems('all')" id="store-cat-all" class="store-cat-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500 text-slate-950">All</button>
+                    <button onclick="window.filterStoreItems('theme')" id="store-cat-theme" class="store-cat-btn px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800">Themes</button>
+                    <button onclick="window.filterStoreItems('badge')" id="store-cat-badge" class="store-cat-btn px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800">Badges</button>
+                    <button onclick="window.filterStoreItems('ebook')" id="store-cat-ebook" class="store-cat-btn px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800">Devotionals</button>
+                    <button onclick="window.filterStoreItems('wallpaper')" id="store-cat-wallpaper" class="store-cat-btn px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800">Wallpapers</button>
+                    <button onclick="window.filterStoreItems('mystery')" id="store-cat-mystery" class="store-cat-btn px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800">Mystery Box</button>
+                  </div>
+                </div>
+
+                <div id="rewards-store-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                   <!-- Rendered dynamically -->
+                </div>
+              </div>
+
+              <!-- SECTION 6: INSTALLER BUNDLES & SHORTCUTS -->
+              <div id="store-section-installers" class="hidden space-y-6">
+                <div>
+                  <h3 class="text-xl font-black text-slate-900 dark:text-zinc-100">App Installers & PWA Shortcut Triggers</h3>
+                  <p class="text-xs text-slate-500 dark:text-zinc-400 mt-1">Direct installer triggers for native PWA configurations, mobile APKs, and desktop binaries.</p>
+                </div>
+
+                <div id="download-bundles-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <!-- Loaded dynamically -->
+                </div>
+
+                <!-- Permanent Desktop Shortcut & Pinning Assistant Card -->
+                <div class="bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800/80 rounded-3xl p-6 space-y-6">
+                  <div class="flex items-center gap-3">
+                    <div class="p-2.5 bg-blue-100 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded-2xl shrink-0">
+                      <i data-lucide="pin" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                      <h3 class="text-lg font-black font-display text-slate-900 dark:text-zinc-50">Desktop Pinning & Shortcut Assistant</h3>
+                      <p class="text-xs text-slate-400 mt-0.5">If the automatic PWA browser installation is blocked, use these robust alternatives to pin HomeCell directly to your desktop.</p>
+                    </div>
+                  </div>
+
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Method 1: Instant Shortcut File -->
+                    <div class="bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800/60 rounded-2xl p-5 space-y-4">
+                      <div>
+                        <span class="px-2 py-0.5 text-[8px] font-black uppercase tracking-wider bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400 rounded">Option A</span>
+                        <h4 class="font-bold text-slate-900 dark:text-zinc-50 text-sm mt-1">Instant Desktop Pinning Shortcut</h4>
+                        <p class="text-[11px] text-slate-500 dark:text-zinc-400 mt-1">Download a native web link file and drag it onto your Desktop for one-click access anytime.</p>
+                      </div>
+                      
+                      <div class="space-y-2 text-[11px] text-slate-600 dark:text-zinc-300 leading-normal">
+                        <p class="flex items-start gap-1.5"><span class="font-black text-blue-500">1.</span> Download the shortcut file matching your computer OS below.</p>
+                        <p class="flex items-start gap-1.5"><span class="font-black text-blue-500">2.</span> Drag the downloaded file from your Downloads folder straight onto your Desktop.</p>
+                        <p class="flex items-start gap-1.5"><span class="font-black text-blue-500">3.</span> Pin it to your Taskbar or Dock for a pristine permanent launcher.</p>
+                      </div>
+
+                      <div class="grid grid-cols-2 gap-2 pt-2">
+                        <button onclick="window.triggerDirectFileDownload('windows-shortcut')" class="py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 font-extrabold text-[10px] uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1">
+                          🖥️ Windows Pin (.url)
+                        </button>
+                        <button onclick="window.triggerDirectFileDownload('macos-shortcut')" class="py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 font-extrabold text-[10px] uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1">
+                          🍎 macOS Pin (.webloc)
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- Method 2: Create Native-feeling Window Shortcut -->
+                    <div class="bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800/60 rounded-2xl p-5 space-y-4">
+                      <div>
+                        <span class="px-2 py-0.5 text-[8px] font-black uppercase tracking-wider bg-purple-100 text-purple-700 dark:bg-purple-950/40 dark:text-purple-400 rounded">Option B</span>
+                        <h4 class="font-bold text-slate-900 dark:text-zinc-50 text-sm mt-1">Chrome/Edge App wrapper</h4>
+                        <p class="text-[11px] text-slate-500 dark:text-zinc-400 mt-1">Run HomeCell in a standalone window frame without standard browser borders.</p>
+                      </div>
+
+                      <div class="space-y-2 text-[11px] text-slate-600 dark:text-zinc-300 leading-normal">
+                        <p class="flex items-start gap-1.5"><span class="font-black text-purple-500">1.</span> Open this application in a new dedicated browser tab.</p>
+                        <p class="flex items-start gap-1.5"><span class="font-black text-purple-500">2.</span> Open Chrome/Edge menu (3 dots) ➔ <strong class="text-purple-600 dark:text-purple-400">Save and share ➔ Create shortcut...</strong> (or More tools ➔ Create shortcut).</p>
+                        <p class="flex items-start gap-1.5"><span class="font-black text-purple-500">3.</span> Check <strong class="font-bold text-slate-900 dark:text-zinc-100">"Open as window"</strong> and click Create to instantly pin it!</p>
+                      </div>
+
+                      <div class="pt-2">
+                        <a href="https://danielgiobari644-glitch.github.io/homecell" target="_blank" rel="noopener noreferrer" class="w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-sm flex items-center justify-center gap-1.5 text-center no-underline decoration-transparent">
+                          <i data-lucide="external-link" class="w-3.5 h-3.5"></i> Open in New Tab to Create Pin
+                        </a>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -3376,321 +3553,6 @@
           </div>
         </section>
 
-        <!-- Tab 6: Direct Downloads Hub -->
-        <section id="tab-downloads" class="app-tab hidden space-y-6 animate-fade-in">
-          <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-[2.5rem] p-6 sm:p-8 shadow-sm space-y-6">
-            
-            <!-- Store Header Banner -->
-            <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 p-6 bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 rounded-3xl text-slate-950 shadow-md">
-              <div class="space-y-1">
-                <div class="inline-flex items-center gap-2 px-3 py-1 bg-slate-950/20 rounded-full text-xs font-black uppercase tracking-wider text-slate-950">
-                  <i data-lucide="shopping-bag" class="w-4 h-4"></i> Kingdom Store 2.0
-                </div>
-                <h1 class="text-2xl sm:text-3xl font-black font-display tracking-tight text-slate-950">Digital Resource Hub & Request Hub</h1>
-                <p class="text-xs sm:text-sm font-bold text-slate-900/80">Acquire digital wallpapers, quote collections, and custom creations powered by Kingdom Coins.</p>
-              </div>
-
-              <div class="px-5 py-3 bg-slate-950 text-white rounded-2xl flex items-center gap-3 shrink-0 shadow-lg border border-amber-400/30">
-                <div class="p-2 bg-amber-400/20 text-amber-400 rounded-xl">
-                  <i data-lucide="coins" class="w-6 h-6"></i>
-                </div>
-                <div>
-                  <span class="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Your KC Balance</span>
-                  <span class="text-xl font-black font-mono text-amber-400 store-kc-balance-display">0 KC</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Kingdom Store Sub-Navigation Tabs -->
-            <div class="flex items-center gap-2 overflow-x-auto pb-2 border-b border-slate-200 dark:border-zinc-800">
-              <button id="store-tab-btn-marketplace" onclick="switchStoreTab('marketplace')" class="store-nav-btn px-4 py-2.5 rounded-2xl text-xs font-black bg-amber-500 text-slate-950 cursor-pointer shadow-sm transition-all flex items-center gap-2">
-                <i data-lucide="store" class="w-4 h-4"></i> Store Marketplace
-              </button>
-              <button id="store-tab-btn-custom-requests" onclick="switchStoreTab('custom-requests')" class="store-nav-btn px-4 py-2.5 rounded-2xl text-xs font-extrabold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-700 cursor-pointer transition-all flex items-center gap-2">
-                <i data-lucide="sparkles" class="w-4 h-4"></i> Custom Requests ✨
-              </button>
-              <button id="store-tab-btn-feedback-hub" onclick="switchStoreTab('feedback-hub')" class="store-nav-btn px-4 py-2.5 rounded-2xl text-xs font-extrabold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-700 cursor-pointer transition-all flex items-center gap-2">
-                <i data-lucide="lightbulb" class="w-4 h-4"></i> Feedback Hub 💡
-              </button>
-              <button id="store-tab-btn-my-library" onclick="switchStoreTab('my-library')" class="store-nav-btn px-4 py-2.5 rounded-2xl text-xs font-extrabold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-700 cursor-pointer transition-all flex items-center gap-2">
-                <i data-lucide="book-open" class="w-4 h-4"></i> My Library 📚
-              </button>
-              <button id="store-tab-btn-installers" onclick="switchStoreTab('installers')" class="store-nav-btn px-4 py-2.5 rounded-2xl text-xs font-extrabold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-700 cursor-pointer transition-all flex items-center gap-2">
-                <i data-lucide="download" class="w-4 h-4"></i> App Installers 📱
-              </button>
-            </div>
-
-            <!-- SECTION 1: STORE MARKETPLACE -->
-            <div id="store-section-marketplace" class="space-y-6">
-              <!-- Search & Filters -->
-              <div class="flex flex-col sm:flex-row gap-4 items-center justify-between">
-                <div class="relative w-full sm:w-80">
-                  <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400"></i>
-                  <input type="text" id="store-search-input" oninput="handleStoreSearch(this.value)" placeholder="Search the Kingdom Store..." class="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-zinc-850 border border-slate-200 dark:border-zinc-800 rounded-2xl text-xs font-medium text-slate-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-amber-500" />
-                </div>
-
-                <div class="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1">
-                  <button onclick="selectStoreCategory('all')" data-category="all" class="store-category-pill px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 text-slate-950 cursor-pointer transition-all">All</button>
-                  <button onclick="selectStoreCategory('wallpapers')" data-category="wallpapers" class="store-category-pill px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-700 cursor-pointer transition-all">Wallpapers</button>
-                  <button onclick="selectStoreCategory('quotes')" data-category="quotes" class="store-category-pill px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-700 cursor-pointer transition-all">Quotes</button>
-                  <button onclick="selectStoreCategory('scripture collections')" data-category="scripture collections" class="store-category-pill px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-700 cursor-pointer transition-all">Scriptures</button>
-                  <button onclick="selectStoreCategory('devotionals & guides')" data-category="devotionals & guides" class="store-category-pill px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-700 cursor-pointer transition-all">Devotionals</button>
-                </div>
-              </div>
-
-              <!-- Products Grid -->
-              <div id="store-products-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                <!-- Loaded dynamically via store.js -->
-              </div>
-            </div>
-
-            <!-- SECTION 2: CUSTOM CREATION REQUESTS -->
-            <div id="store-section-custom-requests" class="hidden space-y-8">
-              <div class="p-6 bg-gradient-to-br from-purple-900/90 to-slate-900 border border-purple-500/30 rounded-3xl text-white space-y-3 shadow-lg">
-                <span class="px-3 py-1 rounded-full bg-purple-500/20 text-purple-300 border border-purple-400/30 text-xs font-black uppercase tracking-wider inline-block">
-                  ✨ Custom Creation Marketplace
-                </span>
-                <h2 class="text-2xl font-black">Want Something Made Specifically For You?</h2>
-                <p class="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-2xl">
-                  Tell us what you want and our Super Admin team will design it for you! Spend your Kingdom Coins to request custom phone wallpapers, church event posters, quote graphics, or image editing.
-                </p>
-              </div>
-
-              <!-- Request Form & Pricing Calculator -->
-              <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <form id="custom-req-form" onsubmit="handleCustomRequestSubmit(event)" class="lg:col-span-2 space-y-4 p-6 bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-3xl">
-                  <h3 class="text-lg font-black text-slate-900 dark:text-zinc-100">Submit Creation Request</h3>
-
-                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div class="space-y-1.5">
-                      <label class="text-xs font-extrabold text-slate-700 dark:text-zinc-300">Request Type</label>
-                      <select id="custom-req-type" class="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-2xl text-xs font-bold text-slate-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-amber-500">
-                        <option value="wallpaper">📱 Personal Phone Wallpaper (150 KC)</option>
-                        <option value="poster">🖼️ Christian Poster Design (200 KC)</option>
-                        <option value="quote">💬 Custom Quote Graphic (100 KC)</option>
-                        <option value="scripture">📖 Scripture Art Collection (120 KC)</option>
-                        <option value="social">📲 Social Media Banner (150 KC)</option>
-                        <option value="birthday">🎂 Birthday Blessing Graphic (180 KC)</option>
-                        <option value="event">⛪ Church Event Flyer (250 KC)</option>
-                        <option value="editing">🪄 Image Touchup / Background Removal (200 KC)</option>
-                        <option value="other">✨ Other Custom Creation (200 KC)</option>
-                      </select>
-                    </div>
-
-                    <div class="space-y-1.5">
-                      <label class="text-xs font-extrabold text-slate-700 dark:text-zinc-300">Reference Image / URL (Optional)</label>
-                      <input type="url" id="custom-req-url" placeholder="https://images.unsplash.com/... or paste link" class="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-2xl text-xs text-slate-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-amber-500" />
-                    </div>
-                  </div>
-
-                  <div class="space-y-1.5">
-                    <label class="text-xs font-extrabold text-slate-700 dark:text-zinc-300">Detailed Description</label>
-                    <textarea id="custom-req-desc" required rows="3" placeholder="Specify colors, scripture text, theme, orientation, or style preferences..." class="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-2xl text-xs text-slate-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-amber-500"></textarea>
-                  </div>
-
-                  <div class="space-y-1.5">
-                    <label class="text-xs font-extrabold text-slate-700 dark:text-zinc-300">Target / Desired Result</label>
-                    <input type="text" id="custom-req-desired" required placeholder="e.g. 4K Mobile Wallpaper with Psalm 23 in Gold Typography" class="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-2xl text-xs text-slate-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-amber-500" />
-                  </div>
-
-                  <div class="space-y-1.5">
-                    <label class="text-xs font-extrabold text-slate-700 dark:text-zinc-300">Upload Reference Image File</label>
-                    <input type="file" accept="image/*" onchange="previewCustomRequestSourceImage(event)" class="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-amber-500 file:text-slate-950 hover:file:bg-amber-600 cursor-pointer" />
-                    <div id="custom-req-img-preview-box" class="hidden relative max-w-xs rounded-2xl overflow-hidden shadow border border-slate-200 dark:border-zinc-700 mt-2">
-                      <img id="custom-req-img-preview" src="" class="w-full h-36 object-cover" />
-                    </div>
-                  </div>
-
-                  <button type="submit" class="w-full py-3.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-black text-xs uppercase tracking-wider rounded-2xl transition-all cursor-pointer shadow-md flex items-center justify-center gap-2">
-                    <i data-lucide="sparkles" class="w-4 h-4"></i> Submit Creation Request
-                  </button>
-                </form>
-
-                <!-- Pricing Calculator Box -->
-                <div class="p-6 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl space-y-4 flex flex-col justify-between shadow-xs">
-                  <div class="space-y-3">
-                    <h4 class="font-black text-slate-900 dark:text-zinc-100 text-base">Kingdom Coins Quote Calculator</h4>
-                    <p class="text-xs text-slate-500 dark:text-zinc-400">Kingdom Coins are securely reserved upon request submission. Super Admin will review and fulfill your request!</p>
-
-                    <div class="p-4 bg-slate-50 dark:bg-zinc-850 rounded-2xl space-y-2 text-xs border border-slate-200 dark:border-zinc-800 font-mono">
-                      <div class="flex justify-between text-slate-600 dark:text-zinc-400">
-                        <span>Your KC Balance:</span>
-                        <span id="custom-req-user-balance" class="font-bold text-slate-900 dark:text-zinc-100">0 KC</span>
-                      </div>
-                      <div class="flex justify-between text-amber-500 font-bold">
-                        <span>Estimated Cost:</span>
-                        <span id="custom-req-cost-display">150 KC</span>
-                      </div>
-                      <div class="pt-2 border-t border-slate-200 dark:border-zinc-700 flex justify-between font-black">
-                        <span class="text-slate-700 dark:text-zinc-300">Balance After Request:</span>
-                        <span id="custom-req-after-balance" class="text-emerald-500">0 KC</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-2xl text-[11px] text-amber-800 dark:text-amber-300">
-                    💡 <strong>Revision Guarantee:</strong> If a request needs adjustment, Super Admin will update it or refund your Kingdom Coins!
-                  </div>
-                </div>
-              </div>
-
-              <!-- My Requests Section -->
-              <div class="space-y-4">
-                <h3 class="text-xl font-black text-slate-900 dark:text-zinc-100">My Custom Requests Tracker</h3>
-                <div id="my-custom-requests-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <!-- Loaded dynamically via store.js -->
-                </div>
-              </div>
-            </div>
-
-            <!-- SECTION 3: FEEDBACK HUB -->
-            <div id="store-section-feedback-hub" class="hidden space-y-8">
-              <div class="p-6 bg-gradient-to-br from-blue-900/90 to-slate-900 border border-blue-500/30 rounded-3xl text-white space-y-2 shadow-lg">
-                <span class="px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 border border-blue-400/30 text-xs font-black uppercase tracking-wider inline-block">
-                  💡 Community Feedback Hub
-                </span>
-                <h2 class="text-2xl font-black">You Use Home.cell. You Help Shape Home.cell.</h2>
-                <p class="text-xs sm:text-sm text-slate-300">Suggest new app features, store resources, or content additions. Community members can upvote your ideas!</p>
-              </div>
-
-              <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <!-- Submit Suggestion Form -->
-                <form id="feedback-form" onsubmit="handleFeedbackSubmit(event)" class="space-y-4 p-6 bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-3xl">
-                  <h3 class="text-lg font-black text-slate-900 dark:text-zinc-100">Post a Suggestion</h3>
-
-                  <div class="space-y-1.5">
-                    <label class="text-xs font-extrabold text-slate-700 dark:text-zinc-300">Feedback Category</label>
-                    <select id="feedback-type" class="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-2xl text-xs font-bold text-slate-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                      <option value="Feature Request">💡 Feature Request</option>
-                      <option value="Store Request">🛍️ Kingdom Store Item Request</option>
-                      <option value="Content Request">📖 Scripture / Devotional Content</option>
-                      <option value="Bug Report">🐛 Bug Report</option>
-                      <option value="Design Feedback">🎨 Design Feedback</option>
-                      <option value="General Feedback">❤️ General Feedback</option>
-                    </select>
-                  </div>
-
-                  <div class="space-y-1.5">
-                    <label class="text-xs font-extrabold text-slate-700 dark:text-zinc-300">Suggestion Title</label>
-                    <input type="text" id="feedback-title" required placeholder="e.g. Add Audio Bible Narrator" class="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-2xl text-xs text-slate-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                  </div>
-
-                  <div class="space-y-1.5">
-                    <label class="text-xs font-extrabold text-slate-700 dark:text-zinc-300">Description / Details</label>
-                    <textarea id="feedback-desc" required rows="3" placeholder="Explain why this feature or resource would benefit the Home.cell fellowship..." class="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-2xl text-xs text-slate-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
-                  </div>
-
-                  <button type="submit" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs uppercase tracking-wider rounded-2xl transition-all cursor-pointer shadow-md flex items-center justify-center gap-2">
-                    <i data-lucide="send" class="w-4 h-4"></i> Post Suggestion
-                  </button>
-                </form>
-
-                <!-- Feedback List & Filters -->
-                <div class="lg:col-span-2 space-y-4">
-                  <div class="flex items-center justify-between gap-2 overflow-x-auto pb-1">
-                    <button onclick="filterFeedback('all')" data-filter="all" class="feedback-filter-pill px-3 py-1.5 rounded-xl text-xs font-bold bg-purple-600 text-white cursor-pointer">All Ideas</button>
-                    <button onclick="filterFeedback('popular')" data-filter="popular" class="feedback-filter-pill px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 cursor-pointer hover:bg-slate-200 dark:hover:bg-zinc-700">🔥 Most Requested</button>
-                    <button onclick="filterFeedback('under_review')" data-filter="under_review" class="feedback-filter-pill px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 cursor-pointer hover:bg-slate-200 dark:hover:bg-zinc-700">🟣 Under Review</button>
-                    <button onclick="filterFeedback('planned')" data-filter="planned" class="feedback-filter-pill px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 cursor-pointer hover:bg-slate-200 dark:hover:bg-zinc-700">🔵 Planned</button>
-                    <button onclick="filterFeedback('completed')" data-filter="completed" class="feedback-filter-pill px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 cursor-pointer hover:bg-slate-200 dark:hover:bg-zinc-700">🟢 Completed</button>
-                  </div>
-
-                  <div id="feedback-hub-list" class="space-y-3">
-                    <!-- Loaded dynamically via store.js -->
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- SECTION 4: MY LIBRARY -->
-            <div id="store-section-my-library" class="hidden space-y-6">
-              <div class="flex items-center justify-between">
-                <div>
-                  <h3 class="text-xl font-black text-slate-900 dark:text-zinc-100">My Digital Library 📚</h3>
-                  <p class="text-xs text-slate-500 dark:text-zinc-400">All your unlocked wallpapers, quote cards, scripture packs, and custom creation deliverables.</p>
-                </div>
-              </div>
-
-              <div id="my-library-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                <!-- Loaded dynamically via store.js -->
-              </div>
-            </div>
-
-            <!-- SECTION 5: INSTALLER BUNDLES & SHORTCUTS -->
-            <div id="store-section-installers" class="hidden space-y-6">
-              <div>
-                <h2 class="text-xl font-black text-slate-900 dark:text-zinc-100">App Installers & PWA Shortcut Triggers</h2>
-                <p class="text-xs text-slate-500 dark:text-zinc-400 mt-1">Direct installer triggers for native PWA configurations, mobile APKs, and desktop binaries.</p>
-              </div>
-
-              <div id="download-bundles-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <!-- Loaded dynamically -->
-              </div>
-
-              <!-- Permanent Desktop Shortcut & Pinning Assistant Card -->
-              <div class="bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800/80 rounded-3xl p-6 space-y-6">
-                <div class="flex items-center gap-3">
-                  <div class="p-2.5 bg-blue-100 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded-2xl shrink-0">
-                    <i data-lucide="pin" class="w-6 h-6"></i>
-                  </div>
-                  <div>
-                    <h3 class="text-lg font-black font-display text-slate-900 dark:text-zinc-50">Desktop Pinning & Shortcut Assistant</h3>
-                    <p class="text-xs text-slate-400 mt-0.5">If the automatic PWA browser installation is blocked, use these robust alternatives to pin HomeCell directly to your desktop.</p>
-                  </div>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <!-- Method 1: Instant Shortcut File -->
-                  <div class="bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800/60 rounded-2xl p-5 space-y-4">
-                    <div>
-                      <span class="px-2 py-0.5 text-[8px] font-black uppercase tracking-wider bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400 rounded">Option A</span>
-                      <h4 class="font-bold text-slate-900 dark:text-zinc-50 text-sm mt-1">Instant Desktop Pinning Shortcut</h4>
-                      <p class="text-[11px] text-slate-500 dark:text-zinc-400 mt-1">Download a native web link file and drag it onto your Desktop for one-click access anytime.</p>
-                    </div>
-                    
-                    <div class="space-y-2 text-[11px] text-slate-600 dark:text-zinc-300 leading-normal">
-                      <p class="flex items-start gap-1.5"><span class="font-black text-blue-500">1.</span> Download the shortcut file matching your computer OS below.</p>
-                      <p class="flex items-start gap-1.5"><span class="font-black text-blue-500">2.</span> Drag the downloaded file from your Downloads folder straight onto your Desktop.</p>
-                      <p class="flex items-start gap-1.5"><span class="font-black text-blue-500">3.</span> Pin it to your Taskbar or Dock for a pristine permanent launcher.</p>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-2 pt-2">
-                      <button onclick="window.triggerDirectFileDownload('windows-shortcut')" class="py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 font-extrabold text-[10px] uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1">
-                        🖥️ Windows Pin (.url)
-                      </button>
-                      <button onclick="window.triggerDirectFileDownload('macos-shortcut')" class="py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 font-extrabold text-[10px] uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1">
-                        🍎 macOS Pin (.webloc)
-                      </button>
-                    </div>
-                  </div>
-
-                  <!-- Method 2: Create Native-feeling Window Shortcut -->
-                  <div class="bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800/60 rounded-2xl p-5 space-y-4">
-                    <div>
-                      <span class="px-2 py-0.5 text-[8px] font-black uppercase tracking-wider bg-purple-100 text-purple-700 dark:bg-purple-950/40 dark:text-purple-400 rounded">Option B</span>
-                      <h4 class="font-bold text-slate-900 dark:text-zinc-50 text-sm mt-1">Chrome/Edge App wrapper</h4>
-                      <p class="text-[11px] text-slate-500 dark:text-zinc-400 mt-1">Run HomeCell in a standalone window frame without standard browser borders.</p>
-                    </div>
-
-                    <div class="space-y-2 text-[11px] text-slate-600 dark:text-zinc-300 leading-normal">
-                      <p class="flex items-start gap-1.5"><span class="font-black text-purple-500">1.</span> Open this application in a new dedicated browser tab.</p>
-                      <p class="flex items-start gap-1.5"><span class="font-black text-purple-500">2.</span> Open Chrome/Edge menu (3 dots) ➔ <strong class="text-purple-600 dark:text-purple-400">Save and share ➔ Create shortcut...</strong> (or More tools ➔ Create shortcut).</p>
-                      <p class="flex items-start gap-1.5"><span class="font-black text-purple-500">3.</span> Check <strong class="font-bold text-slate-900 dark:text-zinc-100">"Open as window"</strong> and click Create to instantly pin it!</p>
-                    </div>
-
-                    <div class="pt-2">
-                      <a href="https://danielgiobari644-glitch.github.io/homecell" target="_blank" rel="noopener noreferrer" class="w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-sm flex items-center justify-center gap-1.5 text-center no-underline decoration-transparent">
-                        <i data-lucide="external-link" class="w-3.5 h-3.5"></i> Open in New Tab to Create Pin
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-          </div>
-        </section>
-
         <!-- Tab 8: Settings & Support -->
         <section id="tab-settings" class="app-tab hidden space-y-6 animate-fade-in">
           <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-[2.5rem] p-8 shadow-sm space-y-6">
@@ -4167,7 +4029,6 @@
             <button onclick="setAdminSubTab('trivia')" id="btn-atab-trivia" class="px-4 py-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:text-zinc-400 dark:hover:bg-zinc-800">Trivia Creator</button>
             <button onclick="setAdminSubTab('bundles')" id="btn-atab-bundles" class="px-4 py-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:text-zinc-400 dark:hover:bg-zinc-800">Custom Downloads</button>
             <button onclick="setAdminSubTab('configs')" id="btn-atab-configs" class="px-4 py-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:text-zinc-400 dark:hover:bg-zinc-800">Desk Setup</button>
-            <button onclick="setAdminSubTab('stream')" id="btn-atab-stream" class="px-4 py-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:text-zinc-400 dark:hover:bg-zinc-800">YouTube Stream</button>
           </div>
 
           <!-- Admin Sub Tab: Loading Screen Management -->
@@ -4951,91 +4812,6 @@
             </div>
           </div>
 
-          <!-- Admin Sub Tab 6: Universal Livestream Setup -->
-          <div id="atab-stream" class="admin-sub-tab hidden space-y-6">
-            <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm space-y-4">
-              <div class="flex items-center justify-between">
-                <h3 class="text-lg font-bold font-display">Live Fellowship Stream Settings</h3>
-                <button onclick="window.resetStreamForm()" class="px-2.5 py-1 text-[10px] uppercase font-black tracking-wider bg-slate-100 dark:bg-zinc-800 text-slate-500 rounded-lg hover:bg-slate-200">New Stream</button>
-              </div>
-              <form id="admin-stream-form" class="space-y-4 text-sm">
-                <input type="hidden" id="admin-stream-id" value="" />
-                
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label class="block text-xs font-bold text-slate-400 mb-1">Stream Broadcast Protocol / Type</label>
-                    <select id="admin-stream-type" class="w-full px-4 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg text-slate-800 dark:text-zinc-100 font-bold">
-                      <option value="auto">✨ Auto Protocol (Smart Detection from URL)</option>
-                      <option value="hls">🎥 HLS (.m3u8) - MediaMTX, self-hosted, or CDN</option>
-                      <option value="webrtc">⚡ WebRTC (WHEP low latency feed)</option>
-                      <option value="iframe">📺 Standard Embed / Iframe (YouTube, Twitch, Custom player)</option>
-                      <option value="mp4">🎬 Direct MP4 / WebM Video URL</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label class="block text-xs font-bold text-slate-400 mb-1">Broadcast Position Placement</label>
-                    <select id="admin-stream-position" class="w-full px-4 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg text-slate-800 dark:text-zinc-100 font-bold">
-                      <option value="top">⭐ Top of feed stream (Sticky Highlight)</option>
-                      <option value="featured">📰 Featured feed post block</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label class="block text-xs font-bold text-slate-400 mb-1">Scheduled Broadcast Time</label>
-                    <input type="datetime-local" id="admin-stream-schedule" class="w-full px-4 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg" />
-                  </div>
-                  <div>
-                    <label class="block text-xs font-bold text-slate-400 mb-1">Livestream Status</label>
-                    <select id="admin-stream-status" class="w-full px-4 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg text-slate-800 dark:text-zinc-100 font-bold">
-                      <option value="scheduled">⏳ Scheduled / Upcoming</option>
-                      <option value="live">🔴 Live Now</option>
-                      <option value="offline">⚫ Offline / Ended</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label class="block text-xs font-bold text-slate-400 mb-1">Stream Source URL / Iframe Link</label>
-                  <input type="text" id="admin-stream-url" required class="w-full px-4 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg" placeholder="e.g. https://domain.com/live/stream.m3u8 OR https://youtube.com/embed/..." />
-                </div>
-                
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label class="block text-xs font-bold text-slate-400 mb-1">Broadcast Title</label>
-                    <input type="text" id="admin-stream-title" required class="w-full px-4 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg" placeholder="e.g. Mid-Week Revival Service" />
-                  </div>
-                  <div>
-                    <label class="block text-xs font-bold text-slate-400 mb-1">Thumbnail Preview URL (Optional)</label>
-                    <input type="url" id="admin-stream-thumbnail" class="w-full px-4 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg" placeholder="https://images.unsplash.com/photo-..." />
-                  </div>
-                </div>
-
-                <div>
-                  <label class="block text-xs font-bold text-slate-400 mb-1">Broadcast Description</label>
-                  <input type="text" id="admin-stream-desc" required class="w-full px-4 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg" placeholder="Gather with believers globally..." />
-                </div>
-                
-                <div class="flex items-center gap-2 py-2">
-                  <input type="checkbox" id="admin-stream-active" class="w-5 h-5 text-purple-600 rounded cursor-pointer" />
-                  <label for="admin-stream-active" class="text-sm font-bold text-purple-600 cursor-pointer">Activate livestream broadcast banner on member dashboards</label>
-                </div>
-                
-                <button type="submit" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-xl tracking-wider text-xs cursor-pointer shadow-sm">Save Stream Configuration 🚀</button>
-              </form>
-            </div>
-
-            <!-- Active Streams catalog list -->
-            <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm space-y-4">
-              <h4 class="text-sm font-bold uppercase tracking-wider text-slate-400">Configured Livestream Broadcasts</h4>
-              <div id="admin-streams-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- Loaded dynamically -->
-                <p class="text-xs text-slate-400 italic">No custom broadcasts registered yet.</p>
-              </div>
-            </div>
-          </div>
-
           <!-- Admin Sub Tab: Upcoming Events Manager -->
           <div id="atab-events" class="admin-sub-tab hidden space-y-6">
             <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm space-y-4">
@@ -5622,7 +5398,6 @@
     <script src="toast.js"></script>
     <script src="champions.js"></script>
     <script src="streak.js"></script>
-    <script src="stream-player.js"></script>
     <script src="dashboard.js"></script>
     <script src="bible.js"></script>
     <script src="quiz.js"></script>

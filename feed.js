@@ -74,27 +74,13 @@ window.setFeedFilter = function(filter) {
   loadFeedStream();
 };
 
-let activeFeedStreams = [];
 let activeFeaturedTestimonies = [];
 let activeCommunityPosts = [];
-let streamsListener = null;
 let featuredTestimoniesListener = null;
 let currentFeaturedIndex = 0;
 let featuredInterval = null;
 
-function initStreamsAndFeaturedListeners() {
-  if (!streamsListener) {
-    streamsListener = window.db.collection('live_streams')
-      .orderBy('updatedAt', 'desc')
-      .onSnapshot(snap => {
-        activeFeedStreams = [];
-        snap.forEach(doc => {
-          activeFeedStreams.push({ id: doc.id, ...doc.data() });
-        });
-        renderFeedWithStreams();
-      }, err => console.error("Feed streams listener error:", err));
-  }
-
+function initFeaturedListeners() {
   if (!featuredTestimoniesListener) {
     featuredTestimoniesListener = window.db.collection('featured_testimonies')
       .orderBy('pinnedAt', 'desc')
@@ -210,7 +196,7 @@ function loadFeedStream() {
   const container = document.getElementById('community-posts-stream');
   if (!container) return;
 
-  initStreamsAndFeaturedListeners();
+  initFeaturedListeners();
 
   if (feedListener) feedListener();
 
@@ -225,68 +211,11 @@ function loadFeedStream() {
     }, err => window.handleFirestoreError(err, 'list', 'community_feed'));
 }
 
-let countdownInterval = null;
-function startFeedCountdownTimers() {
-  if (countdownInterval) clearInterval(countdownInterval);
-
-  countdownInterval = setInterval(() => {
-    activeFeedStreams.forEach(s => {
-      let isUpcoming = s.status === 'scheduled';
-      if (isUpcoming && s.schedule) {
-        const startTime = new Date(s.schedule).getTime();
-        const diff = startTime - Date.now();
-        
-        if (diff <= 0) {
-          renderFeedWithStreams();
-          return;
-        }
-
-        const el = document.getElementById(`feed-countdown-${s.id}`);
-        if (el) {
-          const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-          const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
-          const minutes = Math.floor((diff / (1000 * 60)) % 60);
-          const seconds = Math.floor((diff / 1000) % 60);
-
-          const dSpan = el.querySelector('.days');
-          const hSpan = el.querySelector('.hours');
-          const mSpan = el.querySelector('.minutes');
-          const sSpan = el.querySelector('.seconds');
-
-          if (dSpan) dSpan.innerText = String(days).padStart(2, '0');
-          if (hSpan) hSpan.innerText = String(hours).padStart(2, '0');
-          if (mSpan) mSpan.innerText = String(minutes).padStart(2, '0');
-          if (sSpan) sSpan.innerText = String(seconds).padStart(2, '0');
-        }
-      }
-    });
-  }, 1000);
-}
-
 function renderFeedWithStreams() {
   const container = document.getElementById('community-posts-stream');
   if (!container) return;
 
   container.innerHTML = '';
-
-  const activeStreams = activeFeedStreams.filter(s => s.streamActive === true || s.status !== 'offline');
-  const topStreams = activeStreams.filter(s => s.position === 'top');
-  const featuredStreams = activeStreams.filter(s => s.position === 'featured');
-
-  topStreams.forEach(s => {
-    const streamWrapper = document.createElement('div');
-    streamWrapper.className = "mb-6";
-    streamWrapper.innerHTML = getLiveStreamCardHTML(s);
-    container.appendChild(streamWrapper);
-    
-    let isLive = s.status === 'live';
-    if (s.status === 'scheduled' && s.schedule && Date.now() >= new Date(s.schedule).getTime()) {
-      isLive = true;
-    }
-    if (isLive && s.streamUrl) {
-      setupPlayerInFeed(s.id, s.streamUrl, s.streamType);
-    }
-  });
 
   const filteredPosts = activeCommunityPosts.filter(post => {
     if (window.currentFeedFilter && window.currentFeedFilter !== 'all') {
@@ -297,7 +226,7 @@ function renderFeedWithStreams() {
 
   let visibleCount = filteredPosts.length;
 
-  if (visibleCount === 0 && topStreams.length === 0 && featuredStreams.length === 0) {
+  if (visibleCount === 0) {
     let emptyMessage = "No updates found.";
     if (window.currentFeedFilter === 'testimony') {
       emptyMessage = "No testimonies shared here yet. Be the first to share your testimony using the composer above!";
@@ -315,147 +244,14 @@ function renderFeedWithStreams() {
     return;
   }
 
-  filteredPosts.forEach((post, i) => {
-    if (i === 1 && featuredStreams.length > 0) {
-      featuredStreams.forEach(s => {
-        const streamWrapper = document.createElement('div');
-        streamWrapper.className = "mb-6";
-        streamWrapper.innerHTML = getLiveStreamCardHTML(s);
-        container.appendChild(streamWrapper);
-        
-        let isLive = s.status === 'live';
-        if (s.status === 'scheduled' && s.schedule && Date.now() >= new Date(s.schedule).getTime()) {
-          isLive = true;
-        }
-        if (isLive && s.streamUrl) {
-          setupPlayerInFeed(s.id, s.streamUrl, s.streamType);
-        }
-      });
-    }
-
+  filteredPosts.forEach((post) => {
     const postCard = createFeedPostCard(post);
     container.appendChild(postCard);
   });
 
   updateFeedBadge(visibleCount);
-  startFeedCountdownTimers();
 
   if (window.lucide) window.lucide.createIcons();
-}
-
-function setupPlayerInFeed(streamId, url, streamType) {
-  setTimeout(() => {
-    const container = document.getElementById(`feed-player-container-${streamId}`);
-    if (!container) return;
-
-    if (window.setupUnifiedStreamPlayer) {
-      window.setupUnifiedStreamPlayer(container, {
-        streamUrl: url,
-        protocol: streamType || 'auto',
-        autoplay: true,
-        controls: true
-      });
-    }
-  }, 100);
-}
-
-function getLiveStreamCardHTML(s) {
-  const hasThumbnail = !!s.thumbnail;
-  
-  let isLive = s.status === 'live';
-  let isUpcoming = s.status === 'scheduled';
-  
-  if (isUpcoming && s.schedule) {
-    const startTime = new Date(s.schedule).getTime();
-    if (Date.now() >= startTime) {
-      isLive = true;
-      isUpcoming = false;
-    }
-  }
-
-  let mediaAreaHTML = '';
-  if (isLive) {
-    if (s.streamUrl) {
-      mediaAreaHTML = `
-        <div id="feed-player-container-${s.id}" class="aspect-video w-full rounded-2xl overflow-hidden bg-slate-950 relative border border-slate-800 shadow-inner">
-          <!-- Loaded via setupPlayerInFeed -->
-        </div>
-      `;
-    } else {
-      mediaAreaHTML = `
-        <div class="aspect-video w-full bg-slate-900/40 rounded-2xl flex flex-col items-center justify-center text-slate-400 p-6">
-          <i data-lucide="video-off" class="w-8 h-8 mb-2"></i>
-          <p class="text-xs font-bold">Waiting for connection...</p>
-        </div>
-      `;
-    }
-  } else if (isUpcoming) {
-    mediaAreaHTML = `
-      <div class="relative aspect-video w-full rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 flex flex-col items-center justify-center p-6 text-center min-h-[180px]">
-        ${hasThumbnail ? `<img src="${s.thumbnail}" class="absolute inset-0 w-full h-full object-cover opacity-20 pointer-events-none" />` : ''}
-        <div class="relative z-10 space-y-4">
-          <div class="px-3 py-1 bg-amber-500/10 border border-amber-500/20 rounded-full text-amber-500 text-[10px] uppercase font-bold w-max mx-auto tracking-widest">
-            ⏳ Scheduled Broadcast
-          </div>
-          <div class="text-xs text-slate-300 font-medium">Starts in:</div>
-          <div id="feed-countdown-${s.id}" class="grid grid-cols-4 gap-2 max-w-xs mx-auto">
-            <div class="bg-white/5 backdrop-blur-sm p-2 rounded-xl border border-white/10">
-              <span class="days text-lg font-black font-mono block text-blue-400">00</span>
-              <span class="text-[8px] uppercase font-bold text-slate-500">Days</span>
-            </div>
-            <div class="bg-white/5 backdrop-blur-sm p-2 rounded-xl border border-white/10">
-              <span class="hours text-lg font-black font-mono block text-blue-400">00</span>
-              <span class="text-[8px] uppercase font-bold text-slate-500">Hours</span>
-            </div>
-            <div class="bg-white/5 backdrop-blur-sm p-2 rounded-xl border border-white/10">
-              <span class="minutes text-lg font-black font-mono block text-blue-400">00</span>
-              <span class="text-[8px] uppercase font-bold text-slate-500">Mins</span>
-            </div>
-            <div class="bg-white/5 backdrop-blur-sm p-2 rounded-xl border border-white/10">
-              <span class="seconds text-lg font-black font-mono block text-rose-500 animate-pulse">00</span>
-              <span class="text-[8px] uppercase font-bold text-slate-500">Secs</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
-  } else {
-    mediaAreaHTML = `
-      <div class="aspect-video w-full bg-slate-900/40 rounded-2xl flex flex-col items-center justify-center text-slate-500 p-6 text-center">
-        <i data-lucide="video-off" class="w-8 h-8 mb-2"></i>
-        <p class="text-xs font-bold">Broadcast Ended / Offline</p>
-      </div>
-    `;
-  }
-
-  const liveHeaderBadge = isLive 
-    ? `<span class="px-2.5 py-0.5 text-[9px] font-black uppercase tracking-widest bg-rose-100 text-rose-700 animate-pulse rounded-md flex items-center gap-1">🔴 Live Broadcast</span>`
-    : `<span class="px-2.5 py-0.5 text-[9px] font-black uppercase tracking-widest bg-amber-100 text-amber-700 rounded-md flex items-center gap-1">⏳ Upcoming Stream</span>`;
-
-  return `
-    <div class="bg-gradient-to-br from-indigo-950 via-slate-900 to-slate-950 border border-slate-800 rounded-[2.2rem] p-6 shadow-xl space-y-4 relative overflow-hidden transition-all duration-300">
-      <div class="absolute -right-24 -top-24 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
-      
-      <div class="flex items-center justify-between gap-4">
-        <div class="flex items-center gap-2">
-          <div class="w-8 h-8 bg-blue-500/10 text-blue-400 rounded-full flex items-center justify-center">
-            <i data-lucide="video" class="w-4 h-4 animate-pulse"></i>
-          </div>
-          <div>
-            <span class="text-xs font-black text-slate-300 block uppercase tracking-widest">HomeCell Live</span>
-          </div>
-        </div>
-        ${liveHeaderBadge}
-      </div>
-
-      <div class="space-y-1">
-        <h4 class="text-lg font-black text-white font-display tracking-tight leading-snug">${s.streamTitle || 'Untitled stream'}</h4>
-        <p class="text-xs text-slate-400 leading-relaxed">${s.streamDesc || ''}</p>
-      </div>
-
-      ${mediaAreaHTML}
-    </div>
-  `;
 }
 
 function createFeedPostCard(post) {

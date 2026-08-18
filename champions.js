@@ -1021,6 +1021,13 @@ function switchChampionsSubTab(tabName) {
       }
     }
   });
+
+  if (tabName === 'store') {
+    if (window.initKingdomStoreModule) window.initKingdomStoreModule();
+    if (window.initDownloadsModule) window.initDownloadsModule();
+  }
+
+  if (window.lucide) window.lucide.createIcons();
 }
 
 function copyReferralCode() {
