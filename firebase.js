@@ -1,11 +1,9 @@
 // firebase.js
-// Firebase configuration and auth services
+// Firebase configuration and auth services for Home.cell
 
-// Prevent circular JSON errors and catch internal SDK assertions in sandbox preview
 (function() {
   const originalError = console.error;
   const originalWarn = console.warn;
-  const originalLog = console.log;
 
   function sanitizeArg(arg) {
     if (arg instanceof Error) {
@@ -31,19 +29,13 @@
         });
         return JSON.parse(str);
       } catch (e) {
-        try {
-          if (arg.message) return `[Unsafe Object]: ${arg.message}`;
-          return `[Unsafe ${arg.constructor ? arg.constructor.name : 'Object'}]`;
-        } catch (err) {
-          return "[Unsafe Object]";
-        }
+        return "[Unsafe Object]";
       }
     }
     return arg;
   }
 
   console.error = function(...args) {
-    // Filter out benign internal Firestore assertion messages in sandboxed iframe environments
     const msg = args.map(a => String(a || '')).join(' ');
     if (msg.includes('INTERNAL ASSERTION FAILED')) {
       originalWarn.call(console, 'Firestore SDK internal assertion caught:', msg);
@@ -58,24 +50,12 @@
     }
     originalWarn.apply(console, args.map(sanitizeArg));
   };
-  console.log = function(...args) {
-    originalLog.apply(console, args.map(sanitizeArg));
-  };
 
-  // Gracefully prevent unhandled SDK assertion crashes from breaking window context
   window.addEventListener('unhandledrejection', function(event) {
     const reasonMsg = String(event?.reason?.message || event?.reason || '');
     if (reasonMsg.includes('INTERNAL ASSERTION FAILED') || reasonMsg.includes('Unexpected state')) {
       event.preventDefault();
-      console.warn('Caught unhandled Firestore assertion rejection gracefully:', reasonMsg);
-    }
-  });
-
-  window.addEventListener('error', function(event) {
-    const errorMsg = String(event?.message || event?.error?.message || '');
-    if (errorMsg.includes('INTERNAL ASSERTION FAILED') || errorMsg.includes('Unexpected state')) {
-      event.preventDefault();
-      console.warn('Caught window error for Firestore assertion gracefully:', errorMsg);
+      console.warn('Caught unhandled Firestore assertion rejection:', reasonMsg);
     }
   });
 })();
@@ -91,7 +71,6 @@ const firebaseConfig = {
   measurementId: "G-0YN4548C8Z"
 };
 
-// Initialize Firebase Compat
 if (!window.firebase) {
   console.error("Firebase SDK not loaded via CDNs.");
 }
@@ -106,9 +85,7 @@ try {
     experimentalAutoDetectLongPolling: true,
     merge: true
   });
-} catch (e) {
-  // Ignore if settings already initialized
-}
+} catch (e) {}
 
 const auth = firebase.auth();
 
@@ -121,7 +98,6 @@ const OperationType = {
   WRITE: 'write',
 };
 
-// Safe stringifier to handle potential circular structures
 function safeStringify(obj) {
   try {
     const cache = new Set();
@@ -139,7 +115,6 @@ function safeStringify(obj) {
   }
 }
 
-// Standard Firestore Error Handler as specified by the system skill
 function handleFirestoreError(error, operationType, path) {
   const errInfo = {
     error: error instanceof Error ? error.message : String(error),
@@ -157,11 +132,11 @@ function handleFirestoreError(error, operationType, path) {
     path: String(path || '')
   };
   console.error('Firestore Error: ', safeStringify(errInfo));
-  window.showToast?.(error.message || 'Operation failed due to lack of permissions.', 'error');
+  window.showToast?.(error.message || 'Operation failed.', 'error');
   throw new Error(safeStringify(errInfo));
 }
 
-// Test Connection gracefully
+// Test Connection
 async function testConnection() {
   try {
     await db.collection('test').doc('connection').get();
@@ -173,11 +148,75 @@ async function testConnection() {
 }
 testConnection();
 
-// Expose to window for modular usage across scripts
 window.db = db;
 window.auth = auth;
 window.firebase = firebase;
 window.handleFirestoreError = handleFirestoreError;
 window.OperationType = OperationType;
+window.currentUserRole = 'Member';
+
+// Real-time Auth & Role Observer
+auth.onAuthStateChanged(async (user) => {
+  const headerName = document.getElementById('header-user-name');
+  const headerAvatar = document.getElementById('header-avatar-circle');
+  const superAdminBadge = document.getElementById('header-super-admin-badge');
+  const adminNavBtn = document.getElementById('nav-btn-admin');
+  const mobileAdminBtn = document.getElementById('mobile-admin-btn');
+  const headerKcCount = document.getElementById('header-kc-count');
+  const headerStreakCount = document.getElementById('header-streak-count');
+
+  if (user) {
+    if (headerName) headerName.innerText = user.displayName || user.email.split('@')[0];
+    if (headerAvatar) {
+      headerAvatar.innerHTML = `<img src="${user.photoURL || `https://api.dicebear.com/7.x/bottts/svg?seed=${user.uid}`}" class="w-full h-full object-cover" />`;
+    }
+
+    try {
+      const userDocRef = db.collection('users').doc(user.uid);
+      userDocRef.onSnapshot(doc => {
+        if (doc.exists) {
+          const userData = doc.data();
+          const isSuperAdmin = userData.role === 'Super Admin' || user.email === 'danielgiobari644@gmail.com';
+          window.currentUserRole = isSuperAdmin ? 'Super Admin' : (userData.role || 'Member');
+          window.currentUserProfile = userData;
+          window.currentKcBalance = userData.kingdomCoins !== undefined ? userData.kingdomCoins : 100;
+
+          if (headerKcCount) headerKcCount.innerText = `${(userData.kingdomCoins || 0).toLocaleString()} KC`;
+          if (headerStreakCount) headerStreakCount.innerText = `${userData.streak || 1}d`;
+
+          if (isSuperAdmin) {
+            if (superAdminBadge) superAdminBadge.classList.remove('hidden');
+            if (adminNavBtn) adminNavBtn.classList.remove('hidden');
+            if (mobileAdminBtn) mobileAdminBtn.classList.remove('hidden');
+          } else {
+            if (superAdminBadge) superAdminBadge.classList.add('hidden');
+            if (adminNavBtn) adminNavBtn.classList.add('hidden');
+            if (mobileAdminBtn) mobileAdminBtn.classList.add('hidden');
+          }
+
+          if (window.renderStoreKcHeader) window.renderStoreKcHeader();
+          if (window.checkSuperAdminStoreControls) window.checkSuperAdminStoreControls();
+          if (window.syncMyLibrary) window.syncMyLibrary();
+        }
+      });
+    } catch (e) {
+      console.warn("User snapshot error:", e);
+    }
+  } else {
+    window.currentUserRole = 'Guest';
+    window.currentUserProfile = null;
+    window.currentKcBalance = 100;
+    if (headerName) headerName.innerText = 'Guest Believer';
+    if (headerAvatar) headerAvatar.innerText = '✝';
+    if (superAdminBadge) superAdminBadge.classList.add('hidden');
+    if (adminNavBtn) adminNavBtn.classList.add('hidden');
+    if (mobileAdminBtn) mobileAdminBtn.classList.add('hidden');
+    if (headerKcCount) headerKcCount.innerText = '100 KC';
+    if (headerStreakCount) headerStreakCount.innerText = '1d';
+    if (window.renderStoreKcHeader) window.renderStoreKcHeader();
+    if (window.checkSuperAdminStoreControls) window.checkSuperAdminStoreControls();
+  }
+});
 
 console.log("Firebase Engine initialized successfully.");
+

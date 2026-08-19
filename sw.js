@@ -1,7 +1,7 @@
 // sw.js
 // Production-grade Service Worker for real Web Push Notifications and Offline PWA Support
 
-const CACHE_NAME = 'homecell-cache-v1';
+const CACHE_NAME = 'homecell-cache-v2';
 const ASSETS_TO_CACHE = [
   './',
   'index.html',
@@ -36,7 +36,6 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
-  // Safe fetch handler to satisfy Chrome/iOS PWA criteria
   if (event.request.method !== 'GET' || event.request.url.includes('/api/')) {
     return;
   }
@@ -50,7 +49,7 @@ self.addEventListener('fetch', event => {
 });
 
 self.addEventListener('push', event => {
-  let data = { title: 'Home.cell', body: 'New community update!', url: '/' };
+  let data = { title: 'Home.cell', body: 'New fellowship update!', url: '/' };
   if (event.data) {
     try {
       data = event.data.json();
@@ -61,8 +60,8 @@ self.addEventListener('push', event => {
 
   const options = {
     body: data.body,
-    icon: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&q=80&w=192&h=192',
-    badge: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&q=80&w=72&h=72',
+    icon: '/favicon.jpg',
+    badge: '/favicon.jpg',
     data: {
       url: data.url || '/'
     },

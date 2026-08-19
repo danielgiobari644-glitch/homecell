@@ -1,2811 +1,1328 @@
 // admin.js
-// Super Admin Controls Desk - membership registry, parish events, trivia factory, installer publisher, and system settings
+// Complete Super Admin & Leadership Command Center with Trivia Quiz Builder & Participant Tracking
 
-let usersListListener = null;
+let adminUsersListener = null;
+let adminRequestsListener = null;
 let adminCellsListener = null;
-let adminEventsListener = null;
-let adminTriviaListener = null;
-let adminBundlesListener = null;
-let adminUpcomingEventsListener = null;
-let adminDailyDevotionalsListener = null;
+let adminStatsListener = null;
 let adminQuizzesListener = null;
-let adminApkListener = null;
-let adminStoreProductsListener = null;
-let adminCustomRequestsListener = null;
-let adminFeedbackListener = null;
-let adminLoadingScreenListener = null;
-let adminLoadingHistoryListener = null;
+let currentAdminSubTab = 'members';
 
 function initAdminModule() {
-  const adminBtns = document.querySelectorAll('#nav-admin, #mobile-nav-admin, .nav-item-admin');
-  const unauthBanner = document.getElementById('admin-unauthorized-banner');
-  const mainContent = document.getElementById('admin-main-content');
+  const user = window.auth?.currentUser;
+  const isSuperAdmin = window.currentUserRole === 'Super Admin' || user?.email === 'danielgiobari644@gmail.com';
 
-  const authEmail = (window.auth?.currentUser?.email || window.auth?.currentUser?.providerData?.[0]?.email || '').toLowerCase().trim();
-  const profileEmail = (window.currentUserProfile?.email || '').toLowerCase().trim();
-  const isSuperAdmin = window.currentUserRole === 'Super Admin' ||
-                       authEmail === 'danielgiobari644@gmail.com' ||
-                       profileEmail === 'danielgiobari644@gmail.com';
+  const adminNavBtn = document.getElementById('nav-btn-admin');
+  if (adminNavBtn && isSuperAdmin) {
+    adminNavBtn.classList.remove('hidden');
+  }
+
+  const pane = document.getElementById('admin-management-pane');
+  if (!pane) return;
 
   if (!isSuperAdmin) {
-    if (usersListListener) { usersListListener(); usersListListener = null; }
-    if (adminCellsListener) { adminCellsListener(); adminCellsListener = null; }
-    if (adminEventsListener) { adminEventsListener(); adminEventsListener = null; }
-    if (adminTriviaListener) { adminTriviaListener(); adminTriviaListener = null; }
-    if (adminBundlesListener) { adminBundlesListener(); adminBundlesListener = null; }
-    if (adminUpcomingEventsListener) { adminUpcomingEventsListener(); adminUpcomingEventsListener = null; }
-    if (adminDailyDevotionalsListener) { adminDailyDevotionalsListener(); adminDailyDevotionalsListener = null; }
-    if (adminQuizzesListener) { adminQuizzesListener(); adminQuizzesListener = null; }
-    if (adminApkListener) { adminApkListener(); adminApkListener = null; }
-    if (adminStoreProductsListener) { adminStoreProductsListener(); adminStoreProductsListener = null; }
-    if (adminCustomRequestsListener) { adminCustomRequestsListener(); adminCustomRequestsListener = null; }
-    if (adminFeedbackListener) { adminFeedbackListener(); adminFeedbackListener = null; }
-    if (adminLoadingScreenListener) { adminLoadingScreenListener(); adminLoadingScreenListener = null; }
-    if (adminLoadingHistoryListener) { adminLoadingHistoryListener(); adminLoadingHistoryListener = null; }
-
-    adminBtns.forEach(btn => btn.classList.add('hidden'));
-    if (unauthBanner) unauthBanner.classList.remove('hidden');
-    if (mainContent) mainContent.classList.add('hidden');
-    return;
-  }
-
-  // User is confirmed Super Admin
-  window.currentUserRole = 'Super Admin';
-  adminBtns.forEach(btn => btn.classList.remove('hidden'));
-  if (unauthBanner) unauthBanner.classList.add('hidden');
-  if (mainContent) mainContent.classList.remove('hidden');
-
-  const adminSep = document.getElementById('admin-nav-separator');
-  if (adminSep) adminSep.classList.remove('hidden');
-
-  syncMembershipRegistry();
-  syncAdminCells();
-  syncAdminEvents();
-  syncAdminUpcomingEvents();
-  syncAdminDailyDevotionals();
-  syncAdminTrivia();
-  syncAdminQuizzes();
-  syncAdminBundles();
-  syncAdminApkConfig();
-  syncAdminStoreProducts();
-  syncAdminCustomRequests();
-  syncAdminFeedbackHub();
-  syncAdminLoadingScreen();
-  loadGlobalDeskSettings();
-}
-
-// 1. Unified Membership Registry
-function syncMembershipRegistry() {
-  const container = document.getElementById('admin-users-rows');
-  if (!container) return;
-
-  if (usersListListener) usersListListener();
-
-  // Fetch all cells first so we can map names and populate selects
-  window.db.collection('cells').get().then(cellsSnap => {
-    const cellsList = [];
-    cellsSnap.forEach(cdoc => {
-      cellsList.push({ id: cdoc.id, name: cdoc.data().name });
-    });
-
-    usersListListener = window.db.collection('users').orderBy('createdAt', 'desc').onSnapshot(snap => {
-      container.innerHTML = '';
-      window.allUsersList = [];
-      if (snap.empty) {
-        container.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-slate-400">No registered members found.</td></tr>`;
-        return;
-      }
-
-      snap.forEach(doc => {
-        const u = doc.data();
-        const uid = doc.id;
-        window.allUsersList.push({ uid, ...u });
-
-        const tr = document.createElement('tr');
-        tr.className = "border-b border-slate-100 dark:border-zinc-800 text-slate-800 dark:text-zinc-200";
-
-        const roles = ['Member', 'Cell Leader', 'Cell Coordinator', 'Pastor', 'Super Admin'];
-        const roleOptions = roles.map(r => `<option value="${r}" ${u.role === r ? 'selected' : ''}>${r}</option>`).join('');
-
-        const cellOptions = `
-          <option value="none" ${u.cellId === 'none' ? 'selected' : ''}>None</option>
-          ${cellsList.map(c => `<option value="${c.id}" ${u.cellId === c.id ? 'selected' : ''}>${c.name}</option>`).join('')}
-        `;
-
-        tr.innerHTML = `
-          <td class="p-4 font-bold text-slate-900 dark:text-zinc-100">${u.displayName || 'No Name'}</td>
-          <td class="p-4 font-mono text-xs text-slate-500">${u.email}</td>
-          <td class="p-4">
-            <select onchange="updateUserRole('${uid}', this.value)" class="text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500 font-bold text-slate-800 dark:text-zinc-200">
-              ${roleOptions}
-            </select>
-          </td>
-          <td class="p-4">
-            <select onchange="updateUserCellAssignment('${uid}', this.value)" class="text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500 font-bold text-slate-800 dark:text-zinc-200">
-              ${cellOptions}
-            </select>
-          </td>
-          <td class="p-4 text-center">
-            <div class="flex items-center justify-center gap-1">
-              <button onclick="sendUserPasswordResetEmail('${u.email}')" class="text-blue-500 hover:text-blue-700 p-2 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-all cursor-pointer" title="Send Password Reset Email">
-                <i data-lucide="key-round" class="w-4 h-4"></i>
-              </button>
-              <button onclick="evictUser('${uid}')" class="text-rose-500 hover:text-rose-700 p-2 rounded-xl hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-all cursor-pointer" title="Evict User">
-                <i data-lucide="trash-2" class="w-4 h-4"></i>
-              </button>
-            </div>
-          </td>
-        `;
-
-        container.appendChild(tr);
-      });
-
-      if (window.lucide) window.lucide.createIcons();
-    }, err => window.handleFirestoreError(err, 'list', 'users'));
-  });
-}
-
-function updateUserRole(uid, role) {
-  window.db.collection('users').doc(uid).update({ role })
-    .then(() => window.showToast?.(`Updated user role to ${role}`))
-    .catch(err => window.handleFirestoreError(err, 'write', `users/${uid}`));
-}
-
-function updateUserCellAssignment(uid, cellId) {
-  window.db.collection('users').doc(uid).update({ cellId })
-    .then(() => window.showToast?.(`Updated member fellowship assignment.`))
-    .catch(err => window.handleFirestoreError(err, 'write', `users/${uid}`));
-}
-
-function evictUser(uid) {
-  const isConfirmed = confirm("Are you sure you want to permanently evict this user from the portal registry?");
-  if (!isConfirmed) return;
-
-  window.db.collection('users').doc(uid).delete()
-    .then(() => window.showToast?.("User profile evicted."))
-    .catch(err => window.handleFirestoreError(err, 'delete', `users/${uid}`));
-}
-
-// 2. Fellowship Cell Suspensions & Listings
-function syncAdminCells() {
-  const container = document.getElementById('admin-cells-controls-box');
-  if (!container) return;
-
-  if (adminCellsListener) adminCellsListener();
-
-  adminCellsListener = window.db.collection('cells').onSnapshot(snap => {
-    container.innerHTML = '';
-    if (snap.empty) {
-      container.innerHTML = `<p class="text-slate-400 text-center py-6">No cell registries active.</p>`;
-      return;
-    }
-
-    const grid = document.createElement('div');
-    grid.className = "grid grid-cols-1 md:grid-cols-2 gap-6";
-
-    snap.forEach(doc => {
-      const cell = doc.data();
-      const cellId = doc.id;
-      const isPending = cell.status === 'pending_approval';
-      const isSuspended = cell.status === 'suspended';
-
-      const card = document.createElement('div');
-      card.className = `p-5 bg-slate-50 dark:bg-zinc-800/40 border rounded-2xl flex flex-col justify-between ${
-        isPending ? 'border-amber-500 bg-amber-50/20 dark:bg-amber-950/20' :
-        isSuspended ? 'border-rose-500 bg-rose-50/10' : 'border-slate-200 dark:border-zinc-800'
-      }`;
-
-      card.innerHTML = `
-        <div>
-          <div class="flex items-center justify-between gap-2 mb-1">
-            <span class="text-[10px] font-mono text-slate-400 uppercase tracking-widest">${cell.city}</span>
-            ${isPending ? '<span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30">PENDING APPROVAL</span>' : ''}
-          </div>
-          <div class="flex items-center gap-2">
-            <h5 class="font-black font-display text-slate-900 dark:text-zinc-100">${cell.name}</h5>
-            <button onclick="window.renameCellGroup('${cellId}', \`${cell.name.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)" class="p-1 hover:text-blue-600 text-slate-400 dark:text-zinc-500 rounded transition-colors cursor-pointer" title="Rename Cell">
-              <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
-            </button>
-          </div>
-          <p class="text-xs text-slate-500 mt-1">${cell.description}</p>
-          <div class="text-[10px] text-slate-400 font-semibold mt-2">Leader: ${cell.leaderName} (${cell.leaderEmail})</div>
+    pane.innerHTML = `
+      <div class="glass-panel rounded-3xl p-12 text-center space-y-4 max-w-lg mx-auto">
+        <div class="w-16 h-16 rounded-3xl bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto text-2xl font-black">
+          🛡️
         </div>
-
-        <div class="flex flex-col gap-2 mt-4 pt-3 border-t border-slate-100 dark:border-zinc-800/60">
-          ${isPending ? `
-            <button onclick="window.approveCellGroup('${cellId}')" class="w-full py-2 text-xs font-black bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-all cursor-pointer shadow-sm flex items-center justify-center gap-1.5">
-              <i data-lucide="check-circle" class="w-4 h-4"></i> Approve & Activate Cell Group
-            </button>
-          ` : ''}
-          <div class="flex gap-2">
-            <button onclick="toggleCellSuspension('${cellId}', '${cell.status}')" class="flex-grow py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-              isSuspended
-                ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                : 'bg-amber-600 hover:bg-amber-700 text-white'
-            }">
-              ${isSuspended ? 'Activate Cell' : 'Suspend Cell'}
-            </button>
-            <button onclick="deleteCellGroup('${cellId}')" class="px-2.5 py-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 dark:bg-rose-950/20 dark:text-rose-400 rounded-lg cursor-pointer">
-              <i data-lucide="trash-2" class="w-4 h-4"></i>
-            </button>
-          </div>
-          <button onclick="openChangeCellLeaderModal('${cellId}')" class="w-full py-1.5 text-xs font-bold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all cursor-pointer text-center">
-            Change Cell Leader
-          </button>
+        <h3 class="text-xl font-black font-display text-slate-900 dark:text-zinc-100">Super Admin Access Required</h3>
+        <p class="text-xs text-slate-500 leading-relaxed">
+          The Leadership Command Center is reserved for ordained pastors, cell coordinators, and system administrators.
+        </p>
+        <div class="pt-2">
+          <span class="text-[11px] font-mono text-slate-400">Current email: ${user?.email || 'Guest'}</span>
         </div>
-      `;
-
-      grid.appendChild(card);
-    });
-
-    container.appendChild(grid);
-
-    if (window.lucide) window.lucide.createIcons();
-  }, err => window.handleFirestoreError(err, 'list', 'cells'));
-}
-
-window.approveCellGroup = function(cellId) {
-  const db = window.db;
-  if (!db) return;
-  db.collection('cells').doc(cellId).update({
-    status: 'active',
-    approvedByAdmin: true,
-    approvedAt: window.firebase.firestore.FieldValue.serverTimestamp()
-  }).then(() => {
-    window.showToast?.("✅ Cell group approved and activated successfully!", "success");
-  }).catch(err => {
-    window.showToast?.("Error approving cell: " + err.message, "error");
-  });
-};
-
-function toggleCellSuspension(cellId, currentStatus) {
-  const nextStatus = currentStatus === 'active' ? 'suspended' : 'active';
-  window.db.collection('cells').doc(cellId).update({ status: nextStatus })
-    .then(() => window.showToast?.(`Cell status shifted to ${nextStatus}.`))
-    .catch(err => window.handleFirestoreError(err, 'write', `cells/${cellId}`));
-}
-
-function deleteCellGroup(cellId) {
-  const isConfirmed = confirm("Are you sure you want to permanently delete this Fellowship Cell? All associated messages and events will remain inaccessible.");
-  if (!isConfirmed) return;
-
-  window.db.collection('cells').doc(cellId).delete()
-    .then(() => window.showToast?.("Cell group deleted."))
-    .catch(err => window.handleFirestoreError(err, 'delete', `cells/${cellId}`));
-}
-
-function renameCellGroup(cellId, currentName) {
-  const newName = prompt("Enter new name for the Fellowship Cell Group:", currentName);
-  if (newName === null) return;
-  const trimmed = newName.trim();
-  if (!trimmed) {
-    window.showToast?.("Cell name cannot be empty.", "error");
-    return;
-  }
-  window.db.collection('cells').doc(cellId).update({ name: trimmed })
-    .then(() => window.showToast?.("Cell renamed successfully."))
-    .catch(err => window.handleFirestoreError(err, 'write', `cells/${cellId}`));
-}
-
-// 3. Fellowship Gatherings Manager
-function syncAdminEvents() {
-  const container = document.getElementById('admin-events-list');
-  if (!container) return;
-
-  if (adminEventsListener) adminEventsListener();
-
-  adminEventsListener = window.db.collection('parish_events').orderBy('date', 'desc').onSnapshot(snap => {
-    container.innerHTML = '';
-    if (snap.empty) {
-      container.innerHTML = `<p class="text-xs text-slate-400">No scheduled gatherings.</p>`;
-      return;
-    }
-
-    snap.forEach(doc => {
-      const ev = doc.data();
-      const evId = doc.id;
-
-      const item = document.createElement('div');
-      item.className = "flex items-center justify-between p-3.5 bg-slate-50 dark:bg-zinc-800/40 border border-slate-200 dark:border-zinc-800 rounded-xl";
-      item.innerHTML = `
-        <div>
-          <h6 class="font-bold text-sm text-slate-800 dark:text-zinc-200">${ev.title}</h6>
-          <span class="text-[10px] font-mono text-slate-400">${ev.date}</span>
-        </div>
-        <button onclick="deleteParishEvent('${evId}')" class="text-rose-500 hover:text-rose-700 cursor-pointer p-1">
-          <i data-lucide="trash-2" class="w-4.5 h-4.5"></i>
-        </button>
-      `;
-
-      container.appendChild(item);
-    });
-
-    if (window.lucide) window.lucide.createIcons();
-  }, err => window.handleFirestoreError(err, 'list', 'parish_events'));
-}
-
-function createParishEvent(title, date, description) {
-  const docId = window.db.collection('parish_events').doc().id;
-  window.db.collection('parish_events').doc(docId).set({
-    id: docId,
-    title,
-    date,
-    description,
-    rsvps: {},
-    createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
-  })
-    .then(() => window.showToast?.("Created Universal Fellowship gathering."))
-    .catch(err => window.handleFirestoreError(err, 'create', `parish_events/${docId}`));
-}
-
-function deleteParishEvent(eventId) {
-  const isConfirmed = confirm("Are you sure you want to delete this Fellowship Gathering?");
-  if (!isConfirmed) return;
-
-  window.db.collection('parish_events').doc(eventId).delete()
-    .then(() => window.showToast?.("Gathering deleted."))
-    .catch(err => window.handleFirestoreError(err, 'delete', `parish_events/${eventId}`));
-}
-
-// 4. Trivia Q&A Factory
-function syncAdminTrivia() {
-  const container = document.getElementById('admin-trivia-list');
-  if (!container) return;
-
-  if (adminTriviaListener) adminTriviaListener();
-
-  adminTriviaListener = window.db.collection('trivia_questions').orderBy('createdAt', 'desc').onSnapshot(snap => {
-    container.innerHTML = '';
-    
-    // Also update public trivia listing under Bible tab
-    const publicContainer = document.getElementById('bible-trivia-deck');
-    if (publicContainer) publicContainer.innerHTML = '';
-
-    if (snap.empty) {
-      container.innerHTML = `<p class="text-xs text-slate-400">No trivia questions manufactured yet.</p>`;
-      if (publicContainer) {
-        publicContainer.innerHTML = `<p class="text-slate-400 italic text-center py-6">No Bible trivia Q&As published yet.</p>`;
-      }
-      return;
-    }
-
-    let qIdx = 1;
-    snap.forEach(doc => {
-      const q = doc.data();
-      const qid = doc.id;
-
-      // Render in Admin Panel
-      const item = document.createElement('div');
-      item.className = "p-3 bg-slate-50 dark:bg-zinc-800/40 border border-slate-200 dark:border-zinc-800 rounded-xl space-y-1 relative group";
-      item.innerHTML = `
-        <div class="text-xs font-bold text-slate-800 dark:text-zinc-200">Q: ${q.question}</div>
-        <div class="text-[10px] text-slate-400">Answer Index: ${q.answerIdx} (${q.options[q.answerIdx]})</div>
-        <button onclick="deleteTriviaQuestion('${qid}')" class="absolute hidden group-hover:block top-2 right-2 text-rose-500 hover:text-rose-700 p-1 cursor-pointer">
-          <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-        </button>
-      `;
-      container.appendChild(item);
-
-      // Render in Bible study pane for public interaction
-      if (publicContainer) {
-        const pcard = document.createElement('div');
-        pcard.className = "p-5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-sm space-y-4";
-        
-        const optionBlocks = q.options.map((opt, oIdx) => `
-          <button onclick="checkTriviaAnswer('${qid}', ${oIdx}, ${q.answerIdx})" id="trivia-opt-${qid}-${oIdx}" class="w-full text-left p-3 rounded-xl border border-slate-100 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/20 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:border-slate-300 dark:hover:border-zinc-700 transition-all font-semibold text-xs text-slate-700 dark:text-zinc-300 cursor-pointer flex justify-between items-center">
-            <span>${opt}</span>
-          </button>
-        `).join('');
-
-        pcard.innerHTML = `
-          <div class="space-y-1">
-            <span class="px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400">Bible Trivia Q${qIdx++}</span>
-            <h5 class="text-sm font-black text-slate-900 dark:text-zinc-100 pt-1">${q.question}</h5>
-          </div>
-          <div class="space-y-2">
-            ${optionBlocks}
-          </div>
-        `;
-        publicContainer.appendChild(pcard);
-      }
-    });
-
-    if (window.lucide) window.lucide.createIcons();
-  }, err => window.handleFirestoreError(err, 'list', 'trivia_questions'));
-}
-
-function createTriviaQuestion(question, options, answerIdx) {
-  const docId = window.db.collection('trivia_questions').doc().id;
-  window.db.collection('trivia_questions').doc(docId).set({
-    id: docId,
-    question,
-    options,
-    answerIdx,
-    createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
-  })
-    .then(() => window.showToast?.("Bible Trivia Q&A manufactured successfully!"))
-    .catch(err => window.handleFirestoreError(err, 'create', `trivia_questions/${docId}`));
-}
-
-function deleteTriviaQuestion(qid) {
-  const isConfirmed = confirm("Are you sure you want to delete this Trivia Question?");
-  if (!isConfirmed) return;
-
-  window.db.collection('trivia_questions').doc(qid).delete()
-    .then(() => window.showToast?.("Trivia question deleted."))
-    .catch(err => window.handleFirestoreError(err, 'delete', `trivia_questions/${qid}`));
-}
-
-// Client check handler
-function checkTriviaAnswer(qid, selectedIdx, correctIdx) {
-  const btn = document.getElementById(`trivia-opt-${qid}-${selectedIdx}`);
-  if (!btn) return;
-
-  // Clear previous highlights for this question
-  for (let i = 0; i < 4; i++) {
-    const obtn = document.getElementById(`trivia-opt-${qid}-${i}`);
-    if (obtn) {
-      obtn.className = "w-full text-left p-3 rounded-xl border border-slate-100 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/20 text-slate-700 dark:text-zinc-300 font-semibold text-xs";
-    }
-  }
-
-  if (selectedIdx === correctIdx) {
-    btn.className = "w-full text-left p-3 rounded-xl border border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-400 font-semibold text-xs flex justify-between items-center";
-    btn.innerHTML += `<i data-lucide="check-circle" class="w-4 h-4 text-emerald-500"></i>`;
-    window.showToast?.("Amen! Correct Answer!");
-  } else {
-    btn.className = "w-full text-left p-3 rounded-xl border border-rose-500 bg-rose-50 dark:bg-rose-950/30 text-rose-800 dark:text-rose-400 font-semibold text-xs flex justify-between items-center";
-    btn.innerHTML += `<i data-lucide="x-circle" class="w-4 h-4 text-rose-500"></i>`;
-    
-    // Highlight correct option as well
-    const correctBtn = document.getElementById(`trivia-opt-${qid}-${correctIdx}`);
-    if (correctBtn) {
-      correctBtn.className = "w-full text-left p-3 rounded-xl border border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-400 font-semibold text-xs";
-    }
-    window.showToast?.("Wrong answer. Try searching scripture details!", "error");
-  }
-
-  if (window.lucide) window.lucide.createIcons();
-}
-
-// 5. Installer Packages Publisher
-function syncAdminBundles() {
-  const container = document.getElementById('admin-bundles-list');
-  if (!container) return;
-
-  if (adminBundlesListener) adminBundlesListener();
-
-  adminBundlesListener = window.db.collection('download_bundles').orderBy('createdAt', 'desc').onSnapshot(snap => {
-    container.innerHTML = '';
-    if (snap.empty) {
-      container.innerHTML = `<p class="text-xs text-slate-400">No active trigger installers registered.</p>`;
-      return;
-    }
-
-    snap.forEach(doc => {
-      const b = doc.data();
-      const bid = doc.id;
-
-      const item = document.createElement('div');
-      item.className = "flex items-center justify-between p-3.5 bg-slate-50 dark:bg-zinc-800/40 border border-slate-200 dark:border-zinc-800 rounded-xl relative group";
-      item.innerHTML = `
-        <div>
-          <h6 class="font-bold text-xs text-slate-800 dark:text-zinc-200">${b.title} [${b.category}]</h6>
-          <span class="text-[9px] font-mono text-slate-400">${b.size} • ${b.tag}</span>
-        </div>
-        <button onclick="deleteDownloadBundle('${bid}')" class="text-rose-500 hover:text-rose-700 p-1 cursor-pointer">
-          <i data-lucide="trash-2" class="w-4 h-4"></i>
-        </button>
-      `;
-
-      container.appendChild(item);
-    });
-
-    if (window.lucide) window.lucide.createIcons();
-  }, err => window.handleFirestoreError(err, 'list', 'download_bundles'));
-}
-
-function createDownloadBundle(title, size, url, tag, category) {
-  const docId = window.db.collection('download_bundles').doc().id;
-  window.db.collection('download_bundles').doc(docId).set({
-    id: docId,
-    title,
-    size,
-    url,
-    tag,
-    category,
-    createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
-  })
-    .then(() => window.showToast?.("Installer Trigger Bundle registered successfully!"))
-    .catch(err => window.handleFirestoreError(err, 'create', `download_bundles/${docId}`));
-}
-
-function deleteDownloadBundle(bundleId) {
-  const isConfirmed = confirm("Are you sure you want to permanently delete this Download Bundle?");
-  if (!isConfirmed) return;
-
-  window.db.collection('download_bundles').doc(bundleId).delete()
-    .then(() => window.showToast?.("Bundle trigger removed."))
-    .catch(err => window.handleFirestoreError(err, 'delete', `download_bundles/${bundleId}`));
-}
-
-// Admin Official Android APK Management
-
-function syncAdminApkConfig() {
-  const badge = document.getElementById('admin-apk-status-badge');
-  const box = document.getElementById('admin-current-apk-box');
-  const filenameEl = document.getElementById('admin-apk-filename');
-  const metaEl = document.getElementById('admin-apk-meta');
-
-  if (!badge || !box) return;
-
-  if (adminApkListener) adminApkListener();
-
-  const db = window.db;
-  if (!db) return;
-
-  adminApkListener = db.collection('system_configs').doc('apk').onSnapshot(doc => {
-    if (doc.exists) {
-      const data = doc.data();
-      if (data && (data.apkDataUrl || data.externalUrl)) {
-        badge.className = "px-3.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30";
-        badge.innerText = "Active Published APK";
-
-        box.classList.remove('hidden');
-        if (filenameEl) filenameEl.innerText = data.fileName || 'HomeCell_Android_Release.apk';
-        if (metaEl) metaEl.innerText = `Size: ${data.fileSize || 'Standard APK'} • Ready for Android Users`;
-        return;
-      }
-    }
-
-    badge.className = "px-3.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/30";
-    badge.innerText = "No Custom APK Uploaded (Using Default Fallback)";
-    box.classList.add('hidden');
-  }, err => console.warn("APK config listener error:", err));
-}
-
-window.handleAdminApkUploadSubmit = function(event) {
-  if (event) event.preventDefault();
-  const fileInput = document.getElementById('admin-apk-file-input');
-  const urlInput = document.getElementById('admin-apk-url-input');
-  const submitBtn = document.getElementById('btn-upload-apk-submit');
-
-  const externalUrl = urlInput ? urlInput.value.trim() : '';
-  const file = fileInput && fileInput.files ? fileInput.files[0] : null;
-
-  if (!file && !externalUrl) {
-    window.showToast?.("Please select an .apk file or enter an external APK link.", "error");
-    return;
-  }
-
-  if (submitBtn) {
-    submitBtn.disabled = true;
-    submitBtn.innerText = "Processing APK...";
-  }
-
-  const saveApkToDb = (apkDataUrl, fileName, fileSize) => {
-    const db = window.db;
-    db.collection('system_configs').doc('apk').set({
-      apkDataUrl: apkDataUrl || '',
-      externalUrl: externalUrl || '',
-      fileName: fileName || 'HomeCell_Android_App.apk',
-      fileSize: fileSize || 'Direct Download',
-      updatedAt: window.firebase.firestore.FieldValue.serverTimestamp()
-    }, { merge: true }).then(() => {
-      window.showToast?.("🚀 Official Android APK published successfully for all users!", "success");
-      if (fileInput) fileInput.value = '';
-      if (urlInput) urlInput.value = '';
-      createDownloadBundle(fileName, fileSize, externalUrl || 'Uploaded File', 'v1.0.4', 'android');
-    }).catch(err => {
-      window.showToast?.("Failed to publish APK: " + err.message, "error");
-    }).finally(() => {
-      if (submitBtn) {
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = `<i data-lucide="upload-cloud" class="w-4 h-4"></i> Upload & Publish APK`;
-        if (window.lucide) window.lucide.createIcons();
-      }
-    });
-  };
-
-  if (file) {
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      const dataUrl = e.target.result;
-      const formattedSize = (file.size / (1024 * 1024)).toFixed(1) + ' MB';
-      saveApkToDb(dataUrl, file.name, formattedSize);
-    };
-    reader.onerror = function() {
-      window.showToast?.("Error reading file.", "error");
-      if (submitBtn) {
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = `<i data-lucide="upload-cloud" class="w-4 h-4"></i> Upload & Publish APK`;
-      }
-    };
-    reader.readAsDataURL(file);
-  } else {
-    saveApkToDb('', 'HomeCell_Android_App.apk', 'External Direct Link');
-  }
-};
-window.syncAdminApkConfig = syncAdminApkConfig;
-
-// 6. Global Desktop Support
-function loadGlobalDeskSettings() {
-  const phone = document.getElementById('desk-form-phone');
-  const wa = document.getElementById('desk-form-whatsapp');
-  const email = document.getElementById('desk-form-email');
-
-  window.db.collection('system_configs').doc('contacts').get().then(doc => {
-    if (doc.exists) {
-      const d = doc.data();
-      if (phone) phone.value = d.phone || '';
-      if (wa) wa.value = d.whatsapp || '';
-      if (email) email.value = d.email || '';
-    }
-  });
-
-  const triviaTimerInput = document.getElementById('trivia-settings-timer');
-  const triviaPointsInput = document.getElementById('trivia-settings-points');
-  const triviaThemeInput = document.getElementById('trivia-settings-theme');
-
-  window.db.collection('system_configs').doc('trivia').get().then(doc => {
-    if (doc.exists) {
-      const d = doc.data();
-      if (triviaTimerInput) triviaTimerInput.value = d.timerLimit || 15;
-      if (triviaPointsInput) triviaPointsInput.value = d.pointsPerQuestion || 100;
-      if (triviaThemeInput) triviaThemeInput.value = d.weeklyTheme || 'The Pentecost Acts';
-    }
-  });
-}
-
-function updateSupportDesk() {
-  const phone = document.getElementById('desk-form-phone').value.trim();
-  const wa = document.getElementById('desk-form-whatsapp').value.trim();
-  const email = document.getElementById('desk-form-email').value.trim();
-
-  window.db.collection('system_configs').doc('contacts').set({
-    phone,
-    whatsapp: wa,
-    email
-  })
-    .then(() => window.showToast?.("Support desk channels updated."))
-    .catch(err => window.handleFirestoreError(err, 'write', 'system_configs/contacts'));
-}
-
-// Admin Panel Sub Tab switches
-function setAdminSubTab(subTabId) {
-  const subTabs = ['users', 'store', 'custom-requests', 'feedback-hub', 'loading-screen', 'cells', 'events', 'devotionals', 'trivia', 'bundles', 'configs'];
-  subTabs.forEach(tab => {
-    const pane = document.getElementById(`atab-${tab}`);
-    const btn = document.getElementById(`btn-atab-${tab}`);
-    if (pane) {
-      if (tab === subTabId) pane.classList.remove('hidden');
-      else pane.classList.add('hidden');
-    }
-    if (btn) {
-      if (tab === subTabId) {
-        btn.className = "px-4 py-2 rounded-lg bg-purple-100 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300 font-bold";
-      } else {
-        btn.className = "px-4 py-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:text-zinc-400 dark:hover:bg-zinc-800 font-semibold";
-      }
-    }
-  });
-}
-
-// Helper function: Compress image to small base64 JPEG
-function compressAndResizeImage(file, maxWidth = 800, quality = 0.75) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        let width = img.width;
-        let height = img.height;
-        if (width > maxWidth) {
-          height = Math.round((height * maxWidth) / width);
-          width = maxWidth;
-        }
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL('image/jpeg', quality));
-      };
-      img.onerror = reject;
-      img.src = e.target.result;
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
-// 7. Upcoming Events Manager Functions
-let adminEventImageBase64 = '';
-window.editingAdminEventId = null;
-window.adminUpcomingEventsCache = {};
-
-window.addAdminEventExtraDateField = function(val = '') {
-  const container = document.getElementById('admin-event-extra-dates-container');
-  if (!container) return;
-
-  const row = document.createElement('div');
-  row.className = "flex items-center gap-2 animate-fade-in admin-event-extra-date-row";
-  row.innerHTML = `
-    <input type="datetime-local" class="admin-event-extra-date-input flex-1 px-3 py-2 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl text-xs text-slate-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-purple-500" value="${val}" />
-    <button type="button" onclick="this.parentElement.remove()" class="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg cursor-pointer transition-colors" title="Remove this date">
-      <i data-lucide="trash-2" class="w-4 h-4"></i>
-    </button>
-  `;
-  container.appendChild(row);
-  if (window.lucide) window.lucide.createIcons();
-};
-
-window.getAdminEventExtraDates = function() {
-  const inputs = document.querySelectorAll('.admin-event-extra-date-input');
-  const dates = [];
-  inputs.forEach(inp => {
-    const v = inp.value.trim();
-    if (v) dates.push(v);
-  });
-  return dates;
-};
-
-window.formatEventDatesDisplay = function(ev) {
-  if (!ev) return "";
-  const formatSingle = (dtStr) => {
-    if (!dtStr) return "";
-    try {
-      return new Date(dtStr).toLocaleString([], { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-    } catch (e) {
-      return dtStr;
-    }
-  };
-
-  const startFormatted = formatSingle(ev.eventDate);
-
-  if (ev.eventEndDate) {
-    const endFormatted = formatSingle(ev.eventEndDate);
-    return `${startFormatted} – ${endFormatted}`;
-  }
-
-  if (ev.extraDates && Array.isArray(ev.extraDates) && ev.extraDates.length > 0) {
-    const validCount = ev.extraDates.filter(Boolean).length;
-    if (validCount > 0) {
-      return `${startFormatted} (+${validCount} extra date${validCount > 1 ? 's' : ''})`;
-    }
-  }
-
-  return startFormatted;
-};
-
-window.previewAdminEventImage = function(event) {
-  const file = event.target.files ? event.target.files[0] : null;
-  if (!file) return;
-  compressAndResizeImage(file, 800, 0.75).then(base64 => {
-    adminEventImageBase64 = base64;
-    const box = document.getElementById('admin-event-img-preview-box');
-    const img = document.getElementById('admin-event-img-preview');
-    if (box && img) {
-      img.src = base64;
-      box.classList.remove('hidden');
-    }
-  }).catch(err => {
-    window.showToast?.("Error processing image file: " + err.message, "error");
-  });
-};
-
-window.previewAdminEventUrl = function(url) {
-  if (!url) return;
-  adminEventImageBase64 = url.trim();
-  const box = document.getElementById('admin-event-img-preview-box');
-  const img = document.getElementById('admin-event-img-preview');
-  if (box && img) {
-    img.src = url.trim();
-    box.classList.remove('hidden');
-  }
-};
-
-window.clearAdminEventImage = function() {
-  adminEventImageBase64 = '';
-  const fileInput = document.getElementById('admin-event-file');
-  const urlInput = document.getElementById('admin-event-url');
-  const box = document.getElementById('admin-event-img-preview-box');
-  if (fileInput) fileInput.value = '';
-  if (urlInput) urlInput.value = '';
-  if (box) box.classList.add('hidden');
-};
-
-window.editUpcomingEvent = function(eventId) {
-  const ev = window.adminUpcomingEventsCache[eventId];
-  if (!ev) return;
-
-  window.editingAdminEventId = eventId;
-
-  const titleInput = document.getElementById('admin-event-title');
-  const dateInput = document.getElementById('admin-event-date');
-  const endDateInput = document.getElementById('admin-event-end-date');
-  const locInput = document.getElementById('admin-event-location');
-  const descInput = document.getElementById('admin-event-desc');
-  const urlInput = document.getElementById('admin-event-url');
-  const extraContainer = document.getElementById('admin-event-extra-dates-container');
-  const submitBtn = document.getElementById('btn-save-event');
-  const cancelBtn = document.getElementById('btn-cancel-edit-event');
-  const modeBanner = document.getElementById('admin-event-form-mode-banner');
-  const modeText = document.getElementById('admin-event-editing-title-text');
-
-  if (titleInput) titleInput.value = ev.title || '';
-  if (dateInput) dateInput.value = ev.eventDate || '';
-  if (endDateInput) endDateInput.value = ev.eventEndDate || '';
-  if (locInput) locInput.value = ev.location || '';
-  if (descInput) descInput.value = ev.description || '';
-
-  if (extraContainer) extraContainer.innerHTML = '';
-  if (ev.extraDates && Array.isArray(ev.extraDates)) {
-    ev.extraDates.forEach(d => window.addAdminEventExtraDateField(d));
-  }
-
-  if (ev.imageUrl) {
-    adminEventImageBase64 = ev.imageUrl;
-    const box = document.getElementById('admin-event-img-preview-box');
-    const img = document.getElementById('admin-event-img-preview');
-    if (urlInput) urlInput.value = ev.imageUrl.startsWith('http') ? ev.imageUrl : '';
-    if (box && img) {
-      img.src = ev.imageUrl;
-      box.classList.remove('hidden');
-    }
-  }
-
-  if (modeBanner) modeBanner.classList.remove('hidden');
-  if (modeText) modeText.innerText = `Editing Event: "${ev.title}"`;
-  if (cancelBtn) cancelBtn.classList.remove('hidden');
-
-  if (submitBtn) {
-    submitBtn.innerHTML = `<i data-lucide="check-circle" class="w-4 h-4"></i> Save Updated Event`;
-  }
-
-  const formEl = document.getElementById('admin-event-form');
-  if (formEl) formEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  if (window.lucide) window.lucide.createIcons();
-};
-
-window.cancelAdminEventEdit = function() {
-  window.editingAdminEventId = null;
-  const formEl = document.getElementById('admin-event-form');
-  if (formEl) formEl.reset();
-
-  const extraContainer = document.getElementById('admin-event-extra-dates-container');
-  if (extraContainer) extraContainer.innerHTML = '';
-
-  window.clearAdminEventImage();
-
-  const modeBanner = document.getElementById('admin-event-form-mode-banner');
-  if (modeBanner) modeBanner.classList.add('hidden');
-
-  const cancelBtn = document.getElementById('btn-cancel-edit-event');
-  if (cancelBtn) cancelBtn.classList.add('hidden');
-
-  const submitBtn = document.getElementById('btn-save-event');
-  if (submitBtn) {
-    submitBtn.innerHTML = `<i data-lucide="calendar-plus" class="w-4 h-4"></i> Publish Upcoming Event`;
-  }
-  if (window.lucide) window.lucide.createIcons();
-};
-
-window.handleAdminEventSubmit = function(event) {
-  if (event) event.preventDefault();
-  const title = document.getElementById('admin-event-title').value.trim();
-  const eventDate = document.getElementById('admin-event-date').value;
-  const eventEndDate = document.getElementById('admin-event-end-date')?.value || null;
-  const extraDates = window.getAdminEventExtraDates();
-  const location = document.getElementById('admin-event-location').value.trim();
-  const description = document.getElementById('admin-event-desc').value.trim();
-  const submitBtn = document.getElementById('btn-save-event');
-
-  const imageUrl = adminEventImageBase64 || document.getElementById('admin-event-url')?.value.trim();
-
-  if (!title || !eventDate || !location || !description) {
-    window.showToast?.("Please complete all required event fields.", "error");
-    return;
-  }
-  if (!imageUrl) {
-    window.showToast?.("Please attach an event banner picture (file or URL).", "error");
-    return;
-  }
-
-  const isEditing = Boolean(window.editingAdminEventId);
-
-  if (submitBtn) {
-    submitBtn.disabled = true;
-    submitBtn.innerText = isEditing ? "Saving Changes..." : "Publishing Event...";
-  }
-
-  const payload = {
-    title,
-    eventDate,
-    eventEndDate,
-    extraDates,
-    location,
-    description,
-    imageUrl,
-    updatedAt: window.firebase.firestore.FieldValue.serverTimestamp()
-  };
-
-  if (isEditing) {
-    window.db.collection('upcoming_events').doc(window.editingAdminEventId).update(payload)
-      .then(() => {
-        window.showToast?.("🎉 Upcoming Event updated successfully!", "success");
-        window.cancelAdminEventEdit();
-      })
-      .catch(err => {
-        window.handleFirestoreError(err, 'update', `upcoming_events/${window.editingAdminEventId}`);
-      })
-      .finally(() => {
-        if (submitBtn) submitBtn.disabled = false;
-      });
-  } else {
-    const docId = window.db.collection('upcoming_events').doc().id;
-    payload.id = docId;
-    payload.createdBy = window.currentUserProfile?.displayName || 'Super Admin';
-    payload.createdAt = window.firebase.firestore.FieldValue.serverTimestamp();
-
-    window.db.collection('upcoming_events').doc(docId).set(payload)
-      .then(() => {
-        window.showToast?.("🎉 Upcoming Event published successfully!", "success");
-        window.cancelAdminEventEdit();
-      })
-      .catch(err => {
-        window.handleFirestoreError(err, 'create', `upcoming_events/${docId}`);
-      })
-      .finally(() => {
-        if (submitBtn) submitBtn.disabled = false;
-      });
-  }
-};
-
-function syncAdminUpcomingEvents() {
-  const container = document.getElementById('admin-upcoming-events-list');
-  if (!container) return;
-
-  if (adminUpcomingEventsListener) adminUpcomingEventsListener();
-
-  adminUpcomingEventsListener = window.db.collection('upcoming_events')
-    .orderBy('eventDate', 'asc')
-    .onSnapshot(snap => {
-      container.innerHTML = '';
-      window.adminUpcomingEventsCache = {};
-
-      if (snap.empty) {
-        container.innerHTML = `<p class="text-xs text-slate-400 italic">No upcoming events published yet.</p>`;
-        return;
-      }
-
-      snap.forEach(doc => {
-        const ev = doc.data();
-        const evId = doc.id;
-        window.adminUpcomingEventsCache[evId] = ev;
-
-        const dateSummary = window.formatEventDatesDisplay(ev);
-        const card = document.createElement('div');
-        card.className = "p-4 bg-slate-50 dark:bg-zinc-800/40 border border-slate-200 dark:border-zinc-800 rounded-2xl flex flex-col justify-between space-y-3";
-        
-        let extraDatesBadges = '';
-        if (ev.extraDates && Array.isArray(ev.extraDates) && ev.extraDates.length > 0) {
-          extraDatesBadges = `
-            <div class="mt-2 pt-2 border-t border-slate-200/60 dark:border-zinc-700/60 space-y-1">
-              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Additional Sessions:</span>
-              <div class="flex flex-wrap gap-1">
-                ${ev.extraDates.map(d => `<span class="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800">📅 ${new Date(d).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>`).join('')}
-              </div>
-            </div>
-          `;
-        }
-
-        card.innerHTML = `
-          <div class="space-y-2">
-            ${ev.imageUrl ? `<img src="${ev.imageUrl}" class="w-full h-32 object-cover rounded-xl border border-slate-200 dark:border-zinc-700 shadow-xs" />` : ''}
-            <div>
-              <span class="px-2.5 py-0.5 rounded text-[9px] font-mono font-bold uppercase tracking-widest bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 inline-block">
-                📅 ${dateSummary}
-              </span>
-              <h5 class="font-extrabold text-slate-900 dark:text-zinc-100 text-sm mt-1.5">${ev.title}</h5>
-              <p class="text-xs text-slate-500 dark:text-zinc-400 line-clamp-2 mt-0.5">${ev.description}</p>
-              <div class="text-[10px] text-slate-400 font-bold mt-1">📍 ${ev.location}</div>
-              ${extraDatesBadges}
-            </div>
-          </div>
-          <div class="pt-2 border-t border-slate-200 dark:border-zinc-800 flex items-center justify-between gap-2">
-            <button onclick="window.editUpcomingEvent('${evId}')" class="px-3 py-1.5 text-xs font-bold bg-purple-100 hover:bg-purple-200 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 rounded-lg transition-all cursor-pointer flex items-center gap-1">
-              <i data-lucide="edit-3" class="w-3.5 h-3.5"></i> Edit Event
-            </button>
-            <button onclick="window.deleteUpcomingEvent('${evId}')" class="px-3 py-1.5 text-xs font-bold bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/30 text-rose-600 rounded-lg transition-all cursor-pointer flex items-center gap-1">
-              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Delete
-            </button>
-          </div>
-        `;
-        container.appendChild(card);
-      });
-
-      if (window.lucide) window.lucide.createIcons();
-    }, err => window.handleFirestoreError(err, 'list', 'upcoming_events'));
-}
-
-window.deleteUpcomingEvent = function(eventId) {
-  const isConfirmed = confirm("Are you sure you want to delete this upcoming event?");
-  if (!isConfirmed) return;
-
-  window.db.collection('upcoming_events').doc(eventId).delete()
-    .then(() => window.showToast?.("Upcoming event deleted."))
-    .catch(err => window.handleFirestoreError(err, 'delete', `upcoming_events/${eventId}`));
-};
-
-// 8. Daily Devotionals Manager Functions
-let adminDevotionalImageBase64 = '';
-
-window.previewAdminDevotionalImage = function(event) {
-  const file = event.target.files ? event.target.files[0] : null;
-  if (!file) return;
-  compressAndResizeImage(file, 800, 0.75).then(base64 => {
-    adminDevotionalImageBase64 = base64;
-    const box = document.getElementById('admin-devotional-img-preview-box');
-    const img = document.getElementById('admin-devotional-img-preview');
-    if (box && img) {
-      img.src = base64;
-      box.classList.remove('hidden');
-    }
-  }).catch(err => {
-    window.showToast?.("Error processing devotional image: " + err.message, "error");
-  });
-};
-
-window.previewAdminDevotionalUrl = function(url) {
-  if (!url) return;
-  adminDevotionalImageBase64 = url.trim();
-  const box = document.getElementById('admin-devotional-img-preview-box');
-  const img = document.getElementById('admin-devotional-img-preview');
-  if (box && img) {
-    img.src = url.trim();
-    box.classList.remove('hidden');
-  }
-};
-
-window.clearAdminDevotionalImage = function() {
-  adminDevotionalImageBase64 = '';
-  const fileInput = document.getElementById('admin-devotional-file');
-  const urlInput = document.getElementById('admin-devotional-url');
-  const box = document.getElementById('admin-devotional-img-preview-box');
-  if (fileInput) fileInput.value = '';
-  if (urlInput) urlInput.value = '';
-  if (box) box.classList.add('hidden');
-};
-
-window.handleAdminDevotionalSubmit = function(event) {
-  if (event) event.preventDefault();
-  const title = document.getElementById('admin-devotional-title').value.trim();
-  const scripture = document.getElementById('admin-devotional-scripture').value.trim();
-  const devotionalDate = document.getElementById('admin-devotional-date').value;
-  const body = document.getElementById('admin-devotional-body').value.trim();
-  const submitBtn = document.getElementById('btn-save-devotional');
-
-  const imageUrl = adminDevotionalImageBase64 || document.getElementById('admin-devotional-url')?.value.trim();
-
-  if (!title || !scripture || !devotionalDate || !body) {
-    window.showToast?.("Please fill out all devotional fields.", "error");
-    return;
-  }
-  if (!imageUrl) {
-    window.showToast?.("Please attach a devotional picture (file or URL).", "error");
-    return;
-  }
-
-  if (submitBtn) {
-    submitBtn.disabled = true;
-    submitBtn.innerText = "Publishing Devotional...";
-  }
-
-  const docId = window.db.collection('daily_devotionals').doc().id;
-  window.db.collection('daily_devotionals').doc(docId).set({
-    id: docId,
-    title,
-    scripture,
-    devotionalDate,
-    body,
-    imageUrl,
-    createdBy: window.currentUserProfile?.displayName || 'Super Admin',
-    createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
-  }).then(() => {
-    window.showToast?.("☀️ Daily Devotional published successfully!", "success");
-    document.getElementById('admin-devotional-form')?.reset();
-    window.clearAdminDevotionalImage();
-  }).catch(err => {
-    window.handleFirestoreError(err, 'create', `daily_devotionals/${docId}`);
-  }).finally(() => {
-    if (submitBtn) {
-      submitBtn.disabled = false;
-      submitBtn.innerHTML = `<i data-lucide="sun" class="w-4 h-4"></i> Publish Daily Devotional`;
-      if (window.lucide) window.lucide.createIcons();
-    }
-  });
-};
-
-function syncAdminDailyDevotionals() {
-  const container = document.getElementById('admin-daily-devotionals-list');
-  if (!container) return;
-
-  if (adminDailyDevotionalsListener) adminDailyDevotionalsListener();
-
-  adminDailyDevotionalsListener = window.db.collection('daily_devotionals')
-    .orderBy('devotionalDate', 'desc')
-    .onSnapshot(snap => {
-      container.innerHTML = '';
-      if (snap.empty) {
-        container.innerHTML = `<p class="text-xs text-slate-400 italic">No daily devotionals published yet.</p>`;
-        return;
-      }
-
-      window.devotionalsCache = window.devotionalsCache || {};
-
-      snap.forEach(doc => {
-        const d = doc.data();
-        const dId = doc.id;
-        d.id = doc.id;
-        window.devotionalsCache[doc.id] = d;
-
-        const card = document.createElement('div');
-        card.className = "p-4 bg-slate-50 dark:bg-zinc-800/40 border border-slate-200 dark:border-zinc-800 rounded-2xl flex flex-col justify-between space-y-3";
-        
-        card.innerHTML = `
-          <div class="space-y-2">
-            ${d.imageUrl ? `<img src="${d.imageUrl}" class="w-full h-32 object-cover rounded-xl border border-slate-200 dark:border-zinc-700 shadow-xs cursor-pointer" onclick="window.openFullDevotionalModal(window.devotionalsCache['${doc.id}'])" />` : ''}
-            <div>
-              <span class="px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase tracking-widest bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
-                ${d.devotionalDate} • ${d.scripture}
-              </span>
-              <h5 class="font-extrabold text-slate-900 dark:text-zinc-100 text-sm mt-1 cursor-pointer hover:text-amber-600" onclick="window.openFullDevotionalModal(window.devotionalsCache['${doc.id}'])">${d.title}</h5>
-              <p class="text-xs text-slate-500 dark:text-zinc-400 line-clamp-3 mt-0.5 leading-relaxed">${d.body}</p>
-            </div>
-          </div>
-          <div class="pt-2 border-t border-slate-200 dark:border-zinc-800 flex items-center justify-between gap-2">
-            <button onclick="window.openFullDevotionalModal(window.devotionalsCache['${doc.id}'])" class="px-3 py-1.5 text-xs font-bold bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300 rounded-lg transition-all cursor-pointer flex items-center gap-1">
-              <i data-lucide="book-open" class="w-3.5 h-3.5"></i> Read Full
-            </button>
-            <button onclick="window.deleteDailyDevotional('${dId}')" class="px-3 py-1.5 text-xs font-bold bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/30 text-rose-600 rounded-lg transition-all cursor-pointer flex items-center gap-1">
-              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Delete
-            </button>
-          </div>
-        `;
-        container.appendChild(card);
-      });
-
-      if (window.lucide) window.lucide.createIcons();
-    }, err => window.handleFirestoreError(err, 'list', 'daily_devotionals'));
-}
-
-window.deleteDailyDevotional = function(devotionalId) {
-  const isConfirmed = confirm("Are you sure you want to delete this daily devotional?");
-  if (!isConfirmed) return;
-
-  window.db.collection('daily_devotionals').doc(devotionalId).delete()
-    .then(() => window.showToast?.("Daily devotional deleted."))
-    .catch(err => window.handleFirestoreError(err, 'delete', `daily_devotionals/${devotionalId}`));
-};
-
-// Form Listeners
-document.addEventListener("DOMContentLoaded", () => {
-  const qForm = document.getElementById('trivia-creator-form');
-  if (qForm) {
-    qForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const question = document.getElementById('trivia-q').value.trim();
-      const opt0 = document.getElementById('trivia-o0').value.trim();
-      const opt1 = document.getElementById('trivia-o1').value.trim();
-      const opt2 = document.getElementById('trivia-o2').value.trim();
-      const opt3 = document.getElementById('trivia-o3').value.trim();
-      const answerIdx = parseInt(document.getElementById('trivia-answer-idx').value);
-
-      if (!question || !opt0 || !opt1) return;
-
-      createTriviaQuestion(question, [opt0, opt1, opt2, opt3], answerIdx);
-      qForm.reset();
-    });
-  }
-
-  const bForm = document.getElementById('admin-bundle-form');
-  if (bForm) {
-    bForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const title = document.getElementById('bundle-title').value.trim();
-      const size = document.getElementById('bundle-size').value.trim();
-      const url = document.getElementById('bundle-url').value.trim();
-      const tag = document.getElementById('bundle-tag').value.trim();
-      const category = document.getElementById('bundle-category').value;
-
-      if (!title || !url) return;
-
-      createDownloadBundle(title, size, url, tag, category);
-      bForm.reset();
-    });
-  }
-
-  const cForm = document.getElementById('admin-desk-form');
-  if (cForm) {
-    cForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      updateSupportDesk();
-    });
-  }
-
-  const tsForm = document.getElementById('admin-trivia-settings-form');
-  if (tsForm) {
-    tsForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const timerLimit = parseInt(document.getElementById('trivia-settings-timer').value) || 15;
-      const pointsPerQuestion = parseInt(document.getElementById('trivia-settings-points').value) || 100;
-      const weeklyTheme = document.getElementById('trivia-settings-theme').value.trim() || 'The Pentecost Acts';
-
-      window.db.collection('system_configs').doc('trivia').set({
-        timerLimit,
-        pointsPerQuestion,
-        weeklyTheme
-      })
-        .then(() => window.showToast?.("Trivia engine rules updated successfully!"))
-        .catch(err => window.handleFirestoreError(err, 'write', 'system_configs/trivia'));
-    });
-  }
-
-  const clForm = document.getElementById('change-leader-form');
-  if (clForm) {
-    clForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const cellId = document.getElementById('change-leader-cell-id').value;
-      const newLeaderUid = document.getElementById('change-leader-select').value;
-      const newLeader = (window.allUsersList || []).find(u => u.uid === newLeaderUid);
-      if (!newLeader) return;
-
-      window.db.collection('cells').doc(cellId).get().then(cellDoc => {
-        if (!cellDoc.exists) {
-          window.showToast?.("Cell fellowship group not found.", "error");
-          return;
-        }
-
-        const cellData = cellDoc.data();
-        const oldLeaderUid = cellData.leaderUid;
-
-        const batch = window.db.batch();
-
-        // Update Cell Doc
-        batch.update(window.db.collection('cells').doc(cellId), {
-          leaderUid: newLeaderUid,
-          leaderName: newLeader.displayName || newLeader.email,
-          leaderEmail: newLeader.email
-        });
-
-        // Promote new leader
-        batch.update(window.db.collection('users').doc(newLeaderUid), {
-          role: 'Cell Leader',
-          cellId: cellId
-        });
-
-        // Demote old leader (if different from new leader)
-        if (oldLeaderUid && oldLeaderUid !== newLeaderUid) {
-          batch.update(window.db.collection('users').doc(oldLeaderUid), {
-            role: 'Member'
-          });
-        }
-
-        return batch.commit().then(() => {
-          window.showToast?.("Cell leadership reassigned successfully.");
-          closeChangeLeaderModal();
-        });
-      })
-      .catch(err => window.handleFirestoreError(err, 'write', 'reassign_leader'));
-    });
-  }
-});
-
-function openChangeCellLeaderModal(cellId) {
-  const cellIdInput = document.getElementById('change-leader-cell-id');
-  if (cellIdInput) cellIdInput.value = cellId;
-
-  const select = document.getElementById('change-leader-select');
-  if (select) {
-    select.innerHTML = (window.allUsersList || []).map(u => `
-      <option value="${u.uid}">${u.displayName || u.email} (${u.role || 'Member'})</option>
-    `).join('');
-  }
-
-  const modal = document.getElementById('change-leader-modal');
-  if (modal) modal.classList.remove('hidden');
-}
-
-function closeChangeLeaderModal() {
-  const modal = document.getElementById('change-leader-modal');
-  if (modal) modal.classList.add('hidden');
-}
-
-// Support for off-app push notifications nudges
-function applyNudgePreset() {
-  const select = document.getElementById('nudge-preset-select');
-  const titleInput = document.getElementById('admin-nudge-title');
-  const bodyInput = document.getElementById('admin-nudge-body');
-  const targetSelect = document.getElementById('admin-nudge-target');
-
-  if (!select || !titleInput || !bodyInput) return;
-
-  const choice = select.value;
-  if (choice === 'devotion') {
-    titleInput.value = "☀️ Keep Your Streak Alive!";
-    bodyInput.value = "Your personal devotion streak is a beautiful testimony of your faith. Complete today's daily devotional check-in now to maintain it!";
-    if (targetSelect) targetSelect.value = "/?tab=dashboard";
-  } else if (choice === 'trivia') {
-    titleInput.value = "🔥 Live Trivia Active Now!";
-    bodyInput.value = "The Pentecost Trivia arena is buzzing! Come test your bible knowledge in real-time with fellow members of the assembly!";
-    if (targetSelect) targetSelect.value = "/?tab=bible";
-  } else if (choice === 'testimony') {
-    titleInput.value = "🙏 Power-packed Testimony Shared!";
-    bodyInput.value = "A member of the cohort just shared a magnificent testimony of God's grace. Read it, support them, and get encouraged!";
-    if (targetSelect) targetSelect.value = "/?tab=feed";
-  } else if (choice === 'stream') {
-    titleInput.value = "📹 Live Fellowship Broadcast Active!";
-    bodyInput.value = "We are gathering online right now. Come tune into the live broadcast stream to connect, share, and grow together!";
-    if (targetSelect) targetSelect.value = "/?tab=dashboard";
-  }
-}
-
-function sendAdminNudge(event) {
-  event.preventDefault();
-  const title = document.getElementById('admin-nudge-title').value.trim();
-  const body = document.getElementById('admin-nudge-body').value.trim();
-  const target = document.getElementById('admin-nudge-target').value;
-  const targetRoleSelect = document.getElementById('admin-nudge-role');
-  const targetRole = (targetRoleSelect && targetRoleSelect.value !== 'all') ? targetRoleSelect.value : null;
-
-  if (!title || !body) return;
-
-  // Utilize our real push notification helper!
-  if (window.sendPushNotification) {
-    window.sendPushNotification(title, body, target, targetRole);
-    if (targetRole) {
-      window.showToast?.(`Push notification nudge successfully broadcasted off-app to all ${targetRole}s!`, "success");
-    } else {
-      window.showToast?.("Push notification nudge successfully broadcasted off-app to all members!", "success");
-    }
-    
-    // Clear form
-    const form = document.getElementById('admin-push-nudge-form');
-    if (form) form.reset();
-    const select = document.getElementById('nudge-preset-select');
-    if (select) select.value = "";
-  } else {
-    window.showToast?.("Push Notification engine is currently initializing, please wait.", "error");
-  }
-}
-
-// ==========================================
-// 5. ULTIMATE INTERACTIVE QUIZ BUILDER CONSOLE
-// ==========================================
-let activeQuizQuestions = [];
-let editingQuestionIdx = null;
-
-function toggleAdminQuestionFormat() {
-  const qType = document.getElementById('admin-q-type').value;
-  const mcGroup = document.getElementById('admin-mc-group');
-  const ansSelect = document.getElementById('admin-q-correct');
-
-  if (qType === 'tf') {
-    if (mcGroup) mcGroup.classList.add('hidden');
-    if (ansSelect) {
-      ansSelect.innerHTML = `
-        <option value="0">True</option>
-        <option value="1">False</option>
-      `;
-    }
-  } else {
-    if (mcGroup) mcGroup.classList.remove('hidden');
-    if (ansSelect) {
-      ansSelect.innerHTML = `
-        <option value="0">Option A</option>
-        <option value="1">Option B</option>
-        <option value="2">Option C</option>
-        <option value="3">Option D</option>
-      `;
-    }
-  }
-}
-
-function addQuestionToActiveQuiz() {
-  const promptEl = document.getElementById('admin-q-prompt');
-  if (!promptEl) return;
-  const prompt = promptEl.value.trim();
-  if (!prompt) {
-    window.showToast?.("Question prompt cannot be empty!", "error");
-    return;
-  }
-
-  const qType = document.getElementById('admin-q-type').value;
-  let options = [];
-  let answerIdx = parseInt(document.getElementById('admin-q-correct').value);
-
-  if (qType === 'tf') {
-    options = ["True", "False"];
-    if (answerIdx > 1) answerIdx = 0;
-  } else {
-    const o0 = document.getElementById('admin-q-o0').value.trim();
-    const o1 = document.getElementById('admin-q-o1').value.trim();
-    const o2 = document.getElementById('admin-q-o2').value.trim();
-    const o3 = document.getElementById('admin-q-o3').value.trim();
-
-    if (!o0 || !o1 || !o2 || !o3) {
-      window.showToast?.("All 4 options must be supplied for Multiple Choice questions!", "error");
-      return;
-    }
-    options = [o0, o1, o2, o3];
-  }
-
-  const newQ = { question: prompt, options, answerIdx, type: qType };
-
-  if (editingQuestionIdx !== null) {
-    activeQuizQuestions[editingQuestionIdx] = newQ;
-    editingQuestionIdx = null;
-    window.showToast?.("Question updated in builder queue.");
-  } else {
-    activeQuizQuestions.push(newQ);
-    window.showToast?.("Question added to builder queue.");
-  }
-
-  // Reset question form
-  promptEl.value = '';
-  const o0 = document.getElementById('admin-q-o0'); if (o0) o0.value = '';
-  const o1 = document.getElementById('admin-q-o1'); if (o1) o1.value = '';
-  const o2 = document.getElementById('admin-q-o2'); if (o2) o2.value = '';
-  const o3 = document.getElementById('admin-q-o3'); if (o3) o3.value = '';
-  const correct = document.getElementById('admin-q-correct'); if (correct) correct.value = '0';
-
-  renderActiveQuestionsQueue();
-}
-
-function renderActiveQuestionsQueue() {
-  const queueContainer = document.getElementById('admin-questions-queue');
-  const countEl = document.getElementById('admin-builder-count');
-  if (!queueContainer) return;
-
-  if (countEl) countEl.innerText = `${activeQuizQuestions.length} Questions Added`;
-
-  if (activeQuizQuestions.length === 0) {
-    queueContainer.innerHTML = `<p class="text-xs text-slate-400 text-center py-8">Add questions on the left to begin building this quiz.</p>`;
-    return;
-  }
-
-  queueContainer.innerHTML = '';
-  activeQuizQuestions.forEach((q, idx) => {
-    const card = document.createElement('div');
-    card.className = "p-3 bg-slate-50 dark:bg-zinc-800/50 border border-slate-200 dark:border-zinc-800 rounded-xl space-y-1 text-xs relative group flex items-start justify-between gap-4";
-    card.innerHTML = `
-      <div class="space-y-1 flex-1">
-        <div class="font-bold text-slate-800 dark:text-zinc-200">
-          <span class="text-blue-600 dark:text-blue-400 font-extrabold pr-1">Q${idx + 1}.</span> ${q.question}
-        </div>
-        <div class="text-[10px] text-slate-400 flex items-center gap-2 pt-1">
-          <span class="uppercase tracking-wider font-black text-[8px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400">${q.type === 'tf' ? 'True/False' : 'Multi Choice'}</span>
-          <span>Correct: ${q.options[q.answerIdx]}</span>
-        </div>
-      </div>
-      <div class="flex items-center gap-1 shrink-0">
-        <button onclick="window.reorderBuilderQuestion(${idx}, -1)" class="p-1 hover:bg-slate-200 dark:hover:bg-zinc-700 rounded text-slate-500 cursor-pointer" title="Move Up">
-          <i data-lucide="chevron-up" class="w-3.5 h-3.5"></i>
-        </button>
-        <button onclick="window.reorderBuilderQuestion(${idx}, 1)" class="p-1 hover:bg-slate-200 dark:hover:bg-zinc-700 rounded text-slate-500 cursor-pointer" title="Move Down">
-          <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
-        </button>
-        <button onclick="window.editBuilderQuestion(${idx})" class="p-1 hover:bg-blue-100 dark:hover:bg-blue-950/40 rounded text-blue-600 cursor-pointer" title="Edit Question">
-          <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
-        </button>
-        <button onclick="window.deleteBuilderQuestion(${idx})" class="p-1 hover:bg-rose-100 dark:hover:bg-rose-950/40 rounded text-rose-500 cursor-pointer" title="Delete Question">
-          <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-        </button>
       </div>
     `;
-    queueContainer.appendChild(card);
+    return;
+  }
+
+  renderAdminInterface();
+  syncAdminKPIStats();
+  switchAdminSubTab(currentAdminSubTab);
+}
+
+function renderAdminInterface() {
+  const pane = document.getElementById('admin-management-pane');
+  if (!pane) return;
+
+  pane.innerHTML = `
+    <!-- Top Admin Header Banner -->
+    <div class="p-6 sm:p-8 bg-gradient-to-r from-slate-900 via-indigo-950 to-blue-950 border border-blue-500/30 rounded-3xl text-white shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
+      <div class="space-y-2 text-center md:text-left">
+        <span class="px-3.5 py-1 rounded-full bg-blue-500/20 text-blue-300 font-black text-[10px] uppercase tracking-wider inline-block border border-blue-400/30">
+          🛡️ Executive Command Center
+        </span>
+        <h2 class="text-2xl sm:text-3xl font-black font-display tracking-tight text-white">Super Admin Control Hub</h2>
+        <p class="text-xs sm:text-sm text-slate-300 max-w-xl">
+          Manage member roles, build Live Trivia Quizzes, track live participants, publish official broadcasts, and manage House Cells.
+        </p>
+      </div>
+
+      <div class="flex items-center gap-3 bg-white/10 backdrop-blur-md p-4 rounded-2xl shrink-0 border border-white/10">
+        <span class="w-3 h-3 rounded-full bg-emerald-400 animate-pulse"></span>
+        <div class="text-left">
+          <span class="text-[10px] uppercase font-black text-slate-300 block">Leadership Status</span>
+          <span class="text-sm font-black font-mono text-amber-400">Super Admin Active</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Admin KPI Stats Grid -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4" id="admin-kpi-grid">
+      <div class="glass-panel rounded-2xl p-4 text-center space-y-1">
+        <span class="text-[10px] uppercase font-black text-slate-400">Total Members</span>
+        <span id="kpi-total-members" class="text-xl font-black font-mono text-blue-600 dark:text-blue-400 block">...</span>
+      </div>
+      <div class="glass-panel rounded-2xl p-4 text-center space-y-1">
+        <span class="text-[10px] uppercase font-black text-slate-400">House Cells</span>
+        <span id="kpi-total-cells" class="text-xl font-black font-mono text-indigo-600 dark:text-indigo-400 block">...</span>
+      </div>
+      <div class="glass-panel rounded-2xl p-4 text-center space-y-1">
+        <span class="text-[10px] uppercase font-black text-slate-400">Live Quizzes</span>
+        <span id="kpi-total-quizzes" class="text-xl font-black font-mono text-purple-600 dark:text-purple-400 block">...</span>
+      </div>
+      <div class="glass-panel rounded-2xl p-4 text-center space-y-1">
+        <span class="text-[10px] uppercase font-black text-slate-400">Store Products</span>
+        <span id="kpi-total-products" class="text-xl font-black font-mono text-amber-500 block">...</span>
+      </div>
+    </div>
+
+    <!-- Admin Sub-Navigation Pills -->
+    <div class="flex items-center gap-2 overflow-x-auto no-scrollbar border-b border-slate-200 dark:border-zinc-800 pb-3">
+      <button id="admin-tab-members" onclick="switchAdminSubTab('members')" class="admin-sub-btn px-4 py-2 rounded-xl text-xs font-black bg-blue-600 text-white cursor-pointer shadow-xs transition-all shrink-0">
+        👥 Members & Roles
+      </button>
+      <button id="admin-tab-quizzes" onclick="switchAdminSubTab('quizzes')" class="admin-sub-btn px-4 py-2 rounded-xl text-xs font-extrabold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-700 cursor-pointer transition-all shrink-0">
+        🏆 Live Trivia Builder
+      </button>
+      <button id="admin-tab-cells" onclick="switchAdminSubTab('cells')" class="admin-sub-btn px-4 py-2 rounded-xl text-xs font-extrabold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-700 cursor-pointer transition-all shrink-0">
+        🏡 House Cells
+      </button>
+      <button id="admin-tab-broadcast" onclick="switchAdminSubTab('broadcast')" class="admin-sub-btn px-4 py-2 rounded-xl text-xs font-extrabold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-700 cursor-pointer transition-all shrink-0">
+        📢 Church Broadcast
+      </button>
+      <button id="admin-tab-devotionals" onclick="switchAdminSubTab('devotionals')" class="admin-sub-btn px-4 py-2 rounded-xl text-xs font-extrabold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-700 cursor-pointer transition-all shrink-0">
+        ☀️ Devotionals
+      </button>
+      <button id="admin-tab-events" onclick="switchAdminSubTab('events')" class="admin-sub-btn px-4 py-2 rounded-xl text-xs font-extrabold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-700 cursor-pointer transition-all shrink-0">
+        📅 Gatherings
+      </button>
+      <button id="admin-tab-requests" onclick="switchAdminSubTab('requests')" class="admin-sub-btn px-4 py-2 rounded-xl text-xs font-extrabold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-700 cursor-pointer transition-all shrink-0">
+        ✨ Custom Orders
+      </button>
+      <button id="admin-tab-inventory" onclick="switchAdminSubTab('inventory')" class="admin-sub-btn px-4 py-2 rounded-xl text-xs font-extrabold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-700 cursor-pointer transition-all shrink-0">
+        🛍️ Store Inventory
+      </button>
+    </div>
+
+    <!-- Admin Tab Panes Container -->
+    <div id="admin-sub-panes" class="space-y-6"></div>
+  `;
+}
+
+function switchAdminSubTab(tabId) {
+  currentAdminSubTab = tabId;
+  const btns = document.querySelectorAll('.admin-sub-btn');
+  btns.forEach(b => {
+    if (b.id === `admin-tab-${tabId}`) {
+      b.className = "admin-sub-btn px-4 py-2 rounded-xl text-xs font-black bg-blue-600 text-white cursor-pointer shadow-xs transition-all shrink-0";
+    } else {
+      b.className = "admin-sub-btn px-4 py-2 rounded-xl text-xs font-extrabold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-700 cursor-pointer transition-all shrink-0";
+    }
   });
+
+  const container = document.getElementById('admin-sub-panes');
+  if (!container) return;
+
+  if (tabId === 'members') renderAdminMembersPane(container);
+  else if (tabId === 'quizzes') renderAdminQuizzesPane(container);
+  else if (tabId === 'cells') renderAdminCellsPane(container);
+  else if (tabId === 'broadcast') renderAdminBroadcastPane(container);
+  else if (tabId === 'devotionals') renderAdminDevotionalsPane(container);
+  else if (tabId === 'events') renderAdminEventsPane(container);
+  else if (tabId === 'requests') renderAdminRequestsPane(container);
+  else if (tabId === 'inventory') renderAdminInventoryPane(container);
 
   if (window.lucide) window.lucide.createIcons();
 }
 
-function reorderBuilderQuestion(index, direction) {
-  const newIndex = index + direction;
-  if (newIndex < 0 || newIndex >= activeQuizQuestions.length) return;
-  const temp = activeQuizQuestions[index];
-  activeQuizQuestions[index] = activeQuizQuestions[newIndex];
-  activeQuizQuestions[newIndex] = temp;
-  renderActiveQuestionsQueue();
+// 1. Members & Roles Management
+function renderAdminMembersPane(container) {
+  container.innerHTML = `
+    <div class="glass-panel rounded-3xl p-6 sm:p-8 space-y-6">
+      <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+        <div>
+          <h3 class="text-lg font-black text-slate-900 dark:text-zinc-100">Member Directory & Access Management</h3>
+          <p class="text-xs text-slate-400">Promote leaders, assign House Cells, and adjust Kingdom Coin allocations.</p>
+        </div>
+        <div class="relative min-w-[240px]">
+          <input type="text" id="admin-user-search" oninput="filterAdminUsers(this.value)" placeholder="Search members by name/email..." class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl pl-9 pr-3 py-2.5" />
+          <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-3"></i>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left">
+          <thead>
+            <tr class="border-b border-slate-200 dark:border-zinc-800 text-[10px] uppercase font-black text-slate-400">
+              <th class="py-3 px-4">Member</th>
+              <th class="py-3 px-4">Email</th>
+              <th class="py-3 px-4">Assigned Role</th>
+              <th class="py-3 px-4">Kingdom Coins</th>
+              <th class="py-3 px-4">Quick Coin Grant</th>
+            </tr>
+          </thead>
+          <tbody id="admin-users-table-body">
+            <tr><td colspan="5" class="py-8 text-center text-xs text-slate-400">Loading directory...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+  syncAdminUsers();
 }
 
-function editBuilderQuestion(index) {
-  const q = activeQuizQuestions[index];
-  editingQuestionIdx = index;
+function syncAdminUsers() {
+  const container = document.getElementById('admin-users-table-body');
+  if (!container) return;
 
-  document.getElementById('admin-q-prompt').value = q.question;
-  document.getElementById('admin-q-type').value = q.type || 'mc';
-  toggleAdminQuestionFormat();
+  if (adminUsersListener) adminUsersListener();
+  const db = window.db;
+  if (!db) return;
 
-  if (q.type !== 'tf') {
-    document.getElementById('admin-q-o0').value = q.options[0] || '';
-    document.getElementById('admin-q-o1').value = q.options[1] || '';
-    document.getElementById('admin-q-o2').value = q.options[2] || '';
-    document.getElementById('admin-q-o3').value = q.options[3] || '';
-  }
-
-  document.getElementById('admin-q-correct').value = q.answerIdx;
-}
-
-function deleteBuilderQuestion(index) {
-  activeQuizQuestions.splice(index, 1);
-  if (editingQuestionIdx === index) editingQuestionIdx = null;
-  renderActiveQuestionsQueue();
-}
-
-function clearActiveQuizBuilder() {
-  activeQuizQuestions = [];
-  editingQuestionIdx = null;
-  const editId = document.getElementById('admin-quiz-edit-id'); if (editId) editId.value = '';
-  const title = document.getElementById('admin-quiz-title'); if (title) title.value = '';
-  const topic = document.getElementById('admin-quiz-topic'); if (topic) topic.value = '';
-  const diff = document.getElementById('admin-quiz-difficulty'); if (diff) diff.value = 'Beginner';
-  const emoji = document.getElementById('admin-quiz-emoji'); if (emoji) emoji.value = '📖';
-  const grad = document.getElementById('admin-quiz-gradient'); if (grad) grad.value = 'from-blue-600 to-indigo-700';
-  const imgUrl = document.getElementById('admin-quiz-image-url'); if (imgUrl) imgUrl.value = '';
-  const desc = document.getElementById('admin-quiz-desc'); if (desc) desc.value = '';
-  renderActiveQuestionsQueue();
-}
-
-function publishQuizToCloud() {
-  const editId = document.getElementById('admin-quiz-edit-id').value;
-  const title = document.getElementById('admin-quiz-title').value.trim();
-  const topic = document.getElementById('admin-quiz-topic').value.trim();
-  const difficulty = document.getElementById('admin-quiz-difficulty').value;
-  const coverEmoji = document.getElementById('admin-quiz-emoji').value.trim();
-  const coverGradient = document.getElementById('admin-quiz-gradient').value;
-  const coverImageUrl = document.getElementById('admin-quiz-image-url')?.value.trim() || '';
-  const description = document.getElementById('admin-quiz-desc').value.trim();
-
-  if (!title || !topic || !description) {
-    window.showToast?.("Quiz Title, Topic Category, and Description are required!", "error");
-    return;
-  }
-
-  if (activeQuizQuestions.length === 0) {
-    window.showToast?.("Please add at least one question to the builder queue!", "error");
-    return;
-  }
-
-  const docId = editId || window.db.collection('quizzes').doc().id;
-
-  window.db.collection('quizzes').doc(docId).set({
-    id: docId,
-    title,
-    topic,
-    difficulty,
-    coverEmoji,
-    coverGradient,
-    coverImageUrl,
-    description,
-    questions: activeQuizQuestions,
-    createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
-  })
-  .then(() => {
-    window.showToast?.("Sunday Congregational Quiz published successfully!", "success");
-    clearActiveQuizBuilder();
-    syncAdminQuizzes();
-    if (window.renderQuizSelectionGrid) window.renderQuizSelectionGrid();
-  })
-  .catch(err => window.handleFirestoreError(err, 'create', `quizzes/${docId}`));
-}
-
-// Admin JSON Upload & Download Template Helpers
-function handleQuizJsonUpload(event) {
-  const file = event.target.files?.[0];
-  if (!file) return;
-
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    try {
-      const data = JSON.parse(e.target.result);
-      
-      if (data.questions && Array.isArray(data.questions)) {
-        if (data.title) document.getElementById('admin-quiz-title').value = data.title;
-        if (data.topic) document.getElementById('admin-quiz-topic').value = data.topic;
-        if (data.difficulty) document.getElementById('admin-quiz-difficulty').value = data.difficulty;
-        if (data.coverEmoji) document.getElementById('admin-quiz-emoji').value = data.coverEmoji;
-        if (data.coverGradient) document.getElementById('admin-quiz-gradient').value = data.coverGradient;
-        if (data.coverImageUrl) document.getElementById('admin-quiz-image-url').value = data.coverImageUrl;
-        if (data.description) document.getElementById('admin-quiz-desc').value = data.description;
-        
-        activeQuizQuestions = data.questions;
-        window.showToast?.(`Loaded full quiz (${data.questions.length} questions) from JSON file!`, "success");
-      } else if (Array.isArray(data)) {
-        activeQuizQuestions = data;
-        window.showToast?.(`Loaded ${data.length} questions into builder queue from JSON array!`, "success");
-      } else {
-        window.showToast?.("Invalid JSON format. Expected quiz object with questions array or array of questions.", "error");
-        return;
-      }
-
-      renderActiveQuestionsQueue();
-    } catch (err) {
-      window.showToast?.("Failed to parse JSON file: " + err.message, "error");
-    }
-  };
-  reader.readAsText(file);
-}
-
-function downloadQuizJsonTemplate() {
-  const template = {
-    title: "Acts of the Apostles & Early Church",
-    topic: "New Testament",
-    difficulty: "Intermediate",
-    coverEmoji: "🔥",
-    coverGradient: "from-purple-600 to-indigo-700",
-    coverImageUrl: "https://images.unsplash.com/photo-1490730141103-6cac27aaab94?auto=format&fit=crop&w=800&q=80",
-    description: "Explore the explosive growth of the early church following Pentecost.",
-    questions: [
-      {
-        question: "On which festival did the Holy Spirit descend upon the apostles?",
-        options: ["Passover", "Pentecost", "Tabernacles", "Unleavened Bread"],
-        answerIdx: 1,
-        type: "mc"
-      },
-      {
-        question: "In what city were the disciples first called 'Christians'?",
-        options: ["Jerusalem", "Antioch", "Damascus", "Rome"],
-        answerIdx: 1,
-        type: "mc"
-      },
-      {
-        question: "Saul of Tarsus was converted on the road to Damascus.",
-        options: ["True", "False"],
-        answerIdx: 0,
-        type: "tf"
-      }
-    ]
-  };
-
-  const jsonStr = JSON.stringify(template, null, 2);
-  const blob = new Blob([jsonStr], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = "HomeCell_Quiz_Template.json";
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-
-  window.showToast?.("📥 Sample Quiz JSON Template downloaded!", "success");
-}
-
-function parseAndApplyQuizJson(jsonText, publishDirectly = false) {
-  if (!jsonText || !jsonText.trim()) {
-    window.showToast?.("Please paste valid JSON code into the text area first.", "error");
-    return;
-  }
-  try {
-    const data = JSON.parse(jsonText.trim());
-    
-    if (data.questions && Array.isArray(data.questions)) {
-      if (data.title) document.getElementById('admin-quiz-title').value = data.title;
-      if (data.topic) document.getElementById('admin-quiz-topic').value = data.topic;
-      if (data.difficulty) document.getElementById('admin-quiz-difficulty').value = data.difficulty;
-      if (data.coverEmoji) document.getElementById('admin-quiz-emoji').value = data.coverEmoji;
-      if (data.coverGradient) document.getElementById('admin-quiz-gradient').value = data.coverGradient;
-      if (data.coverImageUrl) document.getElementById('admin-quiz-image-url').value = data.coverImageUrl;
-      if (data.description) document.getElementById('admin-quiz-desc').value = data.description;
-      
-      activeQuizQuestions = data.questions;
-
-      if (publishDirectly) {
-        publishQuizToCloud();
-        return;
-      }
-
-      window.showToast?.(`Loaded quiz "${data.title || 'Untitled'}" (${data.questions.length} questions) into builder!`, "success");
-    } else if (Array.isArray(data)) {
-      activeQuizQuestions = data;
-      window.showToast?.(`Loaded ${data.length} questions into builder queue from JSON!`, "success");
-    } else {
-      window.showToast?.("Invalid JSON format. Expected quiz object with questions array or an array of question objects.", "error");
+  adminUsersListener = db.collection('users').orderBy('createdAt', 'desc').limit(50).onSnapshot(snap => {
+    container.innerHTML = '';
+    if (snap.empty) {
+      container.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-slate-400 text-xs">No users registered yet.</td></tr>`;
       return;
     }
 
-    renderActiveQuestionsQueue();
-  } catch (err) {
-    window.showToast?.("Failed to parse pasted JSON code: " + err.message, "error");
-  }
-}
-
-function handleQuizJsonPasteSubmit() {
-  const jsonText = document.getElementById('admin-quiz-json-textarea')?.value;
-  parseAndApplyQuizJson(jsonText, false);
-}
-
-function handleQuizJsonPasteDirectPublish() {
-  const jsonText = document.getElementById('admin-quiz-json-textarea')?.value;
-  parseAndApplyQuizJson(jsonText, true);
-}
-
-function copySampleQuizJsonToTextarea() {
-  const sample = {
-    title: "The Book of Acts & Early Church Miracles",
-    topic: "New Testament History",
-    difficulty: "Intermediate",
-    coverEmoji: "🔥",
-    coverGradient: "from-purple-600 to-indigo-700",
-    coverImageUrl: "https://images.unsplash.com/photo-1490730141103-6cac27aaab94?auto=format&fit=crop&w=800&q=80",
-    description: "Explore the Holy Spirit movement in the early apostolic church.",
-    questions: [
-      {
-        question: "On which Jewish festival did the Holy Spirit descend upon the disciples?",
-        options: ["Passover", "Pentecost", "Tabernacles", "Yom Kippur"],
-        answerIdx: 1,
-        type: "mc"
-      },
-      {
-        question: "In which city were believers first called 'Christians'?",
-        options: ["Jerusalem", "Antioch", "Damascus", "Ephesus"],
-        answerIdx: 1,
-        type: "mc"
-      },
-      {
-        question: "Saul of Tarsus encountered Jesus on the road to Damascus.",
-        options: ["True", "False"],
-        answerIdx: 0,
-        type: "tf"
-      }
-    ]
-  };
-
-  const textarea = document.getElementById('admin-quiz-json-textarea');
-  if (textarea) {
-    textarea.value = JSON.stringify(sample, null, 2);
-    window.showToast?.("Sample quiz JSON code loaded into textarea!");
-  }
-}
-
-window.handleQuizJsonUpload = handleQuizJsonUpload;
-window.downloadQuizJsonTemplate = downloadQuizJsonTemplate;
-window.handleQuizJsonPasteSubmit = handleQuizJsonPasteSubmit;
-window.handleQuizJsonPasteDirectPublish = handleQuizJsonPasteDirectPublish;
-window.copySampleQuizJsonToTextarea = copySampleQuizJsonToTextarea;
-
-function copyDirectQuizLink(quizId) {
-  const url = `${window.location.origin}${window.location.pathname}?quiz=${encodeURIComponent(quizId || 'power_of_thanksgiving')}&mode=quiz`;
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(url).then(() => {
-      window.showToast?.("🔗 Direct quiz link copied to clipboard!", "success");
-    }).catch(() => {
-      prompt("Copy direct quiz link:", url);
+    snap.forEach(doc => {
+      const u = doc.data();
+      const tr = document.createElement('tr');
+      tr.className = "border-b border-slate-100 dark:border-zinc-800/60 text-xs hover:bg-slate-50/50 dark:hover:bg-zinc-800/30 transition-colors";
+      
+      tr.innerHTML = `
+        <td class="py-3.5 px-4 font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-3">
+          <img src="${u.photoURL || `https://api.dicebear.com/7.x/bottts/svg?seed=${doc.id}`}" class="w-8 h-8 rounded-full object-cover bg-slate-800 shrink-0" />
+          <div>
+            <span class="block">${u.displayName || 'Member'}</span>
+            <span class="text-[10px] font-normal text-slate-400">Streak: ${u.streak || 1}d</span>
+          </div>
+        </td>
+        <td class="py-3.5 px-4 text-slate-500 font-mono text-[11px]">${u.email || doc.id}</td>
+        <td class="py-3.5 px-4">
+          <select onchange="updateUserRoleDirect('${doc.id}', this.value)" class="text-xs p-2 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-850 font-bold cursor-pointer">
+            <option value="Member" ${u.role === 'Member' ? 'selected' : ''}>Member</option>
+            <option value="Cell Leader" ${u.role === 'Cell Leader' ? 'selected' : ''}>Cell Leader</option>
+            <option value="Cell Coordinator" ${u.role === 'Cell Coordinator' ? 'selected' : ''}>Cell Coordinator</option>
+            <option value="Pastor" ${u.role === 'Pastor' ? 'selected' : ''}>Pastor</option>
+            <option value="Super Admin" ${u.role === 'Super Admin' ? 'selected' : ''}>Super Admin</option>
+          </select>
+        </td>
+        <td class="py-3.5 px-4 font-mono font-black text-amber-500">${(u.kingdomCoins || 0).toLocaleString()} KC</td>
+        <td class="py-3.5 px-4">
+          <div class="flex items-center gap-1.5">
+            <button onclick="grantAdminCoins('${doc.id}', 100)" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-[11px] rounded-xl cursor-pointer shadow-xs transition-all">
+              +100 KC
+            </button>
+            <button onclick="grantAdminCoins('${doc.id}', 500)" class="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white font-black text-[11px] rounded-xl cursor-pointer shadow-xs transition-all">
+              +500 KC
+            </button>
+          </div>
+        </td>
+      `;
+      container.appendChild(tr);
     });
-  } else {
-    prompt("Copy direct quiz link:", url);
+  }, err => console.warn("Admin users error:", err));
+}
+
+// 2. Super Admin Trivia Quiz Builder & Live Manager
+let adminDraftQuizQuestions = [
+  {
+    question: "Who was called the friend of God in scripture?",
+    options: ["Moses", "Abraham", "David", "Elijah"],
+    answerIndex: 1,
+    scriptureReference: "James 2:23 / Genesis 15:6"
+  },
+  {
+    question: "In what city was Jesus Christ born?",
+    options: ["Jerusalem", "Nazareth", "Bethlehem", "Capernaum"],
+    answerIndex: 2,
+    scriptureReference: "Micah 5:2 / Luke 2:4-7"
+  },
+  {
+    question: "How many books are in the New Testament?",
+    options: ["27", "39", "66", "12"],
+    answerIndex: 0,
+    scriptureReference: "27 canonical books"
+  }
+];
+
+function renderAdminQuizzesPane(container) {
+  container.innerHTML = `
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <!-- Quiz Creator Form -->
+      <div class="glass-panel rounded-3xl p-6 sm:p-8 space-y-6">
+        <div>
+          <span class="px-2.5 py-1 rounded-full bg-purple-100 text-purple-700 text-[10px] font-black uppercase font-mono">
+            👑 Super Admin Live Tool
+          </span>
+          <h3 class="text-lg font-black text-slate-900 dark:text-zinc-100 mt-1">Create Live Trivia Quiz</h3>
+          <p class="text-xs text-slate-400">Launch real-time Bible competitions where believers participate together with live chat.</p>
+        </div>
+
+        <form id="admin-create-quiz-form" onsubmit="handleCreateQuizSubmit(event)" class="space-y-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">Quiz Title</label>
+            <input type="text" id="admin-quiz-title" required placeholder="e.g. Acts of the Apostles Champions Sprint" class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl p-3" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">Category</label>
+            <select id="admin-quiz-category" class="w-full text-xs font-bold bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl p-3">
+              <option value="New Testament">New Testament</option>
+              <option value="Old Testament">Old Testament</option>
+              <option value="Gospels & Miracles">Gospels & Miracles</option>
+              <option value="General Scripture">General Scripture</option>
+              <option value="Prophets & Kings">Prophets & Kings</option>
+            </select>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">KC per Correct</label>
+              <input type="number" id="admin-quiz-reward-per-q" value="10" min="1" max="100" class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl p-3 font-mono font-bold" />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">Bonus KC</label>
+              <input type="number" id="admin-quiz-bonus-reward" value="25" min="0" max="500" class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl p-3 font-mono font-bold" />
+            </div>
+          </div>
+
+          <!-- Questions Builder Box -->
+          <div class="space-y-3 pt-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-black text-slate-800 dark:text-zinc-200">Questions (<span id="admin-draft-q-count">3</span>)</span>
+              <button type="button" onclick="openAddQuestionModal()" class="text-xs font-bold text-purple-600 dark:text-purple-400 hover:underline cursor-pointer">
+                + Add Question
+              </button>
+            </div>
+            <div id="admin-draft-questions-list" class="space-y-2 max-h-48 overflow-y-auto pr-1"></div>
+          </div>
+
+          <button type="submit" class="w-full py-3.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-purple-500/25 cursor-pointer transition-all">
+            Launch Live Quiz 🚀
+          </button>
+        </form>
+      </div>
+
+      <!-- Live Quizzes List & Participant Tracking -->
+      <div class="lg:col-span-2 space-y-6">
+        <div>
+          <h3 class="text-lg font-black text-slate-900 dark:text-zinc-100">Live Quizzes & Real-Time Participants</h3>
+          <p class="text-xs text-slate-400">Monitor active participant counts, manage live quiz statuses, and view live results.</p>
+        </div>
+
+        <div id="admin-quizzes-list-container" class="space-y-4">
+          <div class="py-12 text-center text-xs text-slate-400">Loading quizzes...</div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  renderDraftQuestionsList();
+  syncAdminQuizzesList();
+}
+
+function renderDraftQuestionsList() {
+  const container = document.getElementById('admin-draft-questions-list');
+  const countEl = document.getElementById('admin-draft-q-count');
+  if (countEl) countEl.innerText = adminDraftQuizQuestions.length;
+  if (!container) return;
+
+  container.innerHTML = adminDraftQuizQuestions.map((q, idx) => `
+    <div class="p-3 bg-slate-50 dark:bg-zinc-800/80 rounded-xl border border-slate-200 dark:border-zinc-700 text-xs flex items-center justify-between gap-2">
+      <div class="truncate">
+        <span class="font-bold text-slate-900 dark:text-zinc-100">Q${idx + 1}: ${q.question}</span>
+        <span class="text-[10px] text-emerald-600 block">Answer: ${q.options[q.answerIndex]} (${q.scriptureReference || ''})</span>
+      </div>
+      <button type="button" onclick="removeDraftQuestion(${idx})" class="text-red-500 hover:text-red-700 p-1 font-bold">✕</button>
+    </div>
+  `).join('');
+}
+
+function removeDraftQuestion(idx) {
+  adminDraftQuizQuestions.splice(idx, 1);
+  renderDraftQuestionsList();
+}
+
+function openAddQuestionModal() {
+  const qPrompt = prompt("Enter the question prompt:");
+  if (!qPrompt) return;
+  const optA = prompt("Option A:") || "Option A";
+  const optB = prompt("Option B:") || "Option B";
+  const optC = prompt("Option C:") || "Option C";
+  const optD = prompt("Option D:") || "Option D";
+  const correctLetter = (prompt("Which option is correct? (A, B, C, or D):") || "A").toUpperCase();
+  const scriptRef = prompt("Scripture Reference (optional):") || "";
+
+  let answerIdx = 0;
+  if (correctLetter === 'B') answerIdx = 1;
+  if (correctLetter === 'C') answerIdx = 2;
+  if (correctLetter === 'D') answerIdx = 3;
+
+  adminDraftQuizQuestions.push({
+    question: qPrompt,
+    options: [optA, optB, optC, optD],
+    answerIndex: answerIdx,
+    scriptureReference: scriptRef
+  });
+
+  renderDraftQuestionsList();
+}
+
+async function handleCreateQuizSubmit(e) {
+  e.preventDefault();
+  if (adminDraftQuizQuestions.length === 0) {
+    window.showToast?.("Please add at least 1 question to the quiz.", "warning");
+    return;
+  }
+
+  const title = document.getElementById('admin-quiz-title')?.value?.trim();
+  const category = document.getElementById('admin-quiz-category')?.value;
+  const rewardPerQ = parseInt(document.getElementById('admin-quiz-reward-per-q')?.value) || 10;
+  const bonusReward = parseInt(document.getElementById('admin-quiz-bonus-reward')?.value) || 25;
+
+  const user = window.auth?.currentUser;
+
+  try {
+    await window.db.collection('custom_quizzes').add({
+      title: title,
+      category: category,
+      rewardPerCorrect: rewardPerQ,
+      bonusReward: bonusReward,
+      questions: adminDraftQuizQuestions,
+      participantsCount: 0,
+      status: 'live',
+      createdById: user?.uid || 'admin',
+      createdByName: user?.displayName || 'Pastor Daniel (Super Admin)',
+      createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    window.soundEngine?.playSuccess?.();
+    window.showToast?.("🎉 Live Quiz launched successfully! Believers can now participate and chat in real-time.", "success");
+    document.getElementById('admin-create-quiz-form')?.reset();
+  } catch (err) {
+    console.error("Error creating quiz:", err);
+    window.showToast?.("Error creating quiz: " + err.message, "error");
   }
 }
-window.copyDirectQuizLink = copyDirectQuizLink;
 
-function syncAdminQuizzes() {
-  const catalogContainer = document.getElementById('admin-quizzes-catalog');
-  if (!catalogContainer) return;
+function syncAdminQuizzesList() {
+  const container = document.getElementById('admin-quizzes-list-container');
+  if (!container) return;
 
   if (adminQuizzesListener) adminQuizzesListener();
+  const db = window.db;
+  if (!db) return;
 
-  adminQuizzesListener = window.db.collection('quizzes').orderBy('createdAt', 'desc').onSnapshot(snap => {
-    catalogContainer.innerHTML = '';
-
+  adminQuizzesListener = db.collection('custom_quizzes').orderBy('createdAt', 'desc').onSnapshot(snap => {
+    container.innerHTML = '';
     if (snap.empty) {
-      catalogContainer.innerHTML = `<p class="text-xs text-slate-400 text-center py-6">No custom quizzes published to the catalog yet.</p>`;
+      container.innerHTML = `<div class="py-8 text-center text-xs text-slate-400">No custom live quizzes launched yet. Use the form on the left to create one!</div>`;
       return;
     }
 
     snap.forEach(doc => {
       const q = doc.data();
+      const isLive = q.status === 'live';
       const card = document.createElement('div');
-      card.className = "p-4 bg-slate-50 dark:bg-zinc-800/40 border border-slate-200 dark:border-zinc-800 rounded-2xl flex flex-col justify-between space-y-4 text-xs";
+      card.className = "glass-panel rounded-3xl p-5 sm:p-6 space-y-4 border border-slate-200 dark:border-zinc-800";
+
       card.innerHTML = `
-        <div class="space-y-2">
-          <div class="flex items-center gap-2">
-            ${q.coverImageUrl ? `<img src="${q.coverImageUrl}" class="w-10 h-10 object-cover rounded-xl shrink-0" />` : `<span class="text-xl shrink-0">${q.coverEmoji || '📖'}</span>`}
-            <div class="leading-tight">
-              <h5 class="font-extrabold text-slate-900 dark:text-zinc-50 line-clamp-1">${q.title}</h5>
-              <span class="text-[9px] uppercase tracking-wider text-slate-400">${q.topic} • ${q.difficulty}</span>
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="px-2.5 py-0.5 rounded-full ${isLive ? 'bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300' : 'bg-slate-100 text-slate-600'} text-[10px] font-black uppercase font-mono">
+                ${isLive ? '🔴 LIVE NOW' : 'ENDED'}
+              </span>
+              <span class="text-xs font-bold text-amber-500 font-mono">🪙 +${q.rewardPerCorrect || 10} KC/Q</span>
+            </div>
+            <h4 class="font-black text-base text-slate-900 dark:text-zinc-100 font-display mt-1">${q.title}</h4>
+            <p class="text-xs text-slate-400">${q.questions ? q.questions.length : 0} Questions • Category: ${q.category || 'General'}</p>
+          </div>
+
+          <!-- Real-time Participant Count Badge -->
+          <div class="flex items-center gap-3 bg-purple-50 dark:bg-purple-950/40 p-3 rounded-2xl border border-purple-200 dark:border-purple-900 shrink-0">
+            <i data-lucide="users" class="w-5 h-5 text-purple-600 dark:text-purple-400"></i>
+            <div>
+              <span class="text-[10px] uppercase font-black text-purple-600 dark:text-purple-400 block">Participants</span>
+              <span class="text-base font-black font-mono text-slate-900 dark:text-zinc-100">${q.participantsCount || 0} Believers</span>
             </div>
           </div>
-          <p class="text-[11px] text-slate-500 dark:text-zinc-400 line-clamp-2">${q.description}</p>
-          <div class="text-[10px] text-slate-400 font-bold">${q.questions ? q.questions.length : 0} Questions published</div>
         </div>
-        <div class="flex items-center gap-2 pt-2 border-t border-slate-100 dark:border-zinc-800/50">
-          <button onclick="window.editQuizFromCatalog('${q.id}')" class="flex-1 py-1.5 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/20 dark:hover:bg-blue-950/40 text-blue-600 font-bold rounded-lg transition-all cursor-pointer text-center">
-            Edit
-          </button>
-          <button onclick="window.copyDirectQuizLink('${q.id}')" class="py-1.5 px-3 bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/20 dark:hover:bg-purple-950/40 text-purple-600 font-bold rounded-lg transition-all cursor-pointer text-center flex items-center gap-1" title="Copy Direct Link">
-            🔗 Link
-          </button>
-          <button onclick="window.deleteQuizFromCatalog('${q.id}')" class="py-1.5 px-3 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 dark:hover:bg-rose-950/40 text-rose-500 font-bold rounded-lg transition-all cursor-pointer text-center">
+
+        <div class="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-slate-100 dark:border-zinc-800">
+          <div class="flex items-center gap-2">
+            <button onclick="switchTab('quiz'); window.joinSuperAdminQuiz('${doc.id}');" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer flex items-center gap-1.5">
+              <i data-lucide="play" class="w-3.5 h-3.5"></i> Enter Room & Chat
+            </button>
+            <button onclick="toggleQuizLiveStatus('${doc.id}', '${isLive ? 'ended' : 'live'}')" class="px-3 py-2 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 text-slate-700 dark:text-zinc-300 font-bold text-xs rounded-xl transition-all cursor-pointer">
+              ${isLive ? 'End Quiz' : 'Re-Open Quiz'}
+            </button>
+          </div>
+
+          <button onclick="deleteQuizDirect('${doc.id}')" class="px-3 py-2 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 font-bold text-xs rounded-xl transition-all cursor-pointer">
             Delete
           </button>
         </div>
       `;
-      catalogContainer.appendChild(card);
+      container.appendChild(card);
     });
-  }, err => console.warn("Published quizzes catalog stream failed:", err));
+
+    if (window.lucide) window.lucide.createIcons();
+  }, err => console.warn("Admin quizzes sync error:", err));
 }
 
-function editQuizFromCatalog(quizId) {
-  window.db.collection('quizzes').doc(quizId).get().then(doc => {
-    if (!doc.exists) return;
-    const q = doc.data();
-
-    document.getElementById('admin-quiz-edit-id').value = q.id;
-    document.getElementById('admin-quiz-title').value = q.title || '';
-    document.getElementById('admin-quiz-topic').value = q.topic || '';
-    document.getElementById('admin-quiz-difficulty').value = q.difficulty || 'Beginner';
-    document.getElementById('admin-quiz-emoji').value = q.coverEmoji || '📖';
-    document.getElementById('admin-quiz-gradient').value = q.coverGradient || 'from-blue-600 to-indigo-700';
-    if (document.getElementById('admin-quiz-image-url')) {
-      document.getElementById('admin-quiz-image-url').value = q.coverImageUrl || '';
-    }
-    document.getElementById('admin-quiz-desc').value = q.description || '';
-
-    activeQuizQuestions = q.questions || [];
-    editingQuestionIdx = null;
-
-    renderActiveQuestionsQueue();
-    window.showToast?.("Loaded quiz into builder queue! Scroll up to edit.");
-  }).catch(err => window.handleFirestoreError(err, 'get', `quizzes/${quizId}`));
-}
-
-function deleteQuizFromCatalog(quizId) {
-  const isConfirmed = confirm("Are you sure you want to delete this Custom Quiz from the assembly database?");
-  if (!isConfirmed) return;
-
-  window.db.collection('quizzes').doc(quizId).delete()
-    .then(() => {
-      window.showToast?.("Custom quiz deleted from catalog successfully.");
-      if (window.renderQuizSelectionGrid) window.renderQuizSelectionGrid();
-    })
-    .catch(err => window.handleFirestoreError(err, 'delete', `quizzes/${quizId}`));
-}
-
-function handleAdminPasswordChangeSubmit(e) {
-  if (e) e.preventDefault();
-  const user = window.auth.currentUser;
-  if (!user) {
-    window.showToast?.("You must be logged in as Super Admin to change password.", "error");
-    return;
-  }
-
-  const newPass = document.getElementById('admin-new-password')?.value.trim();
-  const confirmPass = document.getElementById('admin-confirm-password')?.value.trim();
-
-  if (!newPass || newPass.length < 6) {
-    window.showToast?.("Password must be at least 6 characters long.", "error");
-    return;
-  }
-
-  if (newPass !== confirmPass) {
-    window.showToast?.("Passwords do not match. Please verify and try again.", "error");
-    return;
-  }
-
-  const btn = document.getElementById('btn-change-admin-pass');
-  if (btn) {
-    btn.disabled = true;
-    btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Updating...`;
-  }
-
-  user.updatePassword(newPass)
-    .then(() => {
-      window.showToast?.("🔑 Admin password updated successfully!", "success");
-      if (document.getElementById('admin-new-password')) document.getElementById('admin-new-password').value = '';
-      if (document.getElementById('admin-confirm-password')) document.getElementById('admin-confirm-password').value = '';
-    })
-    .catch(err => {
-      console.error("Admin password change error:", err);
-      if (err.code === 'auth/requires-recent-login') {
-        window.showToast?.("Security requirement: Please sign out and log back in before changing password directly, or click 'Send Password Reset Link'.", "error");
-      } else {
-        window.showToast?.("Failed to update password: " + err.message, "error");
-      }
-    })
-    .finally(() => {
-      if (btn) {
-        btn.disabled = false;
-        btn.innerHTML = `<i data-lucide="key" class="w-4 h-4"></i> Update Password Now`;
-        if (window.lucide) window.lucide.createIcons();
-      }
+async function toggleQuizLiveStatus(quizId, newStatus) {
+  try {
+    await window.db.collection('custom_quizzes').doc(quizId).update({
+      status: newStatus
     });
+    window.showToast?.(`Quiz status set to ${newStatus}.`, "info");
+  } catch (err) {
+    window.showToast?.("Error updating quiz: " + err.message, "error");
+  }
 }
 
-function sendAdminPasswordResetEmail() {
-  const adminEmail = 'danielgiobari644@gmail.com';
-  window.auth.sendPasswordResetEmail(adminEmail)
-    .then(() => {
-      window.showToast?.(`📧 Password reset email sent to ${adminEmail}! Check your inbox.`, "success");
-    })
-    .catch(err => {
-      console.error("Password reset email error:", err);
-      window.showToast?.("Failed to send reset email: " + err.message, "error");
-    });
+async function deleteQuizDirect(quizId) {
+  if (!confirm("Are you sure you want to delete this live quiz?")) return;
+  try {
+    await window.db.collection('custom_quizzes').doc(quizId).delete();
+    window.showToast?.("Quiz deleted.", "info");
+  } catch (err) {
+    window.showToast?.("Error deleting quiz: " + err.message, "error");
+  }
 }
 
-function sendUserPasswordResetEmail(email) {
-  if (!email) return;
-  window.auth.sendPasswordResetEmail(email)
-    .then(() => {
-      window.showToast?.(`📧 Password reset link sent to ${email}`, "success");
-    })
-    .catch(err => {
-      console.error("User password reset error:", err);
-      window.showToast?.("Failed to send reset email: " + err.message, "error");
-    });
+// 3. House Cell Creator
+function renderAdminCellsPane(container) {
+  container.innerHTML = `
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div class="glass-panel rounded-3xl p-6 sm:p-8 space-y-5">
+        <div>
+          <h3 class="text-lg font-black text-slate-900 dark:text-zinc-100">Create New House Cell</h3>
+          <p class="text-xs text-slate-400">Establish a new geographical fellowship unit for weekly discipleship.</p>
+        </div>
+
+        <form onsubmit="handleCreateCellSubmit(event)" class="space-y-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">Cell Name</label>
+            <input type="text" id="admin-cell-name" required placeholder="e.g. Grace & Truth Cell" class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl p-3" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">City / Location</label>
+            <input type="text" id="admin-cell-city" required placeholder="e.g. Port Harcourt, GRA Phase 2" class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl p-3" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">Cell Leader Name & Email</label>
+            <input type="text" id="admin-cell-leader" required placeholder="e.g. Brother Emmanuel (leader@example.com)" class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl p-3" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">Weekly Meeting Schedule</label>
+            <input type="text" id="admin-cell-schedule" required placeholder="e.g. Every Wednesday 6:00 PM" class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl p-3" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">Vision / Description</label>
+            <textarea id="admin-cell-desc" rows="3" required placeholder="Brief description of fellowship focus..." class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl p-3"></textarea>
+          </div>
+          <button type="submit" class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase rounded-xl shadow cursor-pointer transition-all">
+            Establish Cell Group
+          </button>
+        </form>
+      </div>
+
+      <div class="lg:col-span-2 space-y-4">
+        <h4 class="font-black text-sm text-slate-900 dark:text-zinc-100">Active House Cells Network</h4>
+        <div id="admin-cells-list-container" class="space-y-3"></div>
+      </div>
+    </div>
+  `;
+  syncAdminCells();
 }
 
-// ---------------------------------------------------------------------------
-// SUPER ADMIN KINGDOM STORE PRODUCTS MANAGER 🏪
-// ---------------------------------------------------------------------------
-
-function syncAdminStoreProducts() {
-  const container = document.getElementById('admin-products-catalog');
+function syncAdminCells() {
+  const container = document.getElementById('admin-cells-list-container');
   if (!container) return;
 
+  if (adminCellsListener) adminCellsListener();
   const db = window.db;
   if (!db) return;
 
-  if (adminStoreProductsListener) adminStoreProductsListener();
-
-  adminStoreProductsListener = db.collection('products').onSnapshot(snap => {
+  adminCellsListener = db.collection('cells').orderBy('createdAt', 'desc').onSnapshot(snap => {
     container.innerHTML = '';
     if (snap.empty) {
-      container.innerHTML = `<div class="col-span-full text-center py-6 text-slate-400">No store products found. Add one above!</div>`;
+      container.innerHTML = `<div class="p-6 text-center text-xs text-slate-400">No house cells created yet.</div>`;
       return;
     }
 
     snap.forEach(doc => {
-      const p = doc.data();
-      const pid = doc.id;
-
+      const c = doc.data();
       const card = document.createElement('div');
-      card.className = "p-4 bg-slate-50 dark:bg-zinc-850 border border-slate-200 dark:border-zinc-700 rounded-2xl flex flex-col justify-between space-y-3";
-
+      card.className = "glass-panel rounded-2xl p-5 space-y-2 border border-slate-200 dark:border-zinc-800 flex items-center justify-between";
       card.innerHTML = `
-        <div class="space-y-2">
-          <div class="relative h-28 rounded-xl overflow-hidden bg-slate-200">
-            <img src="${p.coverUrl || 'https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=800&q=80'}" class="w-full h-full object-cover" />
-            <span class="absolute top-2 left-2 px-2 py-0.5 rounded bg-slate-900/80 text-amber-400 text-[9px] font-black uppercase">
-              ${p.category}
-            </span>
-          </div>
-
-          <h5 class="font-bold text-slate-900 dark:text-zinc-100 text-sm line-clamp-1">${p.title}</h5>
-          <p class="text-xs text-amber-500 font-bold">🪙 ${p.priceKC} KC</p>
+        <div>
+          <h4 class="font-black text-sm text-slate-900 dark:text-zinc-100">${c.name}</h4>
+          <p class="text-xs text-slate-500">${c.city} • Leader: ${c.leaderName}</p>
+          <span class="text-[11px] font-mono text-blue-600 dark:text-blue-400 font-bold">${c.meetingDayTime || 'Wednesdays 6:00 PM'}</span>
         </div>
-
-        <button onclick="deleteAdminProduct('${pid}')" class="w-full py-2 bg-rose-100 hover:bg-rose-200 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 font-bold text-xs rounded-xl transition-all cursor-pointer">
-          Delete Product
-        </button>
+        <button onclick="deleteCellDirect('${doc.id}')" class="text-red-500 hover:text-red-700 text-xs font-bold p-2">Delete</button>
       `;
-
       container.appendChild(card);
     });
-  }, err => console.warn("Admin products snapshot error:", err));
+  }, err => console.warn("Admin cells sync error:", err));
 }
 
-let currentAdminSelectedFileObj = null;
-
-async function handleAdminProductFileSelected(e) {
-  const file = e.target.files?.[0];
-  const infoContainer = document.getElementById('admin-prod-file-info');
-  const previewImg = document.getElementById('admin-prod-file-preview-img');
-  const sizeText = document.getElementById('admin-prod-file-size-text');
-
-  if (!file) {
-    currentAdminSelectedFileObj = null;
-    if (infoContainer) infoContainer.classList.add('hidden');
-    return;
-  }
-
-  const titleInput = document.getElementById('admin-prod-title');
-  if (titleInput && !titleInput.value) {
-    const rawName = file.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' ');
-    titleInput.value = rawName.charAt(0).toUpperCase() + rawName.slice(1);
-  }
-
-  const isImage = file.type.startsWith('image/');
-  const isAudio = file.type.startsWith('audio/');
-  const isPdf = file.type.includes('pdf') || file.name.endsWith('.pdf');
-
-  // Auto-select category based on file type if still on default
-  const categorySelect = document.getElementById('admin-prod-category');
-  if (categorySelect) {
-    if (isAudio && categorySelect.value === 'Wallpapers') {
-      categorySelect.value = 'Scripture Collections';
-    } else if (isPdf && categorySelect.value === 'Wallpapers') {
-      categorySelect.value = 'Devotionals & Guides';
-    }
-  }
-
-  window.showToast?.(`Uploading "${file.name}" from your device...`, "info");
+async function handleCreateCellSubmit(e) {
+  e.preventDefault();
+  const name = document.getElementById('admin-cell-name')?.value?.trim();
+  const city = document.getElementById('admin-cell-city')?.value?.trim();
+  const leader = document.getElementById('admin-cell-leader')?.value?.trim();
+  const schedule = document.getElementById('admin-cell-schedule')?.value?.trim();
+  const desc = document.getElementById('admin-cell-desc')?.value?.trim();
 
   try {
-    const reader = new FileReader();
-    const fileDataUrl = await new Promise((resolve, reject) => {
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
+    await window.db.collection('cells').add({
+      name: name,
+      city: city,
+      leaderName: leader,
+      meetingDayTime: schedule,
+      description: desc,
+      membersCount: 1,
+      createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
     });
+    window.showToast?.("🎉 House cell group established successfully!", "success");
+    switchAdminSubTab('cells');
+  } catch (err) {
+    window.showToast?.("Error: " + err.message, "error");
+  }
+}
 
-    let uploadedServerUrl = null;
-    try {
-      const uploadRes = await fetch('/api/upload-store-asset', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fileData: fileDataUrl,
-          fileName: file.name,
-          fileType: file.type
-        })
-      });
-      if (uploadRes.ok) {
-        const uploadData = await uploadRes.json();
-        if (uploadData.fileUrl) {
-          uploadedServerUrl = uploadData.fileUrl;
-        }
-      }
-    } catch (netErr) {
-      console.warn("Direct server upload endpoint bypassed, using data URL fallback:", netErr);
-    }
+async function deleteCellDirect(cellId) {
+  if (!confirm("Are you sure you want to delete this house cell?")) return;
+  try {
+    await window.db.collection('cells').doc(cellId).delete();
+    window.showToast?.("Cell removed.", "info");
+  } catch (err) {
+    window.showToast?.("Error deleting cell: " + err.message, "error");
+  }
+}
 
-    let previewDataUrl = fileDataUrl;
-    if (isImage) {
-      try {
-        const compressed = await window.compressImageForFirestore(file, 1200, 1200, 0.8);
-        previewDataUrl = compressed.previewData;
-      } catch (cErr) {
-        console.warn("Image compression fallback:", cErr);
-      }
-    } else if (isPdf) {
-      previewDataUrl = 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=800&q=80';
-    } else if (isAudio) {
-      previewDataUrl = 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=800&q=80';
-    } else {
-      previewDataUrl = 'https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=800&q=80';
-    }
+// 4. Church Broadcast Announcement
+function renderAdminBroadcastPane(container) {
+  container.innerHTML = `
+    <div class="max-w-2xl mx-auto glass-panel rounded-3xl p-6 sm:p-8 space-y-6">
+      <div>
+        <h3 class="text-lg font-black text-slate-900 dark:text-zinc-100">Publish Church-Wide Broadcast</h3>
+        <p class="text-xs text-slate-400">Broadcast official messages, pastoral updates, and urgent ministry alerts directly to all believer feeds.</p>
+      </div>
 
-    const finalFileUrl = uploadedServerUrl || fileDataUrl;
-    currentAdminSelectedFileObj = {
-      file: file,
-      fileName: file.name,
-      fileType: file.type,
-      serverUrl: uploadedServerUrl,
-      dataUrl: fileDataUrl,
-      previewData: previewDataUrl,
-      sizeInKB: Math.round(file.size / 1024)
+      <form onsubmit="handleAdminBroadcastSubmit(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">Broadcast Title</label>
+          <input type="text" id="broadcast-title" required placeholder="e.g. All-Night Miracle Service Announcement" class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl p-3" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">Message Body</label>
+          <textarea id="broadcast-content" rows="4" required placeholder="Write the announcement message to the fellowship..." class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl p-3"></textarea>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <input type="checkbox" id="broadcast-push" class="rounded text-purple-600 cursor-pointer" checked />
+          <label for="broadcast-push" class="text-xs font-bold text-purple-600 dark:text-purple-400 cursor-pointer">Send instant push notification banner</label>
+        </div>
+
+        <button type="submit" class="w-full py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg cursor-pointer transition-all">
+          Broadcast Message 📢
+        </button>
+      </form>
+    </div>
+  `;
+}
+
+async function handleAdminBroadcastSubmit(e) {
+  e.preventDefault();
+  const title = document.getElementById('broadcast-title')?.value?.trim();
+  const content = document.getElementById('broadcast-content')?.value?.trim();
+  const push = document.getElementById('broadcast-push')?.checked;
+
+  const user = window.auth?.currentUser;
+  const newPostId = window.db.collection('community_feed').doc().id;
+
+  try {
+    const postData = {
+      id: newPostId,
+      type: 'announcement',
+      authorUid: user?.uid || 'super-admin',
+      authorName: user?.displayName || 'Pastor Daniel (Super Admin)',
+      authorPhotoURL: user?.photoURL || null,
+      authorRole: 'Super Admin',
+      title: title,
+      text: content,
+      likesCount: 0,
+      likes: {},
+      comments: [],
+      createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
     };
 
-    if (infoContainer) infoContainer.classList.remove('hidden');
-    if (previewImg) previewImg.src = previewDataUrl;
-    if (sizeText) {
-      sizeText.innerText = `${file.name} | Size: ${Math.round(file.size / 1024)} KB ${uploadedServerUrl ? '• Stored on Server' : '• Ready'}`;
+    // Save to primary community_feed collection
+    await window.db.collection('community_feed').doc(newPostId).set(postData);
+    // Also save to posts collection for backwards compatibility
+    await window.db.collection('posts').doc(newPostId).set(postData).catch(() => {});
+
+    if (push && window.dispatchPushNotification) {
+      window.dispatchPushNotification(title, content);
     }
 
-    const coverUrlInput = document.getElementById('admin-prod-cover-url');
-    if (coverUrlInput && !coverUrlInput.value) {
-      coverUrlInput.value = isImage ? finalFileUrl : previewDataUrl;
-    }
-    const fileUrlInput = document.getElementById('admin-prod-file-url');
-    if (fileUrlInput && !fileUrlInput.value) {
-      fileUrlInput.value = finalFileUrl;
-    }
-
-    window.showToast?.(`🎉 "${file.name}" loaded successfully from device!`, "success");
+    window.soundEngine?.playSuccess?.();
+    window.showToast?.("📢 Church broadcast published to the fellowship feed!", "success");
+    switchTab('feed');
   } catch (err) {
-    console.error("Device file upload error:", err);
-    window.showToast?.(`File upload error: ${err.message}`, "error");
-    currentAdminSelectedFileObj = null;
-    if (infoContainer) infoContainer.classList.add('hidden');
+    window.showToast?.("Error: " + err.message, "error");
   }
 }
-window.handleAdminProductFileSelected = handleAdminProductFileSelected;
 
-// Submit New Store Product
-async function handleAdminProductSubmit(e) {
+// 5. Devotionals Publisher
+function renderAdminDevotionalsPane(container) {
+  container.innerHTML = `
+    <div class="max-w-2xl mx-auto glass-panel rounded-3xl p-6 sm:p-8 space-y-6">
+      <div>
+        <h3 class="text-lg font-black text-slate-900 dark:text-zinc-100">Publish Daily Devotional</h3>
+        <p class="text-xs text-slate-400">Release the morning bread of life for members to read and earn +10 KC.</p>
+      </div>
+
+      <form onsubmit="handlePublishDevotionalSubmit(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">Title</label>
+          <input type="text" id="admin-dev-title" required placeholder="e.g. Walking in Divine Favor" class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl p-3" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">Scripture Reference</label>
+          <input type="text" id="admin-dev-scripture" required placeholder="e.g. Psalm 5:12" class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl p-3" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">Devotional Body</label>
+          <textarea id="admin-dev-body" rows="4" required placeholder="Inspirational reflection and teaching..." class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl p-3"></textarea>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">Guided Prayer</label>
+          <textarea id="admin-dev-prayer" rows="2" required placeholder="Lord, surround me with Your favor today..." class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl p-3"></textarea>
+        </div>
+        <button type="submit" class="w-full py-3.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs uppercase rounded-xl shadow cursor-pointer transition-all">
+          Publish Devotional ☀️
+        </button>
+      </form>
+    </div>
+  `;
+}
+
+async function handlePublishDevotionalSubmit(e) {
   e.preventDefault();
-
-  const title = document.getElementById('admin-prod-title')?.value?.trim();
-  const category = document.getElementById('admin-prod-category')?.value || 'Wallpapers';
-  const collectionName = document.getElementById('admin-prod-collection')?.value?.trim() || 'General';
-  const priceKC = parseInt(document.getElementById('admin-prod-price')?.value || '50');
-  let coverUrl = document.getElementById('admin-prod-cover-url')?.value?.trim() || '';
-  let fileUrl = document.getElementById('admin-prod-file-url')?.value?.trim() || coverUrl;
-  const description = document.getElementById('admin-prod-desc')?.value?.trim() || '';
-  const tagsStr = document.getElementById('admin-prod-tags')?.value?.trim() || '';
-  const tags = tagsStr.split(',').map(t => t.trim()).filter(t => t.length > 0);
-
-  if (currentAdminSelectedFileObj) {
-    if (!coverUrl) coverUrl = currentAdminSelectedFileObj.previewData || currentAdminSelectedFileObj.serverUrl || currentAdminSelectedFileObj.dataUrl;
-    if (!fileUrl) fileUrl = currentAdminSelectedFileObj.serverUrl || currentAdminSelectedFileObj.dataUrl || coverUrl;
-  }
-
-  if (!title || isNaN(priceKC)) {
-    window.showToast?.("Please enter a title and valid Kingdom Coin price!", "error");
-    return;
-  }
-
-  if (!coverUrl && !fileUrl) {
-    window.showToast?.("Please select a file from your device or provide a resource URL!", "error");
-    return;
-  }
-
-  const db = window.db;
-  if (!db) return;
-
-  const prodRef = db.collection('products').doc();
-
-  const productData = {
-    id: prodRef.id,
-    title: title,
-    category: category,
-    collectionName: collectionName,
-    priceKC: priceKC,
-    coverUrl: coverUrl || fileUrl || 'https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=800&q=80',
-    fileUrl: fileUrl || coverUrl,
-    description: description,
-    author: "Super Admin",
-    tags: tags.length ? tags : ["Kingdom", "Digital"],
-    featured: true,
-    published: true,
-    downloadable: true,
-    storageType: currentAdminSelectedFileObj ? (currentAdminSelectedFileObj.serverUrl ? "server_storage" : "firestore_base64") : "external_url",
-    createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
-  };
+  const title = document.getElementById('admin-dev-title')?.value?.trim();
+  const scripture = document.getElementById('admin-dev-scripture')?.value?.trim();
+  const body = document.getElementById('admin-dev-body')?.value?.trim();
+  const prayer = document.getElementById('admin-dev-prayer')?.value?.trim();
+  const todayStr = new Date().toISOString().split('T')[0];
 
   try {
-    await prodRef.set(productData);
-    await db.collection('storeProducts').doc(prodRef.id).set(productData, { merge: true }).catch(() => {});
+    const devData = {
+      title: title,
+      scripture: scripture,
+      body: body,
+      prayer: prayer,
+      devotionalDate: todayStr,
+      date: todayStr,
+      author: 'Pastor Daniel Giobari (Super Admin)',
+      imageUrl: 'https://images.unsplash.com/photo-1507692049790-de58290a4334?auto=format&fit=crop&w=1200&q=80',
+      createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
+    };
 
-    document.getElementById('admin-product-form')?.reset();
-    currentAdminSelectedFileObj = null;
-    const infoContainer = document.getElementById('admin-prod-file-info');
-    if (infoContainer) infoContainer.classList.add('hidden');
+    await window.db.collection('daily_devotionals').add(devData);
+    await window.db.collection('devotionals').add(devData).catch(() => {});
 
-    window.showToast?.(`🎉 Store product "${title}" published to Kingdom Store!`, "success");
-    syncAdminStoreProducts();
-    if (window.syncStoreProducts) window.syncStoreProducts();
+    window.soundEngine?.playSuccess?.();
+    window.showToast?.("☀️ Devotional published successfully!", "success");
+    switchTab('devotionals');
   } catch (err) {
-    console.error("Admin product submit error:", err);
-    window.showToast?.("Error publishing store product: " + err.message, "error");
+    window.showToast?.("Error: " + err.message, "error");
   }
 }
 
-// Delete Admin Product
-async function deleteAdminProduct(prodId) {
-  if (!confirm("Are you sure you want to delete this store product?")) return;
+// 6. Gatherings Scheduler
+function renderAdminEventsPane(container) {
+  container.innerHTML = `
+    <div class="max-w-2xl mx-auto glass-panel rounded-3xl p-6 sm:p-8 space-y-6">
+      <div>
+        <h3 class="text-lg font-black text-slate-900 dark:text-zinc-100">Schedule Church Gathering</h3>
+        <p class="text-xs text-slate-400">Post upcoming conferences, cell rallies, and prayer meetings.</p>
+      </div>
 
-  const db = window.db;
-  if (!db) return;
+      <form onsubmit="handleCreateEventSubmit(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">Event Title</label>
+          <input type="text" id="admin-event-title" required placeholder="e.g. Kingdom Leaders Summit" class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl p-3" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">Date & Time</label>
+          <input type="text" id="admin-event-datetime" required placeholder="e.g. Sunday, 10:00 AM" class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl p-3" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">Location / Venue</label>
+          <input type="text" id="admin-event-location" required placeholder="e.g. Main Sanctuary & Online Livestream" class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl p-3" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">Description</label>
+          <textarea id="admin-event-desc" rows="3" required placeholder="Details about this gathering..." class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl p-3"></textarea>
+        </div>
+        <button type="submit" class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase rounded-xl shadow cursor-pointer transition-all">
+          Schedule Gathering 📅
+        </button>
+      </form>
+    </div>
+  `;
+}
+
+async function handleCreateEventSubmit(e) {
+  e.preventDefault();
+  const title = document.getElementById('admin-event-title')?.value?.trim();
+  const dt = document.getElementById('admin-event-datetime')?.value?.trim();
+  const loc = document.getElementById('admin-event-location')?.value?.trim();
+  const desc = document.getElementById('admin-event-desc')?.value?.trim();
 
   try {
-    await db.collection('products').doc(prodId).delete();
-    window.showToast?.("Product deleted.", "info");
-    syncAdminStoreProducts();
-  } catch (e) {
-    console.error("Delete product error:", e);
+    const eventData = {
+      title: title,
+      eventDate: dt,
+      dateTime: dt,
+      time: '10:00 AM',
+      location: loc,
+      description: desc,
+      attendeesCount: 0,
+      attendees: {},
+      imageUrl: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=1200&q=80',
+      createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
+    };
+
+    await window.db.collection('upcoming_events').add(eventData);
+    await window.db.collection('events').add(eventData).catch(() => {});
+
+    window.soundEngine?.playSuccess?.();
+    window.showToast?.("📅 Gathering scheduled successfully!", "success");
+    switchTab('events');
+  } catch (err) {
+    window.showToast?.("Error: " + err.message, "error");
   }
 }
 
-// ---------------------------------------------------------------------------
-// SUPER ADMIN CUSTOM REQUESTS MANAGER ✨
-// ---------------------------------------------------------------------------
+// 7. Custom Requests Orders Fulfillment
+function renderAdminRequestsPane(container) {
+  container.innerHTML = `
+    <div class="glass-panel rounded-3xl p-6 sm:p-8 space-y-6">
+      <div>
+        <h3 class="text-lg font-black text-slate-900 dark:text-zinc-100">Custom Media Orders Fulfillment</h3>
+        <p class="text-xs text-slate-400">Review member custom wallpaper and poster orders, attach high-res links, and deliver.</p>
+      </div>
+      <div id="admin-requests-list" class="space-y-4"></div>
+    </div>
+  `;
+  syncAdminRequests();
+}
 
-function syncAdminCustomRequests() {
-  const container = document.getElementById('admin-custom-requests-rows');
+function syncAdminRequests() {
+  const container = document.getElementById('admin-requests-list');
   if (!container) return;
 
+  if (adminRequestsListener) adminRequestsListener();
   const db = window.db;
   if (!db) return;
 
-  if (adminCustomRequestsListener) adminCustomRequestsListener();
-
-  adminCustomRequestsListener = db.collection('custom_requests').onSnapshot(snap => {
+  adminRequestsListener = db.collection('custom_requests').orderBy('createdAt', 'desc').onSnapshot(snap => {
     container.innerHTML = '';
     if (snap.empty) {
-      container.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-slate-400">No custom creation requests found.</td></tr>`;
+      container.innerHTML = `<div class="p-6 text-center text-xs text-slate-400">No custom orders submitted yet.</div>`;
       return;
     }
 
     snap.forEach(doc => {
       const r = doc.data();
-      const reqId = doc.id;
-
-      const tr = document.createElement('tr');
-      tr.className = "border-b border-slate-100 dark:border-zinc-800 text-slate-800 dark:text-zinc-200 text-xs";
-
-      tr.innerHTML = `
-        <td class="p-3 font-mono font-bold">${reqId}</td>
-        <td class="p-3 font-bold">${r.userName || 'Member'} <span class="block text-[10px] text-slate-400">${r.userEmail || ''}</span></td>
-        <td class="p-3 capitalize font-bold text-purple-600 dark:text-purple-400">${r.type}</td>
-        <td class="p-3">
-          <p class="font-bold line-clamp-1">${r.desiredResult}</p>
-          <p class="text-[11px] text-slate-400 line-clamp-2">${r.description}</p>
-        </td>
-        <td class="p-3">
-          <select onchange="updateAdminRequestStatus('${reqId}', this.value)" class="px-2 py-1 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg text-xs font-bold text-slate-800 dark:text-zinc-200">
-            <option value="Submitted" ${r.status === 'Submitted' ? 'selected' : ''}>🟡 Submitted</option>
-            <option value="In Progress" ${r.status === 'In Progress' ? 'selected' : ''}>🔵 In Progress</option>
-            <option value="Ready" ${r.status === 'Ready' ? 'selected' : ''}>🟢 Ready</option>
-            <option value="Completed" ${r.status === 'Completed' ? 'selected' : ''}>⚪ Completed</option>
-            <option value="Needs Information" ${r.status === 'Needs Information' ? 'selected' : ''}>🔴 Needs Info</option>
-          </select>
-        </td>
-        <td class="p-3 space-y-1">
-          <button onclick="promptUploadRequestResultModal('${reqId}')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-[11px] uppercase cursor-pointer">
-            Upload Result
-          </button>
-        </td>
+      const card = document.createElement('div');
+      card.className = "p-5 rounded-2xl bg-slate-50 dark:bg-zinc-850 border border-slate-200 dark:border-zinc-800 space-y-3";
+      card.innerHTML = `
+        <div class="flex items-center justify-between">
+          <span class="font-bold text-sm text-slate-900 dark:text-zinc-100">${r.desiredText}</span>
+          <span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase font-mono ${r.status === 'Completed' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">${r.status || 'Pending'}</span>
+        </div>
+        <p class="text-xs text-slate-500">${r.description}</p>
+        <div class="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-zinc-800 text-xs">
+          <span class="text-slate-400 font-mono">By: ${r.userName || r.userId}</span>
+          <button onclick="deliverCustomOrder('${doc.id}')" class="px-4 py-1.5 bg-emerald-600 text-white font-bold rounded-xl text-xs">Fulfill & Deliver</button>
+        </div>
       `;
-
-      container.appendChild(tr);
+      container.appendChild(card);
     });
-  }, err => console.warn("Admin requests snapshot error:", err));
+  }, err => console.warn("Admin requests sync error:", err));
 }
 
-// Update Request Status
-async function updateAdminRequestStatus(reqId, status) {
-  const db = window.db;
-  if (!db) return;
+async function deliverCustomOrder(reqId) {
+  const deliverableUrl = prompt("Enter the High-Res Download URL for this custom request:", "https://images.unsplash.com/photo-1507692049790-de58290a4334?w=1920&q=80");
+  if (!deliverableUrl) return;
 
   try {
-    await db.collection('custom_requests').doc(reqId).update({ status: status });
-    window.showToast?.(`Updated request status to ${status}`, "success");
-  } catch (e) {
-    console.error("Update request status error:", e);
+    await window.db.collection('custom_requests').doc(reqId).update({
+      status: 'Completed',
+      deliverableUrl: deliverableUrl,
+      completedAt: window.firebase.firestore.FieldValue.serverTimestamp()
+    });
+    window.showToast?.("Custom request marked as completed!", "success");
+  } catch (err) {
+    window.showToast?.("Error: " + err.message, "error");
   }
 }
 
-// Prompt Upload Request Result Modal
-function promptUploadRequestResultModal(reqId) {
-  window.showModalHtml?.(`
-    <div class="space-y-4 p-1">
-      <h3 class="text-lg font-black text-slate-900 dark:text-zinc-100">Fulfill Request ${reqId}</h3>
-      <p class="text-xs text-slate-500 dark:text-zinc-400">Provide the final result URL or note to complete this creation request.</p>
+// 8. Store Inventory Creator & Catalog Management
+let adminUploadedCoverBase64 = null;
+let adminUploadedFileBase64 = null;
+let adminProductsListener = null;
 
-      <div class="space-y-2">
-        <label class="text-xs font-bold text-slate-700 dark:text-zinc-300">Result Image / File URL</label>
-        <input type="url" id="modal-req-result-url" class="w-full px-3 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl text-xs text-slate-900 dark:text-zinc-100" placeholder="https://images.unsplash.com/... or link" />
+function renderAdminInventoryPane(container) {
+  container.innerHTML = `
+    <div class="space-y-8">
+      <!-- Upload Resource Form -->
+      <div class="glass-panel rounded-3xl p-6 sm:p-8 space-y-6">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h3 class="text-lg font-black text-slate-900 dark:text-zinc-100 flex items-center gap-2">
+              <span>🛍️</span> Upload Resource to Kingdom Store
+            </h3>
+            <p class="text-xs text-slate-400 mt-0.5">Upload wallpapers, devotionals, guides, and scripture cards directly from your phone or computer.</p>
+          </div>
+          <span class="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-black text-[10px] uppercase font-mono border border-emerald-500/30">
+            Direct Device Upload Ready
+          </span>
+        </div>
+
+        <form id="admin-product-upload-form" onsubmit="handleAdminStoreProductUploadSubmit(event)" class="space-y-5">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1.5">Product Title *</label>
+              <input type="text" id="admin-prod-title" required placeholder="e.g. Psalms of Peace 4K Wallpaper Pack" class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-2xl p-3.5 text-slate-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-amber-500" />
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1.5">Category *</label>
+              <select id="admin-prod-category" class="w-full text-xs font-bold bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-2xl p-3.5 text-slate-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-amber-500">
+                <option value="Wallpapers">4K Wallpapers</option>
+                <option value="Quotes">Inspirational Quotes</option>
+                <option value="Scripture Collections">Scripture Collections</option>
+                <option value="Devotionals & Guides">Devotionals & Guides</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1.5">Price (Kingdom Coins) *</label>
+              <input type="number" id="admin-prod-price" required value="50" min="1" max="5000" class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-2xl p-3.5 font-mono font-black text-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500" />
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1.5">Collection Name</label>
+              <input type="text" id="admin-prod-collection" placeholder="e.g. Morning & Night Prayer" class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-2xl p-3.5 text-slate-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-amber-500" />
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1.5">Author / Ministry</label>
+              <input type="text" id="admin-prod-author" value="Pastor Daniel (Super Admin)" class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-2xl p-3.5 text-slate-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-amber-500" />
+            </div>
+          </div>
+
+          <!-- Direct Device File Uploaders -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5 p-5 bg-slate-50 dark:bg-zinc-850/60 rounded-3xl border border-slate-200 dark:border-zinc-750">
+            <!-- 1. Cover Image Upload from Device -->
+            <div class="space-y-3">
+              <label class="block text-xs font-black text-slate-800 dark:text-zinc-200">
+                🖼️ Cover Artwork (Direct from Device or URL)
+              </label>
+              
+              <div class="flex items-center gap-3">
+                <label class="flex-1 cursor-pointer flex items-center justify-center gap-2 py-3 px-4 rounded-2xl bg-white dark:bg-zinc-800 border border-dashed border-slate-300 dark:border-zinc-600 hover:border-amber-500 text-xs font-bold text-slate-700 dark:text-zinc-300 transition-all shadow-xs">
+                  <i data-lucide="upload-cloud" class="w-4 h-4 text-amber-500"></i>
+                  <span>Choose Image File</span>
+                  <input type="file" id="admin-prod-cover-file" accept="image/*" onchange="handleAdminCoverFileSelect(event)" class="hidden" />
+                </label>
+              </div>
+
+              <div id="admin-prod-cover-preview-box" class="hidden relative rounded-2xl overflow-hidden border border-slate-200 dark:border-zinc-700 h-32 bg-slate-100 dark:bg-zinc-800">
+                <img id="admin-prod-cover-preview" class="w-full h-full object-cover" />
+                <button type="button" onclick="clearAdminCoverFile()" class="absolute top-2 right-2 p-1.5 rounded-full bg-slate-900/80 text-white text-xs hover:bg-red-600 cursor-pointer">✕</button>
+              </div>
+
+              <div>
+                <span class="text-[10px] text-slate-400 block mb-1">Or paste Image URL:</span>
+                <input type="url" id="admin-prod-img-url" placeholder="https://images.unsplash.com/..." class="w-full text-xs bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl p-2.5 text-slate-900 dark:text-zinc-100" />
+              </div>
+            </div>
+
+            <!-- 2. Resource File Download Upload from Device -->
+            <div class="space-y-3">
+              <label class="block text-xs font-black text-slate-800 dark:text-zinc-200">
+                📦 Digital Download File (Direct from Device or URL)
+              </label>
+
+              <div class="flex items-center gap-3">
+                <label class="flex-1 cursor-pointer flex items-center justify-center gap-2 py-3 px-4 rounded-2xl bg-white dark:bg-zinc-800 border border-dashed border-slate-300 dark:border-zinc-600 hover:border-emerald-500 text-xs font-bold text-slate-700 dark:text-zinc-300 transition-all shadow-xs">
+                  <i data-lucide="file-up" class="w-4 h-4 text-emerald-500"></i>
+                  <span>Choose Resource File (PDF/Zip/Image)</span>
+                  <input type="file" id="admin-prod-resource-file" onchange="handleAdminResourceFileSelect(event)" class="hidden" />
+                </label>
+              </div>
+
+              <div id="admin-prod-file-status" class="hidden p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 text-xs font-mono font-bold border border-emerald-300 dark:border-emerald-800"></div>
+
+              <div>
+                <span class="text-[10px] text-slate-400 block mb-1">Or paste File Download URL:</span>
+                <input type="url" id="admin-prod-file-url" placeholder="https://..." class="w-full text-xs bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl p-2.5 text-slate-900 dark:text-zinc-100" />
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1.5">Description *</label>
+            <textarea id="admin-prod-desc" rows="3" required placeholder="Describe the spiritual value, format, resolution, and usage..." class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-2xl p-3.5 text-slate-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-amber-500"></textarea>
+          </div>
+
+          <div class="flex flex-wrap items-center justify-between gap-4 pt-2">
+            <label class="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-700 dark:text-zinc-300">
+              <input type="checkbox" id="admin-prod-featured" class="w-4 h-4 rounded text-amber-500 focus:ring-amber-400" />
+              <span>Feature on Store Home Banner ★</span>
+            </label>
+
+            <button type="submit" id="btn-admin-upload-prod" class="px-8 py-3.5 bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 hover:brightness-105 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-emerald-600/25 cursor-pointer transition-all">
+              Upload & Publish to Kingdom Store 🛍️
+            </button>
+          </div>
+        </form>
       </div>
 
-      <div class="space-y-2">
-        <label class="text-xs font-bold text-slate-700 dark:text-zinc-300">Admin Note for User</label>
-        <textarea id="modal-req-admin-note" rows="3" class="w-full px-3 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl text-xs text-slate-900 dark:text-zinc-100" placeholder="Praise God! Here is your requested custom wallpaper..."></textarea>
-      </div>
+      <!-- Live Catalog Table -->
+      <div class="glass-panel rounded-3xl p-6 sm:p-8 space-y-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-lg font-black text-slate-900 dark:text-zinc-100">Live Kingdom Store Catalog</h3>
+            <p class="text-xs text-slate-400">Manage all listed products, pricing, and active listings.</p>
+          </div>
+          <button onclick="syncAdminStoreProductsCatalog()" class="text-xs text-blue-600 dark:text-blue-400 font-bold hover:underline cursor-pointer">
+            Refresh Catalog
+          </button>
+        </div>
 
-      <div class="flex gap-2 pt-2">
-        <button onclick="window.closeModal?.()" class="flex-1 py-2.5 bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 font-bold rounded-xl text-xs cursor-pointer">Cancel</button>
-        <button onclick="saveAdminRequestResult('${reqId}')" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-xl text-xs uppercase cursor-pointer">Publish Result</button>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left">
+            <thead>
+              <tr class="border-b border-slate-200 dark:border-zinc-800 text-[10px] uppercase font-black text-slate-400">
+                <th class="py-3 px-4">Item</th>
+                <th class="py-3 px-4">Category</th>
+                <th class="py-3 px-4">Price</th>
+                <th class="py-3 px-4">Collection</th>
+                <th class="py-3 px-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="admin-store-catalog-body">
+              <tr><td colspan="5" class="py-6 text-center text-xs text-slate-400">Loading catalog...</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
-  `);
+  `;
+
+  syncAdminStoreProductsCatalog();
+  if (window.lucide) window.lucide.createIcons();
 }
 
-// Save Admin Request Result
-async function saveAdminRequestResult(reqId) {
-  const resultUrl = document.getElementById('modal-req-result-url')?.value?.trim();
-  const adminNote = document.getElementById('modal-req-admin-note')?.value?.trim();
-
-  if (!resultUrl) {
-    window.showToast?.("Please enter a result file URL!", "error");
-    return;
-  }
-
-  const db = window.db;
-  if (!db) return;
-
-  try {
-    await db.collection('custom_requests').doc(reqId).update({
-      resultUrl: resultUrl,
-      adminNotes: adminNote || '',
-      status: "Ready"
-    });
-
-    window.closeModal?.();
-    window.showToast?.("🎉 Custom request result published!", "success");
-    syncAdminCustomRequests();
-  } catch (e) {
-    console.error("Save request result error:", e);
-    window.showToast?.("Error saving result.", "error");
-  }
-}
-
-// ---------------------------------------------------------------------------
-// SUPER ADMIN FEEDBACK HUB MANAGER 💡
-// ---------------------------------------------------------------------------
-
-function syncAdminFeedbackHub() {
-  const container = document.getElementById('admin-feedback-rows');
-  if (!container) return;
-
-  const db = window.db;
-  if (!db) return;
-
-  if (adminFeedbackListener) adminFeedbackListener();
-
-  adminFeedbackListener = db.collection('feedback_items').onSnapshot(snap => {
-    container.innerHTML = '';
-    if (snap.empty) {
-      container.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-slate-400">No suggestions submitted yet.</td></tr>`;
-      return;
-    }
-
-    snap.forEach(doc => {
-      const f = doc.data();
-      const fid = doc.id;
-
-      const tr = document.createElement('tr');
-      tr.className = "border-b border-slate-100 dark:border-zinc-800 text-slate-800 dark:text-zinc-200 text-xs";
-
-      tr.innerHTML = `
-        <td class="p-3 font-bold">${f.title} <span class="block text-[10px] font-normal text-slate-400">${f.description}</span></td>
-        <td class="p-3 font-bold">${f.userName || 'Member'}</td>
-        <td class="p-3 font-mono font-bold text-purple-600">▲ ${f.upvotesCount || 0}</td>
-        <td class="p-3">
-          <select onchange="updateAdminFeedbackStatus('${fid}', this.value)" class="px-2 py-1 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg text-xs font-bold text-slate-800 dark:text-zinc-200">
-            <option value="Under Review" ${f.status === 'Under Review' ? 'selected' : ''}>🟣 Under Review</option>
-            <option value="Planned" ${f.status === 'Planned' ? 'selected' : ''}>🔵 Planned</option>
-            <option value="In Development" ${f.status === 'In Development' ? 'selected' : ''}>🟡 In Development</option>
-            <option value="Completed" ${f.status === 'Completed' ? 'selected' : ''}>🟢 Completed</option>
-            <option value="Declined" ${f.status === 'Declined' ? 'selected' : ''}>🔴 Declined</option>
-          </select>
-        </td>
-        <td class="p-3">
-          ${f.rewardAwarded ? `<span class="text-emerald-500 font-bold">✨ +10 KC Awarded</span>` : `
-            <button onclick="rewardAdminFeedbackUser('${fid}', '${f.userUid}')" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black rounded-lg text-[10px] uppercase cursor-pointer">
-              Award +10 KC
-            </button>
-          `}
-        </td>
-      `;
-
-      container.appendChild(tr);
-    });
-  }, err => console.warn("Admin feedback snapshot error:", err));
-}
-
-// Update Feedback Status
-async function updateAdminFeedbackStatus(fid, status) {
-  const db = window.db;
-  if (!db) return;
-
-  try {
-    await db.collection('feedback_items').doc(fid).update({ status: status });
-    window.showToast?.(`Feedback status updated to ${status}`, "success");
-  } catch (e) {
-    console.error("Update feedback status error:", e);
-  }
-}
-
-// Award KC to User for Approved Feedback
-async function rewardAdminFeedbackUser(fid, userUid) {
-  if (!userUid) return;
-
-  const db = window.db;
-  if (!db) return;
-
-  try {
-    const userRef = db.collection('users').doc(userUid);
-    const itemRef = db.collection('feedback_items').doc(fid);
-
-    await db.runTransaction(async (transaction) => {
-      const userDoc = await transaction.get(userRef);
-      if (!userDoc.exists) return;
-
-      const currentKc = userDoc.data().kingdomCoins || 0;
-      transaction.update(userRef, { kingdomCoins: currentKc + 10 });
-      transaction.update(itemRef, { rewardAwarded: true });
-    });
-
-    window.showToast?.("✨ Awarded +10 Kingdom Coins to user for great feedback!", "success");
-    syncAdminFeedbackHub();
-  } catch (e) {
-    console.error("Reward feedback error:", e);
-  }
-}
-
-// Expose globally
-window.syncAdminStoreProducts = syncAdminStoreProducts;
-window.handleAdminProductSubmit = handleAdminProductSubmit;
-window.deleteAdminProduct = deleteAdminProduct;
-window.syncAdminCustomRequests = syncAdminCustomRequests;
-window.updateAdminRequestStatus = updateAdminRequestStatus;
-window.promptUploadRequestResultModal = promptUploadRequestResultModal;
-window.saveAdminRequestResult = saveAdminRequestResult;
-window.syncAdminFeedbackHub = syncAdminFeedbackHub;
-window.updateAdminFeedbackStatus = updateAdminFeedbackStatus;
-window.rewardAdminFeedbackUser = rewardAdminFeedbackUser;
-
-// --- Super Admin Loading Screen System Management ---
-let selectedVideoBase64 = null;
-let selectedVideoFile = null;
-
-function syncAdminLoadingScreen() {
-  const statusBadge = document.getElementById('admin-ls-status-badge');
-  const toggleBtn = document.getElementById('admin-ls-toggle-btn');
-  const activeVideoPreview = document.getElementById('admin-ls-active-video-preview');
-  const fallbackPreviewBox = document.getElementById('admin-ls-fallback-preview-box');
-  const previewStatus = document.getElementById('admin-ls-preview-status');
-
-  const metaTitle = document.getElementById('admin-ls-meta-title');
-  const metaTagline = document.getElementById('admin-ls-meta-tagline');
-  const metaLoop = document.getElementById('admin-ls-meta-loop');
-  const metaDurations = document.getElementById('admin-ls-meta-durations');
-  const metaUpdated = document.getElementById('admin-ls-meta-updated');
-  const metaAuthor = document.getElementById('admin-ls-meta-author');
-
-  if (adminLoadingScreenListener) adminLoadingScreenListener();
-
-  adminLoadingScreenListener = window.db.collection('appSettings').doc('loadingScreen').onSnapshot(snap => {
-    if (!snap.exists) {
-      if (statusBadge) {
-        statusBadge.innerText = 'DEFAULT (Built-in Animation)';
-        statusBadge.className = 'px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-500/20 text-blue-400 border border-blue-500/40';
-      }
-      if (toggleBtn) {
-        toggleBtn.innerHTML = '<i data-lucide="power" class="w-4 h-4 inline"></i> Enable Custom Video';
-      }
-      if (activeVideoPreview) activeVideoPreview.classList.add('hidden');
-      if (fallbackPreviewBox) fallbackPreviewBox.classList.remove('hidden');
-      if (previewStatus) {
-        previewStatus.innerText = 'Built-in Earth Horizon';
-        previewStatus.className = 'text-blue-400 font-bold';
-      }
-      if (metaTitle) metaTitle.innerText = 'Built-in Home.cell Earth Horizon';
-      if (metaTagline) metaTagline.innerText = '"Connecting fellowship cell network..."';
-      if (metaLoop) metaLoop.innerText = 'Yes (true)';
-      if (metaDurations) metaDurations.innerText = 'Min 2.2s • Max 5.5s';
-      if (metaUpdated) metaUpdated.innerText = 'System Default';
-      if (metaAuthor) metaAuthor.innerText = 'danielgiobari644@gmail.com';
-      return;
-    }
-
-    const data = snap.data();
-    window.currentAdminLoadingConfig = data;
-
-    if (data.enabled && data.videoUrl) {
-      if (statusBadge) {
-        statusBadge.innerText = 'ACTIVE (Custom Video)';
-        statusBadge.className = 'px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/40';
-      }
-      if (toggleBtn) {
-        toggleBtn.innerHTML = '<i data-lucide="power-off" class="w-4 h-4 inline"></i> Disable Custom Video';
-      }
-      if (activeVideoPreview) {
-        activeVideoPreview.src = data.videoUrl;
-        activeVideoPreview.classList.remove('hidden');
-      }
-      if (fallbackPreviewBox) fallbackPreviewBox.classList.add('hidden');
-      if (previewStatus) {
-        previewStatus.innerText = 'Custom Video Active';
-        previewStatus.className = 'text-emerald-400 font-bold';
-      }
-    } else {
-      if (statusBadge) {
-        statusBadge.innerText = data.enabled ? 'ACTIVE (Built-in Fallback)' : 'DISABLED (Built-in Default)';
-        statusBadge.className = 'px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-400 border border-amber-500/40';
-      }
-      if (toggleBtn) {
-        toggleBtn.innerHTML = '<i data-lucide="power" class="w-4 h-4 inline"></i> Activate Video';
-      }
-      if (activeVideoPreview) activeVideoPreview.classList.add('hidden');
-      if (fallbackPreviewBox) fallbackPreviewBox.classList.remove('hidden');
-      if (previewStatus) {
-        previewStatus.innerText = 'Built-in Fallback Active';
-        previewStatus.className = 'text-amber-400 font-bold';
-      }
-    }
-
-    if (metaTitle) metaTitle.innerText = data.title || 'Custom Loading Screen';
-    if (metaTagline) metaTagline.innerText = `"${data.tagline || 'Connecting fellowship cell network...'}"`;
-    if (metaLoop) metaLoop.innerText = data.loop !== false ? 'Yes (true)' : 'No (false)';
-    if (metaDurations) metaDurations.innerText = `Min ${(data.minDisplayDuration || 2200)/1000}s • Max ${(data.maxDisplayDuration || 5500)/1000}s`;
-    if (metaUpdated) metaUpdated.innerText = data.updatedAt ? new Date(data.updatedAt).toLocaleString() : 'Just now';
-    if (metaAuthor) metaAuthor.innerText = data.updatedBy || 'danielgiobari644@gmail.com';
-
-    if (window.lucide) window.lucide.createIcons();
-  });
-
-  // History list listener
-  const historyContainer = document.getElementById('admin-ls-history-rows');
-  if (!historyContainer) return;
-
-  if (adminLoadingHistoryListener) adminLoadingHistoryListener();
-
-  adminLoadingHistoryListener = window.db.collection('loading_screen_history').orderBy('updatedAt', 'desc').limit(20).onSnapshot(snap => {
-    historyContainer.innerHTML = '';
-    if (snap.empty) {
-      historyContainer.innerHTML = `
-        <div class="p-6 text-center text-slate-400 text-xs font-bold bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl">
-          No previous custom video configurations archived yet.
-        </div>
-      `;
-      return;
-    }
-
-    snap.forEach(doc => {
-      const h = doc.data();
-      const id = doc.id;
-      const card = document.createElement('div');
-      card.className = "p-4 bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4";
-
-      const isCurrentActive = window.currentAdminLoadingConfig?.videoUrl && window.currentAdminLoadingConfig?.videoUrl === h.videoUrl && window.currentAdminLoadingConfig?.enabled;
-
-      card.innerHTML = `
-        <div class="flex items-center gap-3">
-          <div class="w-12 h-12 rounded-xl bg-slate-900 overflow-hidden flex-shrink-0 flex items-center justify-center border border-slate-700">
-            ${h.videoUrl ? `<video src="${h.videoUrl}" class="w-full h-full object-cover" muted></video>` : '🌍'}
-          </div>
-          <div>
-            <div class="flex items-center gap-2">
-              <h5 class="text-xs font-black text-slate-900 dark:text-zinc-100">${h.title || 'Custom Video'}</h5>
-              ${isCurrentActive ? `<span class="px-2 py-0.5 rounded-md text-[9px] font-black bg-emerald-500 text-slate-950">LIVE NOW</span>` : ''}
-            </div>
-            <p class="text-[11px] text-slate-500 italic">"${h.tagline || ''}"</p>
-            <p class="text-[10px] text-slate-400 font-mono mt-0.5">By ${h.updatedBy || 'Super Admin'} • ${h.updatedAt ? new Date(h.updatedAt).toLocaleDateString() : 'Previous'}</p>
-          </div>
-        </div>
-
-        <div class="flex items-center gap-2 shrink-0">
-          <button onclick="activateLoadingScreenHistory('${id}')" class="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-xl transition-all shadow-xs cursor-pointer">
-            Reactivate
-          </button>
-          <button onclick="deleteLoadingScreenHistory('${id}')" class="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl transition-all cursor-pointer" title="Delete record">
-            <i data-lucide="trash-2" class="w-4 h-4"></i>
-          </button>
-        </div>
-      `;
-      historyContainer.appendChild(card);
-    });
-
-    if (window.lucide) window.lucide.createIcons();
-  });
-}
-
-function handleAdminVideoFileSelect(event) {
-  const file = event.target.files?.[0];
+function handleAdminCoverFileSelect(event) {
+  const file = event.target.files[0];
   if (!file) return;
 
-  if (!file.type.includes('video/')) {
-    window.showToast?.("⚠️ Please select a valid video file (.mp4, .webm)", "error");
-    return;
-  }
-
-  selectedVideoFile = file;
-  const fileInfo = document.getElementById('admin-ls-file-info');
-  if (fileInfo) {
-    fileInfo.innerText = `🎬 Selected: ${file.name} (${(file.size / (1024 * 1024)).toFixed(2)} MB)`;
-    fileInfo.classList.remove('hidden');
-  }
-
-  const titleInput = document.getElementById('admin-ls-title-input');
-  if (titleInput && !titleInput.value) {
-    titleInput.value = file.name.replace(/\.[^/.]+$/, "").replace(/_/g, " ");
-  }
-
   const reader = new FileReader();
-  reader.onload = function(e) {
-    selectedVideoBase64 = e.target.result;
+  reader.onload = (e) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let width = img.width;
+      let height = img.height;
+      const maxWidth = 1200;
+      if (width > maxWidth) {
+        height = Math.round((height * maxWidth) / width);
+        width = maxWidth;
+      }
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+      adminUploadedCoverBase64 = canvas.toDataURL('image/jpeg', 0.82);
+
+      const previewBox = document.getElementById('admin-prod-cover-preview-box');
+      const previewImg = document.getElementById('admin-prod-cover-preview');
+      if (previewImg) previewImg.src = adminUploadedCoverBase64;
+      if (previewBox) previewBox.classList.remove('hidden');
+      window.showToast?.("Cover image ready from device!", "success");
+    };
+    img.src = e.target.result;
   };
   reader.readAsDataURL(file);
 }
 
-function handleAdminVideoUrlInput(event) {
-  const url = event.target.value;
-  if (url && url.startsWith('http')) {
-    selectedVideoBase64 = null;
-    selectedVideoFile = null;
-    const fileInfo = document.getElementById('admin-ls-file-info');
-    if (fileInfo) fileInfo.classList.add('hidden');
-  }
+function clearAdminCoverFile() {
+  adminUploadedCoverBase64 = null;
+  const input = document.getElementById('admin-prod-cover-file');
+  if (input) input.value = '';
+  const previewBox = document.getElementById('admin-prod-cover-preview-box');
+  if (previewBox) previewBox.classList.add('hidden');
 }
 
-async function handleAdminLoadingScreenSubmit(event) {
-  event.preventDefault();
+function handleAdminResourceFileSelect(event) {
+  const file = event.target.files[0];
+  if (!file) return;
 
-  const title = document.getElementById('admin-ls-title-input').value.trim();
-  const tagline = document.getElementById('admin-ls-tagline-input').value.trim();
-  const urlInput = document.getElementById('admin-ls-url-input').value.trim();
-  const minDuration = parseInt(document.getElementById('admin-ls-min-duration').value) || 2200;
-  const maxDuration = parseInt(document.getElementById('admin-ls-max-duration').value) || 5500;
-  const loop = document.getElementById('admin-ls-loop-checkbox').checked;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    adminUploadedFileBase64 = e.target.result;
+    const statusBox = document.getElementById('admin-prod-file-status');
+    if (statusBox) {
+      statusBox.innerText = `✓ Selected: ${file.name} (${Math.round(file.size / 1024)} KB)`;
+      statusBox.classList.remove('hidden');
+    }
+    window.showToast?.(`Resource "${file.name}" loaded from device!`, "success");
+  };
+  reader.readAsDataURL(file);
+}
 
-  const submitBtn = document.getElementById('admin-ls-submit-btn');
-  const progressContainer = document.getElementById('admin-ls-upload-progress-container');
-  const progressBar = document.getElementById('admin-ls-upload-progress-bar');
-  const progressPct = document.getElementById('admin-ls-upload-pct-text');
-  const progressStatus = document.getElementById('admin-ls-upload-status-text');
+async function handleAdminStoreProductUploadSubmit(e) {
+  e.preventDefault();
 
-  let finalVideoUrl = urlInput;
+  const title = document.getElementById('admin-prod-title')?.value?.trim();
+  const category = document.getElementById('admin-prod-category')?.value || 'Wallpapers';
+  const price = parseInt(document.getElementById('admin-prod-price')?.value) || 50;
+  const collectionName = document.getElementById('admin-prod-collection')?.value?.trim() || 'Kingdom Collection';
+  const author = document.getElementById('admin-prod-author')?.value?.trim() || 'Super Admin';
+  const desc = document.getElementById('admin-prod-desc')?.value?.trim();
+  const featured = document.getElementById('admin-prod-featured')?.checked || false;
+
+  const urlCover = document.getElementById('admin-prod-img-url')?.value?.trim();
+  const urlFile = document.getElementById('admin-prod-file-url')?.value?.trim();
+
+  const coverUrl = adminUploadedCoverBase64 || urlCover || 'https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=800&q=80';
+  const fileUrl = adminUploadedFileBase64 || urlFile || coverUrl;
+
+  const btn = document.getElementById('btn-admin-upload-prod');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<span class="animate-spin inline-block mr-2">⏳</span> Publishing to Store...`;
+  }
 
   try {
-    if (submitBtn) submitBtn.disabled = true;
-
-    if (selectedVideoFile && selectedVideoBase64) {
-      if (progressContainer) progressContainer.classList.remove('hidden');
-      if (progressBar) progressBar.style.width = '30%';
-      if (progressPct) progressPct.innerText = '30%';
-      if (progressStatus) progressStatus.innerText = 'Uploading video file to server...';
-
-      const resp = await fetch('/api/upload-video', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          videoData: selectedVideoBase64,
-          fileName: selectedVideoFile.name
-        })
-      });
-
-      if (!resp.ok) {
-        const errData = await resp.json().catch(() => ({}));
-        throw new Error(errData.error || "Failed to upload video to server.");
-      }
-
-      const resData = await resp.json();
-      finalVideoUrl = resData.videoUrl;
-
-      if (progressBar) progressBar.style.width = '100%';
-      if (progressPct) progressPct.innerText = '100%';
-      if (progressStatus) progressStatus.innerText = 'Upload complete! Updating Firestore config...';
-    }
-
-    if (!finalVideoUrl) {
-      window.showToast?.("⚠️ Please choose a video file to upload or enter a video URL.", "error");
-      if (submitBtn) submitBtn.disabled = false;
-      return;
-    }
-
-    const payload = {
-      enabled: true,
-      videoUrl: finalVideoUrl,
-      title: title || 'Custom Loading Screen',
-      tagline: tagline || 'Connecting fellowship cell network...',
-      minDisplayDuration: minDuration,
-      maxDisplayDuration: maxDuration,
-      loop: loop,
-      updatedAt: new Date().toISOString(),
-      updatedBy: window.auth?.currentUser?.email || 'danielgiobari644@gmail.com'
+    const prodId = `prod_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const productPayload = {
+      id: prodId,
+      title: title,
+      category: category,
+      collectionName: collectionName,
+      priceKC: price,
+      price: price,
+      description: desc,
+      author: author,
+      coverUrl: coverUrl,
+      imageUrl: coverUrl,
+      fileUrl: fileUrl,
+      downloadUrl: fileUrl,
+      featured: featured,
+      published: true,
+      downloadable: true,
+      downloadsCount: 0,
+      tags: [category, "Kingdom", "Spiritual"],
+      uploadedBy: window.auth?.currentUser?.email || 'danielgiobari644@gmail.com',
+      createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
     };
 
-    await window.db.collection('appSettings').doc('loadingScreen').set(payload);
-    await window.db.collection('loading_screen_history').add(payload);
+    await window.db.collection('products').doc(prodId).set(productPayload);
+    await window.db.collection('storeProducts').doc(prodId).set(productPayload).catch(() => {});
 
-    window.showToast?.("🎬 Custom Loading Screen Activated Successfully!", "success");
+    window.soundEngine?.playSuccess?.();
+    window.showToast?.("🛍️ Product uploaded directly to Kingdom Store!", "success");
 
-    document.getElementById('admin-ls-upload-form').reset();
-    selectedVideoBase64 = null;
-    selectedVideoFile = null;
-    const fileInfo = document.getElementById('admin-ls-file-info');
-    if (fileInfo) fileInfo.classList.add('hidden');
-    if (progressContainer) progressContainer.classList.add('hidden');
+    // Reset Form
+    document.getElementById('admin-product-upload-form')?.reset();
+    clearAdminCoverFile();
+    adminUploadedFileBase64 = null;
+    const statusBox = document.getElementById('admin-prod-file-status');
+    if (statusBox) statusBox.classList.add('hidden');
+
+    syncAdminStoreProductsCatalog();
+    if (window.syncStoreProducts) window.syncStoreProducts();
 
   } catch (err) {
-    console.error("Error saving loading screen config:", err);
-    window.showToast?.(`❌ Failed to save video config: ${err.message}`, "error");
+    window.showToast?.("Error: " + err.message, "error");
   } finally {
-    if (submitBtn) submitBtn.disabled = false;
+    if (btn) {
+      btn.disabled = false;
+      btn.innerText = "Upload & Publish to Kingdom Store 🛍️";
+    }
   }
 }
 
-async function toggleLoadingScreenActive() {
-  try {
-    const docRef = window.db.collection('appSettings').doc('loadingScreen');
-    const snap = await docRef.get();
-    if (!snap.exists) {
-      window.showToast?.("ℹ️ Currently using system built-in animation.", "info");
+function syncAdminStoreProductsCatalog() {
+  const tbody = document.getElementById('admin-store-catalog-body');
+  if (!tbody) return;
+
+  const db = window.db;
+  if (!db) return;
+
+  if (adminProductsListener) adminProductsListener();
+
+  adminProductsListener = db.collection('products').orderBy('createdAt', 'desc').onSnapshot(snap => {
+    tbody.innerHTML = '';
+    if (snap.empty) {
+      tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-xs text-slate-400">No products uploaded yet. Use the form above to add resources!</td></tr>`;
       return;
     }
 
-    const data = snap.data();
-    const newStatus = !data.enabled;
-    await docRef.update({
-      enabled: newStatus,
-      updatedAt: new Date().toISOString(),
-      updatedBy: window.auth?.currentUser?.email || 'danielgiobari644@gmail.com'
+    snap.forEach(doc => {
+      const p = doc.data();
+      const tr = document.createElement('tr');
+      tr.className = "border-b border-slate-100 dark:border-zinc-800 text-xs hover:bg-slate-50/50 dark:hover:bg-zinc-800/40";
+      
+      const itemPrice = p.priceKC !== undefined ? p.priceKC : (p.price !== undefined ? p.price : 50);
+      const cover = p.coverUrl || p.imageUrl || 'https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=800&q=80';
+
+      tr.innerHTML = `
+        <td class="py-3 px-4">
+          <div class="flex items-center gap-3">
+            <img src="${cover}" class="w-10 h-10 rounded-xl object-cover border border-slate-200 dark:border-zinc-700 shrink-0" />
+            <div>
+              <span class="font-bold text-slate-900 dark:text-zinc-100 block">${p.title}</span>
+              <span class="text-[10px] text-slate-400 line-clamp-1">${p.description || ''}</span>
+            </div>
+          </div>
+        </td>
+        <td class="py-3 px-4">
+          <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300">
+            ${p.category || 'Resource'}
+          </span>
+        </td>
+        <td class="py-3 px-4 font-mono font-black text-amber-500">
+          🪙 ${itemPrice} KC
+        </td>
+        <td class="py-3 px-4 text-slate-500 dark:text-zinc-400">
+          ${p.collectionName || 'General'}
+        </td>
+        <td class="py-3 px-4 text-right">
+          <button onclick="deleteAdminStoreProduct('${doc.id}', '${encodeURIComponent(p.title || '')}')" class="px-3 py-1.5 bg-red-100 dark:bg-red-950/60 text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white font-bold rounded-xl text-xs cursor-pointer transition-all">
+            Delete
+          </button>
+        </td>
+      `;
+      tbody.appendChild(tr);
     });
+  }, err => console.warn("Catalog sync error:", err));
+}
 
-    window.showToast?.(newStatus ? "✅ Loading Video Enabled!" : "⏸️ Loading Video Disabled - Default Fallback Active", "success");
-  } catch (e) {
-    window.handleFirestoreError(e, 'update', 'appSettings/loadingScreen');
+async function deleteAdminStoreProduct(prodId, encodedTitle) {
+  const title = decodeURIComponent(encodedTitle || 'Resource');
+  if (!confirm(`Delete product "${title}" from the Kingdom Store catalog?`)) return;
+
+  try {
+    await window.db.collection('products').doc(prodId).delete();
+    await window.db.collection('storeProducts').doc(prodId).delete().catch(() => {});
+    window.showToast?.(`"${title}" removed from Kingdom Store.`, "info");
+    syncAdminStoreProductsCatalog();
+  } catch (err) {
+    window.showToast?.("Error: " + err.message, "error");
   }
 }
 
-async function restoreDefaultLoadingScreen() {
-  if (!confirm("Are you sure you want to restore the default Home.cell Earth Horizon loading animation?")) return;
+// KPI Stats Counter
+function syncAdminKPIStats() {
+  const db = window.db;
+  if (!db) return;
+
+  db.collection('users').get().then(s => {
+    const el = document.getElementById('kpi-total-members');
+    if (el) el.innerText = s.size.toString();
+  }).catch(() => {});
+
+  db.collection('cells').get().then(s => {
+    const el = document.getElementById('kpi-total-cells');
+    if (el) el.innerText = s.size.toString();
+  }).catch(() => {});
+
+  db.collection('custom_quizzes').get().then(s => {
+    const el = document.getElementById('kpi-total-quizzes');
+    if (el) el.innerText = s.size.toString();
+  }).catch(() => {});
+
+  db.collection('products').get().then(s => {
+    const el = document.getElementById('kpi-total-products');
+    if (el) el.innerText = s.size.toString();
+  }).catch(() => {});
+}
+
+async function updateUserRoleDirect(userId, newRole) {
   try {
-    await window.db.collection('appSettings').doc('loadingScreen').set({
-      enabled: false,
-      videoUrl: "",
-      title: "Built-in Home.cell Earth Horizon",
-      tagline: "Connecting fellowship cell network...",
-      minDisplayDuration: 2200,
-      maxDisplayDuration: 5500,
-      loop: true,
-      updatedAt: new Date().toISOString(),
-      updatedBy: window.auth?.currentUser?.email || 'danielgiobari644@gmail.com'
+    await window.db.collection('users').doc(userId).update({
+      role: newRole
     });
-    window.showToast?.("✨ Restored Built-in Loading Screen Animation!", "success");
-  } catch (e) {
-    window.handleFirestoreError(e, 'write', 'appSettings/loadingScreen');
+    window.showToast?.(`User role updated to ${newRole}`, "success");
+  } catch (err) {
+    window.showToast?.("Error updating role: " + err.message, "error");
   }
 }
 
-async function activateLoadingScreenHistory(id) {
+async function grantAdminCoins(userId, amount) {
   try {
-    const snap = await window.db.collection('loading_screen_history').doc(id).get();
-    if (!snap.exists) return;
-    const data = snap.data();
-    const payload = {
-      ...data,
-      enabled: true,
-      updatedAt: new Date().toISOString(),
-      updatedBy: window.auth?.currentUser?.email || 'danielgiobari644@gmail.com'
-    };
-    await window.db.collection('appSettings').doc('loadingScreen').set(payload);
-    window.showToast?.(`🎬 Reactivated "${data.title || 'Video'}"!`, "success");
-  } catch (e) {
-    window.handleFirestoreError(e, 'write', 'appSettings/loadingScreen');
+    const userRef = window.db.collection('users').doc(userId);
+    const doc = await userRef.get();
+    if (doc.exists) {
+      const cur = doc.data().kingdomCoins || 0;
+      await userRef.update({
+        kingdomCoins: cur + amount,
+        totalKcEarned: (doc.data().totalKcEarned || cur) + amount
+      });
+      window.soundEngine?.playCoins?.();
+      window.showToast?.(`Granted +${amount} KC to believer!`, "success");
+    }
+  } catch (err) {
+    window.showToast?.("Error granting coins: " + err.message, "error");
   }
 }
 
-async function deleteLoadingScreenHistory(id) {
-  if (!confirm("Delete this archived video record?")) return;
-  try {
-    await window.db.collection('loading_screen_history').doc(id).delete();
-    window.showToast?.("🗑️ Archive record removed.", "info");
-  } catch (e) {
-    window.handleFirestoreError(e, 'delete', `loading_screen_history/${id}`);
-  }
-}
-
-// Expose globally
 window.initAdminModule = initAdminModule;
-window.syncAdminLoadingScreen = syncAdminLoadingScreen;
-window.handleAdminVideoFileSelect = handleAdminVideoFileSelect;
-window.handleAdminVideoUrlInput = handleAdminVideoUrlInput;
-window.handleAdminLoadingScreenSubmit = handleAdminLoadingScreenSubmit;
-window.toggleLoadingScreenActive = toggleLoadingScreenActive;
-window.restoreDefaultLoadingScreen = restoreDefaultLoadingScreen;
-window.activateLoadingScreenHistory = activateLoadingScreenHistory;
-window.deleteLoadingScreenHistory = deleteLoadingScreenHistory;
-window.toggleAdminQuestionFormat = toggleAdminQuestionFormat;
-window.addQuestionToActiveQuiz = addQuestionToActiveQuiz;
-window.reorderBuilderQuestion = reorderBuilderQuestion;
-window.editBuilderQuestion = editBuilderQuestion;
-window.deleteBuilderQuestion = deleteBuilderQuestion;
-window.clearActiveQuizBuilder = clearActiveQuizBuilder;
-window.publishQuizToCloud = publishQuizToCloud;
-window.syncAdminQuizzes = syncAdminQuizzes;
-window.editQuizFromCatalog = editQuizFromCatalog;
-window.deleteQuizFromCatalog = deleteQuizFromCatalog;
-window.updateUserRole = updateUserRole;
-window.updateUserCellAssignment = updateUserCellAssignment;
-window.evictUser = evictUser;
-window.toggleCellSuspension = toggleCellSuspension;
-window.deleteCellGroup = deleteCellGroup;
-window.deleteParishEvent = deleteParishEvent;
-window.deleteTriviaQuestion = deleteTriviaQuestion;
-window.deleteDownloadBundle = deleteDownloadBundle;
-window.checkTriviaAnswer = checkTriviaAnswer;
-window.updateSupportDesk = updateSupportDesk;
-window.setAdminSubTab = setAdminSubTab;
-window.openChangeCellLeaderModal = openChangeCellLeaderModal;
-window.closeChangeLeaderModal = closeChangeLeaderModal;
-window.applyNudgePreset = applyNudgePreset;
-window.sendAdminNudge = sendAdminNudge;
-window.renameCellGroup = renameCellGroup;
-window.handleAdminPasswordChangeSubmit = handleAdminPasswordChangeSubmit;
-window.sendAdminPasswordResetEmail = sendAdminPasswordResetEmail;
-window.sendUserPasswordResetEmail = sendUserPasswordResetEmail;
+window.switchAdminSubTab = switchAdminSubTab;
+window.updateUserRoleDirect = updateUserRoleDirect;
+window.grantAdminCoins = grantAdminCoins;
+window.openAddQuestionModal = openAddQuestionModal;
+window.removeDraftQuestion = removeDraftQuestion;
+window.handleCreateQuizSubmit = handleCreateQuizSubmit;
+window.toggleQuizLiveStatus = toggleQuizLiveStatus;
+window.deleteQuizDirect = deleteQuizDirect;
+window.handleAdminCoverFileSelect = handleAdminCoverFileSelect;
+window.clearAdminCoverFile = clearAdminCoverFile;
+window.handleAdminResourceFileSelect = handleAdminResourceFileSelect;
+window.handleAdminStoreProductUploadSubmit = handleAdminStoreProductUploadSubmit;
+window.syncAdminStoreProductsCatalog = syncAdminStoreProductsCatalog;
+window.deleteAdminStoreProduct = deleteAdminStoreProduct;
+

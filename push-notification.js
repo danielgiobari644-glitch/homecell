@@ -1,5 +1,5 @@
 // push-notification.js
-// Modern Client-side Push Notification Engine for real background/offline notifications
+// Client-side Push Notification Engine for Home.cell
 
 const VAPID_KEY_URL = '/api/vapid-public-key';
 const SUBSCRIBE_URL = '/api/subscribe';
@@ -29,18 +29,15 @@ window.getNotificationPermissionState = function() {
   return Notification.permission;
 };
 
-// Requests permission and registers push subscription
 window.requestNotificationPermission = async function() {
   if (!window.isNotificationSupported()) {
-    console.warn("Push notifications are not supported in this browser.");
-    window.showToast?.("Push notifications are not supported in this browser environment.", "warning");
+    window.showToast?.("Push notifications are not supported in this browser.", "warning");
     return 'unsupported';
   }
 
   try {
     const permission = await Notification.requestPermission();
     if (permission !== 'granted') {
-      console.log("Notification permission denied or dismissed:", permission);
       window.showToast?.("Notification permission was not granted.", "warning");
       updatePushUIState();
       return permission;
@@ -48,7 +45,6 @@ window.requestNotificationPermission = async function() {
 
     window.showToast?.("Setting up notifications...", "info");
 
-    // Register service worker safely with fallback
     let registration = null;
     try {
       registration = await navigator.serviceWorker.register('sw.js');
@@ -60,11 +56,9 @@ window.requestNotificationPermission = async function() {
       registration = await navigator.serviceWorker.getRegistration().catch(() => null);
     }
 
-    // Attempt PushManager WebPush subscription if available
     let subscription = null;
     if (registration && registration.pushManager) {
       try {
-        // Get VAPID Public Key from the server
         const keyRes = await fetch(VAPID_KEY_URL);
         if (keyRes.ok) {
           const { publicKey } = await keyRes.json();
@@ -80,11 +74,10 @@ window.requestNotificationPermission = async function() {
           }
         }
       } catch (pushErr) {
-        console.warn("PushManager subscription warning (falling back to in-app notification mode):", pushErr);
+        console.warn("PushManager subscription warning:", pushErr);
       }
     }
 
-    // Safely extract subscription keys and endpoint to prevent circular structure issues
     let subRaw = null;
     if (subscription) {
       try {
@@ -98,35 +91,16 @@ window.requestNotificationPermission = async function() {
             }
           };
         }
-      } catch (e) {
-        console.warn("Failed to call subscription.toJSON(), falling back to manual extraction:", e);
-      }
+      } catch (e) {}
 
       if (!subRaw) {
-        let p256dh = null;
-        let auth = null;
-        try {
-          if (typeof subscription.getKey === 'function') {
-            const p256dhBuffer = subscription.getKey('p256dh');
-            if (p256dhBuffer) {
-              p256dh = btoa(String.fromCharCode.apply(null, new Uint8Array(p256dhBuffer)));
-            }
-            const authBuffer = subscription.getKey('auth');
-            if (authBuffer) {
-              auth = btoa(String.fromCharCode.apply(null, new Uint8Array(authBuffer)));
-            }
-          }
-        } catch (keyErr) {
-          console.warn("Could not retrieve subscription keys:", keyErr);
-        }
         subRaw = {
           endpoint: subscription.endpoint,
-          keys: { p256dh, auth }
+          keys: { p256dh: null, auth: null }
         };
       }
     }
 
-    // Send subscription to server with user details if available
     const currentUser = window.auth?.currentUser;
     if (subRaw && subRaw.endpoint) {
       try {
@@ -146,14 +120,11 @@ window.requestNotificationPermission = async function() {
     }
 
     localStorage.setItem('homecell_push_notifications_enabled', 'true');
-    console.log("Successfully configured notifications for user session.");
     window.showToast?.("🔔 Notifications enabled successfully!", "success");
     updatePushUIState();
 
     return permission;
   } catch (error) {
-    console.error("Error setting up push notifications:", error);
-    // If permission was granted by the browser, don't fail completely
     if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
       localStorage.setItem('homecell_push_notifications_enabled', 'true');
       window.showToast?.("🔔 Notifications enabled for this device!", "success");
@@ -165,7 +136,6 @@ window.requestNotificationPermission = async function() {
   }
 };
 
-// Update active subscription with logged in user profile and role
 window.updateSubscriptionOnServer = async function() {
   if (!window.isNotificationSupported()) return;
   try {
@@ -175,7 +145,6 @@ window.updateSubscriptionOnServer = async function() {
     const subscription = await registration.pushManager.getSubscription();
     if (!subscription) return;
     
-    // Extract subscription raw
     let subRaw = null;
     if (typeof subscription.toJSON === 'function') {
       const parsed = subscription.toJSON();
@@ -208,18 +177,16 @@ window.updateSubscriptionOnServer = async function() {
         role: window.currentUserRole || 'Member'
       })
     });
-    console.log("Updated background notification subscription for user:", currentUser.email, "as", window.currentUserRole);
   } catch (error) {
     console.warn("Failed updating user notification session metadata:", error);
   }
 };
 
-// Broadcasts push notification payload to the backend with selective targeting
 window.sendPushNotification = async function(title, body, targetUrl = '/', targetRole = null, targetUid = null, excludeUid = null) {
   if (!title || !body) return;
 
   try {
-    const res = await fetch(BROADCAST_URL, {
+    await fetch(BROADCAST_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
@@ -231,18 +198,11 @@ window.sendPushNotification = async function(title, body, targetUrl = '/', targe
         excludeUid
       })
     });
-    
-    if (res.ok) {
-      console.log(`Push broadcast successful for: "${title}" (Target role: ${targetRole || 'all'})`);
-    } else {
-      console.warn("Backend failed to broadcast push.");
-    }
   } catch (error) {
     console.warn("Failed sending push notification request to server:", error);
   }
 };
 
-// Update status visualizer
 function updatePushUIState() {
   const btn = document.getElementById('btn-enable-push');
   const statusIndicator = document.getElementById('push-status-text');
@@ -284,23 +244,20 @@ function updatePushUIState() {
     statusIndicator.className = "text-xs font-semibold text-slate-400";
   } else {
     btn.classList.remove('hidden');
-    btn.innerText = "Enable Real Push Notifications";
+    btn.innerText = "Enable Notifications";
     btn.disabled = false;
-    statusIndicator.innerText = "⚪ Receive updates even offline/off the app";
+    statusIndicator.innerText = "⚪ Receive updates even offline";
     statusIndicator.className = "text-xs text-slate-500 dark:text-zinc-400";
   }
 }
 
-// Automatically update push UI on DOM load and register SW if granted
 document.addEventListener("DOMContentLoaded", () => {
   setTimeout(() => {
     updatePushUIState();
     if (window.isNotificationSupported() && Notification.permission === 'granted') {
       navigator.serviceWorker.register('sw.js').then(() => {
         window.updateSubscriptionOnServer?.();
-      }).catch(err => {
-        console.warn("Auto-SW registration skipped/failed:", err);
-      });
+      }).catch(err => {});
     }
   }, 1500);
 });

@@ -1,6 +1,6 @@
 {
   "name": "Home.cell",
-  "description": "A modern community social network for sharing, connecting, and growing together.",
-  "requestFramePermissions": ["camera", "microphone", "geolocation"],
+  "description": "A modern digital home fellowship, daily scripture study, devotional, and community platform.",
+  "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

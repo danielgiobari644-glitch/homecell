@@ -8,256 +8,57 @@
         "uid": { "type": "string" },
         "displayName": { "type": "string" },
         "email": { "type": "string" },
+        "photoURL": { "type": "string" },
         "bio": { "type": "string" },
         "coordinates": { "type": "string" },
         "role": { "type": "string", "enum": ["Member", "Cell Leader", "Cell Coordinator", "Pastor", "Super Admin"] },
         "cellId": { "type": "string" },
+        "kingdomCoins": { "type": "number" },
+        "totalKcEarned": { "type": "number" },
+        "streak": { "type": "number" },
+        "longestStreak": { "type": "number" },
+        "totalDevotions": { "type": "number" },
+        "chaptersReadCount": { "type": "number" },
+        "quizWinsCount": { "type": "number" },
+        "storePurchases": { "type": "number" },
+        "equippedTheme": { "type": "string" },
+        "onboarded": { "type": "boolean" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["uid", "displayName", "email", "bio", "coordinates", "role", "cellId", "createdAt"]
+      "required": ["uid", "displayName", "email", "role", "cellId"]
     },
-    "Cell": {
-      "title": "Cell",
-      "description": "Fellowship cell group details.",
+    "MissionCompletion": {
+      "title": "MissionCompletion",
+      "description": "Unique historical completion and reward record for a user mission.",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
-        "name": { "type": "string" },
-        "city": { "type": "string" },
-        "description": { "type": "string" },
-        "leaderUid": { "type": "string" },
-        "leaderName": { "type": "string" },
-        "leaderEmail": { "type": "string" },
-        "coLeaders": { "type": "array" },
-        "status": { "type": "string", "enum": ["active", "suspended"] },
-        "createdAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["id", "name", "city", "description", "leaderUid", "leaderName", "leaderEmail", "coLeaders", "status", "createdAt"]
-    },
-    "CellMessage": {
-      "title": "CellMessage",
-      "description": "Message in the cellular group chat.",
-      "type": "object",
-      "properties": {
-        "senderUid": { "type": "string" },
-        "senderName": { "type": "string" },
-        "text": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["senderUid", "senderName", "text", "createdAt"]
-    },
-    "CellEvent": {
-      "title": "CellEvent",
-      "description": "Scheduled cell fellowship event.",
-      "type": "object",
-      "properties": {
-        "title": { "type": "string" },
-        "date": { "type": "string" },
-        "description": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["title", "date", "description", "createdAt"]
-    },
-    "PrayerPetition": {
-      "title": "PrayerPetition",
-      "description": "Prayer request submitted by members.",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "category": { "type": "string" },
-        "text": { "type": "string" },
-        "urgency": { "type": "boolean" },
-        "authorUid": { "type": "string" },
-        "authorName": { "type": "string" },
-        "agreementsCount": { "type": "number" },
-        "agreements": { "type": "object" },
-        "createdAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["id", "category", "text", "urgency", "authorUid", "authorName", "agreementsCount", "agreements", "createdAt"]
-    },
-    "ParishEvent": {
-      "title": "ParishEvent",
-      "description": "Universal parish event with RSVPs.",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "title": { "type": "string" },
-        "date": { "type": "string" },
-        "description": { "type": "string" },
-        "rsvps": { "type": "object" },
-        "createdAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["id", "title", "date", "description", "rsvps", "createdAt"]
-    },
-    "TriviaQuestion": {
-      "title": "TriviaQuestion",
-      "description": "Trivia Q&A created by Super Admin.",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "question": { "type": "string" },
-        "options": { "type": "array" },
-        "answerIdx": { "type": "number" },
-        "createdAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["id", "question", "options", "answerIdx", "createdAt"]
-    },
-    "DownloadBundle": {
-      "title": "DownloadBundle",
-      "description": "Direct installer trigger asset.",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "title": { "type": "string" },
-        "size": { "type": "string" },
-        "url": { "type": "string" },
-        "tag": { "type": "string" },
-        "category": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["id", "title", "size", "url", "tag", "category", "createdAt"]
-    },
-    "SystemConfig": {
-      "title": "SystemConfig",
-      "description": "Global layout settings and stream broadcast setup.",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "phone": { "type": "string" },
-        "whatsapp": { "type": "string" },
-        "email": { "type": "string" },
-        "streamUrl": { "type": "string" },
-        "streamTitle": { "type": "string" },
-        "streamDesc": { "type": "string" },
-        "streamActive": { "type": "boolean" }
-      },
-      "required": ["id"]
-    },
-    "UserReview": {
-      "title": "UserReview",
-      "description": "Star ratings and feedback written by users.",
-      "type": "object",
-      "properties": {
-        "uid": { "type": "string" },
-        "displayName": { "type": "string" },
-        "rating": { "type": "number" },
-        "comment": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["uid", "displayName", "rating", "comment", "createdAt"]
-    },
-    "FeaturedTestimony": {
-      "title": "FeaturedTestimony",
-      "description": "Elegant testimony displayed in featured carousel.",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "authorName": { "type": "string" },
-        "text": { "type": "string" },
-        "order": { "type": "number" },
-        "pinned": { "type": "boolean" },
-        "createdAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["id", "authorName", "text", "order", "pinned", "createdAt"]
-    },
-    "LiveStream": {
-      "title": "LiveStream",
-      "description": "Broadcasting rtmp or hls live stream.",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "title": { "type": "string" },
-        "description": { "type": "string" },
-        "thumbnail": { "type": "string" },
-        "type": { "type": "string" },
-        "streamUrl": { "type": "string" },
-        "status": { "type": "string" },
-        "scheduledAt": { "type": "string" },
-        "appearance": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["id", "title", "description", "type", "streamUrl", "status", "appearance", "createdAt"]
-    },
-    "SupportMessage": {
-      "title": "SupportMessage",
-      "description": "Direct message between user and super admin for spiritual or app support.",
-      "type": "object",
-      "properties": {
         "userUid": { "type": "string" },
-        "userEmail": { "type": "string" },
-        "userName": { "type": "string" },
-        "senderUid": { "type": "string" },
-        "senderName": { "type": "string" },
-        "text": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["userUid", "userEmail", "userName", "senderUid", "senderName", "text", "createdAt"]
-    },
-    "UpcomingEvent": {
-      "title": "UpcomingEvent",
-      "description": "Upcoming parish or community event created by Super Admin with picture.",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "title": { "type": "string" },
+        "missionId": { "type": "string" },
         "date": { "type": "string" },
-        "location": { "type": "string" },
-        "description": { "type": "string" },
-        "imageUrl": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["id", "title", "date", "description", "createdAt"]
-    },
-    "DailyDevotional": {
-      "title": "DailyDevotional",
-      "description": "Daily devotional guide created by Super Admin with picture.",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "title": { "type": "string" },
-        "scripture": { "type": "string" },
-        "content": { "type": "string" },
-        "date": { "type": "string" },
-        "imageUrl": { "type": "string" },
-        "authorName": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["id", "title", "content", "date", "createdAt"]
-    },
-    "Referral": {
-      "title": "Referral",
-      "description": "Referral connection between referrer and referee.",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "referrerUid": { "type": "string" },
-        "referredUid": { "type": "string" },
-        "referredName": { "type": "string" },
-        "referralCode": { "type": "string" },
-        "status": { "type": "string" },
         "rewardKC": { "type": "number" },
-        "createdAt": { "type": "string", "format": "date-time" }
+        "completedAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["id", "referrerUid", "referredUid", "referralCode", "createdAt"]
+      "required": ["id", "userUid", "missionId", "rewardKC"]
     },
-    "UserReward": {
-      "title": "UserReward",
-      "description": "Digital reward unlocked or claimed by user.",
+    "KcTransaction": {
+      "title": "KcTransaction",
+      "description": "Audit record of Kingdom Coins earned or spent.",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
         "userUid": { "type": "string" },
-        "itemId": { "type": "string" },
+        "type": { "type": "string", "enum": ["credit", "debit"] },
+        "amount": { "type": "number" },
         "title": { "type": "string" },
-        "category": { "type": "string" },
-        "kcCost": { "type": "number" },
-        "claimedAt": { "type": "string", "format": "date-time" }
+        "description": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["id", "userUid", "itemId", "title", "category", "kcCost", "claimedAt"]
+      "required": ["id", "userUid", "type", "amount", "title"]
     },
     "Product": {
       "title": "Product",
-      "description": "Kingdom Store digital products created by Super Admin.",
+      "description": "Kingdom Store digital products.",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
@@ -275,226 +76,86 @@
         "downloadable": { "type": "boolean" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["id", "title", "category", "priceKC", "published", "createdAt"]
+      "required": ["id", "title", "category", "priceKC", "published"]
     },
-    "CustomRequest": {
-      "title": "CustomRequest",
-      "description": "Custom creation request submitted by user.",
+    "UserReward": {
+      "title": "UserReward",
+      "description": "Digital product or theme owned by the user.",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
         "userUid": { "type": "string" },
-        "userName": { "type": "string" },
-        "userEmail": { "type": "string" },
-        "type": { "type": "string" },
-        "description": { "type": "string" },
-        "desiredResult": { "type": "string" },
-        "sourceImageUrl": { "type": "string" },
-        "costKC": { "type": "number" },
-        "status": { "type": "string" },
-        "resultUrl": { "type": "string" },
-        "adminNotes": { "type": "string" },
-        "rating": { "type": "number" },
-        "review": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["id", "userUid", "userName", "type", "description", "costKC", "status", "createdAt"]
-    },
-    "FeedbackItem": {
-      "title": "FeedbackItem",
-      "description": "User suggestions and feedback items in the Feedback Hub.",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "userUid": { "type": "string" },
-        "userName": { "type": "string" },
-        "type": { "type": "string" },
+        "itemId": { "type": "string" },
         "title": { "type": "string" },
-        "description": { "type": "string" },
-        "upvotesCount": { "type": "number" },
-        "upvotes": { "type": "object" },
-        "status": { "type": "string" },
-        "adminNotes": { "type": "string" },
-        "rewardAwarded": { "type": "boolean" },
-        "createdAt": { "type": "string", "format": "date-time" }
+        "category": { "type": "string" },
+        "kcCost": { "type": "number" },
+        "fileUrl": { "type": "string" },
+        "claimedAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["id", "userUid", "type", "title", "description", "upvotesCount", "status", "createdAt"]
+      "required": ["id", "userUid", "itemId", "title"]
     },
-    "KcTransaction": {
-      "title": "KcTransaction",
-      "description": "Transparent transaction record of earned or spent Kingdom Coins.",
+    "CommunityPost": {
+      "title": "CommunityPost",
+      "description": "Feed post, testimony, or announcement.",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
-        "userUid": { "type": "string" },
+        "text": { "type": "string" },
         "type": { "type": "string" },
-        "amount": { "type": "number" },
-        "title": { "type": "string" },
-        "description": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["id", "userUid", "type", "amount", "title", "createdAt"]
-    },
-    "LoadingScreenSetting": {
-      "title": "LoadingScreenSetting",
-      "description": "Active custom loading screen video and animation configuration.",
-      "type": "object",
-      "properties": {
-        "enabled": { "type": "boolean" },
+        "authorUid": { "type": "string" },
+        "authorName": { "type": "string" },
+        "authorRole": { "type": "string" },
+        "authorPhotoURL": { "type": "string" },
+        "imageUrl": { "type": "string" },
         "videoUrl": { "type": "string" },
-        "videoType": { "type": "string" },
-        "title": { "type": "string" },
-        "description": { "type": "string" },
-        "tagline": { "type": "string" },
-        "loop": { "type": "boolean" },
-        "minDisplayDuration": { "type": "number" },
-        "maxDisplayDuration": { "type": "number" },
-        "updatedAt": { "type": "string" },
-        "updatedBy": { "type": "string" }
+        "likesCount": { "type": "number" },
+        "likes": { "type": "object" },
+        "comments": { "type": "array" },
+        "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["enabled", "minDisplayDuration", "maxDisplayDuration", "updatedAt", "updatedBy"]
+      "required": ["id", "text", "authorUid", "authorName"]
     }
   },
   "firestore": {
-    "appSettings/{settingId}": {
-      "schema": "LoadingScreenSetting",
-      "description": "Application settings including active loading screen configuration."
-    },
-    "loading_screen_history/{historyId}": {
-      "schema": "LoadingScreenSetting",
-      "description": "History log of custom loading screen configurations."
-    },
     "users/{userId}": {
       "schema": "User",
       "description": "User profile store."
     },
-    "cells/{cellId}": {
-      "schema": "Cell",
-      "description": "Fellowship cell records."
-    },
-    "cells/{cellId}/messages/{messageId}": {
-      "schema": "CellMessage",
-      "description": "Cell chat lounge channel."
-    },
-    "cells/{cellId}/events/{eventId}": {
-      "schema": "CellEvent",
-      "description": "Cell localized calendar gatherings."
-    },
-    "prayer_petitions/{petitionId}": {
-      "schema": "PrayerPetition",
-      "description": "Intercession petitions feed."
-    },
-    "parish_events/{eventId}": {
-      "schema": "ParishEvent",
-      "description": "Universal monthly Parish calendar gatherings."
-    },
-    "trivia_questions/{questionId}": {
-      "schema": "TriviaQuestion",
-      "description": "Bible Trivia & Q&A registry."
-    },
-    "download_bundles/{bundleId}": {
-      "schema": "DownloadBundle",
-      "description": "App deliveries/bundles."
-    },
-    "system_configs/{configId}": {
-      "schema": "SystemConfig",
-      "description": "Primary live support channels and livestream broadcast flag."
-    },
-    "user_reviews/{reviewId}": {
-      "schema": "UserReview",
-      "description": "Real-time user feedback."
-    },
-    "featured_testimonies/{testimonyId}": {
-      "schema": "FeaturedTestimony",
-      "description": "Pinned testimonies for slides."
-    },
-    "live_streams/{streamId}": {
-      "schema": "LiveStream",
-      "description": "Scheduling and managing streams."
-    },
-    "support_chats/{msgId}": {
-      "schema": "SupportMessage",
-      "description": "Direct chat between a user and the Super Admin."
-    },
-    "upcoming_events/{eventId}": {
-      "schema": "UpcomingEvent",
-      "description": "Upcoming events set by Super Admin with photos."
-    },
-    "daily_devotionals/{devotionalId}": {
-      "schema": "DailyDevotional",
-      "description": "Daily devotionals created by Super Admin with photos."
-    },
-    "referrals/{referralId}": {
-      "schema": "Referral",
-      "description": "Referral invitations and tracked connections."
-    },
-    "user_rewards/{rewardId}": {
-      "schema": "UserReward",
-      "description": "Unlocked digital store items and claimed rewards per user."
-    },
-    "products/{productId}": {
-      "schema": "Product",
-      "description": "Digital items for sale in the Kingdom Store."
-    },
-    "storeProducts/{productId}": {
-      "schema": "Product",
-      "description": "Digital items alias for sale in the Kingdom Store."
-    },
-    "stream_replays/{replayId}": {
-      "schema": "LiveStream",
-      "description": "Recorded live stream broadcast replays."
-    },
-    "stream_chats/{chatId}": {
-      "schema": "SupportMessage",
-      "description": "Realtime broadcast chat messages."
-    },
-    "stream_viewers/{viewerId}": {
-      "schema": "User",
-      "description": "Live broadcast concurrent audience presence."
-    },
-    "presence/{userId}": {
-      "schema": "User",
-      "description": "Realtime user online presence states."
-    },
-    "referral_clicks/{clickId}": {
-      "schema": "Referral",
-      "description": "Referral link click logs."
-    },
-    "appSettings/{settingId}": {
-      "schema": "SystemConfig",
-      "description": "App settings including loading screen."
-    },
-    "loading_screen_history/{historyId}": {
-      "schema": "SystemConfig",
-      "description": "Historical loading screen video and audio configurations."
-    },
-    "quizzes/{quizId}": {
-      "schema": "TriviaQuestion",
-      "description": "Interactive Bible quizzes and challenges."
-    },
-    "quiz_scores/{scoreId}": {
-      "schema": "KcTransaction",
-      "description": "User quiz participation and leaderboard scores."
-    },
-    "quiz_reactions/{reactionId}": {
-      "schema": "CellMessage",
-      "description": "Reactions and praise comments on quiz completions."
-    },
-    "community_feed/{postId}": {
-      "schema": "CellMessage",
-      "description": "Universal community feed announcements, testimonies, and posts."
-    },
-    "custom_requests/{requestId}": {
-      "schema": "CustomRequest",
-      "description": "Custom creation requests submitted by users."
-    },
-    "feedback_items/{feedbackId}": {
-      "schema": "FeedbackItem",
-      "description": "Community suggestions and feedback hub submissions."
+    "mission_completions/{completionId}": {
+      "schema": "MissionCompletion",
+      "description": "Unique mission completion and reward prevention audit records."
     },
     "kc_transactions/{transactionId}": {
       "schema": "KcTransaction",
-      "description": "Kingdom coin credit and debit audit records."
+      "description": "Kingdom coin transaction credit and debit logs."
+    },
+    "products/{productId}": {
+      "schema": "Product",
+      "description": "Kingdom Store items for sale."
+    },
+    "user_rewards/{rewardId}": {
+      "schema": "UserReward",
+      "description": "Digital items and rewards unlocked by users."
+    },
+    "community_feed/{postId}": {
+      "schema": "CommunityPost",
+      "description": "Community posts, testimonies, and announcements."
+    },
+    "cells/{cellId}": {
+      "schema": "User",
+      "description": "Fellowship cell registries."
+    },
+    "prayer_petitions/{petitionId}": {
+      "schema": "User",
+      "description": "Intercession and prayer requests."
+    },
+    "custom_requests/{requestId}": {
+      "schema": "User",
+      "description": "Custom creation requests submitted by users."
+    },
+    "feedback_items/{feedbackId}": {
+      "schema": "User",
+      "description": "User suggestions and feedback items."
     }
   }
 }

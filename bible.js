@@ -1,8 +1,7 @@
 // bible.js
-// Interactive Bible Study Engine with all 66 books, live API chapter fetches, search, and Text-To-Speech (TTS)
+// Interactive Bible Study Engine with 66 books, chapter tracking, mission progress & TTS
 
 const BIBLE_BOOKS_CHAPTERS = {
-  // Old Testament
   "Genesis": 50, "Exodus": 40, "Leviticus": 27, "Numbers": 36, "Deuteronomy": 34,
   "Joshua": 24, "Judges": 21, "Ruth": 4, "1 Samuel": 31, "2 Samuel": 24,
   "1 Kings": 22, "2 Kings": 25, "1 Chronicles": 29, "2 Chronicles": 36,
@@ -11,7 +10,6 @@ const BIBLE_BOOKS_CHAPTERS = {
   "Jeremiah": 52, "Lamentations": 5, "Ezekiel": 48, "Daniel": 12, "Hosea": 14,
   "Joel": 3, "Amos": 9, "Obadiah": 1, "Jonah": 4, "Micah": 7, "Nahum": 3,
   "Habakkuk": 3, "Zephaniah": 3, "Haggai": 2, "Zechariah": 14, "Malachi": 4,
-  // New Testament
   "Matthew": 28, "Mark": 16, "Luke": 24, "John": 21, "Acts": 28,
   "Romans": 16, "1 Corinthians": 16, "2 Corinthians": 13, "Galatians": 6,
   "Ephesians": 6, "Philippians": 4, "Colossians": 4, "1 Thessalonians": 5,
@@ -30,11 +28,6 @@ const SCRIPTURE_DATA = {
       5: "And God called the light Day, and the darkness he called Night. And the evening and the morning were the first day.",
       27: "So God created man in his own image, in the image of God created he him; male and female created he them.",
       31: "And God saw every thing that he had made, and, behold, it was very good. And the evening and the morning were the sixth day."
-    },
-    12: {
-      1: "Now the LORD had said unto Abram, Get thee out of thy country, and from thy kindred, and from thy father's house, unto a land that I will shew thee:",
-      2: "And I will make of thee a great nation, and I will bless thee, and make thy name great; and thou shalt be a blessing:",
-      3: "And I will bless them that bless thee, and curse him that curseth thee: and in thee shall all families of the earth be blessed."
     }
   },
   "Psalms": {
@@ -45,23 +38,6 @@ const SCRIPTURE_DATA = {
       4: "Yea, though I walk through the valley of the shadow of death, I will fear no evil: for thou art with me; thy rod and thy staff they comfort me.",
       5: "Thou preparest a table before me in the presence of mine enemies: thou anointest my head with oil; my cup runneth over.",
       6: "Surely goodness and mercy shall follow me all the days of my life: and I will dwell in the house of the LORD for ever."
-    },
-    91: {
-      1: "He that dwelleth in the secret place of the most High shall abide under the shadow of the Almighty.",
-      2: "I will say of the LORD, He is my refuge and my fortress: my God; in him will I trust.",
-      3: "Surely he shall deliver thee from the snare of the fowler, and from the noisome pestilence.",
-      11: "For he shall give his angels charge over thee, to keep thee in all thy ways."
-    }
-  },
-  "Proverbs": {
-    3: {
-      5: "Trust in the LORD with all thine heart; and lean not unto thine own understanding.",
-      6: "In all thy ways acknowledge him, and he shall direct thy paths.",
-      7: "Be not wise in thine own eyes: fear the LORD, and depart from evil."
-    },
-    4: {
-      23: "Keep thy heart with all diligence; for out of it are the issues of life.",
-      24: "Put away from thee a froward mouth, and perverse lips put far from thee."
     }
   },
   "John": {
@@ -71,26 +47,14 @@ const SCRIPTURE_DATA = {
       3: "All things were made by him; and without him was not any thing made that was made.",
       4: "In him was life; and the life was the light of men.",
       14: "And the Word was made flesh, and dwelt among us, (and we beheld his glory, the glory as of the only begotten of the Father,) full of grace and truth."
-    },
-    3: {
-      16: "For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life.",
-      17: "For God sent not his Son into the world to condemn the world; but that the world through him might be saved."
-    },
-    14: {
-      6: "Jesus saith unto him, I am the way, the truth, and the life: no man cometh unto the Father, but by me.",
-      27: "Peace I leave with you, my peace I give unto you: not as the world giveth, give I unto you. Let not your heart be troubled, neither let it be afraid."
     }
   },
   "Romans": {
     8: {
       28: "And we know that all things work together for good to them that love God, to them who are the called according to his purpose.",
-      31: "What shall we then say to things? If God be for us, who can be against us?",
+      31: "What shall we then say to these things? If God be for us, who can be against us?",
       38: "For I am persuaded, that neither death, nor life, nor angels, nor principalities, nor powers, nor things present, nor things to come,",
       39: "Nor height, nor depth, nor any other creature, shall be able to separate us from the love of God, which is in Christ Jesus our Lord."
-    },
-    12: {
-      1: "I beseech you therefore, brethren, by the mercies of God, that ye present your bodies a living sacrifice, holy, acceptable unto God, which is your reasonable service.",
-      2: "And be not conformed to this world: but be ye transformed by the renewing of your mind, that ye may prove what is that good, and acceptable, and perfect, will of God."
     }
   }
 };
@@ -147,7 +111,7 @@ function loadVerses() {
   versesBox.innerHTML = `
     <div class="text-center py-12 text-slate-400 font-medium flex flex-col items-center gap-3">
       <div class="w-8 h-8 rounded-full border-4 border-slate-200 border-t-blue-600 animate-spin"></div>
-      <p class="text-xs">Retrieving holy scriptures from study archive...</p>
+      <p class="text-xs">Loading holy scriptures...</p>
     </div>
   `;
 
@@ -163,10 +127,8 @@ function loadVerses() {
         return;
       }
 
-      // Increment user streak for studying scriptures
-      setTimeout(() => {
-        window.incrementUserStreak?.(`studying ${book} Chapter ${chapter}`);
-      }, 1000);
+      // Record real chapter reading progress for missions & stats
+      trackBibleChapterRead(book, chapter);
 
       data.verses.forEach(v => {
         const vNum = v.verse;
@@ -175,7 +137,6 @@ function loadVerses() {
 
         const verseDiv = document.createElement('div');
         verseDiv.className = "p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-900 border border-transparent hover:border-slate-200 dark:hover:border-zinc-800 transition-all cursor-pointer select-none";
-        verseDiv.setAttribute('id', `verse-${book}-${chapter}-${vNum}`);
         verseDiv.onclick = () => copyVerseToClipboard(book, chapter, vNum, text);
 
         verseDiv.innerHTML = `
@@ -186,16 +147,16 @@ function loadVerses() {
       });
     })
     .catch(err => {
-      console.warn("Bible API query failed or offline, loading fallback local chapter data:", err);
       versesBox.innerHTML = '';
       const fallbackData = SCRIPTURE_DATA[book]?.[chapter];
       if (fallbackData) {
+        trackBibleChapterRead(book, chapter);
+
         Object.entries(fallbackData).forEach(([vNum, text]) => {
           window.loadedBibleChapterData[vNum] = text;
 
           const verseDiv = document.createElement('div');
           verseDiv.className = "p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-900 border border-transparent hover:border-slate-200 dark:hover:border-zinc-800 transition-all cursor-pointer select-none";
-          verseDiv.setAttribute('id', `verse-${book}-${chapter}-${vNum}`);
           verseDiv.onclick = () => copyVerseToClipboard(book, chapter, vNum, text);
 
           verseDiv.innerHTML = `
@@ -204,21 +165,57 @@ function loadVerses() {
           `;
           versesBox.appendChild(verseDiv);
         });
-        window.showToast?.(`Offline local study text loaded.`, "info");
+        window.showToast?.(`Loaded ${book} ${chapter} from offline study text.`, "info");
       } else {
         versesBox.innerHTML = `
           <div class="text-center py-12 text-slate-400 space-y-4">
-            <p class="font-bold">Bible Study Text Unavailable Offline</p>
+            <p class="font-bold">Bible Study Text</p>
             <p class="text-xs max-w-sm mx-auto leading-relaxed">
-              To read this chapter offline, please connect to the internet. Genesis, John, Psalms, Proverbs, and Romans contain rich preloaded local sample chapters!
+              Connect to the internet to load all 66 books from the cloud archive. Genesis, John, Psalms, and Romans are available offline!
             </p>
-            <button onclick="loadVerses()" class="bg-blue-600 text-white font-bold text-xs uppercase tracking-wider px-4 py-2 rounded-xl hover:bg-blue-700 cursor-pointer">
-              Try Again
+            <button onclick="loadVerses()" class="bg-blue-600 text-white font-bold text-xs uppercase px-4 py-2 rounded-xl cursor-pointer">
+              Retry
             </button>
           </div>
         `;
       }
     });
+}
+
+function trackBibleChapterRead(book, chapter) {
+  const user = window.auth?.currentUser;
+  const db = window.db;
+  if (!user || !db) return;
+
+  const todayStr = new Date().toISOString().split('T')[0];
+  const readKey = `read_${user.uid}_${book}_${chapter}_${todayStr}`;
+  if (sessionStorage.getItem(readKey)) return;
+  sessionStorage.setItem(readKey, 'true');
+
+  db.collection('users').doc(user.uid).get().then(doc => {
+    if (doc.exists) {
+      const uData = doc.data();
+      const totalChapters = (uData.chaptersReadCount || 0) + 1;
+      const todayChapters = (uData.chaptersReadToday || 0) + 1;
+      const curKc = uData.kingdomCoins || 0;
+
+      doc.ref.update({
+        chaptersReadCount: totalChapters,
+        chaptersReadToday: todayChapters,
+        kingdomCoins: curKc + 5,
+        totalKcEarned: (uData.totalKcEarned || curKc) + 5
+      });
+
+      if (window.currentUserProfile) {
+        window.currentUserProfile.chaptersReadCount = totalChapters;
+        window.currentUserProfile.chaptersReadToday = todayChapters;
+        window.currentUserProfile.kingdomCoins = curKc + 5;
+      }
+
+      window.recordKcTransaction?.('credit', 5, 'Bible Study Reward', `Studied ${book} Chapter ${chapter}`);
+      window.showToast?.(`📖 Read ${book} ${chapter}! +5 Kingdom Coins earned!`, "success");
+    }
+  }).catch(() => {});
 }
 
 function filterVerses() {
@@ -261,11 +258,9 @@ function copyVerseToClipboard(book, chapter, vNum, text) {
   
   navigator.clipboard.writeText(fullText)
     .then(() => {
-      window.showToast?.(`Copied to clipboard: ${citation}`);
+      window.showToast?.(`Copied to clipboard: ${citation}`, "info");
     })
-    .catch(err => {
-      console.error("Clipboard write error:", err);
-    });
+    .catch(() => {});
 }
 
 function speakFullChapter() {
@@ -292,22 +287,17 @@ function speakFullChapter() {
     
     const btn = document.getElementById('btn-chapter-tts');
     if (btn) {
-      btn.innerHTML = `<i data-lucide="square" class="w-5 h-5 animate-pulse"></i> Stop Reading`;
+      btn.innerHTML = `<i data-lucide="square" class="w-4 h-4 animate-pulse"></i> Stop Reading`;
       if (window.lucide) window.lucide.createIcons();
       btn.onclick = stopSpeech;
     }
 
-    currentSpeechUtterance.onend = () => {
-      resetSpeechButton();
-    };
-
-    currentSpeechUtterance.onerror = () => {
-      resetSpeechButton();
-    };
+    currentSpeechUtterance.onend = resetSpeechButton;
+    currentSpeechUtterance.onerror = resetSpeechButton;
 
     window.speechSynthesis.speak(currentSpeechUtterance);
   } else {
-    window.showToast?.("Text-To-Speech is not supported by your browser.", "error");
+    window.showToast?.("Text-To-Speech is not supported by your browser.", "warning");
   }
 }
 
@@ -321,13 +311,12 @@ function stopSpeech() {
 function resetSpeechButton() {
   const btn = document.getElementById('btn-chapter-tts');
   if (btn) {
-    btn.innerHTML = `<i data-lucide="volume-2" class="w-5 h-5"></i> Read Chapter`;
+    btn.innerHTML = `<i data-lucide="volume-2" class="w-4 h-4"></i> Read Chapter`;
     if (window.lucide) window.lucide.createIcons();
     btn.onclick = speakFullChapter;
   }
 }
 
-// Expose globally
 window.initBibleEngine = initBibleEngine;
 window.loadChapters = loadChapters;
 window.loadVerses = loadVerses;

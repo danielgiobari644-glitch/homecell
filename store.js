@@ -1,5 +1,5 @@
 // store.js
-// Home.cell - Kingdom Store 2.0, Custom Creation Requests, Feedback Hub & My Library
+// Home.cell - Kingdom Store 2.0, Real Purchases, Ownership Protection, Custom Requests & My Library
 
 let storeProductsListener = null;
 let storeRequestsListener = null;
@@ -9,9 +9,8 @@ let storeLibraryListener = null;
 let activeStoreCategory = 'all';
 let activeStoreCollection = 'all';
 let storeSearchQuery = '';
-let activeFeedbackFilter = 'all'; // 'all' | 'popular' | 'under_review' | 'planned' | 'completed'
+let activeFeedbackFilter = 'all';
 
-// Default sample products if Firestore is empty to ensure immediate richness
 const DEFAULT_KINGDOM_PRODUCTS = [
   {
     id: "prod_wallpaper_morning_prayer",
@@ -22,6 +21,7 @@ const DEFAULT_KINGDOM_PRODUCTS = [
     coverUrl: "https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=800&q=80",
     fileUrl: "https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=1920&q=80",
     priceKC: 50,
+    price: 50,
     author: "Home.cell Creative",
     tags: ["Wallpaper", "Morning", "Psalm", "Scripture"],
     featured: true,
@@ -38,6 +38,7 @@ const DEFAULT_KINGDOM_PRODUCTS = [
     coverUrl: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=800&q=80",
     fileUrl: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1920&q=80",
     priceKC: 75,
+    price: 75,
     author: "Home.cell Creative",
     tags: ["Faith", "Hebrews", "4K", "Mountains"],
     featured: true,
@@ -51,9 +52,10 @@ const DEFAULT_KINGDOM_PRODUCTS = [
     description: "Inspirational quote on Christlike leadership in printable PDF and high-res PNG formats.",
     category: "Quotes",
     collectionName: "Leadership & Framing",
-    coverUrl: "https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=800&q=80",
-    fileUrl: "https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=1920&q=80",
+    coverUrl: "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=800&q=80",
+    fileUrl: "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=1920&q=80",
     priceKC: 40,
+    price: 40,
     author: "Home.cell Ministry",
     tags: ["Quote", "Leadership", "Printable"],
     featured: false,
@@ -70,6 +72,7 @@ const DEFAULT_KINGDOM_PRODUCTS = [
     coverUrl: "https://images.unsplash.com/photo-1490730141103-6cac27aaab94?auto=format&fit=crop&w=800&q=80",
     fileUrl: "https://images.unsplash.com/photo-1490730141103-6cac27aaab94?auto=format&fit=crop&w=1920&q=80",
     priceKC: 100,
+    price: 100,
     author: "Super Admin",
     tags: ["Scripture", "Memory Cards", "Victory"],
     featured: true,
@@ -86,6 +89,7 @@ const DEFAULT_KINGDOM_PRODUCTS = [
     coverUrl: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=800&q=80",
     fileUrl: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=1920&q=80",
     priceKC: 150,
+    price: 150,
     author: "Super Admin",
     tags: ["Journal", "Devotional", "Prayer", "PDF"],
     featured: true,
@@ -95,29 +99,47 @@ const DEFAULT_KINGDOM_PRODUCTS = [
   }
 ];
 
-// Initialize Kingdom Store Module
+window.currentUserPurchasedItemIds = [];
+let isPurchasingItem = false;
+let storeCachedProducts = [];
+
 function initKingdomStoreModule() {
   renderStoreKcHeader();
+  checkSuperAdminStoreControls();
   syncStoreProducts();
   syncCustomRequests();
   syncFeedbackHub();
   syncMyLibrary();
-  syncKcTransactionHistory();
   setupRequestPriceCalculator();
 }
 
-// 1. Render KC Header Balance
+function checkSuperAdminStoreControls() {
+  const user = window.auth?.currentUser;
+  const isSuperAdmin = window.currentUserRole === 'Super Admin' || user?.email === 'danielgiobari644@gmail.com';
+  const uploadBtn = document.getElementById('store-superadmin-upload-btn');
+  if (uploadBtn) {
+    if (isSuperAdmin) uploadBtn.classList.remove('hidden');
+    else uploadBtn.classList.add('hidden');
+  }
+}
+
 function renderStoreKcHeader() {
   const user = window.auth?.currentUser;
-  const userKc = window.currentUserProfile?.kingdomCoins || currentChampionUserData?.kingdomCoins || 0;
-  
+  let userKc = 100;
+  if (window.currentKcBalance !== undefined) {
+    userKc = window.currentKcBalance;
+  } else if (window.currentUserProfile?.kingdomCoins !== undefined) {
+    userKc = window.currentUserProfile.kingdomCoins;
+  } else if (typeof currentChampionUserData !== 'undefined' && currentChampionUserData?.kingdomCoins !== undefined) {
+    userKc = currentChampionUserData.kingdomCoins;
+  }
+
   const balanceEls = document.querySelectorAll('.store-kc-balance-display');
   balanceEls.forEach(el => {
     el.innerText = `${userKc.toLocaleString()} KC`;
   });
 }
 
-// 2. Sync Store Products
 function syncStoreProducts() {
   const container = document.getElementById('store-products-grid');
   if (!container) return;
@@ -125,62 +147,69 @@ function syncStoreProducts() {
   if (storeProductsListener) storeProductsListener();
 
   const db = window.db;
-  if (!db) return;
+  if (!db) {
+    storeCachedProducts = DEFAULT_KINGDOM_PRODUCTS;
+    renderProductsGrid(DEFAULT_KINGDOM_PRODUCTS);
+    return;
+  }
 
-  storeProductsListener = db.collection('products').where('published', '==', true).onSnapshot(snap => {
+  // Subscribe in real-time to all products
+  storeProductsListener = db.collection('products').orderBy('createdAt', 'desc').onSnapshot(snap => {
     let products = [];
     if (!snap.empty) {
       snap.forEach(doc => {
-        products.push({ id: doc.id, ...doc.data() });
+        const d = doc.data();
+        if (d.published !== false) {
+          products.push({ id: doc.id, ...d });
+        }
       });
-    } else {
-      // Seed default products if collection is brand new
+    }
+    
+    if (products.length === 0) {
       products = DEFAULT_KINGDOM_PRODUCTS;
       seedDefaultProductsIfEmpty();
     }
 
+    storeCachedProducts = products;
     renderProductsGrid(products);
   }, err => {
     console.warn("Store products listener error:", err);
+    storeCachedProducts = DEFAULT_KINGDOM_PRODUCTS;
     renderProductsGrid(DEFAULT_KINGDOM_PRODUCTS);
   });
 }
 
-// Seed default products to Firestore automatically
 async function seedDefaultProductsIfEmpty() {
   try {
     const db = window.db;
     if (!db) return;
+    const isSuperAdmin = window.currentUserRole === 'Super Admin' || window.auth?.currentUser?.email === 'danielgiobari644@gmail.com';
+    if (!isSuperAdmin) return;
+
     const snap = await db.collection('products').limit(1).get();
-    if (snap.empty && (window.currentUserRole === 'Super Admin' || window.auth?.currentUser?.email === 'danielgiobari644@gmail.com')) {
+    if (snap.empty) {
       for (const prod of DEFAULT_KINGDOM_PRODUCTS) {
-        await db.collection('products').doc(prod.id).set(prod, { merge: true });
+        await db.collection('products').doc(prod.id).set({
+          ...prod,
+          createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
       }
-      console.log("Seeded default Kingdom Store products");
     }
   } catch (e) {
-    console.warn("Seeding error:", e);
+    console.warn("Error seeding default products:", e);
   }
 }
 
-// Filter and render products grid
 function renderProductsGrid(products) {
   const container = document.getElementById('store-products-grid');
   if (!container) return;
 
-  let filtered = products;
+  let filtered = products || storeCachedProducts || DEFAULT_KINGDOM_PRODUCTS;
 
-  // Category Filter
   if (activeStoreCategory !== 'all') {
     filtered = filtered.filter(p => (p.category || '').toLowerCase() === activeStoreCategory.toLowerCase());
   }
 
-  // Collection Filter
-  if (activeStoreCollection !== 'all') {
-    filtered = filtered.filter(p => (p.collectionName || '').toLowerCase() === activeStoreCollection.toLowerCase());
-  }
-
-  // Search Query Filter
   if (storeSearchQuery.trim()) {
     const q = storeSearchQuery.toLowerCase().trim();
     filtered = filtered.filter(p => 
@@ -188,17 +217,19 @@ function renderProductsGrid(products) {
       (p.description || '').toLowerCase().includes(q) ||
       (p.category || '').toLowerCase().includes(q) ||
       (p.collectionName || '').toLowerCase().includes(q) ||
-      (p.tags || []).some(t => t.toLowerCase().includes(q))
+      (p.tags || []).some(t => String(t).toLowerCase().includes(q))
     );
   }
 
   if (filtered.length === 0) {
     container.innerHTML = `
-      <div class="col-span-full text-center py-12 text-slate-400 dark:text-zinc-500">
-        <i data-lucide="shopping-bag" class="w-12 h-12 mx-auto mb-3 opacity-50"></i>
-        <p class="font-bold text-slate-700 dark:text-zinc-300">No resources found matching your search.</p>
-        <p class="text-xs mt-1">Try selecting another category or clear your search filter.</p>
-        <button onclick="clearStoreFilters()" class="mt-4 px-4 py-2 bg-blue-600 text-white font-bold text-xs rounded-xl cursor-pointer hover:bg-blue-700 transition-all">Clear Filters</button>
+      <div class="col-span-full text-center py-16 text-slate-400 dark:text-zinc-500 bg-white/50 dark:bg-zinc-900/50 rounded-3xl border border-dashed border-slate-200 dark:border-zinc-800 p-8">
+        <div class="w-16 h-16 rounded-3xl bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto mb-4 text-2xl font-black">
+          🛍️
+        </div>
+        <h4 class="font-black text-base text-slate-800 dark:text-zinc-200">No resources found matching your filter</h4>
+        <p class="text-xs text-slate-500 dark:text-zinc-400 mt-1 max-w-sm mx-auto">Try selecting another category or clear your search query to see all Kingdom assets.</p>
+        <button onclick="clearStoreFilters()" class="mt-5 px-5 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-black text-xs rounded-xl cursor-pointer hover:shadow-md transition-all">Clear Filters</button>
       </div>
     `;
     if (window.lucide) window.lucide.createIcons();
@@ -206,54 +237,84 @@ function renderProductsGrid(products) {
   }
 
   const purchasedItemIds = window.currentUserPurchasedItemIds || [];
+  let currentKc = 100;
+  if (window.currentKcBalance !== undefined) currentKc = window.currentKcBalance;
+  else if (window.currentUserProfile?.kingdomCoins !== undefined) currentKc = window.currentUserProfile.kingdomCoins;
+
+  const isSuperAdmin = window.currentUserRole === 'Super Admin' || window.auth?.currentUser?.email === 'danielgiobari644@gmail.com';
 
   container.innerHTML = filtered.map(p => {
-    const isPurchased = purchasedItemIds.includes(p.id);
+    const itemPrice = parseInt(p.priceKC !== undefined ? p.priceKC : (p.price !== undefined ? p.price : 50)) || 50;
+    const isOwned = purchasedItemIds.includes(p.id);
+    const hasEnoughKc = currentKc >= itemPrice;
+    const coverImage = p.coverUrl || p.imageUrl || 'https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=800&q=80';
+    const downloadLink = p.fileUrl || p.downloadUrl || coverImage;
+
+    let buttonHtml = '';
+    if (isOwned) {
+      buttonHtml = `
+        <div class="flex items-center gap-2">
+          <button disabled class="flex-1 py-3 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-black rounded-2xl text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 border border-emerald-500/30 cursor-default shadow-xs">
+            <i data-lucide="check-circle" class="w-4 h-4 text-emerald-500"></i> Owned
+          </button>
+          <button onclick="downloadStoreProductDirect('${p.id}', '${encodeURIComponent(downloadLink)}', '${encodeURIComponent(p.title || 'Resource')}')" class="px-4 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-2xl text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer transition-all shadow-md shadow-emerald-600/20 active:scale-95" title="Download Resource to Device">
+            <i data-lucide="download" class="w-4 h-4"></i> Download
+          </button>
+        </div>
+      `;
+    } else {
+      buttonHtml = `
+        <button id="btn-buy-prod-${p.id}" onclick="promptBuyProductModal('${p.id}')" class="w-full py-3.5 ${hasEnoughKc ? 'bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 text-slate-950 hover:brightness-105 shadow-md shadow-amber-500/20' : 'bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-slate-600 dark:text-zinc-300 border border-slate-200 dark:border-zinc-700'} font-black rounded-2xl text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-98">
+          <i data-lucide="${hasEnoughKc ? 'shopping-cart' : 'lock'}" class="w-4 h-4"></i>
+          <span>${hasEnoughKc ? `Buy for ${itemPrice} KC` : `Unlock (${itemPrice} KC)`}</span>
+        </button>
+      `;
+    }
 
     return `
-      <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col justify-between group">
+      <div class="bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800/90 rounded-3xl overflow-hidden shadow-xs hover:shadow-lg transition-all duration-300 flex flex-col justify-between group hover:border-amber-500/40 relative">
+        ${isSuperAdmin ? `
+          <div class="absolute top-3 right-3 z-20 flex items-center gap-1">
+            <button onclick="deleteStoreProductDirect('${p.id}', '${encodeURIComponent(p.title || '')}')" class="p-2 rounded-xl bg-slate-900/80 backdrop-blur-md text-red-400 hover:bg-red-600 hover:text-white transition-all cursor-pointer shadow-md" title="Delete Product (Super Admin)">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+        ` : ''}
+
         <div>
-          <div class="relative h-48 bg-slate-100 dark:bg-zinc-800 overflow-hidden">
-            <img src="${p.coverUrl || 'https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=800&q=80'}" alt="${p.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-            <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent"></div>
+          <div class="relative h-48 sm:h-52 bg-slate-100 dark:bg-zinc-800 overflow-hidden">
+            <img src="${coverImage}" alt="${p.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
+            <div class="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/20 to-transparent"></div>
             
-            <div class="absolute top-3 left-3 flex flex-wrap gap-1">
-              <span class="px-2.5 py-1 rounded-full bg-slate-900/80 backdrop-blur-md text-amber-400 text-[10px] font-black uppercase tracking-wider border border-amber-500/30">
+            <div class="absolute top-3 left-3 flex flex-wrap gap-1.5 z-10">
+              <span class="px-3 py-1 rounded-full bg-slate-900/80 backdrop-blur-md text-amber-400 text-[10px] font-black uppercase tracking-wider border border-amber-500/30 shadow-xs">
                 ${p.category || 'Resource'}
               </span>
-              ${p.featured ? `<span class="px-2.5 py-1 rounded-full bg-purple-600/90 text-white text-[10px] font-black uppercase tracking-wider">🔥 Featured</span>` : ''}
+              ${p.featured ? `<span class="px-2.5 py-1 rounded-full bg-purple-600/90 text-white text-[10px] font-black uppercase tracking-wider shadow-xs">★ Featured</span>` : ''}
+              ${isOwned ? `<span class="px-2.5 py-1 rounded-full bg-emerald-500 text-white text-[10px] font-black uppercase tracking-wider shadow-xs">✓ Owned</span>` : ''}
             </div>
 
-            <div class="absolute bottom-3 left-3 right-3 flex items-center justify-between text-white">
-              <span class="text-xs font-bold text-amber-300 flex items-center gap-1">
-                <i data-lucide="coins" class="w-3.5 h-3.5"></i> ${p.priceKC} KC
+            <div class="absolute bottom-3 left-3 right-3 flex items-center justify-between text-white z-10">
+              <span class="text-xs font-black text-amber-300 font-mono flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-900/70 backdrop-blur-sm border border-amber-400/20">
+                🪙 ${itemPrice} KC
               </span>
-              <span class="text-[10px] text-slate-300 font-medium">${p.collectionName || 'Digital Resource'}</span>
+              <span class="text-[10px] text-slate-300 font-semibold px-2 py-0.5 rounded-lg bg-black/40 backdrop-blur-xs">${p.collectionName || p.author || 'Home.cell Digital'}</span>
             </div>
           </div>
 
           <div class="p-5 space-y-2">
-            <h4 class="font-black text-slate-900 dark:text-zinc-100 text-base line-clamp-1">${p.title}</h4>
-            <p class="text-xs text-slate-500 dark:text-zinc-400 line-clamp-2 leading-relaxed">${p.description}</p>
-            
-            <div class="flex flex-wrap gap-1 pt-2">
-              ${(p.tags || []).slice(0, 3).map(tag => `
-                <span class="px-2 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 text-[9px] font-bold text-slate-600 dark:text-zinc-400">#${tag}</span>
-              `).join('')}
-            </div>
+            <h4 class="font-black text-slate-900 dark:text-zinc-100 text-sm sm:text-base line-clamp-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">${p.title}</h4>
+            <p class="text-xs text-slate-500 dark:text-zinc-400 line-clamp-2 leading-relaxed">${p.description || 'High-quality Christian resource for spiritual nourishment.'}</p>
+            ${(p.tags && p.tags.length > 0) ? `
+              <div class="flex flex-wrap gap-1 pt-1">
+                ${p.tags.slice(0, 3).map(tag => `<span class="text-[9px] font-bold text-slate-600 dark:text-zinc-400 bg-slate-100 dark:bg-zinc-800 px-2 py-0.5 rounded-md">#${tag}</span>`).join('')}
+              </div>
+            ` : ''}
           </div>
         </div>
 
         <div class="p-5 pt-0">
-          ${isPurchased ? `
-            <button onclick="downloadStoreProductDirect('${p.id}', '${p.fileUrl || p.coverUrl}')" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-2xl text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer transition-all shadow-sm">
-              <i data-lucide="download" class="w-4 h-4"></i> Download Resource
-            </button>
-          ` : `
-            <button onclick="promptBuyProductModal('${p.id}')" class="w-full py-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-black rounded-2xl text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer transition-all shadow-md shadow-amber-500/20">
-              <i data-lucide="coins" class="w-4 h-4"></i> Get for ${p.priceKC} KC
-            </button>
-          `}
+          ${buttonHtml}
         </div>
       </div>
     `;
@@ -262,10 +323,8 @@ function renderProductsGrid(products) {
   if (window.lucide) window.lucide.createIcons();
 }
 
-// Clear store filters
 function clearStoreFilters() {
   activeStoreCategory = 'all';
-  activeStoreCollection = 'all';
   storeSearchQuery = '';
   const searchInput = document.getElementById('store-search-input');
   if (searchInput) searchInput.value = '';
@@ -273,54 +332,50 @@ function clearStoreFilters() {
   const pills = document.querySelectorAll('.store-category-pill');
   pills.forEach(p => {
     if (p.getAttribute('data-category') === 'all') {
-      p.className = "store-category-pill px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 text-slate-950 cursor-pointer transition-all";
+      p.className = "store-category-pill px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 text-slate-950 cursor-pointer transition-all shadow-xs";
     } else {
       p.className = "store-category-pill px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-700 cursor-pointer transition-all";
     }
   });
 
-  syncStoreProducts();
+  renderProductsGrid(storeCachedProducts);
 }
 
-// Select category filter
 function selectStoreCategory(cat) {
   activeStoreCategory = cat;
   const pills = document.querySelectorAll('.store-category-pill');
   pills.forEach(p => {
     if (p.getAttribute('data-category') === cat) {
-      p.className = "store-category-pill px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 text-slate-950 cursor-pointer transition-all shadow-sm";
+      p.className = "store-category-pill px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 text-slate-950 cursor-pointer transition-all shadow-xs";
     } else {
       p.className = "store-category-pill px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-700 cursor-pointer transition-all";
     }
   });
 
-  syncStoreProducts();
+  renderProductsGrid(storeCachedProducts);
 }
 
-// Handle store search
 function handleStoreSearch(query) {
-  storeSearchQuery = query;
-  syncStoreProducts();
+  storeSearchQuery = query || '';
+  renderProductsGrid(storeCachedProducts);
 }
 
-// Prompt Buy Product Modal
 async function promptBuyProductModal(productId) {
   const user = window.auth?.currentUser;
   if (!user) {
-    window.showToast?.("Please sign in to buy Kingdom Store resources!", "error");
+    window.showToast?.("Please sign in or create an account to purchase Kingdom resources!", "info");
+    if (window.openAuthModal) window.openAuthModal();
     return;
   }
 
   const db = window.db;
-  let prod = DEFAULT_KINGDOM_PRODUCTS.find(p => p.id === productId);
+  let prod = storeCachedProducts.find(p => p.id === productId) || DEFAULT_KINGDOM_PRODUCTS.find(p => p.id === productId);
 
-  if (db) {
+  if (db && (!prod || !prod.title)) {
     try {
       const doc = await db.collection('products').doc(productId).get();
       if (doc.exists) prod = { id: doc.id, ...doc.data() };
-    } catch (e) {
-      console.warn("Get prod error:", e);
-    }
+    } catch (e) {}
   }
 
   if (!prod) {
@@ -328,331 +383,294 @@ async function promptBuyProductModal(productId) {
     return;
   }
 
-  const currentKc = window.currentUserProfile?.kingdomCoins || currentChampionUserData?.kingdomCoins || 0;
+  const itemPrice = parseInt(prod.priceKC !== undefined ? prod.priceKC : (prod.price !== undefined ? prod.price : 50)) || 50;
 
-  if (currentKc < prod.priceKC) {
-    window.showModalHtml?.(`
-      <div class="text-center space-y-4 p-2">
-        <div class="w-16 h-16 bg-amber-100 dark:bg-amber-950/50 text-amber-600 rounded-full flex items-center justify-center mx-auto text-2xl font-black">🪙</div>
-        <h3 class="text-xl font-black text-slate-900 dark:text-zinc-100">Insufficient Kingdom Coins</h3>
-        <p class="text-xs text-slate-500 dark:text-zinc-400">
-          This resource costs <strong class="text-amber-500">${prod.priceKC} KC</strong>. You currently have <strong class="text-slate-800 dark:text-zinc-200">${currentKc} KC</strong>.
-        </p>
-        <div class="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-2xl text-xs text-amber-800 dark:text-amber-300 font-bold">
-          💡 Earn more KC by reading daily scripture (+5 KC), taking scripture quizzes (+15-50 KC), and checking in daily!
-        </div>
-        <button onclick="window.closeModal?.(); switchTab('champions')" class="w-full py-3 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider cursor-pointer">
-          Go to Champions League to Earn KC
-        </button>
-      </div>
-    `);
+  // Check ownership
+  const purchasedItemIds = window.currentUserPurchasedItemIds || [];
+  if (purchasedItemIds.includes(productId)) {
+    window.showToast?.(`You already own "${prod.title}"! Open My Library to download.`, "info");
+    switchStoreTab('my-library');
     return;
   }
 
-  // Confirm Purchase
-  const remainingKc = currentKc - prod.priceKC;
+  let currentKc = 100;
+  if (window.currentKcBalance !== undefined) currentKc = window.currentKcBalance;
+  else if (window.currentUserProfile?.kingdomCoins !== undefined) currentKc = window.currentUserProfile.kingdomCoins;
 
-  window.showModalHtml?.(`
-    <div class="space-y-4 p-1">
-      <div class="flex items-center gap-3">
-        <img src="${prod.coverUrl}" class="w-16 h-16 rounded-2xl object-cover border border-slate-200 dark:border-zinc-700" />
-        <div>
-          <span class="px-2 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-400 text-[10px] font-black uppercase">${prod.category}</span>
-          <h3 class="text-base font-black text-slate-900 dark:text-zinc-100 mt-1 line-clamp-1">${prod.title}</h3>
-          <p class="text-xs text-amber-500 font-bold flex items-center gap-1">🪙 Price: ${prod.priceKC} KC</p>
-        </div>
-      </div>
+  if (currentKc < itemPrice) {
+    const needed = itemPrice - currentKc;
+    const shouldGoToMissions = confirm(`🪙 Insufficient Kingdom Coins!\n\nYou have: ${currentKc} KC\nThis item costs: ${itemPrice} KC\nYou need: ${needed} more KC.\n\nWould you like to open Daily Missions to earn free Kingdom Coins now?`);
+    if (shouldGoToMissions) {
+      if (window.switchTab) window.switchTab('champions');
+      if (window.switchChampionsSubTab) window.switchChampionsSubTab('missions');
+    }
+    return;
+  }
 
-      <div class="bg-slate-50 dark:bg-zinc-800/60 p-4 rounded-2xl space-y-2 text-xs border border-slate-200 dark:border-zinc-700">
-        <div class="flex justify-between text-slate-600 dark:text-zinc-400">
-          <span>Current Balance:</span>
-          <span class="font-bold text-slate-900 dark:text-zinc-100">${currentKc.toLocaleString()} KC</span>
-        </div>
-        <div class="flex justify-between text-amber-600 dark:text-amber-400 font-bold">
-          <span>Resource Cost:</span>
-          <span>-${prod.priceKC.toLocaleString()} KC</span>
-        </div>
-        <div class="pt-2 border-t border-slate-200 dark:border-zinc-700 flex justify-between font-black text-slate-900 dark:text-zinc-100">
-          <span>Balance After Purchase:</span>
-          <span class="text-emerald-500">${remainingKc.toLocaleString()} KC</span>
-        </div>
-      </div>
+  const isConfirmed = confirm(`🛍️ Confirm Kingdom Store Purchase:\n\nResource: "${prod.title}"\nPrice: ${itemPrice} Kingdom Coins\n\nYour Current Balance: ${currentKc.toLocaleString()} KC\nBalance After Purchase: ${(currentKc - itemPrice).toLocaleString()} KC\n\nWould you like to complete this purchase now?`);
+  if (!isConfirmed) return;
 
-      <p class="text-[11px] text-slate-400 text-center">
-        Upon confirmation, this resource will be added to your <strong class="text-slate-700 dark:text-zinc-300">My Library</strong> tab forever.
-      </p>
-
-      <div class="flex gap-2 pt-2">
-        <button onclick="window.closeModal?.()" class="flex-1 py-3 bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 font-bold rounded-xl text-xs cursor-pointer">Cancel</button>
-        <button onclick="executeProductPurchase('${prod.id}', ${prod.priceKC}, '${prod.title.replace(/'/g, "\\'")}', '${(prod.fileUrl || prod.coverUrl).replace(/'/g, "\\'")}')" class="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-xl text-xs uppercase cursor-pointer shadow-md">
-          Confirm Purchase
-        </button>
-      </div>
-    </div>
-  `);
+  const downloadLink = prod.fileUrl || prod.downloadUrl || prod.coverUrl || prod.imageUrl || '';
+  executeProductPurchase(prod.id, itemPrice, prod.title, downloadLink, prod.category || 'Resource');
 }
 
-// Execute Atomic Purchase (with ownership guard and transaction protection)
-let _purchaseInProgress = {}; // Prevent double-clicks
+// Atomic Product Purchase Execution
+async function executeProductPurchase(productId, costKC, title, fileUrl, category = 'Kingdom Store') {
+  if (isPurchasingItem) return;
 
-async function executeProductPurchase(productId, costKC, title, fileUrl) {
   const user = window.auth?.currentUser;
   if (!user) {
-    window.showToast?.("Please sign in to purchase items from the Kingdom Store.", "warning");
+    window.showToast?.("Please sign in to purchase items.", "warning");
     return;
   }
 
-  // Double-click protection
-  if (_purchaseInProgress[productId]) {
-    window.showToast?.("Purchase is already being processed. Please wait.", "info");
+  if (window.currentUserPurchasedItemIds && window.currentUserPurchasedItemIds.includes(productId)) {
+    window.showToast?.("You already own this item. Access it in My Library.", "info");
+    switchStoreTab('my-library');
     return;
   }
-  _purchaseInProgress[productId] = true;
 
   const db = window.db;
-  if (!db) { delete _purchaseInProgress[productId]; return; }
+  if (!db) return;
 
-  window.closeModal?.();
-  window.showToast?.("Processing secure Kingdom transaction...", "info");
+  isPurchasingItem = true;
+  const buyBtn = document.getElementById(`btn-buy-prod-${productId}`);
+  if (buyBtn) {
+    buyBtn.disabled = true;
+    buyBtn.innerHTML = `<span class="animate-spin inline-block mr-1">⏳</span> Purchasing...`;
+  }
+
+  window.showToast?.("Processing Kingdom Coins purchase...", "info");
 
   try {
     const userRef = db.collection('users').doc(user.uid);
-    const rewardRef = db.collection('user_rewards').doc(`${user.uid}_${productId}`);
-    const subUserRewardRef = userRef.collection('user_rewards').doc(productId);
+    const rewardDocId = `${user.uid}_${productId}`;
+    const rewardRef = db.collection('user_rewards').doc(rewardDocId);
+    const purchaseRef = db.collection('purchases').doc(rewardDocId);
     const txnRef = db.collection('kc_transactions').doc();
 
-    // Check ownership FIRST before doing anything
-    const existingReward = await rewardRef.get();
-    if (existingReward.exists && existingReward.data().claimedAt) {
-      window.showToast?.("You already own this item. Check your Library.", "info");
-      delete _purchaseInProgress[productId];
-      return;
-    }
+    let newKcBalance = 0;
 
-    // Use a transaction for atomic balance check + deduction
     await db.runTransaction(async (transaction) => {
       const userDoc = await transaction.get(userRef);
-      if (!userDoc.exists) throw new Error("User profile not found. Please complete onboarding first.");
-
-      // Re-check ownership inside transaction
-      const rewardDoc = await transaction.get(rewardRef);
-      if (rewardDoc.exists && rewardDoc.data().claimedAt) {
-        throw new Error("ALREADY_OWNED");
-      }
+      if (!userDoc.exists) throw new Error("User profile not found. Please log in again.");
 
       const userData = userDoc.data();
-      const currentKc = userData.kingdomCoins || 0;
+      const currentKc = parseInt(userData.kingdomCoins !== undefined ? userData.kingdomCoins : 100);
 
       if (currentKc < costKC) {
-        throw new Error(`Insufficient Kingdom Coins. You have ${currentKc} KC, but this item costs ${costKC} KC.`);
+        throw new Error(`Insufficient KC. You have ${currentKc} KC, but this item requires ${costKC} KC.`);
       }
 
-      const newKc = currentKc - costKC;
+      newKcBalance = currentKc - costKC;
       const storePurchases = (userData.storePurchases || 0) + 1;
 
-      // Atomic balance deduction
       transaction.update(userRef, {
-        kingdomCoins: newKc,
+        kingdomCoins: newKcBalance,
         storePurchases: storePurchases
       });
 
-      // Create ownership record
       const rewardPayload = {
-        id: `${user.uid}_${productId}`,
+        id: rewardDocId,
         userUid: user.uid,
         itemId: productId,
         title: title,
-        category: "Kingdom Store",
+        category: category,
         kcCost: costKC,
         fileUrl: fileUrl || '',
         claimedAt: window.firebase.firestore.FieldValue.serverTimestamp()
       };
 
-      transaction.set(rewardRef, rewardPayload, { merge: true });
-      transaction.set(subUserRewardRef, rewardPayload, { merge: true });
+      transaction.set(rewardRef, rewardPayload);
+      transaction.set(purchaseRef, rewardPayload);
 
-      // Record KC transaction
       transaction.set(txnRef, {
         id: txnRef.id,
         userUid: user.uid,
         type: "debit",
         amount: costKC,
-        title: `Kingdom Store Purchase`,
-        description: `Purchased "${title}" for ${costKC} KC`,
+        title: `Purchased "${title}"`,
+        description: `Kingdom Store resource unlock for ${costKC} KC`,
         createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
       });
-
-      // Update local state
-      if (window.currentUserProfile) window.currentUserProfile.kingdomCoins = newKc;
-      if (window.currentChampionUserData) window.currentChampionUserData.kingdomCoins = newKc;
     });
 
-    // Post-transaction UI updates
+    // Update Local and Global State
     if (!window.currentUserPurchasedItemIds) window.currentUserPurchasedItemIds = [];
     if (!window.currentUserPurchasedItemIds.includes(productId)) {
       window.currentUserPurchasedItemIds.push(productId);
     }
 
-    window.triggerConfetti?.();
-    window.showToast?.(`Purchase successful! "${title}" has been added to your Library.`, "success");
+    window.currentKcBalance = newKcBalance;
+    if (window.currentUserProfile) window.currentUserProfile.kingdomCoins = newKcBalance;
+    if (typeof currentChampionUserData !== 'undefined' && currentChampionUserData) {
+      currentChampionUserData.kingdomCoins = newKcBalance;
+    }
+
+    // Sound and Visual Feedback
+    window.soundEngine?.playCoins?.();
+    if (window.triggerConfetti) window.triggerConfetti();
+    window.showToast?.(`🎉 Purchase successful! "${title}" is now available in My Library.`, "success");
+
     renderStoreKcHeader();
-    syncStoreProducts();
+    renderProductsGrid(storeCachedProducts);
     syncMyLibrary();
 
-  } catch (err) {
-    console.error("Purchase transaction failed:", err);
-    if (err.message === "ALREADY_OWNED") {
-      window.showToast?.("You already own this item. Check your Library.", "info");
-    } else {
-      window.showToast?.(`We couldn't complete your purchase. ${err.message}`, "error");
-    }
-  } finally {
-    delete _purchaseInProgress[productId];
-  }
-}
-
-// Download Store Product Direct
-function downloadBase64Resource(dataUrl, fileName = 'HomeCell_Kingdom_Resource.jpg') {
-  try {
-    const parts = dataUrl.split(';base64,');
-    if (parts.length < 2) {
-      window.open(dataUrl, '_blank');
-      return;
-    }
-    const contentType = parts[0].split(':')[1] || 'image/jpeg';
-    const raw = window.atob(parts[1]);
-    const rawLength = raw.length;
-    const uInt8Array = new Uint8Array(rawLength);
-
-    for (let i = 0; i < rawLength; ++i) {
-      uInt8Array[i] = raw.charCodeAt(i);
-    }
-
-    const blob = new Blob([uInt8Array], { type: contentType });
-    const blobUrl = URL.createObjectURL(blob);
-
-    const a = document.createElement('a');
-    a.href = blobUrl;
-    a.download = fileName;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-
+    // Auto-prompt to switch to My Library or download
     setTimeout(() => {
-      URL.revokeObjectURL(blobUrl);
-    }, 1500);
+      const wantToDownload = confirm(`Resource "${title}" unlocked successfully!\n\nWould you like to view it in My Library and download now?`);
+      if (wantToDownload) {
+        switchStoreTab('my-library');
+      }
+    }, 400);
+
   } catch (err) {
-    console.error("Base64 Blob download error:", err);
-    window.open(dataUrl, '_blank');
+    console.error("Purchase failed:", err);
+    window.showToast?.(err.message || "Purchase failed. Your Kingdom Coins were not deducted.", "error");
+  } finally {
+    isPurchasingItem = false;
+    if (buyBtn) {
+      buyBtn.disabled = false;
+    }
   }
 }
 
-function downloadStoreProductDirect(productId, url, fileName = 'HomeCell_Resource') {
-  window.showToast?.("📥 Starting direct resource download...", "info");
+// Direct File Download for Base64 Data URLs and Web links
+function downloadStoreProductDirect(productId, encodedUrl, encodedFileName) {
+  const url = decodeURIComponent(encodedUrl || '');
+  const fileName = decodeURIComponent(encodedFileName || 'HomeCell_Resource');
+  
   if (!url) {
-    window.showToast?.("Download link is unavailable for this item.", "warning");
+    window.showToast?.("Download link is currently unavailable for this item.", "warning");
     return;
   }
 
-  if (url.startsWith('data:')) {
-    downloadBase64Resource(url, `${fileName}_${productId}.jpg`);
-  } else if (url.startsWith('/uploads/')) {
-    const fullUrl = `${window.location.origin}${url}`;
-    const link = document.createElement('a');
-    link.href = fullUrl;
-    link.target = "_blank";
-    link.download = `${fileName}_${productId}`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  } else if (url.startsWith('http')) {
-    const link = document.createElement('a');
-    link.href = url;
-    link.target = "_blank";
-    link.download = `${fileName}_${productId}`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  } else {
+  window.showToast?.("Preparing your download...", "info");
+
+  try {
+    if (url.startsWith('data:')) {
+      // Base64 Data URL Download
+      const link = document.createElement('a');
+      link.href = url;
+      let ext = '.jpg';
+      if (url.startsWith('data:application/pdf')) ext = '.pdf';
+      else if (url.startsWith('data:image/png')) ext = '.png';
+      else if (url.startsWith('data:audio/')) ext = '.mp3';
+      else if (url.startsWith('data:application/zip')) ext = '.zip';
+      
+      const safeName = fileName.replace(/[^a-zA-Z0-9_\-]/g, '_');
+      link.download = `${safeName}${ext}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.showToast?.(`Downloaded "${fileName}" to your device!`, "success");
+    } else {
+      // Direct Web URL
+      const link = document.createElement('a');
+      link.href = url;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.download = `${fileName.replace(/[^a-zA-Z0-9_\-]/g, '_')}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.showToast?.(`Opening resource download...`, "success");
+    }
+  } catch (err) {
+    console.warn("Direct download trigger:", err);
     window.open(url, '_blank');
   }
 }
-window.downloadBase64Resource = downloadBase64Resource;
-window.downloadStoreProductDirect = downloadStoreProductDirect;
 
-// Client-side Canvas Image Compression for Firestore Storage
-async function compressImageForFirestore(file, maxWidth = 1200, maxHeight = 1200, quality = 0.8) {
-  return new Promise((resolve, reject) => {
-    if (!file || !file.type.startsWith('image/')) {
-      reject(new Error("Selected file is not an image. Please select a JPG, PNG, or WebP file."));
-      return;
-    }
+function syncMyLibrary() {
+  const container = document.getElementById('my-library-grid');
+  if (!container) return;
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        let width = img.width;
-        let height = img.height;
+  const user = window.auth?.currentUser;
+  if (!user) {
+    container.innerHTML = `
+      <div class="col-span-full text-center py-12 text-slate-400 dark:text-zinc-500 bg-white/50 dark:bg-zinc-900/50 rounded-3xl border border-dashed border-slate-200 dark:border-zinc-800 p-8">
+        <div class="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-zinc-800 text-slate-400 flex items-center justify-center mx-auto mb-3 text-xl">
+          🔒
+        </div>
+        <p class="font-bold text-slate-700 dark:text-zinc-300">Sign in to view your purchased resources.</p>
+        <button onclick="if(window.openAuthModal) window.openAuthModal();" class="mt-4 px-4 py-2 bg-blue-600 text-white font-bold text-xs rounded-xl cursor-pointer hover:bg-blue-700 transition-all">Sign In</button>
+      </div>
+    `;
+    return;
+  }
 
-        if (width > maxWidth || height > maxHeight) {
-          if (width / height > maxWidth / maxHeight) {
-            height = Math.round((height * maxWidth) / width);
-            width = maxWidth;
-          } else {
-            width = Math.round((width * maxHeight) / height);
-            height = maxHeight;
-          }
-        }
+  if (storeLibraryListener) storeLibraryListener();
 
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
+  const db = window.db;
+  if (!db) return;
 
-        const mimeType = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
-        const dataUrl = canvas.toDataURL(mimeType, quality);
+  storeLibraryListener = db.collection('user_rewards')
+    .where('userUid', '==', user.uid)
+    .onSnapshot(snap => {
+      window.currentUserPurchasedItemIds = [];
+      const items = [];
 
-        const stringLength = dataUrl.length - dataUrl.indexOf(',') - 1;
-        const sizeInBytes = 4 * Math.ceil(stringLength / 3) * 0.5624896;
-        const sizeInKB = Math.round(sizeInBytes / 1024);
+      if (!snap.empty) {
+        snap.forEach(doc => {
+          const d = doc.data();
+          items.push(d);
+          if (d.itemId) window.currentUserPurchasedItemIds.push(d.itemId);
+        });
+      }
 
-        if (sizeInKB > 850) {
-          reject(new Error(`Optimized image size (${sizeInKB} KB) exceeds the safe 850 KB limit for Firestore documents. Please crop or resize before uploading.`));
-        } else {
-          // Generate small thumbnail (~240px)
-          const thumbCanvas = document.createElement('canvas');
-          const thumbWidth = Math.min(width, 240);
-          const thumbHeight = Math.round((height * thumbWidth) / width);
-          thumbCanvas.width = thumbWidth;
-          thumbCanvas.height = thumbHeight;
-          const thumbCtx = thumbCanvas.getContext('2d');
-          thumbCtx.drawImage(img, 0, 0, thumbWidth, thumbHeight);
-          const previewData = thumbCanvas.toDataURL('image/jpeg', 0.6);
-
-          resolve({
-            dataUrl,
-            previewData,
-            sizeInKB,
-            width,
-            height,
-            fileName: file.name
-          });
-        }
-      };
-      img.onerror = () => reject(new Error("Failed to load image file into canvas."));
-      img.src = e.target.result;
-    };
-    reader.onerror = () => reject(new Error("Failed to read image file."));
-    reader.readAsDataURL(file);
-  });
+      renderMyLibraryGrid(items);
+      renderProductsGrid(storeCachedProducts);
+    }, err => {
+      console.warn("Library snapshot error:", err);
+    });
 }
-window.compressImageForFirestore = compressImageForFirestore;
 
-// ---------------------------------------------------------------------------
-// 3. CUSTOM CREATION REQUESTS SYSTEM ✨
-// ---------------------------------------------------------------------------
+function renderMyLibraryGrid(items) {
+  const container = document.getElementById('my-library-grid');
+  if (!container) return;
+
+  if (items.length === 0) {
+    container.innerHTML = `
+      <div class="col-span-full text-center py-16 text-slate-400 dark:text-zinc-500 bg-white/50 dark:bg-zinc-900/50 border border-dashed border-slate-200 dark:border-zinc-800 rounded-3xl p-8">
+        <div class="w-16 h-16 rounded-3xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center mx-auto mb-4 text-2xl font-black">
+          📥
+        </div>
+        <h4 class="font-black text-base text-slate-800 dark:text-zinc-200">Your Kingdom Library is Empty</h4>
+        <p class="text-xs text-slate-500 dark:text-zinc-400 mt-1 max-w-sm mx-auto">Explore the Kingdom Store and unlock Christian 4K wallpapers, scripture cards, and devotionals with your Kingdom Coins!</p>
+        <button onclick="switchStoreTab('marketplace')" class="mt-5 px-5 py-2.5 bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 font-black text-xs rounded-xl cursor-pointer hover:shadow-md transition-all">Browse Kingdom Store</button>
+      </div>
+    `;
+    if (window.lucide) window.lucide.createIcons();
+    return;
+  }
+
+  container.innerHTML = items.map(item => {
+    const downloadLink = item.fileUrl || '';
+    const safeTitle = item.title || 'Kingdom Resource';
+
+    return `
+      <div class="p-6 bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800/90 rounded-3xl space-y-4 flex flex-col justify-between shadow-xs hover:shadow-md transition-all">
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 text-[10px] font-black uppercase tracking-wider">
+              ${item.category || 'Unlocked'}
+            </span>
+            <span class="text-[10px] font-mono text-amber-500 font-bold">🪙 ${item.kcCost || 0} KC</span>
+          </div>
+          <h4 class="font-black text-slate-900 dark:text-zinc-100 text-sm sm:text-base line-clamp-1">${safeTitle}</h4>
+          <p class="text-[11px] text-slate-400">Ready to download to your phone or computer</p>
+        </div>
+
+        <button onclick="downloadStoreProductDirect('${item.itemId || item.id}', '${encodeURIComponent(downloadLink)}', '${encodeURIComponent(safeTitle)}')" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-2xl text-xs uppercase tracking-wider cursor-pointer flex items-center justify-center gap-2 shadow-md shadow-emerald-600/20 active:scale-98 transition-all">
+          <i data-lucide="download" class="w-4 h-4"></i> Download Resource
+        </button>
+      </div>
+    `;
+  }).join('');
+
+  if (window.lucide) window.lucide.createIcons();
+}
 
 function setupRequestPriceCalculator() {
   const typeSelect = document.getElementById('custom-req-type');
@@ -666,16 +684,17 @@ function setupRequestPriceCalculator() {
     'social': 150,
     'birthday': 180,
     'event': 250,
-    'church': 300,
-    'youth': 150,
     'editing': 200,
     'other': 200
   };
 
   const updateCalc = () => {
     const type = typeSelect.value || 'wallpaper';
-    const cost = PRICE_MAP[type] || 200;
-    const userKc = window.currentUserProfile?.kingdomCoins || currentChampionUserData?.kingdomCoins || 0;
+    const cost = PRICE_MAP[type] || 150;
+    let userKc = 100;
+    if (window.currentKcBalance !== undefined) userKc = window.currentKcBalance;
+    else if (window.currentUserProfile?.kingdomCoins !== undefined) userKc = window.currentUserProfile.kingdomCoins;
+
     const afterKc = userKc - cost;
 
     const costEl = document.getElementById('custom-req-cost-display');
@@ -686,11 +705,7 @@ function setupRequestPriceCalculator() {
     if (userBalanceEl) userBalanceEl.innerText = `${userKc.toLocaleString()} KC`;
     if (afterEl) {
       afterEl.innerText = `${afterKc.toLocaleString()} KC`;
-      if (afterKc < 0) {
-        afterEl.className = "font-extrabold text-red-500";
-      } else {
-        afterEl.className = "font-extrabold text-emerald-500 dark:text-emerald-400";
-      }
+      afterEl.className = afterKc < 0 ? "font-extrabold text-red-500 font-mono" : "font-extrabold text-emerald-500 dark:text-emerald-400 font-mono";
     }
   };
 
@@ -698,39 +713,240 @@ function setupRequestPriceCalculator() {
   updateCalc();
 }
 
-// Preview Source Image for Request
-function previewCustomRequestSourceImage(event) {
+// Super Admin Direct Product Upload Helpers
+let uploadedStoreCoverBase64 = null;
+let uploadedStoreFileBase64 = null;
+
+function handleStoreCoverFileSelect(event) {
   const file = event.target.files[0];
   if (!file) return;
 
+  if (file.size > 8 * 1024 * 1024) {
+    window.showToast?.("Image is too large. Please select an image under 8MB.", "warning");
+    event.target.value = '';
+    return;
+  }
+
+  // Compress image on client-side to ensure swift Firestore performance
+  compressImageToDataUrl(file, 1200, 0.82).then(dataUrl => {
+    uploadedStoreCoverBase64 = dataUrl;
+    const previewBox = document.getElementById('store-upload-cover-preview-box');
+    const previewImg = document.getElementById('store-upload-cover-preview');
+    if (previewImg) previewImg.src = dataUrl;
+    if (previewBox) previewBox.classList.remove('hidden');
+    window.showToast?.("Cover image loaded directly from device!", "success");
+  }).catch(err => {
+    console.error("Image compression error:", err);
+    window.showToast?.("Error loading image from device.", "error");
+  });
+}
+
+function handleStoreResourceFileSelect(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  if (file.size > 6 * 1024 * 1024) {
+    window.showToast?.("File is large. Files up to 6MB can be uploaded directly.", "warning");
+  }
+
   const reader = new FileReader();
   reader.onload = function(e) {
-    const previewBox = document.getElementById('custom-req-img-preview-box');
-    const previewImg = document.getElementById('custom-req-img-preview');
-    if (previewImg) previewImg.src = e.target.result;
-    if (previewBox) previewBox.classList.remove('hidden');
-    window.customRequestUploadedImageData = e.target.result;
+    uploadedStoreFileBase64 = e.target.result;
+    const fileLabel = document.getElementById('store-upload-file-status');
+    if (fileLabel) {
+      fileLabel.innerText = `✓ Selected: ${file.name} (${Math.round(file.size / 1024)} KB)`;
+      fileLabel.classList.remove('hidden');
+    }
+    window.showToast?.(`File "${file.name}" ready to upload!`, "success");
   };
   reader.readAsDataURL(file);
 }
 
-// Submit Custom Creation Request
+function clearStoreUploadCover() {
+  uploadedStoreCoverBase64 = null;
+  const input = document.getElementById('store-upload-cover-input');
+  if (input) input.value = '';
+  const previewBox = document.getElementById('store-upload-cover-preview-box');
+  if (previewBox) previewBox.classList.add('hidden');
+}
+
+// Client-side Image Resizer & Compressor
+function compressImageToDataUrl(file, maxWidth = 1200, quality = 0.82) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function openSuperAdminStoreUploadModal() {
+  const isSuperAdmin = window.currentUserRole === 'Super Admin' || window.auth?.currentUser?.email === 'danielgiobari644@gmail.com';
+  if (!isSuperAdmin) {
+    window.showToast?.("Super Admin credentials required to upload store resources.", "error");
+    return;
+  }
+  const modal = document.getElementById('store-upload-modal');
+  if (modal) modal.classList.remove('hidden');
+  if (window.lucide) window.lucide.createIcons();
+}
+
+function closeSuperAdminStoreUploadModal() {
+  const modal = document.getElementById('store-upload-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+async function handleSuperAdminStoreUploadSubmit(e) {
+  e.preventDefault();
+
+  const isSuperAdmin = window.currentUserRole === 'Super Admin' || window.auth?.currentUser?.email === 'danielgiobari644@gmail.com';
+  if (!isSuperAdmin) {
+    window.showToast?.("Super Admin access required.", "error");
+    return;
+  }
+
+  const title = document.getElementById('store-up-title')?.value?.trim();
+  const category = document.getElementById('store-up-category')?.value || 'Wallpapers';
+  const collectionName = document.getElementById('store-up-collection')?.value?.trim() || 'Home.cell Digital';
+  const priceKC = parseInt(document.getElementById('store-up-price')?.value) || 50;
+  const description = document.getElementById('store-up-desc')?.value?.trim();
+  const author = document.getElementById('store-up-author')?.value?.trim() || 'Pastor Daniel (Super Admin)';
+  const tagsStr = document.getElementById('store-up-tags')?.value?.trim() || '';
+  const isFeatured = document.getElementById('store-up-featured')?.checked || false;
+
+  const urlCoverInput = document.getElementById('store-up-cover-url')?.value?.trim();
+  const urlFileInput = document.getElementById('store-up-file-url')?.value?.trim();
+
+  const finalCoverUrl = uploadedStoreCoverBase64 || urlCoverInput || 'https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=800&q=80';
+  const finalFileUrl = uploadedStoreFileBase64 || urlFileInput || finalCoverUrl;
+
+  if (!title || !description) {
+    window.showToast?.("Please enter both title and description.", "warning");
+    return;
+  }
+
+  const submitBtn = document.getElementById('btn-store-upload-submit');
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = `<span class="animate-spin inline-block mr-2">⏳</span> Publishing to Store...`;
+  }
+
+  try {
+    const db = window.db;
+    if (!db) throw new Error("Database offline.");
+
+    const prodId = `prod_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const tags = tagsStr.split(',').map(t => t.trim()).filter(Boolean);
+
+    const payload = {
+      id: prodId,
+      title: title,
+      category: category,
+      collectionName: collectionName,
+      priceKC: priceKC,
+      price: priceKC,
+      description: description,
+      author: author,
+      coverUrl: finalCoverUrl,
+      imageUrl: finalCoverUrl,
+      fileUrl: finalFileUrl,
+      downloadUrl: finalFileUrl,
+      tags: tags.length > 0 ? tags : [category, "Kingdom"],
+      featured: isFeatured,
+      published: true,
+      downloadable: true,
+      downloadsCount: 0,
+      uploadedByEmail: window.auth?.currentUser?.email || 'danielgiobari644@gmail.com',
+      createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
+    };
+
+    await db.collection('products').doc(prodId).set(payload);
+    await db.collection('storeProducts').doc(prodId).set(payload).catch(() => {});
+
+    window.soundEngine?.playSuccess?.();
+    window.showToast?.(`🎉 "${title}" uploaded to Kingdom Store successfully!`, "success");
+
+    // Reset Form
+    document.getElementById('store-upload-form')?.reset();
+    clearStoreUploadCover();
+    uploadedStoreFileBase64 = null;
+    const fileStatus = document.getElementById('store-upload-file-status');
+    if (fileStatus) fileStatus.classList.add('hidden');
+
+    closeSuperAdminStoreUploadModal();
+    syncStoreProducts();
+
+  } catch (err) {
+    console.error("Upload product error:", err);
+    window.showToast?.("Failed to upload product: " + err.message, "error");
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.innerText = "Publish to Kingdom Store 🛍️";
+    }
+  }
+}
+
+async function deleteStoreProductDirect(productId, encodedTitle) {
+  const isSuperAdmin = window.currentUserRole === 'Super Admin' || window.auth?.currentUser?.email === 'danielgiobari644@gmail.com';
+  if (!isSuperAdmin) {
+    window.showToast?.("Super Admin access required.", "error");
+    return;
+  }
+
+  const title = decodeURIComponent(encodedTitle || 'Product');
+  const confirmDelete = confirm(`Are you sure you want to remove "${title}" from the Kingdom Store catalog?`);
+  if (!confirmDelete) return;
+
+  try {
+    const db = window.db;
+    if (!db) return;
+
+    await db.collection('products').doc(productId).delete();
+    await db.collection('storeProducts').doc(productId).delete().catch(() => {});
+
+    window.showToast?.(`"${title}" deleted from Kingdom Store.`, "info");
+    syncStoreProducts();
+  } catch (err) {
+    window.showToast?.("Error deleting product: " + err.message, "error");
+  }
+}
+
+// Custom Requests Handling
 async function handleCustomRequestSubmit(e) {
   e.preventDefault();
 
   const user = window.auth?.currentUser;
   if (!user) {
     window.showToast?.("Please sign in to submit custom requests!", "error");
+    if (window.openAuthModal) window.openAuthModal();
     return;
   }
 
   const type = document.getElementById('custom-req-type')?.value || 'wallpaper';
   const description = document.getElementById('custom-req-desc')?.value?.trim();
   const desiredResult = document.getElementById('custom-req-desired')?.value?.trim();
-  const sourceImgUrl = window.customRequestUploadedImageData || document.getElementById('custom-req-url')?.value?.trim() || '';
 
   if (!description || !desiredResult) {
-    window.showToast?.("Please fill out both the description and desired result!", "error");
+    window.showToast?.("Please fill out both description and desired text.", "warning");
     return;
   }
 
@@ -742,27 +958,26 @@ async function handleCustomRequestSubmit(e) {
     'social': 150,
     'birthday': 180,
     'event': 250,
-    'church': 300,
-    'youth': 150,
     'editing': 200,
     'other': 200
   };
 
-  const costKC = PRICE_MAP[type] || 200;
-  const userKc = window.currentUserProfile?.kingdomCoins || currentChampionUserData?.kingdomCoins || 0;
+  const costKC = PRICE_MAP[type] || 150;
+  let userKc = 100;
+  if (window.currentKcBalance !== undefined) userKc = window.currentKcBalance;
+  else if (window.currentUserProfile?.kingdomCoins !== undefined) userKc = window.currentUserProfile.kingdomCoins;
 
   if (userKc < costKC) {
-    window.showToast?.(`Insufficient Kingdom Coins. You need ${costKC} KC for this request!`, "error");
+    window.showToast?.(`Not enough KC. You have ${userKc} KC, but this request requires ${costKC} KC.`, "warning");
     return;
   }
 
   const reqNum = Math.floor(100000 + Math.random() * 900000);
   const reqId = `REQ-2026-${reqNum}`;
-
-  window.showToast?.("Submitting your custom creation request...", "info");
-
   const db = window.db;
   if (!db) return;
+
+  window.showToast?.("Submitting custom design request...", "info");
 
   try {
     const userRef = db.collection('users').doc(user.uid);
@@ -777,25 +992,21 @@ async function handleCustomRequestSubmit(e) {
       if (currentBalance < costKC) throw new Error("Insufficient balance.");
 
       transaction.update(userRef, {
-        kingdomCoins: currentBalance - costKC,
-        customRequestsCount: (userDoc.data().customRequestsCount || 0) + 1
+        kingdomCoins: currentBalance - costKC
       });
 
       transaction.set(reqRef, {
         id: reqId,
         userUid: user.uid,
-        userName: window.currentUserProfile?.displayName || user.displayName || user.email || 'Faith Member',
+        userName: window.currentUserProfile?.displayName || user.displayName || user.email || 'Member',
         userEmail: user.email || '',
         type: type,
         description: description,
         desiredResult: desiredResult,
-        sourceImageUrl: sourceImgUrl,
+        desiredText: desiredResult,
         costKC: costKC,
-        status: "Submitted", // Submitted, In Progress, Ready, Completed, Needs Information
+        status: "Submitted",
         resultUrl: "",
-        adminNotes: "",
-        rating: 0,
-        review: "",
         createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
       });
 
@@ -805,29 +1016,28 @@ async function handleCustomRequestSubmit(e) {
         type: "debit",
         amount: costKC,
         title: `Custom Request (${reqId})`,
-        description: `Reserved ${costKC} KC for ${type} request`,
+        description: `Reserved ${costKC} KC for ${type} creation`,
         createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
       });
     });
 
-    // Reset Form
     document.getElementById('custom-req-form')?.reset();
-    document.getElementById('custom-req-img-preview-box')?.classList.add('hidden');
-    window.customRequestUploadedImageData = null;
 
-    if (window.currentUserProfile) window.currentUserProfile.kingdomCoins = userKc - costKC;
+    const newBal = userKc - costKC;
+    window.currentKcBalance = newBal;
+    if (window.currentUserProfile) window.currentUserProfile.kingdomCoins = newBal;
+    
     renderStoreKcHeader();
-
-    window.showToast?.(`🎉 Request ${reqId} submitted! Super Admin has been notified.`, "success");
+    window.soundEngine?.playCoins?.();
+    window.showToast?.(`🎉 Request ${reqId} submitted! Our media team is on it.`, "success");
     syncCustomRequests();
 
   } catch (err) {
-    console.error("Custom request submission failed:", err);
-    window.showToast?.(`Request failed: ${err.message}`, "error");
+    console.error("Custom request failed:", err);
+    window.showToast?.(err.message || "Failed to submit request.", "error");
   }
 }
 
-// Sync Custom Requests List
 function syncCustomRequests() {
   const container = document.getElementById('my-custom-requests-list');
   if (!container) return;
@@ -848,10 +1058,10 @@ function syncCustomRequests() {
     .onSnapshot(snap => {
       if (snap.empty) {
         container.innerHTML = `
-          <div class="text-center py-8 text-slate-400 dark:text-zinc-500 border border-dashed border-slate-200 dark:border-zinc-800 rounded-3xl">
-            <i data-lucide="sparkles" class="w-10 h-10 mx-auto mb-2 opacity-50"></i>
-            <p class="font-bold text-slate-700 dark:text-zinc-300">No custom creation requests yet.</p>
-            <p class="text-xs mt-0.5">Use the form above to request custom wallpapers, quote graphics, or event designs!</p>
+          <div class="col-span-full text-center py-8 text-slate-400 dark:text-zinc-500 border border-dashed border-slate-200 dark:border-zinc-800 rounded-3xl">
+            <i data-lucide="sparkles" class="w-8 h-8 mx-auto mb-2 opacity-50"></i>
+            <p class="font-bold text-slate-700 dark:text-zinc-300">No custom orders yet.</p>
+            <p class="text-xs mt-0.5">Submit a custom wallpaper or banner request above!</p>
           </div>
         `;
         if (window.lucide) window.lucide.createIcons();
@@ -861,144 +1071,33 @@ function syncCustomRequests() {
       const requests = [];
       snap.forEach(doc => requests.push({ id: doc.id, ...doc.data() }));
 
-      renderMyRequestsCards(requests);
-    }, err => console.warn("Requests snapshot error:", err));
-}
-
-// Render My Requests Cards
-function renderMyRequestsCards(requests) {
-  const container = document.getElementById('my-custom-requests-list');
-  if (!container) return;
-
-  const STATUS_BADGES = {
-    'Submitted': 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border-amber-300',
-    'In Progress': 'bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300 border-blue-300',
-    'Ready': 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-300',
-    'Completed': 'bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300 border-purple-300',
-    'Needs Information': 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border-rose-300'
-  };
-
-  container.innerHTML = requests.map(r => `
-    <div class="p-5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl space-y-4 shadow-xs">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <span class="px-2.5 py-1 rounded-xl text-[10px] font-black uppercase font-mono tracking-wider bg-slate-100 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200">
-            ${r.id}
-          </span>
-          <span class="text-xs font-bold text-slate-600 dark:text-zinc-400 capitalize">${r.type} Design</span>
-        </div>
-        <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${STATUS_BADGES[r.status] || 'bg-slate-100 text-slate-600'}">
-          ${r.status}
-        </span>
-      </div>
-
-      <div class="space-y-1">
-        <p class="text-xs text-slate-800 dark:text-zinc-200 font-medium"><strong>Target:</strong> ${r.desiredResult}</p>
-        <p class="text-[11px] text-slate-500 dark:text-zinc-400 line-clamp-2">${r.description}</p>
-      </div>
-
-      ${r.adminNotes ? `
-        <div class="p-3 bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 rounded-2xl text-xs text-purple-900 dark:text-purple-200">
-          <span class="font-bold">👑 Super Admin Note:</span> ${r.adminNotes}
-        </div>
-      ` : ''}
-
-      ${r.resultUrl ? `
-        <div class="p-4 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-2xl space-y-3">
+      container.innerHTML = requests.map(r => `
+        <div class="p-5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl space-y-3 shadow-xs">
           <div class="flex items-center justify-between">
-            <span class="text-xs font-black text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
-              <i data-lucide="check-circle" class="w-4 h-4 text-emerald-500"></i> Result Ready!
+            <span class="px-2.5 py-1 rounded-xl text-[10px] font-black uppercase font-mono bg-slate-100 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200">
+              ${r.id}
             </span>
-            <button onclick="downloadCustomResultFile('${r.id}', '${r.resultUrl}')" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-xl text-xs uppercase cursor-pointer flex items-center gap-1.5 shadow-sm">
-              <i data-lucide="download" class="w-3.5 h-3.5"></i> Download Result
-            </button>
+            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${r.status === 'Completed' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300'}">
+              ${r.status}
+            </span>
           </div>
 
-          ${r.rating ? `
-            <div class="text-xs text-amber-500 font-bold flex items-center gap-1">
-              Your Rating: ${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}
-            </div>
-          ` : `
-            <button onclick="promptRequestReviewModal('${r.id}')" class="text-xs text-purple-600 dark:text-purple-400 font-bold underline cursor-pointer hover:text-purple-800">
-              ⭐ Rate & Review Creation
+          <div>
+            <p class="text-xs font-bold text-slate-800 dark:text-zinc-200">${r.desiredResult || r.desiredText || 'Custom Design'}</p>
+            <p class="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5">${r.description || ''}</p>
+          </div>
+
+          ${(r.resultUrl || r.deliverableUrl) ? `
+            <button onclick="downloadStoreProductDirect('${r.id}', '${encodeURIComponent(r.resultUrl || r.deliverableUrl)}', '${encodeURIComponent(r.desiredResult || 'Custom_Design')}')" class="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs uppercase cursor-pointer flex items-center justify-center gap-1.5 shadow-sm">
+              <i data-lucide="download" class="w-3.5 h-3.5"></i> Download Finished Graphic
             </button>
-          `}
+          ` : ''}
         </div>
-      ` : ''}
-    </div>
-  `).join('');
+      `).join('');
 
-  if (window.lucide) window.lucide.createIcons();
+      if (window.lucide) window.lucide.createIcons();
+    }, err => console.warn("Requests snapshot error:", err));
 }
-
-// Download Custom Result File
-function downloadCustomResultFile(reqId, url) {
-  window.showToast?.(`📥 Downloading custom creation for ${reqId}...`, "success");
-  if (url && url.startsWith('http')) {
-    window.open(url, '_blank');
-  } else {
-    window.triggerDirectFileDownload?.('pwa');
-  }
-}
-
-// Prompt Request Review Modal
-function promptRequestReviewModal(reqId) {
-  window.showModalHtml?.(`
-    <div class="space-y-4 p-1">
-      <h3 class="text-lg font-black text-slate-900 dark:text-zinc-100">Rate Your Custom Creation</h3>
-      <p class="text-xs text-slate-500 dark:text-zinc-400">Your feedback helps Super Admin refine future design quality!</p>
-
-      <div class="space-y-2">
-        <label class="text-xs font-bold text-slate-700 dark:text-zinc-300">Rating Stars</label>
-        <select id="modal-req-rating-stars" class="w-full px-3 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl text-slate-900 dark:text-zinc-100 font-bold text-sm">
-          <option value="5">⭐⭐⭐⭐⭐ Excellent (5 Stars)</option>
-          <option value="4">⭐⭐⭐⭐ Good (4 Stars)</option>
-          <option value="3">⭐⭐⭐ Average (3 Stars)</option>
-          <option value="2">⭐⭐ Needs Improvement (2 Stars)</option>
-          <option value="1">⭐ Poor (1 Star)</option>
-        </select>
-      </div>
-
-      <div class="space-y-2">
-        <label class="text-xs font-bold text-slate-700 dark:text-zinc-300">Comments / Testimonial</label>
-        <textarea id="modal-req-review-text" rows="3" class="w-full px-3 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl text-xs text-slate-900 dark:text-zinc-100" placeholder="God bless! The wallpaper was amazing..."></textarea>
-      </div>
-
-      <div class="flex gap-2 pt-2">
-        <button onclick="window.closeModal?.()" class="flex-1 py-2.5 bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 font-bold rounded-xl text-xs cursor-pointer">Cancel</button>
-        <button onclick="submitCustomRequestRating('${reqId}')" class="flex-1 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-extrabold rounded-xl text-xs uppercase cursor-pointer">Submit Rating</button>
-      </div>
-    </div>
-  `);
-}
-
-// Submit Custom Request Rating
-async function submitCustomRequestRating(reqId) {
-  const rating = parseInt(document.getElementById('modal-req-rating-stars')?.value || '5');
-  const review = document.getElementById('modal-req-review-text')?.value?.trim() || '';
-
-  const db = window.db;
-  if (!db) return;
-
-  try {
-    await db.collection('custom_requests').doc(reqId).update({
-      rating: rating,
-      review: review,
-      status: "Completed"
-    });
-
-    window.closeModal?.();
-    window.showToast?.("Thank you for your rating!", "success");
-    syncCustomRequests();
-  } catch (e) {
-    console.error("Submit rating error:", e);
-    window.showToast?.("Error submitting rating.", "error");
-  }
-}
-
-// ---------------------------------------------------------------------------
-// 4. FEEDBACK HUB SYSTEM 💡
-// ---------------------------------------------------------------------------
 
 function syncFeedbackHub() {
   const container = document.getElementById('feedback-hub-list');
@@ -1009,101 +1108,49 @@ function syncFeedbackHub() {
   const db = window.db;
   if (!db) return;
 
-  storeFeedbackListener = db.collection('feedback_items').onSnapshot(snap => {
+  storeFeedbackListener = db.collection('feedback_items').orderBy('createdAt', 'desc').onSnapshot(snap => {
     let items = [];
     if (!snap.empty) {
       snap.forEach(doc => items.push({ id: doc.id, ...doc.data() }));
     }
 
-    renderFeedbackList(items);
+    if (items.length === 0) {
+      container.innerHTML = `<div class="text-center py-6 text-slate-400 text-xs">No feedback submitted yet. Share your suggestions above!</div>`;
+      return;
+    }
+
+    const userUid = window.auth?.currentUser?.uid;
+
+    container.innerHTML = items.map(item => {
+      const hasUpvoted = userUid && item.upvotes && item.upvotes[userUid];
+      return `
+        <div class="p-4 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl flex items-start gap-3 shadow-xs">
+          <button onclick="toggleFeedbackUpvote('${item.id}')" class="flex flex-col items-center justify-center p-2.5 rounded-xl border ${hasUpvoted ? 'bg-purple-600 border-purple-600 text-white' : 'bg-slate-50 dark:bg-zinc-800 border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-300'} transition-all cursor-pointer shrink-0">
+            <i data-lucide="chevron-up" class="w-4 h-4"></i>
+            <span class="text-xs font-black font-mono">${item.upvotesCount || 0}</span>
+          </button>
+          <div class="flex-1 space-y-1">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-bold uppercase text-purple-600 dark:text-purple-400">${item.type || 'Suggestion'}</span>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-500">${item.status || 'Under Review'}</span>
+            </div>
+            <h5 class="font-bold text-slate-900 dark:text-zinc-100 text-xs">${item.title}</h5>
+            <p class="text-xs text-slate-500 dark:text-zinc-400">${item.description}</p>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    if (window.lucide) window.lucide.createIcons();
   }, err => console.warn("Feedback snapshot error:", err));
 }
 
-// Render Feedback Hub List
-function renderFeedbackList(items) {
-  const container = document.getElementById('feedback-hub-list');
-  if (!container) return;
-
-  let filtered = items;
-
-  if (activeFeedbackFilter === 'popular') {
-    filtered.sort((a, b) => (b.upvotesCount || 0) - (a.upvotesCount || 0));
-  } else if (activeFeedbackFilter !== 'all') {
-    filtered = filtered.filter(i => (i.status || '').toLowerCase().replace(' ', '_') === activeFeedbackFilter);
-  }
-
-  if (filtered.length === 0) {
-    container.innerHTML = `
-      <div class="text-center py-10 text-slate-400 dark:text-zinc-500">
-        <i data-lucide="lightbulb" class="w-10 h-10 mx-auto mb-2 opacity-50"></i>
-        <p class="font-bold text-slate-700 dark:text-zinc-300">No suggestions submitted yet.</p>
-        <p class="text-xs mt-0.5">Be the first to suggest what Home.cell should build next!</p>
-      </div>
-    `;
-    if (window.lucide) window.lucide.createIcons();
-    return;
-  }
-
-  const userUid = window.auth?.currentUser?.uid;
-
-  const STATUS_COLORS = {
-    'Under Review': 'bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300',
-    'Planned': 'bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300',
-    'In Development': 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300',
-    'Completed': 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300',
-    'Declined': 'bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-zinc-400'
-  };
-
-  container.innerHTML = filtered.map(item => {
-    const hasUpvoted = userUid && item.upvotes && item.upvotes[userUid];
-
-    return `
-      <div class="p-5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl space-y-3 shadow-xs hover:border-slate-300 dark:hover:border-zinc-700 transition-all flex items-start gap-4">
-        <!-- Upvote Button -->
-        <button onclick="toggleFeedbackUpvote('${item.id}')" class="flex flex-col items-center justify-center p-3 rounded-2xl border ${hasUpvoted ? 'bg-purple-600 border-purple-600 text-white' : 'bg-slate-50 dark:bg-zinc-850 border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800'} transition-all cursor-pointer shrink-0">
-          <i data-lucide="chevron-up" class="w-5 h-5"></i>
-          <span class="text-xs font-black font-mono mt-0.5">${item.upvotesCount || 0}</span>
-        </button>
-
-        <!-- Feedback Content -->
-        <div class="flex-1 space-y-1">
-          <div class="flex items-center justify-between gap-2">
-            <span class="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400">
-              ${item.type || 'Suggestion'}
-            </span>
-            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${STATUS_COLORS[item.status] || 'bg-slate-100'}">
-              ${item.status || 'Under Review'}
-            </span>
-          </div>
-
-          <h4 class="font-bold text-slate-900 dark:text-zinc-100 text-sm mt-1">${item.title}</h4>
-          <p class="text-xs text-slate-500 dark:text-zinc-400 leading-relaxed">${item.description}</p>
-
-          <div class="flex items-center justify-between text-[10px] text-slate-400 pt-2">
-            <span>By <strong>${item.userName || 'Member'}</strong></span>
-            ${item.rewardAwarded ? `<span class="text-amber-500 font-bold">✨ Super Admin Rewarded +10 KC</span>` : ''}
-          </div>
-
-          ${item.adminNotes ? `
-            <div class="mt-2 p-2.5 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-xl text-xs text-blue-900 dark:text-blue-200">
-              <strong class="font-bold">Home.cell Team:</strong> ${item.adminNotes}
-            </div>
-          ` : ''}
-        </div>
-      </div>
-    `;
-  }).join('');
-
-  if (window.lucide) window.lucide.createIcons();
-}
-
-// Submit Feedback Hub Item
 async function handleFeedbackSubmit(e) {
   e.preventDefault();
 
   const user = window.auth?.currentUser;
   if (!user) {
-    window.showToast?.("Please sign in to submit suggestions!", "error");
+    window.showToast?.("Please sign in to submit suggestions.", "warning");
     return;
   }
 
@@ -1111,12 +1158,7 @@ async function handleFeedbackSubmit(e) {
   const title = document.getElementById('feedback-title')?.value?.trim();
   const description = document.getElementById('feedback-desc')?.value?.trim();
 
-  if (!title || !description) {
-    window.showToast?.("Please enter both a title and description!", "error");
-    return;
-  }
-
-  window.showToast?.("Submitting suggestion to Feedback Hub...", "info");
+  if (!title || !description) return;
 
   const db = window.db;
   if (!db) return;
@@ -1127,32 +1169,28 @@ async function handleFeedbackSubmit(e) {
     await itemRef.set({
       id: itemRef.id,
       userUid: user.uid,
-      userName: window.currentUserProfile?.displayName || user.displayName || user.email || 'Faith Member',
+      userName: window.currentUserProfile?.displayName || user.displayName || user.email || 'Member',
       type: type,
       title: title,
       description: description,
       upvotesCount: 1,
       upvotes: { [user.uid]: true },
       status: "Under Review",
-      adminNotes: "",
-      rewardAwarded: false,
       createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
     });
 
     document.getElementById('feedback-form')?.reset();
-    window.showToast?.("💡 Suggestion posted! Community members can now upvote it.", "success");
+    window.showToast?.("Suggestion posted to Feedback Hub!", "success");
     syncFeedbackHub();
   } catch (err) {
-    console.error("Feedback submit error:", err);
-    window.showToast?.("Error submitting suggestion.", "error");
+    window.showToast?.("Failed to post suggestion.", "error");
   }
 }
 
-// Toggle Feedback Upvote
 async function toggleFeedbackUpvote(itemId) {
   const user = window.auth?.currentUser;
   if (!user) {
-    window.showToast?.("Please sign in to upvote suggestions!", "error");
+    window.showToast?.("Please sign in to upvote suggestions.", "warning");
     return;
   }
 
@@ -1183,166 +1221,11 @@ async function toggleFeedbackUpvote(itemId) {
         upvotesCount: count
       });
     });
-
-  } catch (e) {
-    console.error("Upvote transaction error:", e);
-  }
+  } catch (e) {}
 }
 
-// Filter Feedback
-function filterFeedback(filterKey) {
-  activeFeedbackFilter = filterKey;
-  const pills = document.querySelectorAll('.feedback-filter-pill');
-  pills.forEach(p => {
-    if (p.getAttribute('data-filter') === filterKey) {
-      p.className = "feedback-filter-pill px-3 py-1.5 rounded-xl text-xs font-bold bg-purple-600 text-white cursor-pointer";
-    } else {
-      p.className = "feedback-filter-pill px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 cursor-pointer hover:bg-slate-200 dark:hover:bg-zinc-700";
-    }
-  });
-
-  syncFeedbackHub();
-}
-
-// ---------------------------------------------------------------------------
-// 5. MY LIBRARY SYSTEM 📚
-// ---------------------------------------------------------------------------
-
-function syncMyLibrary() {
-  const container = document.getElementById('my-library-grid');
-  if (!container) return;
-
-  const user = window.auth?.currentUser;
-  if (!user) {
-    container.innerHTML = `<p class="col-span-full text-xs text-slate-400 text-center py-8">Sign in to view your purchased resources and downloads.</p>`;
-    return;
-  }
-
-  if (storeLibraryListener) storeLibraryListener();
-
-  const db = window.db;
-  if (!db) return;
-
-  storeLibraryListener = db.collection('user_rewards')
-    .where('userUid', '==', user.uid)
-    .onSnapshot(snap => {
-      window.currentUserPurchasedItemIds = [];
-      const items = [];
-
-      if (!snap.empty) {
-        snap.forEach(doc => {
-          const d = doc.data();
-          items.push(d);
-          if (d.itemId) window.currentUserPurchasedItemIds.push(d.itemId);
-        });
-      }
-
-      renderMyLibraryGrid(items);
-    }, err => console.warn("Library snapshot error:", err));
-}
-
-function renderMyLibraryGrid(items) {
-  const container = document.getElementById('my-library-grid');
-  if (!container) return;
-
-  if (items.length === 0) {
-    container.innerHTML = `
-      <div class="col-span-full text-center py-10 text-slate-400 dark:text-zinc-500 border border-dashed border-slate-200 dark:border-zinc-800 rounded-3xl">
-        <i data-lucide="book-open" class="w-10 h-10 mx-auto mb-2 opacity-50"></i>
-        <p class="font-bold text-slate-700 dark:text-zinc-300">Your library is currently empty.</p>
-        <p class="text-xs mt-0.5">Explore the Kingdom Store marketplace and unlock Christian resources using your Kingdom Coins!</p>
-        <button onclick="switchStoreTab('marketplace')" class="mt-4 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs rounded-xl cursor-pointer transition-all">Browse Kingdom Store</button>
-      </div>
-    `;
-    if (window.lucide) window.lucide.createIcons();
-    return;
-  }
-
-  container.innerHTML = items.map(item => `
-    <div class="p-6 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl space-y-4 flex flex-col justify-between shadow-xs">
-      <div class="space-y-1">
-        <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 text-[10px] font-black uppercase">
-          ${item.category || 'Unlocked'}
-        </span>
-        <h4 class="font-black text-slate-900 dark:text-zinc-100 text-sm mt-1 line-clamp-1">${item.title}</h4>
-        <p class="text-[11px] text-slate-400 font-mono">Unlocked for ${item.kcCost || 0} KC</p>
-      </div>
-
-      <button onclick="downloadStoreProductDirect('${item.itemId || item.id}', '${item.fileUrl || ''}')" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-xl text-xs uppercase cursor-pointer flex items-center justify-center gap-2 shadow-sm transition-all">
-        <i data-lucide="download" class="w-4 h-4"></i> Download Resource
-      </button>
-    </div>
-  `).join('');
-
-  if (window.lucide) window.lucide.createIcons();
-}
-
-// KC Transaction History Listener
-let storeKcTxListener = null;
-function syncKcTransactionHistory() {
-  const container = document.getElementById('kc-transactions-list');
-  const countEl = document.getElementById('kc-history-count');
-  if (!container) return;
-
-  const user = window.auth?.currentUser;
-  if (!user) {
-    container.innerHTML = `<p class="text-xs text-slate-400 text-center py-8">Sign in to view your Kingdom Coin activity.</p>`;
-    if (countEl) countEl.textContent = '0 transactions';
-    return;
-  }
-
-  if (storeKcTxListener) storeKcTxListener();
-
-  const db = window.db;
-  if (!db) return;
-
-  storeKcTxListener = db.collection('kc_transactions')
-    .where('userUid', '==', user.uid)
-    .orderBy('createdAt', 'desc')
-    .limit(50)
-    .onSnapshot(snap => {
-      const txs = [];
-      snap.forEach(doc => txs.push({ id: doc.id, ...doc.data() }));
-
-      if (countEl) countEl.textContent = `${txs.length} transaction${txs.length !== 1 ? 's' : ''}`;
-
-      if (txs.length === 0) {
-        container.innerHTML = `<p class="text-xs text-slate-400 text-center py-8">No Kingdom Coin activity yet.</p>`;
-        return;
-      }
-
-      container.innerHTML = txs.map(tx => {
-        const isDebit = tx.type === 'debit' || tx.amount < 0;
-        const absAmount = Math.abs(tx.amount || 0);
-        const dateStr = tx.createdAt?.toDate
-          ? tx.createdAt.toDate().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-          : '—';
-        const colorClass = isDebit
-          ? 'text-rose-600 dark:text-rose-400'
-          : 'text-emerald-600 dark:text-emerald-400';
-        const sign = isDebit ? '-' : '+';
-        const desc = tx.description || (isDebit ? 'Spent' : 'Earned');
-
-        return `
-          <div class="p-4 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-xs flex items-center justify-between gap-4 transition-all hover:border-slate-300 dark:hover:border-zinc-700">
-            <div class="min-w-0 flex-1">
-              <p class="text-xs font-bold text-slate-800 dark:text-zinc-200 truncate">${desc}</p>
-              <p class="text-[10px] text-slate-400 mt-0.5">${dateStr}</p>
-            </div>
-            <span class="text-sm font-black ${colorClass} shrink-0">${sign}${absAmount.toLocaleString()} KC</span>
-          </div>
-        `;
-      }).join('');
-    }, err => {
-      console.warn("KC transactions listener error:", err);
-      container.innerHTML = `<p class="text-xs text-slate-400 text-center py-8">Unable to load transaction history.</p>`;
-      if (countEl) countEl.textContent = 'Error';
-    });
-}
-
-// Inner Tab Switcher for Kingdom Store
 function switchStoreTab(tabKey) {
-  const sections = ['marketplace', 'custom-requests', 'feedback-hub', 'my-library', 'rewards', 'installers', 'kc-history'];
+  const sections = ['marketplace', 'custom-requests', 'feedback-hub', 'my-library'];
   sections.forEach(s => {
     const el = document.getElementById(`store-section-${s}`);
     const btn = document.getElementById(`store-tab-btn-${s}`);
@@ -1352,15 +1235,15 @@ function switchStoreTab(tabKey) {
     }
     if (btn) {
       if (s === tabKey) {
-        btn.className = "store-nav-btn px-4 py-2.5 rounded-2xl text-xs font-black bg-amber-500 text-slate-950 cursor-pointer shadow-sm transition-all flex items-center gap-2 shrink-0";
+        btn.className = "store-nav-btn px-4 sm:px-5 py-2.5 rounded-2xl text-xs font-black bg-amber-500 text-slate-950 cursor-pointer shadow-sm transition-all flex items-center gap-2 shrink-0";
       } else {
-        btn.className = "store-nav-btn px-4 py-2.5 rounded-2xl text-xs font-extrabold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-700 cursor-pointer transition-all flex items-center gap-2 shrink-0";
+        btn.className = "store-nav-btn px-4 sm:px-5 py-2.5 rounded-2xl text-xs font-extrabold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-700 cursor-pointer transition-all flex items-center gap-2 shrink-0";
       }
     }
   });
+  if (window.lucide) window.lucide.createIcons();
 }
 
-// Global Exports
 window.initKingdomStoreModule = initKingdomStoreModule;
 window.selectStoreCategory = selectStoreCategory;
 window.handleStoreSearch = handleStoreSearch;
@@ -1368,13 +1251,14 @@ window.clearStoreFilters = clearStoreFilters;
 window.promptBuyProductModal = promptBuyProductModal;
 window.executeProductPurchase = executeProductPurchase;
 window.downloadStoreProductDirect = downloadStoreProductDirect;
-window.previewCustomRequestSourceImage = previewCustomRequestSourceImage;
 window.handleCustomRequestSubmit = handleCustomRequestSubmit;
-window.downloadCustomResultFile = downloadCustomResultFile;
-window.promptRequestReviewModal = promptRequestReviewModal;
-window.submitCustomRequestRating = submitCustomRequestRating;
 window.handleFeedbackSubmit = handleFeedbackSubmit;
 window.toggleFeedbackUpvote = toggleFeedbackUpvote;
-window.filterFeedback = filterFeedback;
 window.switchStoreTab = switchStoreTab;
-window.syncKcTransactionHistory = syncKcTransactionHistory;
+window.openSuperAdminStoreUploadModal = openSuperAdminStoreUploadModal;
+window.closeSuperAdminStoreUploadModal = closeSuperAdminStoreUploadModal;
+window.handleStoreCoverFileSelect = handleStoreCoverFileSelect;
+window.handleStoreResourceFileSelect = handleStoreResourceFileSelect;
+window.clearStoreUploadCover = clearStoreUploadCover;
+window.handleSuperAdminStoreUploadSubmit = handleSuperAdminStoreUploadSubmit;
+window.deleteStoreProductDirect = deleteStoreProductDirect;
