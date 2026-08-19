@@ -4,16 +4,17 @@
 const CACHE_NAME = 'homecell-cache-v2';
 const ASSETS_TO_CACHE = [
   './',
-  'index.html',
-  'manifest.json',
-  'favicon.jpg'
+  './index.html',
+  './manifest.json',
+  './favicon.svg',
+  './index.css'
 ];
 
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
       return cache.addAll(ASSETS_TO_CACHE).catch(err => {
-        console.warn("Service worker cache.addAll failed (benign in preview):", err);
+        console.warn("Service worker cache.addAll note:", err);
       });
     })
   );
@@ -49,21 +50,21 @@ self.addEventListener('fetch', event => {
 });
 
 self.addEventListener('push', event => {
-  let data = { title: 'Home.cell', body: 'New fellowship update!', url: '/' };
+  let data = { title: 'Home.cell', body: 'New fellowship update!', url: './' };
   if (event.data) {
     try {
       data = event.data.json();
     } catch (e) {
-      data = { title: 'Home.cell', body: event.data.text(), url: '/' };
+      data = { title: 'Home.cell', body: event.data.text(), url: './' };
     }
   }
 
   const options = {
     body: data.body,
-    icon: '/favicon.jpg',
-    badge: '/favicon.jpg',
+    icon: './favicon.svg',
+    badge: './favicon.svg',
     data: {
-      url: data.url || '/'
+      url: data.url || './'
     },
     vibrate: [100, 50, 100],
     actions: [
@@ -78,7 +79,7 @@ self.addEventListener('push', event => {
 
 self.addEventListener('notificationclick', event => {
   event.notification.close();
-  const urlToOpen = (event.notification.data && event.notification.data.url) ? event.notification.data.url : '/';
+  const urlToOpen = (event.notification.data && event.notification.data.url) ? event.notification.data.url : './';
   
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(windowClients => {

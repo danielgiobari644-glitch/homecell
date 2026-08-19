@@ -59,7 +59,9 @@ function toggleQuickTheme() {
 
 window.initThemeSystem = initThemeSystem;
 window.applyTheme = applyTheme;
+window.setThemeMode = applyTheme;
 window.toggleQuickTheme = toggleQuickTheme;
+
 
 // Auto-run at script parse
 initThemeSystem();

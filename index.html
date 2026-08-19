@@ -6,8 +6,9 @@
     <title>Home.cell — Christian Fellowship & Discipleship Portal</title>
     <meta name="description" content="A spacious, Christ-centered fellowship portal with House Cells, Champions Hub, Kingdom Store, Daily Devotionals, and Bible Study." />
     
-    <!-- PWA Manifest -->
-    <link rel="manifest" href="/manifest.json" />
+    <!-- PWA Manifest & Icons -->
+    <link rel="manifest" href="./manifest.json" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <meta name="theme-color" content="#2563eb" />
 
     <!-- Google Fonts -->
@@ -42,7 +43,7 @@
     </script>
 
     <!-- Custom Theme Stylesheet -->
-    <link rel="stylesheet" href="/index.css" />
+    <link rel="stylesheet" href="./index.css" />
 
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
@@ -947,78 +948,104 @@
 
     </main>
 
-    <!-- SLIDE-OVER MOBILE NAVIGATION DRAWER (All Devices Accessible) -->
+    <!-- SLIDE-OVER MOBILE / DESKTOP NAVIGATION DRAWER (Modernized & Animated) -->
     <div id="mobile-drawer" class="fixed inset-0 z-50 pointer-events-none">
-      <!-- Backdrop -->
-      <div id="mobile-drawer-backdrop" onclick="toggleMobileNavDrawer(false)" class="drawer-backdrop fixed inset-0 bg-slate-950/70 backdrop-blur-sm"></div>
+      <!-- Backdrop with spring blur -->
+      <div id="mobile-drawer-backdrop" onclick="toggleMobileNavDrawer(false)" class="drawer-backdrop fixed inset-0 bg-slate-950/70 backdrop-blur-md"></div>
 
-      <!-- Slide Panel -->
-      <div id="mobile-drawer-panel" class="drawer-panel fixed top-0 right-0 bottom-0 w-[88vw] max-w-sm bg-white dark:bg-zinc-900 border-l border-slate-200 dark:border-zinc-800 shadow-2xl flex flex-col pointer-events-auto z-10">
+      <!-- Slide Panel with Glassmorphism -->
+      <div id="mobile-drawer-panel" class="drawer-panel fixed top-0 right-0 bottom-0 w-[90vw] sm:w-96 max-w-sm border-l border-slate-200/80 dark:border-zinc-800/80 shadow-2xl flex flex-col pointer-events-auto z-10">
         
-        <!-- Drawer Header -->
-        <div class="p-5 border-b border-slate-200/80 dark:border-zinc-800 flex items-center justify-between bg-slate-50/50 dark:bg-zinc-950/50">
-          <div class="flex items-center gap-2.5">
-            <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white font-black text-xs shadow-xs">✝</div>
+        <!-- Drawer Top Branding -->
+        <div class="p-5 border-b border-slate-200/70 dark:border-zinc-800/70 flex items-center justify-between bg-white/40 dark:bg-zinc-900/40 backdrop-blur-xl">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-violet-600 p-0.5 shadow-md shadow-blue-500/25 flex items-center justify-center text-white font-black text-sm">
+              ✝
+            </div>
             <div>
-              <h3 class="font-black text-sm font-display text-slate-900 dark:text-zinc-50">Home<span class="text-blue-600 dark:text-blue-400">.cell</span></h3>
-              <p class="text-[10px] text-slate-500 dark:text-zinc-400 font-medium">Navigation & Ministry</p>
+              <div class="flex items-center gap-1.5">
+                <h3 class="font-black text-base font-display text-slate-900 dark:text-zinc-50">Home<span class="text-blue-600 dark:text-blue-400">.cell</span></h3>
+                <span class="text-[9px] font-black uppercase font-mono px-1.5 py-0.2 rounded-full bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950">Portal</span>
+              </div>
+              <p class="text-[10px] text-slate-500 dark:text-zinc-400 font-medium">Faith • Fellowship • Community</p>
             </div>
           </div>
-          <button onclick="toggleMobileNavDrawer(false)" class="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer" aria-label="Close Navigation">
+          <button onclick="toggleMobileNavDrawer(false)" class="p-2 rounded-2xl text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer" aria-label="Close Navigation">
             <i data-lucide="x" class="w-5 h-5"></i>
           </button>
         </div>
 
-        <!-- Drawer User Card -->
-        <div class="p-4 bg-gradient-to-r from-blue-600/5 via-indigo-600/5 to-purple-600/5 border-b border-slate-200/60 dark:border-zinc-800">
+        <!-- Modernized User Status Card -->
+        <div class="p-4 mx-4 mt-4 rounded-3xl bg-gradient-to-br from-blue-600/10 via-indigo-600/5 to-purple-600/10 border border-blue-200/50 dark:border-blue-900/40 shadow-xs">
           <div class="flex items-center justify-between gap-3">
-            <div class="flex items-center gap-3">
-              <div id="drawer-user-avatar" class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-black text-xs flex items-center justify-center overflow-hidden shadow-xs shrink-0">✝</div>
-              <div class="overflow-hidden">
-                <h4 id="drawer-user-name" class="font-bold text-xs text-slate-900 dark:text-zinc-100 truncate">Believer Guest</h4>
-                <p id="drawer-user-role" class="text-[10px] text-slate-500 dark:text-zinc-400 font-mono">Member</p>
+            <div class="flex items-center gap-3 min-w-0">
+              <div class="relative shrink-0">
+                <div id="drawer-user-avatar" class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-black text-sm flex items-center justify-center overflow-hidden shadow-sm">
+                  ✝
+                </div>
+                <span class="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-white dark:border-zinc-900" title="Active"></span>
+              </div>
+              <div class="overflow-hidden min-w-0">
+                <h4 id="drawer-user-name" class="font-black text-xs text-slate-900 dark:text-zinc-100 truncate">Guest Believer</h4>
+                <div class="flex items-center gap-1.5 mt-0.5">
+                  <span id="drawer-user-role" class="px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-600 dark:text-blue-400 text-[9px] font-black uppercase tracking-wider">Member</span>
+                </div>
               </div>
             </div>
-            <div class="text-right">
-              <span id="drawer-kc-display" class="px-2.5 py-1 rounded-xl bg-amber-400/20 text-amber-600 dark:text-amber-400 font-black text-xs font-mono inline-block">100 KC</span>
+            
+            <div class="text-right shrink-0">
+              <div id="drawer-kc-display" class="px-3 py-1.5 rounded-2xl bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 font-black text-xs font-mono shadow-xs">
+                100 KC
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- Drawer Navigation Links (Grouped & Accessible) -->
+        <!-- Modern Drawer Navigation Links -->
         <div class="flex-1 overflow-y-auto p-4 space-y-5 smooth-scroll no-scrollbar">
           
-          <!-- Category 1: Fellowship & Community -->
-          <div class="space-y-1">
-            <span class="text-[10px] font-black uppercase tracking-wider text-slate-400 px-3 block">Fellowship & Community</span>
+          <!-- Category 1: Fellowship & Life -->
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between px-3">
+              <span class="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-zinc-500">Fellowship & Life</span>
+              <span class="text-[9px] text-blue-600 dark:text-blue-400 font-bold">Community</span>
+            </div>
             
-            <button onclick="switchTab('feed')" id="drawer-item-feed" class="drawer-nav-item w-full flex items-center justify-between px-3 py-2.5 rounded-2xl text-xs font-bold text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer">
+            <button onclick="switchTab('feed'); toggleMobileNavDrawer(false);" id="drawer-item-feed" class="drawer-nav-item w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold text-slate-700 dark:text-zinc-200 hover:bg-slate-100/80 dark:hover:bg-zinc-800/80 transition-all cursor-pointer">
               <div class="flex items-center gap-3">
-                <i data-lucide="newspaper" class="w-4 h-4 text-blue-500"></i>
+                <div class="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                  <i data-lucide="newspaper" class="w-4 h-4"></i>
+                </div>
                 <span>Fellowship Feed</span>
               </div>
               <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-400"></i>
             </button>
 
-            <button onclick="switchTab('cells')" id="drawer-item-cells" class="drawer-nav-item w-full flex items-center justify-between px-3 py-2.5 rounded-2xl text-xs font-bold text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer">
+            <button onclick="switchTab('cells'); toggleMobileNavDrawer(false);" id="drawer-item-cells" class="drawer-nav-item w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold text-slate-700 dark:text-zinc-200 hover:bg-slate-100/80 dark:hover:bg-zinc-800/80 transition-all cursor-pointer">
               <div class="flex items-center gap-3">
-                <i data-lucide="users" class="w-4 h-4 text-indigo-500"></i>
+                <div class="w-8 h-8 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                  <i data-lucide="users" class="w-4 h-4"></i>
+                </div>
                 <span>House Cells & Chat</span>
               </div>
               <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-400"></i>
             </button>
 
-            <button onclick="switchTab('prayer')" id="drawer-item-prayer" class="drawer-nav-item w-full flex items-center justify-between px-3 py-2.5 rounded-2xl text-xs font-bold text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer">
+            <button onclick="switchTab('prayer'); toggleMobileNavDrawer(false);" id="drawer-item-prayer" class="drawer-nav-item w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold text-slate-700 dark:text-zinc-200 hover:bg-slate-100/80 dark:hover:bg-zinc-800/80 transition-all cursor-pointer">
               <div class="flex items-center gap-3">
-                <i data-lucide="heart-handshake" class="w-4 h-4 text-rose-500"></i>
+                <div class="w-8 h-8 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center">
+                  <i data-lucide="heart-handshake" class="w-4 h-4"></i>
+                </div>
                 <span>Prayer Requests Wall</span>
               </div>
               <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-400"></i>
             </button>
 
-            <button onclick="switchTab('events')" id="drawer-item-events" class="drawer-nav-item w-full flex items-center justify-between px-3 py-2.5 rounded-2xl text-xs font-bold text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer">
+            <button onclick="switchTab('events'); toggleMobileNavDrawer(false);" id="drawer-item-events" class="drawer-nav-item w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold text-slate-700 dark:text-zinc-200 hover:bg-slate-100/80 dark:hover:bg-zinc-800/80 transition-all cursor-pointer">
               <div class="flex items-center gap-3">
-                <i data-lucide="calendar" class="w-4 h-4 text-teal-500"></i>
+                <div class="w-8 h-8 rounded-xl bg-teal-500/10 text-teal-600 dark:text-teal-400 flex items-center justify-center">
+                  <i data-lucide="calendar" class="w-4 h-4"></i>
+                </div>
                 <span>Gatherings & Rallies</span>
               </div>
               <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-400"></i>
@@ -1026,71 +1053,94 @@
           </div>
 
           <!-- Category 2: Spiritual Growth & Word -->
-          <div class="space-y-1">
-            <span class="text-[10px] font-black uppercase tracking-wider text-slate-400 px-3 block">Word & Spiritual Growth</span>
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between px-3">
+              <span class="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-zinc-500">Word & Growth</span>
+              <span class="text-[9px] text-amber-600 dark:text-amber-400 font-bold">Discipleship</span>
+            </div>
 
-            <button onclick="switchTab('champions')" id="drawer-item-champions" class="drawer-nav-item w-full flex items-center justify-between px-3 py-2.5 rounded-2xl text-xs font-bold text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer">
+            <button onclick="switchTab('champions'); toggleMobileNavDrawer(false);" id="drawer-item-champions" class="drawer-nav-item w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold text-slate-700 dark:text-zinc-200 hover:bg-slate-100/80 dark:hover:bg-zinc-800/80 transition-all cursor-pointer">
               <div class="flex items-center gap-3">
-                <i data-lucide="crown" class="w-4 h-4 text-amber-500"></i>
+                <div class="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                  <i data-lucide="crown" class="w-4 h-4"></i>
+                </div>
                 <span>Champions Hub & Missions</span>
               </div>
-              <span class="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px] font-black font-mono">Earn KC</span>
+              <span class="px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 text-[9px] font-black font-mono">Earn KC</span>
             </button>
 
-            <button onclick="switchTab('bible')" id="drawer-item-bible" class="drawer-nav-item w-full flex items-center justify-between px-3 py-2.5 rounded-2xl text-xs font-bold text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer">
+            <button onclick="switchTab('bible'); toggleMobileNavDrawer(false);" id="drawer-item-bible" class="drawer-nav-item w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold text-slate-700 dark:text-zinc-200 hover:bg-slate-100/80 dark:hover:bg-zinc-800/80 transition-all cursor-pointer">
               <div class="flex items-center gap-3">
-                <i data-lucide="book-open" class="w-4 h-4 text-blue-500"></i>
+                <div class="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                  <i data-lucide="book-open" class="w-4 h-4"></i>
+                </div>
                 <span>Holy Bible Study Reader</span>
               </div>
               <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-400"></i>
             </button>
 
-            <button onclick="switchTab('devotionals')" id="drawer-item-devotionals" class="drawer-nav-item w-full flex items-center justify-between px-3 py-2.5 rounded-2xl text-xs font-bold text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer">
+            <button onclick="switchTab('devotionals'); toggleMobileNavDrawer(false);" id="drawer-item-devotionals" class="drawer-nav-item w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold text-slate-700 dark:text-zinc-200 hover:bg-slate-100/80 dark:hover:bg-zinc-800/80 transition-all cursor-pointer">
               <div class="flex items-center gap-3">
-                <i data-lucide="sun" class="w-4 h-4 text-amber-500"></i>
+                <div class="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                  <i data-lucide="sun" class="w-4 h-4"></i>
+                </div>
                 <span>Daily Bread Devotionals</span>
               </div>
-              <span class="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[10px] font-black font-mono">+10 KC</span>
+              <span class="px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-600 dark:text-blue-400 text-[9px] font-black font-mono">+10 KC</span>
             </button>
 
-            <button onclick="switchTab('quiz')" id="drawer-item-quiz" class="drawer-nav-item w-full flex items-center justify-between px-3 py-2.5 rounded-2xl text-xs font-bold text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer">
+            <button onclick="switchTab('quiz'); toggleMobileNavDrawer(false);" id="drawer-item-quiz" class="drawer-nav-item w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold text-slate-700 dark:text-zinc-200 hover:bg-slate-100/80 dark:hover:bg-zinc-800/80 transition-all cursor-pointer">
               <div class="flex items-center gap-3">
-                <i data-lucide="help-circle" class="w-4 h-4 text-purple-500"></i>
+                <div class="w-8 h-8 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                  <i data-lucide="help-circle" class="w-4 h-4"></i>
+                </div>
                 <span>Live Trivia Quiz Arena</span>
               </div>
-              <span class="px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 text-[10px] font-black">Live</span>
+              <span class="px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-600 dark:text-purple-300 text-[9px] font-black animate-pulse">Live</span>
             </button>
           </div>
 
-          <!-- Category 3: Kingdom Resources -->
-          <div class="space-y-1">
-            <span class="text-[10px] font-black uppercase tracking-wider text-slate-400 px-3 block">Kingdom Resources</span>
+          <!-- Category 3: Kingdom Resources & Hall of Fame -->
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between px-3">
+              <span class="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-zinc-500">Resources & Ranks</span>
+              <span class="text-[9px] text-emerald-600 dark:text-emerald-400 font-bold">Store</span>
+            </div>
 
-            <button onclick="switchTab('store')" id="drawer-item-store" class="drawer-nav-item w-full flex items-center justify-between px-3 py-2.5 rounded-2xl text-xs font-bold text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer">
+            <button onclick="switchTab('store'); toggleMobileNavDrawer(false);" id="drawer-item-store" class="drawer-nav-item w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold text-slate-700 dark:text-zinc-200 hover:bg-slate-100/80 dark:hover:bg-zinc-800/80 transition-all cursor-pointer">
               <div class="flex items-center gap-3">
-                <i data-lucide="shopping-bag" class="w-4 h-4 text-emerald-500"></i>
+                <div class="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                  <i data-lucide="shopping-bag" class="w-4 h-4"></i>
+                </div>
                 <span>Kingdom Store 2.0</span>
               </div>
               <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-400"></i>
             </button>
 
-            <button onclick="switchTab('halloffame')" id="drawer-item-halloffame" class="drawer-nav-item w-full flex items-center justify-between px-3 py-2.5 rounded-2xl text-xs font-bold text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer">
+            <button onclick="switchTab('halloffame'); toggleMobileNavDrawer(false);" id="drawer-item-halloffame" class="drawer-nav-item w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold text-slate-700 dark:text-zinc-200 hover:bg-slate-100/80 dark:hover:bg-zinc-800/80 transition-all cursor-pointer">
               <div class="flex items-center gap-3">
-                <i data-lucide="trophy" class="w-4 h-4 text-yellow-500"></i>
+                <div class="w-8 h-8 rounded-xl bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 flex items-center justify-center">
+                  <i data-lucide="trophy" class="w-4 h-4"></i>
+                </div>
                 <span>Hall of Fame & Rankings</span>
               </div>
               <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-400"></i>
             </button>
           </div>
 
-          <!-- Category 4: Super Admin (Shown if Admin) -->
-          <div class="space-y-1" id="drawer-admin-section">
-            <span class="text-[10px] font-black uppercase tracking-wider text-purple-500 px-3 block">Leadership Command</span>
+          <!-- Category 4: Leadership Command (Super Admin) -->
+          <div class="space-y-1.5" id="drawer-admin-section">
+            <div class="flex items-center justify-between px-3">
+              <span class="text-[10px] font-black uppercase tracking-widest text-purple-600 dark:text-purple-400">Super Admin</span>
+              <span class="text-[9px] text-purple-600 dark:text-purple-400 font-bold font-mono">Shield</span>
+            </div>
 
-            <button onclick="switchTab('admin')" id="drawer-item-admin" class="drawer-nav-item w-full flex items-center justify-between px-3 py-2.5 rounded-2xl text-xs font-bold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/40 hover:bg-purple-100 dark:hover:bg-purple-900/60 transition-all cursor-pointer border border-purple-200 dark:border-purple-800">
+            <button onclick="switchTab('admin'); toggleMobileNavDrawer(false);" id="drawer-item-admin" class="drawer-nav-item w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold text-purple-700 dark:text-purple-300 bg-purple-500/10 hover:bg-purple-500/20 transition-all cursor-pointer border border-purple-300/60 dark:border-purple-800/60">
               <div class="flex items-center gap-3">
-                <i data-lucide="shield-check" class="w-4 h-4 text-purple-600 dark:text-purple-400"></i>
-                <span>Super Admin Center</span>
+                <div class="w-8 h-8 rounded-xl bg-purple-600 text-white flex items-center justify-center shadow-xs">
+                  <i data-lucide="shield-check" class="w-4 h-4"></i>
+                </div>
+                <span>Leadership Command Center</span>
               </div>
               <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-purple-500"></i>
             </button>
@@ -1098,25 +1148,32 @@
 
         </div>
 
-        <!-- Drawer Footer Utilities -->
-        <div class="p-4 border-t border-slate-200/80 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/50 space-y-3">
+        <!-- Drawer Footer Utilities & Theme Switcher -->
+        <div class="p-4 border-t border-slate-200/70 dark:border-zinc-800/70 bg-slate-50/70 dark:bg-zinc-950/70 backdrop-blur-xl space-y-3">
           <div class="flex items-center justify-between">
-            <span class="text-xs font-bold text-slate-600 dark:text-zinc-400">Theme</span>
-            <div class="flex items-center gap-1 bg-slate-200 dark:bg-zinc-800 p-1 rounded-xl">
-              <button onclick="setThemeMode('light')" class="p-1.5 rounded-lg text-slate-700 dark:text-zinc-300 hover:bg-white dark:hover:bg-zinc-700 cursor-pointer" title="Light Theme">☀️</button>
-              <button onclick="setThemeMode('dark')" class="p-1.5 rounded-lg text-slate-700 dark:text-zinc-300 hover:bg-white dark:hover:bg-zinc-700 cursor-pointer" title="Dark Theme">🌙</button>
-              <button onclick="setThemeMode('sanctuary')" class="p-1.5 rounded-lg text-slate-700 dark:text-zinc-300 hover:bg-white dark:hover:bg-zinc-700 cursor-pointer" title="Sanctuary Theme">🌌</button>
+            <span class="text-xs font-bold text-slate-600 dark:text-zinc-400">Visual Theme</span>
+            <div class="flex items-center gap-1 bg-slate-200/80 dark:bg-zinc-800 p-1 rounded-2xl">
+              <button onclick="setThemeMode('light')" class="px-2.5 py-1 rounded-xl text-xs font-bold text-slate-700 dark:text-zinc-300 hover:bg-white dark:hover:bg-zinc-700 transition-all cursor-pointer flex items-center gap-1" title="Light Theme">
+                <span>☀️</span> <span class="text-[10px]">Light</span>
+              </button>
+              <button onclick="setThemeMode('dark')" class="px-2.5 py-1 rounded-xl text-xs font-bold text-slate-700 dark:text-zinc-300 hover:bg-white dark:hover:bg-zinc-700 transition-all cursor-pointer flex items-center gap-1" title="Dark Theme">
+                <span>🌙</span> <span class="text-[10px]">Dark</span>
+              </button>
+              <button onclick="setThemeMode('sanctuary')" class="px-2.5 py-1 rounded-xl text-xs font-bold text-slate-700 dark:text-zinc-300 hover:bg-white dark:hover:bg-zinc-700 transition-all cursor-pointer flex items-center gap-1" title="Sanctuary Theme">
+                <span>🌌</span> <span class="text-[10px]">Sanctuary</span>
+              </button>
             </div>
           </div>
           
-          <button onclick="handleHeaderAuthClick(); toggleMobileNavDrawer(false);" class="w-full py-2.5 rounded-xl bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 font-bold text-xs hover:bg-slate-200 dark:hover:bg-zinc-700 transition-all cursor-pointer flex items-center justify-center gap-2">
-            <i data-lucide="user" class="w-4 h-4"></i>
-            <span>Account Profile</span>
+          <button onclick="handleHeaderAuthClick(); toggleMobileNavDrawer(false);" class="w-full py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-800 dark:text-zinc-100 font-black text-xs transition-all cursor-pointer flex items-center justify-center gap-2 border border-slate-200 dark:border-zinc-700">
+            <i data-lucide="user" class="w-4 h-4 text-blue-600 dark:text-blue-400"></i>
+            <span id="drawer-footer-auth-text">Account Profile / Switch Account</span>
           </button>
         </div>
 
       </div>
     </div>
+
 
     <!-- MOBILE STICKY BOTTOM NAVIGATION BAR (Fluid Thumb Access on all Touch Devices) -->
     <nav class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl border-t border-slate-200/80 dark:border-zinc-800/80 px-2 py-1 flex items-center justify-around shadow-lg">
@@ -1350,23 +1407,23 @@
     </div>
 
 
-    <!-- CORE LOGIC & PURE VANILLA MODULE SCRIPTS -->
-    <script src="/toast.js"></script>
-    <script src="/sound-engine.js"></script>
-    <script src="/theme.js"></script>
-    <script src="/firebase.js"></script>
-    <script src="/push-notification.js"></script>
-    <script src="/champions.js"></script>
-    <script src="/store.js"></script>
-    <script src="/halloffame.js"></script>
-    <script src="/feed.js"></script>
-    <script src="/cells.js"></script>
-    <script src="/bible.js"></script>
-    <script src="/quiz.js"></script>
-    <script src="/devotionals.js"></script>
-    <script src="/events.js"></script>
-    <script src="/prayer.js"></script>
-    <script src="/admin.js"></script>
+    <!-- CORE LOGIC & PURE VANILLA MODULE SCRIPTS (Relative Paths) -->
+    <script src="./toast.js"></script>
+    <script src="./sound-engine.js"></script>
+    <script src="./theme.js"></script>
+    <script src="./firebase.js"></script>
+    <script src="./push-notification.js"></script>
+    <script src="./champions.js"></script>
+    <script src="./store.js"></script>
+    <script src="./halloffame.js"></script>
+    <script src="./feed.js"></script>
+    <script src="./cells.js"></script>
+    <script src="./bible.js"></script>
+    <script src="./quiz.js"></script>
+    <script src="./devotionals.js"></script>
+    <script src="./events.js"></script>
+    <script src="./prayer.js"></script>
+    <script src="./admin.js"></script>
 
     <!-- GLOBAL ROUTER & AUTH CONTROLLER -->
     <script>

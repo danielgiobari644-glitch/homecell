@@ -1,31 +1,68 @@
-/* Home.cell — Pure Vanilla Modern Theme, Responsive Layout & Smooth Scrollability */
+/* Home.cell — Modernized Premium Design System, Fluid Animations & Responsive UI */
 
 :root {
   --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-display: 'Playfair Display', Georgia, serif;
-  --bg-color: #f8fafc;
-  --text-color: #0f172a;
-  --card-bg: rgba(255, 255, 255, 0.85);
-  --card-border: rgba(226, 232, 240, 0.8);
-  --header-bg: rgba(255, 255, 255, 0.85);
+  
+  /* Refined, Elegant Light Theme Palette */
+  --bg-color: #f8fafd;
+  --bg-mesh: radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.06) 0px, transparent 50%),
+             radial-gradient(at 100% 0%, rgba(245, 158, 11, 0.05) 0px, transparent 50%),
+             radial-gradient(at 50% 100%, rgba(99, 102, 241, 0.04) 0px, transparent 60%);
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+  --card-bg: rgba(255, 255, 255, 0.92);
+  --card-border: rgba(226, 232, 240, 0.85);
+  --card-border-hover: rgba(59, 130, 246, 0.35);
+  --header-bg: rgba(255, 255, 255, 0.88);
+  --drawer-bg: rgba(255, 255, 255, 0.95);
   --accent-gold: #f59e0b;
   --accent-blue: #2563eb;
+  --pill-bg: #f1f5f9;
+  --pill-hover: #e2e8f0;
+  --shadow-sm: 0 2px 8px -1px rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 10px 25px -3px rgba(15, 23, 42, 0.06), 0 4px 6px -4px rgba(15, 23, 42, 0.03);
+  --shadow-lg: 0 20px 35px -4px rgba(15, 23, 42, 0.08), 0 8px 16px -6px rgba(15, 23, 42, 0.04);
 }
 
 html.dark {
   --bg-color: #09090b;
-  --text-color: #f4f4f5;
-  --card-bg: rgba(24, 24, 27, 0.8);
-  --card-border: rgba(39, 39, 42, 0.8);
-  --header-bg: rgba(15, 15, 20, 0.85);
+  --bg-mesh: radial-gradient(at 0% 0%, rgba(37, 99, 235, 0.12) 0px, transparent 50%),
+             radial-gradient(at 100% 100%, rgba(124, 58, 237, 0.08) 0px, transparent 50%);
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --card-bg: rgba(24, 24, 27, 0.82);
+  --card-border: rgba(39, 39, 42, 0.85);
+  --card-border-hover: rgba(96, 165, 250, 0.35);
+  --header-bg: rgba(15, 15, 20, 0.88);
+  --drawer-bg: rgba(18, 18, 23, 0.96);
+  --pill-bg: #18181b;
+  --pill-hover: #27272a;
+  --shadow-sm: 0 2px 8px -1px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 10px 25px -3px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 20px 35px -4px rgba(0, 0, 0, 0.5);
 }
 
 html.sanctuary {
   --bg-color: #080912;
-  --text-color: #f8fafc;
+  --bg-mesh: radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+             radial-gradient(at 100% 0%, rgba(245, 158, 11, 0.1) 0px, transparent 50%),
+             radial-gradient(at 50% 100%, rgba(139, 92, 246, 0.12) 0px, transparent 60%);
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
   --card-bg: rgba(14, 17, 30, 0.85);
-  --card-border: rgba(35, 42, 70, 0.6);
-  --header-bg: rgba(10, 12, 22, 0.85);
+  --card-border: rgba(35, 42, 70, 0.7);
+  --card-border-hover: rgba(245, 158, 11, 0.4);
+  --header-bg: rgba(10, 12, 22, 0.9);
+  --drawer-bg: rgba(12, 15, 28, 0.97);
+  --pill-bg: #141829;
+  --pill-hover: #1d233a;
+  --shadow-sm: 0 2px 8px -1px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 10px 25px -3px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 20px 35px -4px rgba(0, 0, 0, 0.6);
 }
 
 html {
@@ -37,7 +74,9 @@ html {
 body {
   font-family: var(--font-sans);
   background-color: var(--bg-color);
-  color: var(--text-color);
+  background-image: var(--bg-mesh);
+  background-attachment: fixed;
+  color: var(--text-primary);
   margin: 0;
   padding: 0;
   min-height: 100vh;
@@ -46,30 +85,31 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Fluid Typography */
+/* Typography Hierarchy */
 .font-display {
   font-family: var(--font-display);
 }
 
-/* Glassmorphic Responsive Panels */
+/* Glassmorphic Cards & Elevated Panels */
 .glass-panel {
   background-color: var(--card-bg);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--card-border);
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.04), 0 2px 6px -1px rgba(0, 0, 0, 0.02);
+  box-shadow: var(--shadow-sm);
   transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, border-color 0.25s ease;
 }
 
 .glass-panel:hover {
-  box-shadow: 0 10px 30px -4px rgba(0, 0, 0, 0.08), 0 4px 12px -2px rgba(0, 0, 0, 0.04);
+  border-color: var(--card-border-hover);
+  box-shadow: var(--shadow-md);
 }
 
-/* Tab Enter Transitions */
+/* View Transition Animations */
 @keyframes tabEnter {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
@@ -78,10 +118,110 @@ body {
 }
 
 .tab-animate-in {
-  animation: tabEnter 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: tabEnter 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Custom Scrollbars */
+/* Modernized Sidebar / Drawer Animations */
+.drawer-backdrop {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), backdrop-filter 0.35s ease;
+}
+
+.drawer-backdrop.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.drawer-panel {
+  transform: translateX(100%);
+  background-color: var(--drawer-bg);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  transition: transform 0.38s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.38s ease;
+}
+
+.drawer-panel.active {
+  transform: translateX(0);
+  box-shadow: -10px 0 40px -10px rgba(0, 0, 0, 0.25);
+}
+
+/* Animated Drawer Nav Items */
+.drawer-nav-item {
+  position: relative;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+.drawer-nav-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 15%;
+  bottom: 15%;
+  width: 3px;
+  border-radius: 9999px;
+  background: transparent;
+  transition: all 0.2s ease;
+}
+
+.drawer-nav-item:hover {
+  transform: translateX(4px);
+  background-color: var(--pill-hover);
+}
+
+.drawer-nav-item.active {
+  background-color: rgba(37, 99, 235, 0.08);
+  color: #2563eb;
+}
+
+.drawer-nav-item.active::before {
+  background: linear-gradient(180deg, #2563eb, #6366f1);
+}
+
+.dark .drawer-nav-item.active {
+  background-color: rgba(96, 165, 250, 0.12);
+  color: #60a5fa;
+}
+
+/* Desktop Navigation Pill Bar Micro-Interactions */
+.main-nav-pill {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.main-nav-pill:hover {
+  transform: translateY(-1px);
+}
+
+.main-nav-pill:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+/* Mobile Bottom Navigation Active Indicators */
+.bottom-nav-active {
+  color: #2563eb !important;
+  position: relative;
+}
+
+.dark .bottom-nav-active,
+.sanctuary .bottom-nav-active {
+  color: #60a5fa !important;
+}
+
+.bottom-nav-active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 3.5px;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, #2563eb, #6366f1);
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.4);
+}
+
+/* Clean Custom Scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -97,7 +237,6 @@ body {
   background: rgba(148, 163, 184, 0.6);
 }
 
-/* Hide scrollbars for horizontal pill bars */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
@@ -106,58 +245,13 @@ body {
   scrollbar-width: none;
 }
 
-/* Responsive Table & Scrollable Containers */
 .smooth-scroll {
   -webkit-overflow-scrolling: touch;
   scroll-behavior: smooth;
 }
 
-/* Bottom Safe Area for Mobile Navigation */
 @media (max-width: 768px) {
   body {
     padding-bottom: 5.5rem;
   }
-}
-
-/* Mobile Slide-Over Drawer Transitions */
-.drawer-backdrop {
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.drawer-backdrop.active {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.drawer-panel {
-  transform: translateX(100%);
-  transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.drawer-panel.active {
-  transform: translateX(0);
-}
-
-/* Active Bottom Nav Indicator */
-.bottom-nav-active {
-  color: #2563eb;
-  position: relative;
-}
-
-.dark .bottom-nav-active {
-  color: #60a5fa;
-}
-
-.bottom-nav-active::after {
-  content: '';
-  position: absolute;
-  bottom: -2px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 16px;
-  height: 3px;
-  border-radius: 9999px;
-  background: linear-gradient(90deg, #2563eb, #6366f1);
 }
