@@ -26,13 +26,27 @@ function setAppTheme(themeId, showToast = true) {
   html.setAttribute('data-theme', themeId);
   localStorage.setItem('equipped_theme_id', themeId);
 
-  const darkThemes = ['midnight_dark', 'champion_black', 'r_theme_purple', 'kingdom_purple', 'r_theme_gold', 'royal_gold', 'crimson_faith', 'emerald_dark'];
-  if (darkThemes.some(dt => themeId.includes(dt))) {
+  // Themes that are inherently dark (no light variant)
+  const alwaysDark = ['midnight_dark', 'champion_black', 'kingdom_purple', 'royal_gold', 'crimson_faith', 'emerald_dark'];
+  // Themes that have both light and dark variants (colored themes)
+  const coloredThemes = ['r_theme_gold', 'r_theme_emerald', 'r_theme_sapphire', 'r_theme_purple', 'r_theme_crimson'];
+  // Light-only themes
+  const lightThemes = ['classic_light', 'heavenly_white'];
+
+  if (alwaysDark.some(t => themeId.includes(t))) {
     html.classList.add('dark');
     localStorage.setItem('theme', 'dark');
-  } else if (themeId === 'classic_light' || themeId === 'heavenly_white') {
+  } else if (lightThemes.includes(themeId)) {
     html.classList.remove('dark');
     localStorage.setItem('theme', 'light');
+  } else if (coloredThemes.includes(themeId)) {
+    // Colored themes: check if user previously chose dark variant
+    const currentMode = localStorage.getItem('theme');
+    if (currentMode === 'dark') {
+      html.classList.add('dark');
+    } else {
+      html.classList.remove('dark');
+    }
   }
 
   if (window.currentUserUid && window.db) {
@@ -1638,6 +1652,48 @@ window.openTermsOfService = function() {
   window.switchTab('terms');
   window.scrollTo({ top: 0, behavior: 'smooth' });
 };
+
+// ===== RIPPLE MICROINTERACTION SYSTEM =====
+document.addEventListener('pointerdown', (e) => {
+  const btn = e.target.closest('button, a, [role="button"]');
+  if (!btn) return;
+  const rect = btn.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  const size = Math.max(rect.width, rect.height) * 2;
+  
+  const ripple = document.createElement('span');
+  ripple.className = 'ripple';
+  ripple.style.cssText = `left:${x - size/2}px;top:${y - size/2}px;width:${size}px;height:${size}px;`;
+  
+  // Add overflow hidden for ripple containment
+  const overflow = getComputedStyle(btn).overflow;
+  if (overflow !== 'hidden') {
+    btn.style.overflow = 'hidden';
+  }
+  
+  btn.appendChild(ripple);
+  ripple.addEventListener('animationend', () => {
+    ripple.remove();
+  }, { once: true });
+});
+
+// ===== SMOOTH SCROLL REVEAL OBSERVER =====
+const revealObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('animate-liquid-in');
+      revealObserver.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+// Observe all cards and sections for scroll reveal
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.glass-card, .hover-lift, .glass-surface').forEach(el => {
+    revealObserver.observe(el);
+  });
+});
 
 // Expose globally
 window.openAuthModal = openAuthModal;
