@@ -102,6 +102,7 @@ function initKingdomStoreModule() {
   syncCustomRequests();
   syncFeedbackHub();
   syncMyLibrary();
+  syncKcTransactionHistory();
   setupRequestPriceCalculator();
 }
 
@@ -391,7 +392,9 @@ async function promptBuyProductModal(productId) {
   `);
 }
 
-// Execute Atomic Purchase
+// Execute Atomic Purchase (with ownership guard and transaction protection)
+let _purchaseInProgress = {}; // Prevent double-clicks
+
 async function executeProductPurchase(productId, costKC, title, fileUrl) {
   const user = window.auth?.currentUser;
   if (!user) {
@@ -399,8 +402,15 @@ async function executeProductPurchase(productId, costKC, title, fileUrl) {
     return;
   }
 
+  // Double-click protection
+  if (_purchaseInProgress[productId]) {
+    window.showToast?.("Purchase is already being processed. Please wait.", "info");
+    return;
+  }
+  _purchaseInProgress[productId] = true;
+
   const db = window.db;
-  if (!db) return;
+  if (!db) { delete _purchaseInProgress[productId]; return; }
 
   window.closeModal?.();
   window.showToast?.("Processing secure Kingdom transaction...", "info");
@@ -411,69 +421,93 @@ async function executeProductPurchase(productId, costKC, title, fileUrl) {
     const subUserRewardRef = userRef.collection('user_rewards').doc(productId);
     const txnRef = db.collection('kc_transactions').doc();
 
-    const userDoc = await userRef.get();
-    if (!userDoc.exists) throw new Error("User profile not found. Please complete onboarding first.");
-
-    const userData = userDoc.data();
-    const currentKc = userData.kingdomCoins || 0;
-
-    if (currentKc < costKC) {
-      throw new Error(`Insufficient Kingdom Coins. You have ${currentKc} KC, but this item costs ${costKC} KC.`);
+    // Check ownership FIRST before doing anything
+    const existingReward = await rewardRef.get();
+    if (existingReward.exists && existingReward.data().claimedAt) {
+      window.showToast?.("You already own this item. Check your Library.", "info");
+      delete _purchaseInProgress[productId];
+      return;
     }
 
-    const newKc = currentKc - costKC;
-    const storePurchases = (userData.storePurchases || 0) + 1;
+    // Use a transaction for atomic balance check + deduction
+    await db.runTransaction(async (transaction) => {
+      const userDoc = await transaction.get(userRef);
+      if (!userDoc.exists) throw new Error("User profile not found. Please complete onboarding first.");
 
-    // Execute atomic write
-    const batch = db.batch();
-    batch.update(userRef, {
-      kingdomCoins: newKc,
-      storePurchases: storePurchases
+      // Re-check ownership inside transaction
+      const rewardDoc = await transaction.get(rewardRef);
+      if (rewardDoc.exists && rewardDoc.data().claimedAt) {
+        throw new Error("ALREADY_OWNED");
+      }
+
+      const userData = userDoc.data();
+      const currentKc = userData.kingdomCoins || 0;
+
+      if (currentKc < costKC) {
+        throw new Error(`Insufficient Kingdom Coins. You have ${currentKc} KC, but this item costs ${costKC} KC.`);
+      }
+
+      const newKc = currentKc - costKC;
+      const storePurchases = (userData.storePurchases || 0) + 1;
+
+      // Atomic balance deduction
+      transaction.update(userRef, {
+        kingdomCoins: newKc,
+        storePurchases: storePurchases
+      });
+
+      // Create ownership record
+      const rewardPayload = {
+        id: `${user.uid}_${productId}`,
+        userUid: user.uid,
+        itemId: productId,
+        title: title,
+        category: "Kingdom Store",
+        kcCost: costKC,
+        fileUrl: fileUrl || '',
+        claimedAt: window.firebase.firestore.FieldValue.serverTimestamp()
+      };
+
+      transaction.set(rewardRef, rewardPayload, { merge: true });
+      transaction.set(subUserRewardRef, rewardPayload, { merge: true });
+
+      // Record KC transaction
+      transaction.set(txnRef, {
+        id: txnRef.id,
+        userUid: user.uid,
+        type: "debit",
+        amount: costKC,
+        title: `Kingdom Store Purchase`,
+        description: `Purchased "${title}" for ${costKC} KC`,
+        createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+      // Update local state
+      if (window.currentUserProfile) window.currentUserProfile.kingdomCoins = newKc;
+      if (window.currentChampionUserData) window.currentChampionUserData.kingdomCoins = newKc;
     });
 
-    const rewardPayload = {
-      id: `${user.uid}_${productId}`,
-      userUid: user.uid,
-      itemId: productId,
-      title: title,
-      category: "Kingdom Store",
-      kcCost: costKC,
-      fileUrl: fileUrl || '',
-      claimedAt: window.firebase.firestore.FieldValue.serverTimestamp()
-    };
-
-    batch.set(rewardRef, rewardPayload, { merge: true });
-    batch.set(subUserRewardRef, rewardPayload, { merge: true });
-
-    batch.set(txnRef, {
-      id: txnRef.id,
-      userUid: user.uid,
-      type: "debit",
-      amount: costKC,
-      title: `Purchased "${title}"`,
-      description: `Acquired resource from Kingdom Store for ${costKC} KC`,
-      createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
-    });
-
-    await batch.commit();
-
-    // Update local state immediately
-    if (window.currentUserProfile) window.currentUserProfile.kingdomCoins = newKc;
-    if (window.currentChampionUserData) window.currentChampionUserData.kingdomCoins = newKc;
+    // Post-transaction UI updates
     if (!window.currentUserPurchasedItemIds) window.currentUserPurchasedItemIds = [];
     if (!window.currentUserPurchasedItemIds.includes(productId)) {
       window.currentUserPurchasedItemIds.push(productId);
     }
 
     window.triggerConfetti?.();
-    window.showToast?.(`🎉 Purchased "${title}"! Check My Library to download anytime.`, "success");
+    window.showToast?.(`Purchase successful! "${title}" has been added to your Library.`, "success");
     renderStoreKcHeader();
     syncStoreProducts();
     syncMyLibrary();
 
   } catch (err) {
     console.error("Purchase transaction failed:", err);
-    window.showToast?.(`Purchase error: ${err.message}`, "error");
+    if (err.message === "ALREADY_OWNED") {
+      window.showToast?.("You already own this item. Check your Library.", "info");
+    } else {
+      window.showToast?.(`We couldn't complete your purchase. ${err.message}`, "error");
+    }
+  } finally {
+    delete _purchaseInProgress[productId];
   }
 }
 
@@ -1225,7 +1259,7 @@ function renderMyLibraryGrid(items) {
   }
 
   container.innerHTML = items.map(item => `
-    <div class="p-5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl space-y-3 flex flex-col justify-between shadow-xs">
+    <div class="p-6 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl space-y-4 flex flex-col justify-between shadow-xs">
       <div class="space-y-1">
         <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 text-[10px] font-black uppercase">
           ${item.category || 'Unlocked'}
@@ -1243,9 +1277,72 @@ function renderMyLibraryGrid(items) {
   if (window.lucide) window.lucide.createIcons();
 }
 
+// KC Transaction History Listener
+let storeKcTxListener = null;
+function syncKcTransactionHistory() {
+  const container = document.getElementById('kc-transactions-list');
+  const countEl = document.getElementById('kc-history-count');
+  if (!container) return;
+
+  const user = window.auth?.currentUser;
+  if (!user) {
+    container.innerHTML = `<p class="text-xs text-slate-400 text-center py-8">Sign in to view your Kingdom Coin activity.</p>`;
+    if (countEl) countEl.textContent = '0 transactions';
+    return;
+  }
+
+  if (storeKcTxListener) storeKcTxListener();
+
+  const db = window.db;
+  if (!db) return;
+
+  storeKcTxListener = db.collection('kc_transactions')
+    .where('userUid', '==', user.uid)
+    .orderBy('createdAt', 'desc')
+    .limit(50)
+    .onSnapshot(snap => {
+      const txs = [];
+      snap.forEach(doc => txs.push({ id: doc.id, ...doc.data() }));
+
+      if (countEl) countEl.textContent = `${txs.length} transaction${txs.length !== 1 ? 's' : ''}`;
+
+      if (txs.length === 0) {
+        container.innerHTML = `<p class="text-xs text-slate-400 text-center py-8">No Kingdom Coin activity yet.</p>`;
+        return;
+      }
+
+      container.innerHTML = txs.map(tx => {
+        const isDebit = tx.type === 'debit' || tx.amount < 0;
+        const absAmount = Math.abs(tx.amount || 0);
+        const dateStr = tx.createdAt?.toDate
+          ? tx.createdAt.toDate().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+          : '—';
+        const colorClass = isDebit
+          ? 'text-rose-600 dark:text-rose-400'
+          : 'text-emerald-600 dark:text-emerald-400';
+        const sign = isDebit ? '-' : '+';
+        const desc = tx.description || (isDebit ? 'Spent' : 'Earned');
+
+        return `
+          <div class="p-4 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-xs flex items-center justify-between gap-4 transition-all hover:border-slate-300 dark:hover:border-zinc-700">
+            <div class="min-w-0 flex-1">
+              <p class="text-xs font-bold text-slate-800 dark:text-zinc-200 truncate">${desc}</p>
+              <p class="text-[10px] text-slate-400 mt-0.5">${dateStr}</p>
+            </div>
+            <span class="text-sm font-black ${colorClass} shrink-0">${sign}${absAmount.toLocaleString()} KC</span>
+          </div>
+        `;
+      }).join('');
+    }, err => {
+      console.warn("KC transactions listener error:", err);
+      container.innerHTML = `<p class="text-xs text-slate-400 text-center py-8">Unable to load transaction history.</p>`;
+      if (countEl) countEl.textContent = 'Error';
+    });
+}
+
 // Inner Tab Switcher for Kingdom Store
 function switchStoreTab(tabKey) {
-  const sections = ['marketplace', 'custom-requests', 'feedback-hub', 'my-library', 'rewards', 'installers'];
+  const sections = ['marketplace', 'custom-requests', 'feedback-hub', 'my-library', 'rewards', 'installers', 'kc-history'];
   sections.forEach(s => {
     const el = document.getElementById(`store-section-${s}`);
     const btn = document.getElementById(`store-tab-btn-${s}`);
@@ -1280,3 +1377,4 @@ window.handleFeedbackSubmit = handleFeedbackSubmit;
 window.toggleFeedbackUpvote = toggleFeedbackUpvote;
 window.filterFeedback = filterFeedback;
 window.switchStoreTab = switchStoreTab;
+window.syncKcTransactionHistory = syncKcTransactionHistory;

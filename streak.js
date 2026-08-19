@@ -495,6 +495,8 @@ function completeStreakDevotional() {
     }).then(() => {
       window.triggerConfetti?.();
       window.showToast?.(`✨ Daily Devotional Check-in Complete! Streak: ${newStreak} Days!`, "success");
+      window.checkAndCompleteMissionsForEvent?.('devotional_read');
+      if (newStreak === 7) window.completeMissionInstantly?.('wc_streak_7');
 
       if (newlyUnlockedBadges.length > 0) {
         setTimeout(() => {

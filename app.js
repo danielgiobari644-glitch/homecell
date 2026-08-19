@@ -71,15 +71,15 @@ function switchTab(tabId) {
 
   const tabTitles = {
     feed: 'Community Feed',
-    dashboard: 'Faith Dashboard',
+    dashboard: 'Dashboard',
     streak: 'My Streak',
-    champions: 'Kingdom Champions Hub',
-    bible: 'Scripture & Trivia',
-    cells: 'Cell Fellowships',
-    chat: 'Fellowship Lounge',
-    prayers: 'Prayer Desk',
-    calendar: 'Parish Events',
-    settings: 'Profile & Settings',
+    champions: 'Champions',
+    bible: 'Bible & Quizzes',
+    cells: 'Groups',
+    chat: 'Group Chat',
+    prayers: 'Prayers',
+    calendar: 'Events',
+    settings: 'Profile',
     admin: 'Admin Console',
     privacy: 'Privacy Policy',
     terms: 'Terms of Service'
@@ -392,6 +392,7 @@ function applyUserSessionUI(profile, user, badge, authModal) {
   const dropdownNameEl = document.getElementById('dropdown-user-fullname');
   const dropdownEmailEl = document.getElementById('dropdown-user-email');
   const initialsEl = document.getElementById('header-avatar-initials');
+  const avatarImgEl = document.getElementById('header-avatar-img');
 
   const nameValue = profile.displayName || user.email || 'Member';
   const initial = nameValue.charAt(0).toUpperCase();
@@ -400,6 +401,15 @@ function applyUserSessionUI(profile, user, badge, authModal) {
   if (initialsEl) initialsEl.innerText = initial;
   if (dropdownNameEl) dropdownNameEl.innerText = nameValue;
   if (dropdownEmailEl) dropdownEmailEl.innerText = profile.email || user.email || '';
+
+  // Show profile picture in header if available
+  if (profile.profilePicture && avatarImgEl) {
+    avatarImgEl.src = profile.profilePicture;
+    avatarImgEl.classList.remove('hidden');
+    if (initialsEl) initialsEl.classList.add('hidden');
+  } else if (avatarImgEl) {
+    avatarImgEl.classList.add('hidden');
+  }
 
   // Personalized Greeting
   const hour = new Date().getHours();
@@ -788,7 +798,10 @@ window.filterFellowshipModalList = filterFellowshipModalList;
 window.dismissSidebarSpotlight = dismissSidebarSpotlight;
 window.launchQuizFromPrompt = launchQuizFromPrompt;
 
-// Edit soul testimony profile modal
+// Profile picture state
+let pendingProfilePictureData = null;
+
+// Edit profile modal
 function openProfileEditModal() {
   const p = window.currentUserProfile;
   if (!p) return;
@@ -797,18 +810,107 @@ function openProfileEditModal() {
   const nameInput = document.getElementById('edit-profile-name');
   const bioInput = document.getElementById('edit-profile-bio');
   const coordsInput = document.getElementById('edit-profile-coords');
+  const avatarPreview = document.getElementById('profile-avatar-preview');
+  const avatarInitials = document.getElementById('profile-avatar-initials');
 
   if (nameInput) nameInput.value = p.displayName || '';
   if (bioInput) bioInput.value = p.bio || '';
   if (coordsInput) coordsInput.value = p.coordinates || '';
 
+  // Show current profile picture if exists
+  if (p.profilePicture && avatarPreview) {
+    avatarPreview.src = p.profilePicture;
+    avatarPreview.classList.remove('hidden');
+    if (avatarInitials) avatarInitials.classList.add('hidden');
+  } else if (avatarPreview) {
+    avatarPreview.classList.add('hidden');
+    if (avatarInitials) avatarInitials.classList.remove('hidden');
+  }
+
+  pendingProfilePictureData = null;
   if (m) m.classList.remove('hidden');
 }
+
+// Handle profile picture file selection
+window.handleProfilePictureSelect = function(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+  if (!allowedTypes.includes(file.type)) {
+    window.showToast?.('Please select a JPG, PNG, or WebP image.', 'error');
+ event.target.value = '';
+    return;
+  }
+  if (file.size > 3 * 1024 * 1024) {
+    window.showToast?.('This image is too large. Please choose an image under 3MB.', 'error');
+    event.target.value = '';
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const img = new Image();
+    img.onload = function() {
+      const canvas = document.createElement('canvas');
+      let w = img.width, h = img.height;
+      const maxDim = 300; // Small for profile picture stored in Firestore
+      if (w > maxDim || h > maxDim) {
+        if (w / h > 1) { h = Math.round((h * maxDim) / w); w = maxDim; }
+        else { w = Math.round((w * maxDim) / h); h = maxDim; }
+      }
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+
+      // Check size stays under 100KB for Firestore
+      const b64Len = dataUrl.length - dataUrl.indexOf(',') - 1;
+      const sizeKB = Math.round((4 * Math.ceil(b64Len / 3) * 0.5624896) / 1024);
+      if (sizeKB > 100) {
+        window.showToast?.('This image is too large after resizing. Please choose a simpler image.', 'error');
+        return;
+      }
+
+      pendingProfilePictureData = dataUrl;
+      const preview = document.getElementById('profile-avatar-preview');
+      const initials = document.getElementById('profile-avatar-initials');
+      if (preview) { preview.src = dataUrl; preview.classList.remove('hidden'); }
+      if (initials) initials.classList.add('hidden');
+    };
+    img.onerror = function() {
+      window.showToast?.('Could not load this image. Please try another.', 'error');
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+};
 
 function closeProfileModal() {
   const m = document.getElementById('profile-modal');
   if (m) m.classList.add('hidden');
+  pendingProfilePictureData = null;
 }
+
+// Update all avatar displays across the app when profile picture changes
+function updateAllAvatarDisplays(profilePictureUrl) {
+  if (!profilePictureUrl) return;
+  // Update header avatar
+  const headerAvatar = document.getElementById('header-avatar-img');
+  if (headerAvatar) { headerAvatar.src = profilePictureUrl; headerAvatar.classList.remove('hidden'); }
+  const headerInitials = document.getElementById('header-avatar-initials');
+  if (headerInitials) headerInitials.classList.add('hidden');
+  // Update sidebar avatar
+  const sidebarAvatar = document.getElementById('sidebar-avatar-img');
+  if (sidebarAvatar) { sidebarAvatar.src = profilePictureUrl; sidebarAvatar.classList.remove('hidden'); }
+  const mobileAvatar = document.getElementById('mobile-avatar-img');
+  if (mobileAvatar) { mobileAvatar.src = profilePictureUrl; mobileAvatar.classList.remove('hidden'); }
+}
+
+window.openProfileEditModal = openProfileEditModal;
+window.closeProfileModal = closeProfileModal;
+window.updateAllAvatarDisplays = updateAllAvatarDisplays;
 
 // Standard Auth Actions
 function setAuthAlert(msg) {
@@ -1261,17 +1363,27 @@ document.addEventListener("DOMContentLoaded", () => {
       const bio = document.getElementById('edit-profile-bio').value.trim();
       const coords = document.getElementById('edit-profile-coords').value.trim();
 
-      window.db.collection('users').doc(user.uid).update({
+      const updateData = {
         displayName: name,
         bio: bio,
         coordinates: coords
-      })
+      };
+
+      // Include profile picture if one was selected
+      if (pendingProfilePictureData) {
+        updateData.profilePicture = pendingProfilePictureData;
+      }
+
+      window.db.collection('users').doc(user.uid).update(updateData)
         .then(() => {
-          window.showToast?.("Soul testimony details updated successfully.");
+          window.showToast?.('Profile updated successfully.');
+          if (pendingProfilePictureData) {
+            window.updateAllAvatarDisplays(pendingProfilePictureData);
+            if (window.currentUserProfile) window.currentUserProfile.profilePicture = pendingProfilePictureData;
+          }
           closeProfileModal();
-          // Trigger profile streak increase
           setTimeout(() => {
-            window.incrementUserStreak?.("updating soul testimony profile details");
+            window.incrementUserStreak?.('updating profile details');
           }, 1000);
         })
         .catch(err => window.handleFirestoreError(err, 'write', `users/${user.uid}`));

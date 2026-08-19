@@ -1144,10 +1144,13 @@ function completeTriviaSession() {
           if (window.currentUserProfile) window.currentUserProfile.kingdomCoins = curKc + totalKcEarned;
           window.recordKcTransaction?.('credit', totalKcEarned, `Completed Quiz: ${currentQuiz.title}`, `Earned ${totalKcEarned} KC (#${userRank} rank)`);
           window.showToast?.(`🪙 Earned +${totalKcEarned} Kingdom Coins for finishing quiz!`, "success");
+          window.checkAndCompleteMissionsForEvent?.('kc_earned');
         }
       }).catch(e => console.warn("Quiz KC reward update error:", e));
     }
   }
+
+  window.checkAndCompleteMissionsForEvent?.('quiz_completed');
 
   // Trigger celebration Confetti
   triggerConfetti();

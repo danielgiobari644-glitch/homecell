@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Home.cell - Home Fellowship Portal</title>
+    <title>Home.cell - Home.cell</title>
     
     <!-- Beautiful High-Fidelity Favicon & Title Icon -->
     <link rel="icon" type="image/jpeg" href="favicon.jpg" />
@@ -30,8 +30,155 @@
 
     <!-- Custom CSS Variables & High-Contrast Style -->
     <style type="text/css">
+      /* ===== CSS Custom Properties Theme System ===== */
+      :root {
+        /* Surfaces */
+        --app-bg: #ffffff;
+        --app-surface: #ffffff;
+        --app-surface-2: #f8fafc;
+        --app-surface-3: #f1f5f9;
+        /* Text */
+        --app-text: #0f172a;
+        --app-text-secondary: #475569;
+        --app-text-muted: #94a3b8;
+        /* Accent */
+        --app-accent: #3b82f6;
+        --app-accent-hover: #2563eb;
+        --app-accent-light: #eff6ff;
+        --app-accent-text: #ffffff;
+        /* Borders */
+        --app-border: #e2e8f0;
+        --app-border-light: #f1f5f9;
+        /* Glassmorphism */
+        --glass-bg: rgba(255,255,255,0.7);
+        --glass-border: rgba(255,255,255,0.3);
+        --glass-blur: 16px;
+        /* Shadows */
+        --app-shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+        --app-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+        --app-shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);
+        /* KC accent */
+        --kc-color: #f59e0b;
+        --kc-bg: #fffbeb;
+      }
+      .dark {
+        --app-bg: #0c0e12;
+        --app-surface: #121620;
+        --app-surface-2: #1c2333;
+        --app-surface-3: #232b3e;
+        --app-text: #f1f5f9;
+        --app-text-secondary: #94a3b8;
+        --app-text-muted: #64748b;
+        --app-accent: #60a5fa;
+        --app-accent-hover: #93bbfd;
+        --app-accent-light: #1e293b;
+        --app-accent-text: #ffffff;
+        --app-border: #1e293b;
+        --app-border-light: #1e293b;
+        --glass-bg: rgba(18,22,32,0.7);
+        --glass-border: rgba(30,41,59,0.5);
+        --glass-blur: 16px;
+        --app-shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+        --app-shadow: 0 1px 3px rgba(0,0,0,0.4);
+        --app-shadow-md: 0 4px 6px rgba(0,0,0,0.4);
+        --kc-color: #fbbf24;
+        --kc-bg: #1c1917;
+      }
+
+      /* Theme-specific overrides */
+      html[data-theme='r_theme_gold'] {
+        --app-accent: #d97706;
+        --app-accent-hover: #b45309;
+        --app-accent-light: #fffbeb;
+        --kc-color: #f59e0b;
+        --kc-bg: #451a03;
+      }
+      html[data-theme='r_theme_gold'].dark {
+        --app-bg: #120e06;
+        --app-surface: #1c1508;
+        --app-surface-2: #261d0a;
+      }
+      html[data-theme='r_theme_emerald'] {
+        --app-accent: #059669;
+        --app-accent-hover: #047857;
+        --app-accent-light: #ecfdf5;
+        --kc-color: #10b981;
+        --kc-bg: #022c22;
+      }
+      html[data-theme='r_theme_emerald'].dark {
+        --app-bg: #06120e;
+        --app-surface: #0a1f18;
+        --app-surface-2: #0f2d22;
+      }
+      html[data-theme='r_theme_sapphire'] {
+        --app-accent: #2563eb;
+        --app-accent-hover: #1d4ed8;
+        --app-accent-light: #eff6ff;
+        --kc-color: #3b82f6;
+        --kc-bg: #172554;
+      }
+      html[data-theme='r_theme_sapphire'].dark {
+        --app-bg: #070d1a;
+        --app-surface: #0c1528;
+        --app-surface-2: #111d36;
+      }
+      html[data-theme='r_theme_purple'] {
+        --app-accent: #7c3aed;
+        --app-accent-hover: #6d28d9;
+        --app-accent-light: #f5f3ff;
+        --kc-color: #8b5cf6;
+        --kc-bg: #2e1065;
+      }
+      html[data-theme='r_theme_purple'].dark {
+        --app-bg: #0f0817;
+        --app-surface: #160e22;
+        --app-surface-2: #1e1330;
+      }
+      html[data-theme='r_theme_crimson'] {
+        --app-accent: #e11d48;
+        --app-accent-hover: #be123c;
+        --app-accent-light: #fff1f2;
+        --kc-color: #f43f5e;
+        --kc-bg: #4c0519;
+      }
+      html[data-theme='r_theme_crimson'].dark {
+        --app-bg: #17080b;
+        --app-surface: #1f0d11;
+        --app-surface-2: #2a1118;
+      }
+      html[data-theme='champion_black'] {
+        --app-bg: #000000;
+        --app-surface: #0a0a0a;
+        --app-surface-2: #141414;
+        --app-surface-3: #1e1e1e;
+        --app-text: #ffffff;
+        --app-text-secondary: #a3a3a3;
+        --app-text-muted: #737373;
+        --app-border: #262626;
+        --app-border-light: #1a1a1a;
+        --glass-bg: rgba(10,10,10,0.8);
+        --glass-border: rgba(40,40,40,0.5);
+      }
+      html[data-theme='heavenly_white'] {
+        --app-bg: #f8fafc;
+        --app-surface: #ffffff;
+        --app-surface-2: #f1f5f9;
+        --app-surface-3: #e2e8f0;
+        --app-text: #0f172a;
+        --app-text-secondary: #475569;
+        --app-text-muted: #94a3b8;
+        --app-border: #e2e8f0;
+        --app-border-light: #f1f5f9;
+        --glass-bg: rgba(255,255,255,0.85);
+        --glass-border: rgba(226,232,240,0.6);
+      }
+
+      /* ===== Smooth Theme Transitions ===== */
       body {
         font-family: 'Inter', sans-serif;
+        background-color: var(--app-bg);
+        color: var(--app-text);
+        transition: background-color 0.3s, color 0.3s, border-color 0.3s, box-shadow 0.3s;
       }
       .font-display {
         font-family: 'DM Sans', sans-serif;
@@ -39,7 +186,23 @@
       .font-mono {
         font-family: 'Fira Code', monospace;
       }
-      
+
+      /* ===== Glassmorphism Utility Classes ===== */
+      .glass-surface {
+        background: var(--glass-bg);
+        backdrop-filter: blur(var(--glass-blur));
+        -webkit-backdrop-filter: blur(var(--glass-blur));
+        border: 1px solid var(--glass-border);
+      }
+      .glass-card {
+        background: var(--glass-bg);
+        backdrop-filter: blur(var(--glass-blur));
+        -webkit-backdrop-filter: blur(var(--glass-blur));
+        border: 1px solid var(--glass-border);
+        box-shadow: var(--app-shadow);
+        border-radius: 1.5rem;
+      }
+
       /* Premium keyframe animations */
       @keyframes fadeIn {
         from { opacity: 0; transform: translateY(12px); }
@@ -227,7 +390,7 @@
         color: #f8fafc !important;
       }
 
-      /* Custom Theme Accents */
+      /* Custom Theme Accents (legacy !important overrides for Tailwind classes) */
       html[data-theme="r_theme_gold"] .dark body {
         background-color: #120e06 !important;
       }
@@ -243,6 +406,13 @@
       }
       html[data-theme="r_theme_emerald"] .bg-blue-600 {
         background-color: #059669 !important;
+      }
+
+      html[data-theme="r_theme_sapphire"] .dark body {
+        background-color: #070d1a !important;
+      }
+      html[data-theme="r_theme_sapphire"] .bg-blue-600 {
+        background-color: #2563eb !important;
       }
 
       html[data-theme="r_theme_purple"] .dark body {
@@ -265,7 +435,7 @@
       html[data-theme="heavenly_white"] body {
         background-color: #f8fafc !important;
       }
-      
+
       /* High-Contrast Electric Blue Accents for active states in Dark Mode */
       .dark .text-blue-600,
       .dark .text-blue-500,
@@ -291,7 +461,7 @@
         background-color: rgba(37, 99, 235, 0.12) !important;
         border-color: rgba(37, 99, 235, 0.25) !important;
       }
-      
+
       /* Active Navigation Link styling specifically */
       .dark [id^="nav-"].text-blue-600 {
         color: #60a5fa !important;
@@ -364,7 +534,7 @@
       .direct-quiz-mode #bible-quiz-container {
         display: block !important;
       }
-      
+
       /* Performant, smooth native CSS animations and keyframes */
       @keyframes tabFadeIn {
         from { opacity: 0; transform: translateY(8px); }
@@ -376,9 +546,17 @@
       }
       .app-tab.active {
         display: block;
-        animation: tabFadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        animation: tabFadeIn 0.25s ease-out forwards;
       }
-      
+
+      /* Smooth Animation Utilities */
+      .animate-slide-up { animation: slideUp 0.3s ease-out; }
+      @keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+      .animate-scale-in { animation: scaleIn 0.2s ease-out; }
+      @keyframes scaleIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+      .animate-kc-earned { animation: kcFloat 0.6s ease-out; }
+      @keyframes kcFloat { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-30px); } }
+
       /* Button interactive micro-interactions */
       button, a, [role="button"] {
         transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
@@ -386,7 +564,7 @@
       button:active, a:active {
         transform: scale(0.97);
       }
-      
+
       /* Lift effect on hover */
       .hover-lift {
         transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1);
@@ -437,7 +615,7 @@
         
         <p class="text-[11px] font-black uppercase tracking-widest text-blue-400 mb-6 flex items-center gap-2 justify-center">
           <span class="w-2 h-2 rounded-full bg-blue-500 animate-ping"></span>
-          Home Fellowship Sanctuary
+          Welcome
         </p>
 
         <!-- Dynamic Tagline -->
@@ -575,11 +753,11 @@
                 <div>• Community Praise Feed</div>
                 <div>• Bible & Quiz Arena</div>
                 <div>• Cell Fellowship Directory</div>
-                <div>• Fellowship Chat Lounge</div>
-                <div>• Prayer Request Desk</div>
-                <div>• Cell Events Calendar</div>
+                <div>• Group Chat</div>
+                <div>• Prayers</div>
+                <div>• Events</div>
                 <div>• Native App Downloads</div>
-                <div>• Profile & Settings</div>
+                <div>• Profile</div>
               </div>
             </div>
           </div>
@@ -843,7 +1021,7 @@
             <i data-lucide="home" class="w-8 h-8"></i>
           </div>
           <h1 class="text-3xl font-black font-display tracking-tight text-slate-900 dark:text-zinc-100">Home.cell</h1>
-          <p class="text-slate-500 dark:text-zinc-400 text-sm mt-1">Home Fellowship Connection Portal</p>
+          <p class="text-slate-500 dark:text-zinc-400 text-sm mt-1">Sign In</p>
         </div>
 
         <!-- Tab Toggle for Auth Mode -->
@@ -906,7 +1084,7 @@
 
     <!-- Public Portfolio Website (Visible when unauthenticated) -->
     <!-- Desktop Left Permanent Sidebar -->
-    <aside id="app-sidebar-desktop" class="hidden lg:flex flex-col fixed inset-y-0 left-0 w-64 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl border-r border-slate-200/80 dark:border-zinc-800/80 z-40 p-5 justify-between shadow-xs transition-all duration-300 overflow-y-auto custom-scrollbar">
+    <aside id="app-sidebar-desktop" class="hidden lg:flex flex-col fixed inset-y-0 left-0 w-64 glass-surface border-r border-slate-200/80 dark:border-zinc-800/80 z-40 p-5 justify-between shadow-xs transition-all duration-300 overflow-y-auto custom-scrollbar">
       <div class="space-y-6">
         <!-- Logo Branding Header -->
         <div class="flex items-center gap-3 cursor-pointer px-2" onclick="switchTab('feed')">
@@ -930,7 +1108,7 @@
 
           <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-item-dashboard w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800/60 transition-all cursor-pointer">
             <i data-lucide="layout-dashboard" class="w-4.5 h-4.5"></i>
-            <span>Faith Dashboard</span>
+            <span>Dashboard</span>
           </button>
 
           <button onclick="switchTab('streak')" id="nav-streak" class="nav-item-streak w-full flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-extrabold text-blue-700 dark:text-blue-300 bg-blue-50/80 dark:bg-blue-950/30 border border-blue-200/80 dark:border-blue-800/60 hover:bg-blue-100 dark:hover:bg-blue-900/40 shadow-xs ring-1 ring-blue-400/30 transition-all cursor-pointer relative">
@@ -958,27 +1136,27 @@
 
           <button onclick="switchTab('bible')" id="nav-bible" class="nav-item-bible w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800/60 transition-all cursor-pointer">
             <i data-lucide="book-open" class="w-4.5 h-4.5"></i>
-            <span>Scripture & Trivia</span>
+            <span>Bible & Quizzes</span>
           </button>
 
           <button onclick="switchTab('cells')" id="nav-cells" class="nav-item-cells w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800/60 transition-all cursor-pointer">
             <i data-lucide="users" class="w-4.5 h-4.5"></i>
-            <span>Cell Fellowships</span>
+            <span>Groups</span>
           </button>
 
           <button onclick="switchTab('chat')" id="nav-chat" class="nav-item-chat w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800/60 transition-all cursor-pointer">
             <i data-lucide="message-square" class="w-4.5 h-4.5"></i>
-            <span>Fellowship Lounge</span>
+            <span>Group Chat</span>
           </button>
 
           <button onclick="switchTab('prayers')" id="nav-prayers" class="nav-item-prayers w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800/60 transition-all cursor-pointer">
             <i data-lucide="heart-handshake" class="w-4.5 h-4.5"></i>
-            <span>Prayer Desk</span>
+            <span>Prayers</span>
           </button>
 
           <button onclick="switchTab('settings')" id="nav-settings" class="nav-item-settings w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800/60 transition-all cursor-pointer">
             <i data-lucide="settings" class="w-4.5 h-4.5"></i>
-            <span>Profile & Settings</span>
+            <span>Profile</span>
           </button>
 
           <button onclick="switchTab('admin')" id="nav-admin" class="hidden nav-item-admin w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-black text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-200 hover:bg-purple-50 dark:hover:bg-purple-950/30 transition-all cursor-pointer">
@@ -1022,7 +1200,7 @@
     <!-- Mobile Drawer Sidebar Backdrop & Navigation Drawer -->
     <div id="sidebar-backdrop" onclick="toggleMobileSidebar(false)" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden opacity-0 transition-opacity duration-300"></div>
     
-    <aside id="app-sidebar" class="lg:hidden fixed inset-y-0 left-0 w-72 sm:w-80 max-w-[85vw] bg-white dark:bg-zinc-900 border-r border-slate-200 dark:border-zinc-800 z-50 p-5 flex flex-col justify-between transition-transform duration-300 -translate-x-full shadow-2xl overflow-y-auto custom-scrollbar">
+    <aside id="app-sidebar" class="lg:hidden fixed inset-y-0 left-0 w-72 sm:w-80 max-w-[85vw] glass-surface border-r border-slate-200 dark:border-zinc-800 z-50 p-5 flex flex-col justify-between transition-transform duration-300 -translate-x-full shadow-2xl overflow-y-auto custom-scrollbar">
       <div class="space-y-6">
         <div class="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-zinc-800">
           <div class="flex items-center gap-3 cursor-pointer" onclick="switchTab('feed')">
@@ -1047,7 +1225,7 @@
 
           <button onclick="switchTab('dashboard')" class="nav-item-dashboard w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl text-xs font-bold text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800/60 transition-all cursor-pointer">
             <i data-lucide="layout-dashboard" class="w-4.5 h-4.5"></i>
-            <span>Faith Dashboard</span>
+            <span>Dashboard</span>
           </button>
 
           <button onclick="switchTab('streak')" class="nav-item-streak w-full flex items-center justify-between gap-3 px-3.5 py-3 rounded-2xl text-xs font-extrabold text-blue-700 dark:text-blue-300 bg-blue-50/80 dark:bg-blue-950/30 border border-blue-200/80 dark:border-blue-800/60 hover:bg-blue-100 dark:hover:bg-blue-900/40 shadow-xs ring-1 ring-blue-400/30 transition-all cursor-pointer relative">
@@ -1073,27 +1251,27 @@
 
           <button onclick="switchTab('bible')" class="nav-item-bible w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl text-xs font-bold text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800/60 transition-all cursor-pointer">
             <i data-lucide="book-open" class="w-4.5 h-4.5"></i>
-            <span>Scripture & Trivia</span>
+            <span>Bible & Quizzes</span>
           </button>
 
           <button onclick="switchTab('cells')" class="nav-item-cells w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl text-xs font-bold text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800/60 transition-all cursor-pointer">
             <i data-lucide="users" class="w-4.5 h-4.5"></i>
-            <span>Cell Fellowships</span>
+            <span>Groups</span>
           </button>
 
           <button onclick="switchTab('chat')" class="nav-item-chat w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl text-xs font-bold text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800/60 transition-all cursor-pointer">
             <i data-lucide="message-square" class="w-4.5 h-4.5"></i>
-            <span>Fellowship Lounge</span>
+            <span>Group Chat</span>
           </button>
 
           <button onclick="switchTab('prayers')" class="nav-item-prayers w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl text-xs font-bold text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800/60 transition-all cursor-pointer">
             <i data-lucide="heart-handshake" class="w-4.5 h-4.5"></i>
-            <span>Prayer Desk</span>
+            <span>Prayers</span>
           </button>
 
           <button onclick="switchTab('settings')" class="nav-item-settings w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl text-xs font-bold text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800/60 transition-all cursor-pointer">
             <i data-lucide="settings" class="w-4.5 h-4.5"></i>
-            <span>Profile & Settings</span>
+            <span>Profile</span>
           </button>
 
           <button onclick="switchTab('admin')" id="mobile-nav-admin" class="hidden nav-item-admin w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl text-xs font-black text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-200 hover:bg-purple-50 dark:hover:bg-purple-950/30 transition-all cursor-pointer">
@@ -1134,7 +1312,7 @@
     </aside>
 
     <!-- Core Layout Header (Welcome Navigation Header) -->
-    <header class="bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border-b border-slate-200 dark:border-zinc-800 sticky top-0 z-30 transition-colors lg:pl-64">
+    <header class="glass-surface border-b border-slate-200/50 dark:border-zinc-800/50 sticky top-0 z-30 transition-colors lg:pl-64">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
         
         <!-- Left: Mobile Menu Toggle & Active Page Badge & Personalized Greeting -->
@@ -1168,7 +1346,7 @@
         <!-- Right Toolbar controls -->
         <div class="flex items-center gap-2 sm:gap-2.5 shrink-0">
           <!-- Notification Bell with Unread Counter Badge -->
-          <button onclick="switchTab('prayers')" id="header-notification-bell" class="p-2 bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-200 rounded-xl hover:scale-105 active:scale-95 transition-all cursor-pointer relative" title="Prayer Desk & Notifications">
+          <button onclick="switchTab('prayers')" id="header-notification-bell" class="p-2 bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-200 rounded-xl hover:scale-105 active:scale-95 transition-all cursor-pointer relative" title="Prayers & Notifications">
             <i data-lucide="bell" class="w-4 h-4"></i>
             <span id="header-notif-count" class="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white text-[9px] font-black rounded-full flex items-center justify-center animate-pulse shadow-xs">3</span>
           </button>
@@ -1193,7 +1371,8 @@
           <!-- Current Logged User Profile Dropdown Badge -->
           <div id="user-profile-badge" class="hidden relative">
             <button onclick="window.toggleHeaderProfileMenu()" class="flex items-center gap-2 bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 px-2.5 py-1 rounded-2xl hover:border-blue-500/50 transition-all cursor-pointer">
-              <div id="header-avatar-circle" class="w-7 h-7 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-black text-xs flex items-center justify-center shadow-inner relative">
+              <div id="header-avatar-circle" class="w-7 h-7 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-black text-xs flex items-center justify-center shadow-inner relative overflow-hidden">
+                <img id="header-avatar-img" class="absolute inset-0 w-full h-full object-cover hidden" alt="" />
                 <span id="header-avatar-initials">M</span>
                 <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-zinc-900"></span>
               </div>
@@ -1211,7 +1390,7 @@
                 <p id="dropdown-user-email" class="text-[10px] text-slate-400 truncate">user@homecell.com</p>
               </div>
               <button onclick="switchTab('settings'); window.toggleHeaderProfileMenu(false);" class="w-full px-4 py-2 text-left text-xs font-semibold hover:bg-slate-100 dark:hover:bg-zinc-800 flex items-center gap-2 cursor-pointer">
-                <i data-lucide="user" class="w-4 h-4 text-blue-500"></i> Profile & Settings
+                <i data-lucide="user" class="w-4 h-4 text-blue-500"></i> Profile
               </button>
               <button onclick="switchTab('champions'); window.toggleHeaderProfileMenu(false);" class="w-full px-4 py-2 text-left text-xs font-semibold hover:bg-slate-100 dark:hover:bg-zinc-800 text-amber-600 dark:text-amber-400 flex items-center gap-2 cursor-pointer">
                 <i data-lucide="crown" class="w-4 h-4 text-amber-500"></i> Champions Hub
@@ -1236,7 +1415,7 @@
     <div id="main-workspace-frame" class="max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 flex-grow flex flex-col py-8 pb-12 lg:pl-64">
 
       <!-- Central Canvas Content space -->
-      <main class="flex-grow min-w-0">
+      <main class="flex-grow min-w-0 animate-slide-up">
         
         <!-- Tab 0: Community Feed Page -->
         <section id="tab-feed" class="app-tab active space-y-6 animate-fade-in max-w-4xl mx-auto">
@@ -1692,7 +1871,7 @@
 
           <!-- Fellowship Information center -->
           <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-[2.5rem] p-8 space-y-6 shadow-sm">
-            <h3 class="text-2xl font-black font-display tracking-tight">Active Support & Connection Desk</h3>
+            <h3 class="text-2xl font-black font-display tracking-tight">Contact Us</h3>
             <p class="text-sm text-slate-600 dark:text-zinc-300">
               Need immediate spiritual assistance or pastoral care? Connect instantly with our ordained leaders using the live communications metrics updated below:
             </p>
@@ -1759,7 +1938,7 @@
 
                 <div class="space-y-1">
                   <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 text-xs font-black uppercase tracking-wider">
-                    <i data-lucide="orbit" class="w-3.5 h-3.5 text-blue-400"></i> Spiritual Consistency Orbit
+                    <i data-lucide="orbit" class="w-3.5 h-3.5 text-blue-400"></i> Daily Streak
                   </div>
                   <h2 class="text-2xl sm:text-3xl font-black font-display text-white">Daily Devotional Chain</h2>
                   <p class="text-xs text-slate-300 font-medium">Keep your orbital momentum going. Daily devotion builds lasting fellowship strength.</p>
@@ -1966,7 +2145,7 @@
             <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative z-10">
               <div class="space-y-1">
                 <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs font-black uppercase tracking-wider">
-                  <i data-lucide="crown" class="w-4 h-4 text-amber-400"></i> Kingdom Champions Hub
+                  <i data-lucide="crown" class="w-4 h-4 text-amber-400"></i> Champions
                 </div>
                 <h1 class="text-2xl sm:text-3xl font-black font-display tracking-tight text-white flex items-center gap-2">
                   Welcome, <span id="champ-welcome-name">Champion</span>!
@@ -2232,7 +2411,7 @@
               <div class="flex items-center justify-between">
                 <div>
                   <h3 class="text-base font-black font-display text-slate-900 dark:text-zinc-100 flex items-center gap-2">
-                    <i data-lucide="check-square" class="w-5 h-5 text-amber-500"></i> Daily Kingdom Missions
+                    <i data-lucide="check-square" class="w-5 h-5 text-amber-500"></i> Daily Missions
                   </h3>
                   <p class="text-xs text-slate-500 dark:text-zinc-400">Complete tasks daily to earn Kingdom Coins and build spiritual habits.</p>
                 </div>
@@ -2260,7 +2439,7 @@
             <!-- Weekly Challenges Card -->
             <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 space-y-4 shadow-sm">
               <h3 class="text-base font-black font-display text-slate-900 dark:text-zinc-100 flex items-center gap-2">
-                <i data-lucide="target" class="w-5 h-5 text-purple-500"></i> Weekly Kingdom Challenges
+                <i data-lucide="target" class="w-5 h-5 text-purple-500"></i> Weekly Challenges
               </h3>
               <div id="weekly-challenges-container" class="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <!-- Rendered dynamically -->
@@ -2290,7 +2469,7 @@
               <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 p-6 bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 rounded-3xl text-slate-950 shadow-md">
                 <div class="space-y-1">
                   <div class="inline-flex items-center gap-2 px-3 py-1 bg-slate-950/20 rounded-full text-xs font-black uppercase tracking-wider text-slate-950">
-                    <i data-lucide="shopping-bag" class="w-4 h-4"></i> Kingdom Store & Resource Hub
+                    <i data-lucide="shopping-bag" class="w-4 h-4"></i> Store
                   </div>
                   <h2 class="text-2xl sm:text-3xl font-black font-display tracking-tight text-slate-950">Digital Resource Hub & Request Hub</h2>
                   <p class="text-xs sm:text-sm font-bold text-slate-900/80">Acquire digital wallpapers, quote collections, and custom creations powered by Kingdom Coins.</p>
@@ -2327,6 +2506,7 @@
                 <button id="store-tab-btn-installers" onclick="switchStoreTab('installers')" class="store-nav-btn px-4 py-2.5 rounded-2xl text-xs font-extrabold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-700 cursor-pointer transition-all flex items-center gap-2 shrink-0">
                   <i data-lucide="download" class="w-4 h-4"></i> App Installers 📱
                 </button>
+                <button id="store-tab-btn-kc-history" onclick="switchStoreTab('kc-history')" class="store-nav-btn px-4 py-2.5 rounded-2xl text-xs font-extrabold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-700 cursor-pointer transition-all flex items-center gap-2 shrink-0">History</button>
               </div>
 
               <!-- SECTION 1: STORE MARKETPLACE -->
@@ -2522,6 +2702,16 @@
 
                 <div id="my-library-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   <!-- Loaded dynamically via store.js -->
+                </div>
+              </div>
+
+              <div id="store-section-kc-history" class="hidden">
+                <div class="space-y-4">
+                  <div class="flex items-center justify-between">
+                    <h3 class="font-black text-slate-900 dark:text-zinc-100 text-base">Kingdom Coin Activity</h3>
+                    <span class="text-xs text-slate-400 font-medium" id="kc-history-count">Loading...</span>
+                  </div>
+                  <div id="kc-transactions-list" class="space-y-2"></div>
                 </div>
               </div>
 
@@ -3517,13 +3707,13 @@
 
         </section>
 
-        <!-- Tab 5: Fellowship Events Calendar -->
+        <!-- Tab 5: Events -->
         <section id="tab-calendar" class="app-tab hidden space-y-6 animate-fade-in">
           <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-[2.5rem] p-8 shadow-sm space-y-6">
             
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
-                <h1 class="text-3xl font-black font-display tracking-tight text-slate-900 dark:text-zinc-100">Fellowship Events Calendar</h1>
+                <h1 class="text-3xl font-black font-display tracking-tight text-slate-900 dark:text-zinc-100">Events</h1>
                 <p class="text-sm text-slate-500 dark:text-zinc-400 mt-1">Register attendance RSVPs for universal fellowship gatherings and cell groups.</p>
               </div>
               <div class="flex items-center gap-2">
@@ -3586,7 +3776,7 @@
                     <i data-lucide="user-cog" class="w-5 h-5"></i>
                   </div>
                   <div>
-                    <h3 class="text-sm font-black font-display text-slate-900 dark:text-zinc-50">Fellowship Profile</h3>
+                    <h3 class="text-sm font-black font-display text-slate-900 dark:text-zinc-50">Profile</h3>
                     <p class="text-[10px] text-slate-400">Manage your testimony profile and public bio</p>
                   </div>
                 </div>
@@ -3797,9 +3987,9 @@
                   </h2>
                   <ul class="space-y-2 list-disc list-inside">
                     <li><strong class="text-slate-900 dark:text-zinc-100">Account Credentials:</strong> Display name, email address, password hashes managed via Google Firebase Authentication, and profile avatar settings.</li>
-                    <li><strong class="text-slate-900 dark:text-zinc-100">Fellowship Profile Data:</strong> Assigned cell group ID, personal testimony, spiritual goals, role badge, and optional location coordinates for cell discovery.</li>
+                    <li><strong class="text-slate-900 dark:text-zinc-100">Profile Data:</strong> Assigned cell group ID, personal testimony, spiritual goals, role badge, and optional location coordinates for cell discovery.</li>
                     <li><strong class="text-slate-900 dark:text-zinc-100">Spiritual Activity & Progress:</strong> Daily devotional check-ins, prayer petitions, scripture bookmarks, trivia quiz scores, streak counts, and Champions Hub rewards.</li>
-                    <li><strong class="text-slate-900 dark:text-zinc-100">Communication & Audio Logs:</strong> Fellowship Lounge messages, intercession requests, and direct support chat histories with leadership.</li>
+                    <li><strong class="text-slate-900 dark:text-zinc-100">Communication & Audio Logs:</strong> Group Chat messages, intercession requests, and direct support chat histories with leadership.</li>
                     <li><strong class="text-slate-900 dark:text-zinc-100">Technical Diagnostics:</strong> Web Push notification tokens, browser device type, and encrypted Firestore session logs for real-time synchronization.</li>
                   </ul>
                 </div>
@@ -4818,7 +5008,7 @@
               <div class="flex items-center justify-between">
                 <div>
                   <h3 class="text-lg font-bold font-display text-slate-900 dark:text-zinc-50">Create Upcoming Event</h3>
-                  <p class="text-xs text-slate-500">Publish parish events with custom picture banners for the Feed and Faith Dashboard.</p>
+                  <p class="text-xs text-slate-500">Publish parish events with custom picture banners for the Feed and Dashboard.</p>
                 </div>
                 <span class="text-xs text-purple-600 dark:text-purple-400 font-bold bg-purple-50 dark:bg-purple-950/30 px-3 py-1 rounded-full border border-purple-200 dark:border-purple-800">⭐ Feed & Dashboard Featured</span>
               </div>
@@ -4990,7 +5180,22 @@
         <button onclick="closeProfileModal()" class="absolute top-6 right-6 text-slate-400 hover:text-slate-600">
           <i data-lucide="x" class="w-6 h-6"></i>
         </button>
-        <h3 class="text-2xl font-black font-display tracking-tight text-slate-900 dark:text-zinc-100 mb-6">Modify Soul Testimony</h3>
+        <h3 class="text-2xl font-black font-display tracking-tight text-slate-900 dark:text-zinc-100 mb-6">Edit Profile</h3>
+
+        <!-- Profile Picture Section -->
+        <div class="flex flex-col items-center gap-3 mb-6">
+          <div class="relative">
+            <div id="profile-avatar-initials" class="w-20 h-20 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400 font-bold text-2xl flex items-center justify-center border-2 border-blue-200 dark:border-blue-800">
+              ${(window.currentUserProfile?.displayName || 'M').charAt(0).toUpperCase()}
+            </div>
+            <img id="profile-avatar-preview" class="w-20 h-20 rounded-full object-cover border-2 border-blue-200 dark:border-blue-800 hidden" alt="Profile" />
+            <label class="absolute -bottom-1 -right-1 w-7 h-7 bg-blue-600 hover:bg-blue-700 text-white rounded-full flex items-center justify-center cursor-pointer transition-all shadow-md">
+              <i data-lucide="camera" class="w-3.5 h-3.5"></i>
+              <input type="file" accept="image/jpeg,image/png,image/webp" onchange="handleProfilePictureSelect(event)" class="hidden" />
+            </label>
+          </div>
+          <span class="text-[10px] text-slate-400 font-medium">Tap the camera icon to change your photo</span>
+        </div>
         
         <form id="profile-edit-form" class="space-y-4 text-sm">
           <div>
@@ -4998,7 +5203,7 @@
             <input type="text" id="edit-profile-name" required class="w-full px-4 py-3 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl" />
           </div>
           <div>
-            <label class="block text-xs font-bold text-slate-400 mb-2">Testimony / Bio</label>
+            <label class="block text-xs font-bold text-slate-400 mb-2">Bio</label>
             <textarea id="edit-profile-bio" required rows="3" class="w-full px-4 py-3 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl resize-none"></textarea>
           </div>
           <div>
@@ -5006,7 +5211,7 @@
             <input type="text" id="edit-profile-coords" required class="w-full px-4 py-3 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl" />
           </div>
           <button type="submit" class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-colors">
-            Update Testimony Details
+            Update Profile
           </button>
         </form>
 
@@ -5178,7 +5383,7 @@
     </div>
 
     <!-- Fixed Bottom Mobile Navigation Bar for Quick Single-Tap Access -->
-    <nav class="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border-t border-slate-200/80 dark:border-zinc-800/80 px-2 py-1.5 flex items-center justify-around shadow-2xl">
+    <nav class="lg:hidden fixed bottom-0 left-0 right-0 z-40 glass-surface border-t border-slate-200/50 dark:border-zinc-800/50 px-2 py-1.5 flex items-center justify-around shadow-2xl">
       <button onclick="switchTab('feed')" id="mobile-bottom-nav-feed" class="flex flex-col items-center justify-center py-1 px-2.5 rounded-xl text-slate-500 dark:text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 transition-all cursor-pointer">
         <i data-lucide="newspaper" class="w-5 h-5"></i>
         <span class="text-[10px] font-bold mt-0.5">Feed</span>

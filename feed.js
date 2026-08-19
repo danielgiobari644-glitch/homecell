@@ -548,6 +548,7 @@ function publishToFeed() {
   })
     .then(() => {
       window.showToast?.("Feed post published successfully.");
+      window.checkAndCompleteMissionsForEvent?.('post_liked'); // Social engagement mission
       document.getElementById('feed-composer-text').value = '';
       if (isAnnCheckbox) isAnnCheckbox.checked = false;
 
@@ -625,6 +626,9 @@ function toggleLikePost(postId) {
     });
   })
     .catch(err => window.handleFirestoreError(err, 'write', `community_feed/${postId}/like`));
+
+  // Trigger mission progress for social reaction
+  window.checkAndCompleteMissionsForEvent?.('post_liked');
 }
 
 function toggleCommentsSection(postId) {
@@ -737,6 +741,7 @@ window.toggleAttachmentInput = function(type) {
   }
 };
 
+// Validate and compress image before attaching
 window.handleFileAttachment = function(type) {
   const fileInput = document.getElementById(`feed-${type}-file`);
   const previewBox = document.getElementById(`attachment-${type}-preview`);
@@ -745,28 +750,86 @@ window.handleFileAttachment = function(type) {
   if (!fileInput || !fileInput.files || fileInput.files.length === 0) return;
 
   const file = fileInput.files[0];
-  if (file.size > 4 * 1024 * 1024) {
-    window.showToast?.("File too large. Choose a file smaller than 4MB.", "error");
-    fileInput.value = '';
-    return;
-  }
 
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    const base64Data = e.target.result;
-    if (type === 'image') {
-      window.attachedImageBase64 = base64Data;
-      if (previewMedia) previewMedia.src = base64Data;
-    } else {
-      window.attachedVideoBase64 = base64Data;
+  if (type === 'image') {
+    // Validate image type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!allowedTypes.includes(file.type)) {
+      window.showToast?.('Please select a JPG, PNG, or WebP image. This file type is not supported.', 'error');
+      fileInput.value = '';
+      return;
+    }
+    // Validate image size (max 4MB raw, will compress)
+    if (file.size > 4 * 1024 * 1024) {
+      window.showToast?.('This image is too large. Please choose a smaller image (under 4MB).', 'error');
+      fileInput.value = '';
+      return;
+    }
+
+    // Read and compress the image
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const img = new Image();
+      img.onload = function() {
+        const canvas = document.createElement('canvas');
+        let w = img.width, h = img.height;
+        const maxDim = 1200;
+        if (w > maxDim || h > maxDim) {
+          if (w / h > maxDim / maxDim) { h = Math.round((h * maxDim) / w); w = maxDim; }
+          else { w = Math.round((w * maxDim) / h); h = maxDim; }
+        }
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        const mimeType = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+        const dataUrl = canvas.toDataURL(mimeType, 0.75);
+
+        // Check compressed size ( Firestore safe limit ~800KB for embedded base64 )
+        const b64Length = dataUrl.length - dataUrl.indexOf(',') - 1;
+        const sizeInKB = Math.round((4 * Math.ceil(b64Length / 3) * 0.5624896) / 1024);
+        if (sizeInKB > 800) {
+          window.showToast?.('This image is still too large after compression. Please crop or choose a simpler image.', 'error');
+          fileInput.value = '';
+          return;
+        }
+
+        window.attachedImageBase64 = dataUrl;
+        if (previewMedia) previewMedia.src = dataUrl;
+        if (previewBox) previewBox.classList.remove('hidden');
+      };
+      img.onerror = function() {
+        window.showToast?.('Could not load this image. Please try a different file.', 'error');
+        fileInput.value = '';
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  } else if (type === 'video') {
+    // Validate video type
+    const allowedVideoTypes = ['video/mp4', 'video/webm', 'video/3gpp'];
+    if (!allowedVideoTypes.includes(file.type)) {
+      window.showToast?.('Please select an MP4 or WebM video. This format is not supported.', 'error');
+      fileInput.value = '';
+      return;
+    }
+    // Video must be small enough for Firestore (~500KB max after base64 encoding)
+    if (file.size > 500 * 1024) {
+      window.showToast?.('This video is too large to upload directly. Please use a YouTube link instead by pasting it in the URL field.', 'error');
+      fileInput.value = '';
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      window.attachedVideoBase64 = e.target.result;
       if (previewMedia) {
-        previewMedia.src = base64Data;
+        previewMedia.src = e.target.result;
         previewMedia.load();
       }
-    }
-    if (previewBox) previewBox.classList.remove('hidden');
-  };
-  reader.readAsDataURL(file);
+      if (previewBox) previewBox.classList.remove('hidden');
+    };
+    reader.readAsDataURL(file);
+  }
 };
 
 window.clearAttachment = function(type) {

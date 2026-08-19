@@ -4,7 +4,9 @@
 
 let championsUserUnsubscribe = null;
 let championsLeaderboardUnsubscribe = null;
+let championsMissionsUnsubscribe = null;
 let currentChampionUserData = null;
+window.currentUserMissionData = {};
 let activeLeaderboardTab = 'weekly'; // 'weekly' | 'monthly' | 'alltime'
 let activeLeaderboardCategory = 'kingdomCoins'; // 'kingdomCoins' | 'referrals' | 'streak' | 'quiz' | 'overall'
 let activeRewardCategory = 'all';
@@ -52,8 +54,7 @@ function initChampionsModule() {
 
   syncChampionsUserData(user.uid);
   syncChampionsLeaderboard();
-  renderDailyMissionsList();
-  renderWeeklyChallengesList();
+  syncUserMissions(user.uid);
   renderAchievementsList();
   renderRewardCenterCatalog();
   renderMyRewardsLibrary();
@@ -214,6 +215,7 @@ function syncChampionsUserData(uid) {
           await rRef.update({ rewardClaimed: true }).catch(() => {});
         }
         window.showToast?.(`🎁 You received +${pendingKc} Kingdom Coins from your successful referrals!`, 'success');
+        window.checkAndCompleteMissionsForEvent?.('referral_success');
         data.kingdomCoins = updatedKc;
         data.totalReferrals = totalRefs;
       }
@@ -552,16 +554,275 @@ function renderPodiumLayout(container, topThree, sortField) {
   `;
 }
 
-// Daily Missions Checklist
+// Daily Missions Definition
 const DAILY_MISSIONS_DEF = [
-  { id: 'm_devotional', title: "Read Today's Devotional", reward: 25, icon: '📖', check: () => currentChampionUserData?.lastCheckIn === new Date().toISOString().split('T')[0] },
-  { id: 'm_quiz', title: "Complete Today's Bible Quiz", reward: 30, icon: '❓', check: () => (currentChampionUserData?.completedQuizToday === true) },
-  { id: 'm_streak', title: "Maintain Your Streak", reward: 25, icon: '⚡', check: () => (currentChampionUserData?.streak > 0) },
-  { id: 'm_invite', title: "Invite 1 Friend to Home.cell", reward: 100, icon: '👥', check: () => (currentChampionUserData?.totalReferrals > 0) },
-  { id: 'm_cell', title: "Join or Chat in your Home Cell", reward: 30, icon: '🏠', check: () => (currentChampionUserData?.cellId && currentChampionUserData.cellId !== 'none') },
-  { id: 'm_social', title: "React to Community Feed Posts", reward: 15, icon: '❤️', check: () => true }
+  { id: 'm_devotional', title: "Read Today's Devotional", reward: 25, icon: '📖', target: 1, category: 'bible' },
+  { id: 'm_quiz', title: 'Complete a Bible Quiz', reward: 30, icon: '❓', target: 1, category: 'bible' },
+  { id: 'm_streak', title: 'Maintain Your Streak', reward: 25, icon: '⚡', target: 1, category: 'streak' },
+  { id: 'm_invite', title: 'Invite 1 Friend to Home.cell', reward: 100, icon: '👥', target: 1, category: 'referral' },
+  { id: 'm_cell', title: 'Join or Chat in your Group', reward: 30, icon: '🏠', target: 1, category: 'community' },
+  { id: 'm_social', title: 'React to a Community Post', reward: 15, icon: '❤️', target: 1, category: 'social' }
 ];
 
+// Weekly Challenges Definition
+function getCurrentWeekKey() {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), 0, 1);
+  const diff = now - start;
+  const oneWeek = 604800000;
+  const weekNum = Math.ceil((diff / oneWeek) + 1);
+  return `W${now.getFullYear()}-${weekNum}`;
+}
+
+const WEEKLY_CHALLENGES_DEF = [
+  { id: 'wc_invite_3', title: 'Invite 3 Friends to Home.cell', reward: 300, icon: '🚀', target: 3, category: 'referral' },
+  { id: 'wc_streak_7', title: 'Read Devotionals for 7 Consecutive Days', reward: 250, icon: '📅', target: 7, category: 'streak' },
+  { id: 'wc_quiz_5', title: 'Complete 5 Bible Quizzes', reward: 200, icon: '🧠', target: 5, category: 'bible' },
+  { id: 'wc_earn_1000', title: 'Earn 1,000 Kingdom Coins', reward: 500, icon: '🪙', target: 1000, category: 'earnings' }
+];
+
+// Sync user_missions subcollection from Firestore in real-time
+function syncUserMissions(uid) {
+  if (championsMissionsUnsubscribe) championsMissionsUnsubscribe();
+
+  const missionsRef = window.db.collection('users').doc(uid).collection('user_missions');
+  championsMissionsUnsubscribe = missionsRef.onSnapshot(snap => {
+    const freshData = {};
+    snap.forEach(doc => {
+      freshData[doc.id] = doc.data();
+    });
+    window.currentUserMissionData = freshData;
+    renderDailyMissionsList();
+    renderWeeklyChallengesList();
+  }, err => console.warn('Missions sync error:', err));
+}
+
+// Helper: get today's mission doc ID (for daily missions that reset each day)
+function getDailyMissionDocId(missionId) {
+  const todayStr = new Date().toISOString().split('T')[0];
+  return `${missionId}_${todayStr}`;
+}
+
+// Helper: get weekly challenge doc ID
+function getWeeklyChallengeDocId(challengeId) {
+  const weekKey = getCurrentWeekKey();
+  return `${challengeId}_${weekKey}`;
+}
+
+// Record mission progress in Firestore (atomic increment via transaction)
+async function recordMissionProgress(missionId, increment) {
+  increment = increment || 1;
+  const user = window.auth?.currentUser;
+  if (!user || !window.db) return;
+
+  // Determine if this is a daily or weekly mission
+  const isDaily = missionId.startsWith('m_');
+  const docId = isDaily ? getDailyMissionDocId(missionId) : getWeeklyChallengeDocId(missionId);
+  const missionRef = window.db.collection('users').doc(user.uid).collection('user_missions').doc(docId);
+
+  // Find the mission def for target
+  const missionDef = isDaily
+    ? DAILY_MISSIONS_DEF.find(m => m.id === missionId)
+    : WEEKLY_CHALLENGES_DEF.find(m => m.id === missionId);
+  if (!missionDef) return;
+
+  const target = missionDef.target;
+
+  try {
+    await window.db.runTransaction(async (transaction) => {
+      const missionDoc = await transaction.get(missionRef);
+      let currentProgress = 0;
+      let alreadyCompleted = false;
+      let rewardClaimed = false;
+
+      if (missionDoc.exists) {
+        const data = missionDoc.data();
+        currentProgress = data.progress || 0;
+        alreadyCompleted = data.completed === true;
+        rewardClaimed = data.rewardClaimed === true;
+      }
+
+      if (alreadyCompleted) return; // Already completed, don't increment further
+
+      const newProgress = Math.min(currentProgress + increment, target);
+      const nowCompleted = newProgress >= target;
+
+      const updateData = {
+        missionId: missionId,
+        progress: newProgress,
+        target: target,
+        completed: nowCompleted,
+        lastUpdated: window.firebase.firestore.FieldValue.serverTimestamp()
+      };
+
+      if (nowCompleted && !alreadyCompleted) {
+        updateData.completedAt = window.firebase.firestore.FieldValue.serverTimestamp();
+      }
+
+      if (missionDoc.exists) {
+        transaction.update(missionRef, updateData);
+      } else {
+        updateData.rewardClaimed = false;
+        transaction.set(missionRef, updateData);
+      }
+    });
+  } catch (err) {
+    console.warn('recordMissionProgress error:', err);
+  }
+}
+
+// Complete a mission instantly (for streak checks etc.)
+async function completeMissionInstantly(missionId) {
+  const user = window.auth?.currentUser;
+  if (!user || !window.db) return;
+
+  const isDaily = missionId.startsWith('m_');
+  const docId = isDaily ? getDailyMissionDocId(missionId) : getWeeklyChallengeDocId(missionId);
+  const missionRef = window.db.collection('users').doc(user.uid).collection('user_missions').doc(docId);
+
+  const missionDef = isDaily
+    ? DAILY_MISSIONS_DEF.find(m => m.id === missionId)
+    : WEEKLY_CHALLENGES_DEF.find(m => m.id === missionId);
+  if (!missionDef) return;
+
+  try {
+    await window.db.runTransaction(async (transaction) => {
+      const missionDoc = await transaction.get(missionRef);
+      const data = missionDoc.exists ? missionDoc.data() : {};
+
+      if (data.completed === true) return;
+
+      const updateData = {
+        missionId: missionId,
+        progress: missionDef.target,
+        target: missionDef.target,
+        completed: true,
+        lastUpdated: window.firebase.firestore.FieldValue.serverTimestamp(),
+        completedAt: window.firebase.firestore.FieldValue.serverTimestamp()
+      };
+
+      if (missionDoc.exists) {
+        transaction.update(missionRef, updateData);
+      } else {
+        updateData.rewardClaimed = false;
+        transaction.set(missionRef, updateData);
+      }
+    });
+  } catch (err) {
+    console.warn('completeMissionInstantly error:', err);
+  }
+}
+
+// Auto-complete missions based on app events
+function checkAndCompleteMissionsForEvent(eventType) {
+  if (!window.auth?.currentUser) return;
+
+  const eventMissionMap = {
+    'devotional_read': 'm_devotional',
+    'quiz_completed': 'm_quiz',
+    'post_liked': 'm_social',
+    'post_loved': 'm_social',
+    'chat_message_sent': 'm_cell',
+    'referral_success': 'm_invite'
+  };
+
+  const missionId = eventMissionMap[eventType];
+  if (!missionId) return;
+
+  // Also map to weekly challenges
+  const eventWeeklyMap = {
+    'quiz_completed': 'wc_quiz_5',
+    'referral_success': 'wc_invite_3'
+  };
+
+  recordMissionProgress(missionId, 1);
+
+  const weeklyId = eventWeeklyMap[eventType];
+  if (weeklyId) {
+    recordMissionProgress(weeklyId, 1);
+  }
+
+  // Special: wc_earn_1000 tracks total KC - sync from user data
+  if (eventType === 'kc_earned' && currentChampionUserData) {
+    const totalKc = currentChampionUserData.kingdomCoins || 0;
+    const missionRef = window.db.collection('users').doc(window.auth.currentUser.uid)
+      .collection('user_missions').doc(getWeeklyChallengeDocId('wc_earn_1000'));
+    const missionDoc = window.currentUserMissionData[getWeeklyChallengeDocId('wc_earn_1000')];
+    if (!missionDoc || !missionDoc.completed) {
+      recordMissionProgress('wc_earn_1000', 0); // Will read target from def and we handle kc_earned specially below
+    }
+  }
+}
+
+// Claim a single mission reward using Firestore transaction
+async function claimMissionReward(missionId, isDaily) {
+  const user = window.auth?.currentUser;
+  if (!user || !window.db) return;
+
+  const docId = isDaily ? getDailyMissionDocId(missionId) : getWeeklyChallengeDocId(missionId);
+  const missionRef = window.db.collection('users').doc(user.uid).collection('user_missions').doc(docId);
+  const userRef = window.db.collection('users').doc(user.uid);
+
+  const missionDef = isDaily
+    ? DAILY_MISSIONS_DEF.find(m => m.id === missionId)
+    : WEEKLY_CHALLENGES_DEF.find(m => m.id === missionId);
+  if (!missionDef) return;
+
+  try {
+    await window.db.runTransaction(async (transaction) => {
+      const missionDoc = await transaction.get(missionRef);
+      if (!missionDoc.exists) throw new Error('Mission not found');
+
+      const mData = missionDoc.data();
+      if (!mData.completed) throw new Error('Mission not yet completed');
+      if (mData.rewardClaimed === true) throw new Error('Reward already claimed');
+
+      const userDoc = await transaction.get(userRef);
+      if (!userDoc.exists) throw new Error('User not found');
+
+      const uData = userDoc.data();
+      const currentKc = uData.kingdomCoins || 0;
+      const currentTotalKc = uData.totalKcEarned || currentKc;
+      const rewardAmount = missionDef.reward;
+
+      // Award KC
+      transaction.update(userRef, {
+        kingdomCoins: currentKc + rewardAmount,
+        totalKcEarned: currentTotalKc + rewardAmount
+      });
+
+      // Mark reward as claimed
+      transaction.update(missionRef, {
+        rewardClaimed: true,
+        rewardClaimedAt: window.firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+      // Record KC transaction
+      const txRef = window.db.collection('users').doc(user.uid).collection('kc_transactions').doc();
+      transaction.set(txRef, {
+        type: 'credit',
+        amount: rewardAmount,
+        title: `Mission Completed: ${missionDef.title}`,
+        missionId: missionId,
+        createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
+      });
+    });
+
+    window.triggerConfetti?.();
+    window.showToast?.(`🎉 Mission reward claimed! +${missionDef.reward} Kingdom Coins!`, 'success');
+  } catch (err) {
+    if (err.message === 'Reward already claimed') {
+      window.showToast?.('Reward already claimed for this mission.', 'info');
+    } else if (err.message === 'Mission not yet completed') {
+      window.showToast?.('Complete the mission first to claim the reward.', 'warning');
+    } else {
+      console.warn('claimMissionReward error:', err);
+      window.handleFirestoreError?.(err, 'write', `users/${user.uid}/user_missions`);
+    }
+  }
+}
+
+// Render Daily Missions List (reads from Firestore cache)
 function renderDailyMissionsList() {
   const container = document.getElementById('daily-missions-container');
   if (!container) return;
@@ -570,33 +831,44 @@ function renderDailyMissionsList() {
   let completedCount = 0;
 
   DAILY_MISSIONS_DEF.forEach(m => {
-    const isCompleted = m.check();
+    const docId = getDailyMissionDocId(m.id);
+    const mData = window.currentUserMissionData[docId];
+    const progress = mData ? (mData.progress || 0) : 0;
+    const isCompleted = mData ? (mData.completed === true) : false;
+    const rewardClaimed = mData ? (mData.rewardClaimed === true) : false;
+
     if (isCompleted) completedCount++;
 
     const card = document.createElement('div');
     card.className = `p-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
-      isCompleted
-        ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-800 dark:text-emerald-300"
-        : "bg-white dark:bg-zinc-900 border-slate-200/80 dark:border-zinc-800"
+      rewardClaimed
+        ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-800 dark:text-emerald-300'
+        : isCompleted
+          ? 'bg-blue-500/10 border-blue-500/40'
+          : 'bg-white dark:bg-zinc-900 border-slate-200/80 dark:border-zinc-800'
     }`;
+
+    let actionHtml = '';
+    if (rewardClaimed) {
+      actionHtml = `<span class="px-3 py-1 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase flex items-center gap-1">Completed ✓</span>`;
+    } else if (isCompleted) {
+      actionHtml = `<button onclick="claimMissionReward('${m.id}', true)" class="px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-white text-xs font-black transition-all cursor-pointer hover:scale-105 shadow-sm">Claim +${m.reward} KC</button>`;
+    } else {
+      actionHtml = `<button onclick="handleMissionAction('${m.id}')" class="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all cursor-pointer">Go →</button>`;
+    }
 
     card.innerHTML = `
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl ${isCompleted ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' : 'bg-slate-100 dark:bg-zinc-800 text-slate-500'} flex items-center justify-center text-xl">
+        <div class="w-10 h-10 rounded-xl ${rewardClaimed ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' : isCompleted ? 'bg-blue-500/20 text-blue-600 dark:text-blue-400' : 'bg-slate-100 dark:bg-zinc-800 text-slate-500'} flex items-center justify-center text-xl">
           ${m.icon}
         </div>
         <div>
           <div class="text-xs font-black text-slate-900 dark:text-zinc-100">${m.title}</div>
           <div class="text-[10px] text-amber-600 dark:text-amber-400 font-bold font-mono">+${m.reward} KC Reward</div>
+          <div class="text-[10px] font-mono text-slate-400 mt-0.5">${Math.min(progress, m.target)}/${m.target}</div>
         </div>
       </div>
-
-      <div>
-        ${isCompleted 
-          ? `<span class="px-3 py-1 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase flex items-center gap-1">✓ Completed</span>`
-          : `<button onclick="handleMissionAction('${m.id}')" class="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all cursor-pointer">Go →</button>`
-        }
-      </div>
+      <div>${actionHtml}</div>
     `;
 
     container.appendChild(card);
@@ -606,9 +878,23 @@ function renderDailyMissionsList() {
   const bonusBanner = document.getElementById('daily-missions-bonus-banner');
   if (bonusBanner) {
     const isAllDone = completedCount === DAILY_MISSIONS_DEF.length;
+    const bonusDocId = `daily_bonus_${new Date().toISOString().split('T')[0]}`;
+    const bonusData = window.currentUserMissionData[bonusDocId];
+    const bonusClaimed = bonusData ? (bonusData.rewardClaimed === true) : false;
+
     bonusBanner.className = `p-4 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
-      isAllDone ? "bg-gradient-to-r from-amber-500 to-yellow-600 text-slate-950 font-black shadow-lg" : "bg-slate-100 dark:bg-zinc-800/60 text-slate-600 dark:text-zinc-400 border-slate-200 dark:border-zinc-800"
+      bonusClaimed ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-800 dark:text-emerald-300' : isAllDone ? 'bg-gradient-to-r from-amber-500 to-yellow-600 text-slate-950 font-black shadow-lg' : 'bg-slate-100 dark:bg-zinc-800/60 text-slate-600 dark:text-zinc-400 border-slate-200 dark:border-zinc-800'
     }`;
+
+    let bonusBtnHtml = '';
+    if (bonusClaimed) {
+      bonusBtnHtml = `<span class="px-4 py-2 rounded-xl bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-mono font-black text-xs flex items-center gap-1">Bonus Claimed ✓</span>`;
+    } else if (isAllDone) {
+      bonusBtnHtml = `<button onclick="claimDailyMissionBonus()" class="px-4 py-2 rounded-xl bg-slate-950 text-amber-400 font-mono font-black text-xs hover:scale-105 transition-all cursor-pointer">+100 KC Bonus</button>`;
+    } else {
+      bonusBtnHtml = `<button disabled class="px-4 py-2 rounded-xl bg-slate-950 text-amber-400 font-mono font-black text-xs disabled:opacity-50 disabled:cursor-not-allowed">+100 KC Bonus</button>`;
+    }
+
     bonusBanner.innerHTML = `
       <div class="flex items-center gap-3">
         <span class="text-2xl">🎁</span>
@@ -617,9 +903,7 @@ function renderDailyMissionsList() {
           <div class="text-[11px] opacity-90">${completedCount}/${DAILY_MISSIONS_DEF.length} Missions Completed Today</div>
         </div>
       </div>
-      <button onclick="claimDailyMissionBonus()" ${!isAllDone ? 'disabled' : ''} class="px-4 py-2 rounded-xl bg-slate-950 text-amber-400 font-mono font-black text-xs disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 transition-all cursor-pointer">
-        +100 KC Bonus
-      </button>
+      ${bonusBtnHtml}
     `;
   }
 }
@@ -632,66 +916,130 @@ function handleMissionAction(id) {
   else if (id === 'm_social') window.switchTab?.('feed');
 }
 
-function claimDailyMissionBonus() {
+// Claim Daily Mission Bonus using Firestore transaction
+async function claimDailyMissionBonus() {
   const user = window.auth?.currentUser;
-  if (!user) return;
+  if (!user || !window.db) return;
 
   const todayStr = new Date().toISOString().split('T')[0];
-  const claimKey = `kc_daily_bonus_${todayStr}_${user.uid}`;
+  const bonusDocId = `daily_bonus_${todayStr}`;
+  const bonusRef = window.db.collection('users').doc(user.uid).collection('user_missions').doc(bonusDocId);
+  const userRef = window.db.collection('users').doc(user.uid);
 
-  if (localStorage.getItem(claimKey)) {
-    window.showToast?.("You have already claimed today's mission bonus!", "info");
-    return;
-  }
+  try {
+    await window.db.runTransaction(async (transaction) => {
+      const bonusDoc = await transaction.get(bonusRef);
+      if (bonusDoc.exists && bonusDoc.data().rewardClaimed === true) {
+        throw new Error('already_claimed');
+      }
 
-  localStorage.setItem(claimKey, 'true');
-  const docRef = window.db.collection('users').doc(user.uid);
-  docRef.get().then(doc => {
-    if (doc.exists) {
-      const currentKc = doc.data().kingdomCoins || 0;
-      docRef.update({
+      const userDoc = await transaction.get(userRef);
+      if (!userDoc.exists) throw new Error('user_not_found');
+
+      const uData = userDoc.data();
+      const currentKc = uData.kingdomCoins || 0;
+      const currentTotalKc = uData.totalKcEarned || currentKc;
+
+      transaction.update(userRef, {
         kingdomCoins: currentKc + 100,
-        totalKcEarned: (doc.data().totalKcEarned || currentKc) + 100
-      }).then(() => {
-        window.triggerConfetti?.();
-        window.showToast?.("🎉 Daily All-Mission Bonus claimed! +100 Kingdom Coins!", "success");
+        totalKcEarned: currentTotalKc + 100
       });
+
+      const setData = {
+        missionId: 'daily_bonus',
+        progress: 1,
+        target: 1,
+        completed: true,
+        rewardClaimed: true,
+        rewardClaimedAt: window.firebase.firestore.FieldValue.serverTimestamp(),
+        completedAt: window.firebase.firestore.FieldValue.serverTimestamp(),
+        lastUpdated: window.firebase.firestore.FieldValue.serverTimestamp()
+      };
+
+      if (bonusDoc.exists) {
+        transaction.update(bonusRef, setData);
+      } else {
+        transaction.set(bonusRef, setData);
+      }
+
+      // Record KC transaction
+      const txRef = window.db.collection('users').doc(user.uid).collection('kc_transactions').doc();
+      transaction.set(txRef, {
+        type: 'credit',
+        amount: 100,
+        title: 'Daily All-Mission Completion Bonus',
+        missionId: 'daily_bonus',
+        createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
+      });
+    });
+
+    window.triggerConfetti?.();
+    window.showToast?.('🎉 Daily All-Mission Bonus claimed! +100 Kingdom Coins!', 'success');
+  } catch (err) {
+    if (err.message === 'already_claimed') {
+      window.showToast?.("You have already claimed today's mission bonus!", 'info');
+    } else {
+      console.warn('claimDailyMissionBonus error:', err);
+      window.handleFirestoreError?.(err, 'write', `users/${user.uid}/user_missions`);
     }
-  });
+  }
 }
 
-// Weekly Challenges
+// Render Weekly Challenges List (reads from Firestore cache)
 function renderWeeklyChallengesList() {
   const container = document.getElementById('weekly-challenges-container');
   if (!container) return;
 
-  const challenges = [
-    { title: 'Invite 3 Friends to Home.cell', reward: 300, icon: '🚀', progress: `${Math.min(3, currentChampionUserData?.totalReferrals || 0)}/3` },
-    { title: 'Read Devotionals for 7 Consecutive Days', reward: 250, icon: '📅', progress: `${Math.min(7, currentChampionUserData?.streak || 0)}/7` },
-    { title: 'Complete 5 Bible Quizzes', reward: 200, icon: '🧠', progress: '3/5' },
-    { title: 'Earn 1,000 Kingdom Coins', reward: 500, icon: '🪙', progress: `${Math.min(1000, currentChampionUserData?.kingdomCoins || 0)}/1000` }
-  ];
-
   container.innerHTML = '';
-  challenges.forEach(c => {
+
+  WEEKLY_CHALLENGES_DEF.forEach(c => {
+    const docId = getWeeklyChallengeDocId(c.id);
+    const mData = window.currentUserMissionData[docId];
+    const progress = mData ? (mData.progress || 0) : 0;
+    const isCompleted = mData ? (mData.completed === true) : false;
+    const rewardClaimed = mData ? (mData.rewardClaimed === true) : false;
+
+    // Special: wc_earn_1000 shows actual KC from user data
+    let displayProgress = progress;
+    if (c.id === 'wc_earn_1000' && currentChampionUserData) {
+      displayProgress = Math.min(currentChampionUserData.kingdomCoins || 0, c.target);
+    }
+    // Special: wc_streak_7 shows actual streak from user data
+    if (c.id === 'wc_streak_7' && currentChampionUserData) {
+      displayProgress = Math.min(currentChampionUserData.streak || 0, c.target);
+    }
+
     const card = document.createElement('div');
-    card.className = "p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 flex items-center justify-between gap-3 shadow-xs";
+    card.className = `p-4 rounded-2xl border transition-all flex items-center justify-between gap-3 shadow-xs ${
+      rewardClaimed
+        ? 'bg-emerald-500/10 border-emerald-500/30'
+        : isCompleted
+          ? 'bg-blue-500/10 border-blue-500/40'
+          : 'bg-white dark:bg-zinc-900 border-slate-200/80 dark:border-zinc-800'
+    }`;
+
+    let actionHtml = '';
+    if (rewardClaimed) {
+      actionHtml = `<span class="px-3 py-1 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase">Completed ✓</span>`;
+    } else if (isCompleted) {
+      actionHtml = `<button onclick="claimMissionReward('${c.id}', false)" class="px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-white text-xs font-black transition-all cursor-pointer hover:scale-105 shadow-sm">Claim +${c.reward} KC</button>`;
+    } else {
+      actionHtml = `<span class="px-3 py-1 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 font-mono font-black text-xs block">+${c.reward} KC</span>`;
+    }
+
     card.innerHTML = `
       <div class="flex items-center gap-3">
-        <div class="w-11 h-11 rounded-2xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center text-2xl">
+        <div class="w-11 h-11 rounded-2xl ${rewardClaimed ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' : isCompleted ? 'bg-blue-500/20 text-blue-600 dark:text-blue-400' : 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400'} flex items-center justify-center text-2xl">
           ${c.icon}
         </div>
         <div>
           <div class="text-xs font-black text-slate-900 dark:text-zinc-100">${c.title}</div>
-          <div class="text-[10px] text-slate-400 mt-0.5">Progress: <strong class="text-blue-600 dark:text-blue-400 font-mono">${c.progress}</strong></div>
+          <div class="text-[10px] text-slate-400 mt-0.5">Progress: <strong class="text-blue-600 dark:text-blue-400 font-mono">${displayProgress}/${c.target}</strong></div>
         </div>
       </div>
-      <div class="text-right">
-        <span class="px-3 py-1 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 font-mono font-black text-xs block">
-          +${c.reward} KC
-        </span>
-      </div>
+      <div class="text-right">${actionHtml}</div>
     `;
+
     container.appendChild(card);
   });
 }
@@ -1068,4 +1416,9 @@ window.processReferralForNewUser = processReferralForNewUser;
 window.claimDailyMissionBonus = claimDailyMissionBonus;
 window.claimDailyMissionsBonus = claimDailyMissionBonus;
 window.handleMissionAction = handleMissionAction;
+window.claimMissionReward = claimMissionReward;
+window.recordMissionProgress = recordMissionProgress;
+window.completeMissionInstantly = completeMissionInstantly;
+window.checkAndCompleteMissionsForEvent = checkAndCompleteMissionsForEvent;
+window.syncUserMissions = syncUserMissions;
 

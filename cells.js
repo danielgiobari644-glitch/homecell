@@ -523,6 +523,7 @@ function sendCellChatMessage(text) {
     .then(() => {
       cancelReply();
       updateUserPresence('online', null);
+      window.checkAndCompleteMissionsForEvent?.('chat_message_sent');
     })
     .catch(err => window.handleFirestoreError(err, 'create', `cells/${profile.cellId}/messages`));
 }
