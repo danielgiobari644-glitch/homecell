@@ -6,6 +6,10 @@ let adminRequestsListener = null;
 let adminCellsListener = null;
 let adminStatsListener = null;
 let adminQuizzesListener = null;
+let adminEventsListener = null;
+let adminDevotionalsListener = null;
+let adminDevDraftCover = 'https://images.unsplash.com/photo-1507692049790-de58290a4334?auto=format&fit=crop&w=1200&q=80';
+let adminEventDraftCover = 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=1200&q=80';
 let currentAdminSubTab = 'members';
 
 function initAdminModule() {
@@ -696,38 +700,195 @@ async function handleAdminBroadcastSubmit(e) {
   }
 }
 
-// 5. Devotionals Publisher
+// 5. Devotionals Publisher & Cover Photo Management
 function renderAdminDevotionalsPane(container) {
+  adminDevDraftCover = 'https://images.unsplash.com/photo-1507692049790-de58290a4334?auto=format&fit=crop&w=1200&q=80';
+
   container.innerHTML = `
-    <div class="max-w-2xl mx-auto glass-panel rounded-3xl p-6 sm:p-8 space-y-6">
-      <div>
-        <h3 class="text-lg font-black text-slate-900 dark:text-zinc-100">Publish Daily Devotional</h3>
-        <p class="text-xs text-slate-400">Release the morning bread of life for members to read and earn +10 KC.</p>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <!-- Create Devotional Form -->
+      <div class="glass-panel rounded-3xl p-6 sm:p-8 space-y-6">
+        <div>
+          <h3 class="text-lg font-black text-slate-900 dark:text-zinc-100">Publish Daily Devotional</h3>
+          <p class="text-xs text-slate-400">Release the morning bread of life with a high-definition cover for members to read and earn +10 KC.</p>
+        </div>
+
+        <form onsubmit="handlePublishDevotionalSubmit(event)" class="space-y-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">Title</label>
+            <input type="text" id="admin-dev-title" required placeholder="e.g. Walking in Divine Favor" class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl p-3 text-slate-900 dark:text-zinc-100" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">Scripture Reference</label>
+            <input type="text" id="admin-dev-scripture" required placeholder="e.g. Psalm 5:12" class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl p-3 text-slate-900 dark:text-zinc-100" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">Devotional Body</label>
+            <textarea id="admin-dev-body" rows="4" required placeholder="Inspirational reflection and teaching..." class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl p-3 text-slate-900 dark:text-zinc-100"></textarea>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">Guided Prayer</label>
+            <textarea id="admin-dev-prayer" rows="2" required placeholder="Lord, surround me with Your favor today..." class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl p-3 text-slate-900 dark:text-zinc-100"></textarea>
+          </div>
+
+          <!-- Cover Photo Picker Box -->
+          <div class="p-4 bg-slate-50 dark:bg-zinc-800/80 rounded-2xl border border-slate-200 dark:border-zinc-700 space-y-3">
+            <div class="flex items-center justify-between">
+              <label class="block text-xs font-bold text-slate-800 dark:text-zinc-200">
+                🖼️ Devotional Cover Photo
+              </label>
+              <span class="text-[10px] text-amber-500 font-bold">HD Banner</span>
+            </div>
+
+            <div class="relative h-28 rounded-xl overflow-hidden bg-slate-200 dark:bg-zinc-700 border border-slate-300 dark:border-zinc-600">
+              <img id="admin-dev-cover-preview" src="${adminDevDraftCover}" class="w-full h-full object-cover" />
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <label class="cursor-pointer py-2 px-3 rounded-xl bg-white dark:bg-zinc-700 border border-slate-200 dark:border-zinc-600 hover:border-amber-500 text-[11px] font-bold text-center text-slate-700 dark:text-zinc-200 flex items-center justify-center gap-1.5 shadow-2xs">
+                <i data-lucide="upload" class="w-3.5 h-3.5 text-amber-500"></i>
+                <span>Upload File</span>
+                <input type="file" id="admin-dev-cover-file" accept="image/*" onchange="handleAdminDevCoverSelect(event)" class="hidden" />
+              </label>
+
+              <button type="button" onclick="promptAdminDevCoverUrl()" class="py-2 px-3 rounded-xl bg-white dark:bg-zinc-700 border border-slate-200 dark:border-zinc-600 hover:border-amber-500 text-[11px] font-bold text-slate-700 dark:text-zinc-200 flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer">
+                <i data-lucide="link" class="w-3.5 h-3.5 text-blue-500"></i>
+                <span>Paste URL</span>
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" class="w-full py-3.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs uppercase rounded-xl shadow cursor-pointer transition-all">
+            Publish Devotional ☀️
+          </button>
+        </form>
       </div>
 
-      <form onsubmit="handlePublishDevotionalSubmit(event)" class="space-y-4">
-        <div>
-          <label class="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">Title</label>
-          <input type="text" id="admin-dev-title" required placeholder="e.g. Walking in Divine Favor" class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl p-3" />
+      <!-- Published Devotionals List with Cover Manager -->
+      <div class="lg:col-span-2 space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h4 class="font-black text-base text-slate-900 dark:text-zinc-100">Published Daily Devotionals</h4>
+            <p class="text-xs text-slate-400">Click 'Change Cover' on any devotional to update its banner with an image file or custom URL.</p>
+          </div>
         </div>
-        <div>
-          <label class="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">Scripture Reference</label>
-          <input type="text" id="admin-dev-scripture" required placeholder="e.g. Psalm 5:12" class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl p-3" />
+        <div id="admin-devotionals-list-container" class="space-y-3 max-h-[750px] overflow-y-auto pr-1">
+          <div class="p-8 text-center text-xs text-slate-400">Loading devotionals...</div>
         </div>
-        <div>
-          <label class="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">Devotional Body</label>
-          <textarea id="admin-dev-body" rows="4" required placeholder="Inspirational reflection and teaching..." class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl p-3"></textarea>
-        </div>
-        <div>
-          <label class="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">Guided Prayer</label>
-          <textarea id="admin-dev-prayer" rows="2" required placeholder="Lord, surround me with Your favor today..." class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl p-3"></textarea>
-        </div>
-        <button type="submit" class="w-full py-3.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs uppercase rounded-xl shadow cursor-pointer transition-all">
-          Publish Devotional ☀️
-        </button>
-      </form>
+      </div>
     </div>
   `;
+
+  syncAdminDevotionalsList();
+  if (window.lucide) window.lucide.createIcons();
+}
+
+function handleAdminDevCoverSelect(e) {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    adminDevDraftCover = event.target.result;
+    const prev = document.getElementById('admin-dev-cover-preview');
+    if (prev) prev.src = adminDevDraftCover;
+  };
+  reader.readAsDataURL(file);
+}
+
+function promptAdminDevCoverUrl() {
+  const url = prompt("Enter Image URL for Devotional Cover:", adminDevDraftCover);
+  if (url && url.trim()) {
+    adminDevDraftCover = url.trim();
+    const prev = document.getElementById('admin-dev-cover-preview');
+    if (prev) prev.src = adminDevDraftCover;
+  }
+}
+
+function syncAdminDevotionalsList() {
+  const container = document.getElementById('admin-devotionals-list-container');
+  if (!container) return;
+
+  if (adminDevotionalsListener) adminDevotionalsListener();
+  const db = window.db;
+  if (!db) return;
+
+  adminDevotionalsListener = db.collection('daily_devotionals')
+    .orderBy('devotionalDate', 'desc')
+    .onSnapshot(snap => {
+      container.innerHTML = '';
+      if (snap.empty) {
+        // Try fallback
+        db.collection('devotionals').get().then(fallbackSnap => {
+          if (fallbackSnap.empty) {
+            container.innerHTML = `<div class="p-8 text-center text-xs text-slate-400">No devotionals published yet.</div>`;
+            return;
+          }
+          renderAdminDevotionalsCards(fallbackSnap);
+        }).catch(() => {
+          container.innerHTML = `<div class="p-8 text-center text-xs text-slate-400">No devotionals published yet.</div>`;
+        });
+        return;
+      }
+      renderAdminDevotionalsCards(snap);
+    }, err => console.warn("Admin devotionals sync error:", err));
+}
+
+function renderAdminDevotionalsCards(snap) {
+  const container = document.getElementById('admin-devotionals-list-container');
+  if (!container) return;
+  container.innerHTML = '';
+
+  snap.forEach(doc => {
+    const d = doc.data();
+    const docId = doc.id;
+    const card = document.createElement('div');
+    card.className = "glass-panel rounded-2xl p-4 sm:p-5 space-y-3 border border-slate-200 dark:border-zinc-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4";
+
+    const safeTitle = (d.title || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    const safeImg = (d.imageUrl || '').replace(/'/g, "\\'");
+
+    card.innerHTML = `
+      <div class="flex items-center gap-3.5">
+        <div class="relative w-20 h-16 rounded-xl overflow-hidden bg-slate-100 dark:bg-zinc-800 shrink-0 border border-slate-200 dark:border-zinc-700">
+          ${d.imageUrl ? `
+            <img src="${d.imageUrl}" class="w-full h-full object-cover" alt="${d.title}" />
+          ` : `
+            <div class="w-full h-full flex items-center justify-center text-amber-500"><i data-lucide="sun" class="w-6 h-6"></i></div>
+          `}
+        </div>
+        <div class="space-y-0.5">
+          <span class="text-[10px] font-black uppercase text-amber-600 dark:text-amber-400 font-mono">${d.devotionalDate || 'Daily'} • ${d.scripture || ''}</span>
+          <h5 class="font-black text-sm text-slate-900 dark:text-zinc-100 line-clamp-1">${d.title}</h5>
+          <p class="text-xs text-slate-400 line-clamp-1">${d.body || ''}</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 shrink-0 self-end sm:self-center">
+        <button onclick="window.openChangeCoverModal({ type: 'devotional', id: '${docId}', title: '${safeTitle}', imageUrl: '${safeImg}' })" class="px-3.5 py-2 bg-amber-500/10 hover:bg-amber-500 text-amber-700 dark:text-amber-300 hover:text-slate-950 font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center gap-1.5 border border-amber-500/30">
+          <i data-lucide="camera" class="w-3.5 h-3.5"></i>
+          <span>Change Cover</span>
+        </button>
+
+        <button onclick="deleteDevotionalDirect('${docId}')" class="px-3 py-2 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 font-bold text-xs rounded-xl transition-all cursor-pointer">
+          Delete
+        </button>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+
+  if (window.lucide) window.lucide.createIcons();
+}
+
+async function deleteDevotionalDirect(devId) {
+  if (!confirm("Are you sure you want to delete this devotional?")) return;
+  try {
+    await window.db.collection('daily_devotionals').doc(devId).delete();
+    await window.db.collection('devotionals').doc(devId).delete().catch(() => {});
+    window.showToast?.("Devotional deleted.", "info");
+  } catch (err) {
+    window.showToast?.("Error deleting: " + err.message, "error");
+  }
 }
 
 async function handlePublishDevotionalSubmit(e) {
@@ -747,7 +908,7 @@ async function handlePublishDevotionalSubmit(e) {
       devotionalDate: todayStr,
       date: todayStr,
       author: 'Pastor Daniel Giobari (Super Admin)',
-      imageUrl: 'https://images.unsplash.com/photo-1507692049790-de58290a4334?auto=format&fit=crop&w=1200&q=80',
+      imageUrl: adminDevDraftCover || 'https://images.unsplash.com/photo-1507692049790-de58290a4334?auto=format&fit=crop&w=1200&q=80',
       createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
     };
 
@@ -762,38 +923,194 @@ async function handlePublishDevotionalSubmit(e) {
   }
 }
 
-// 6. Gatherings Scheduler
+// 6. Gatherings Scheduler & Cover Photo Management
 function renderAdminEventsPane(container) {
+  adminEventDraftCover = 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=1200&q=80';
+
   container.innerHTML = `
-    <div class="max-w-2xl mx-auto glass-panel rounded-3xl p-6 sm:p-8 space-y-6">
-      <div>
-        <h3 class="text-lg font-black text-slate-900 dark:text-zinc-100">Schedule Church Gathering</h3>
-        <p class="text-xs text-slate-400">Post upcoming conferences, cell rallies, and prayer meetings.</p>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <!-- Schedule Event Form -->
+      <div class="glass-panel rounded-3xl p-6 sm:p-8 space-y-6">
+        <div>
+          <h3 class="text-lg font-black text-slate-900 dark:text-zinc-100">Schedule Church Gathering</h3>
+          <p class="text-xs text-slate-400">Post upcoming conferences, cell rallies, and prayer meetings with custom cover artwork.</p>
+        </div>
+
+        <form onsubmit="handleCreateEventSubmit(event)" class="space-y-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">Event Title</label>
+            <input type="text" id="admin-event-title" required placeholder="e.g. Kingdom Leaders Summit" class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl p-3 text-slate-900 dark:text-zinc-100" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">Date & Time</label>
+            <input type="text" id="admin-event-datetime" required placeholder="e.g. Sunday, 10:00 AM" class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl p-3 text-slate-900 dark:text-zinc-100" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">Location / Venue</label>
+            <input type="text" id="admin-event-location" required placeholder="e.g. Main Sanctuary & Online Livestream" class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl p-3 text-slate-900 dark:text-zinc-100" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">Description</label>
+            <textarea id="admin-event-desc" rows="3" required placeholder="Details about this gathering..." class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl p-3 text-slate-900 dark:text-zinc-100"></textarea>
+          </div>
+
+          <!-- Cover Photo Picker Box -->
+          <div class="p-4 bg-slate-50 dark:bg-zinc-800/80 rounded-2xl border border-slate-200 dark:border-zinc-700 space-y-3">
+            <div class="flex items-center justify-between">
+              <label class="block text-xs font-bold text-slate-800 dark:text-zinc-200">
+                🖼️ Gathering Cover Artwork
+              </label>
+              <span class="text-[10px] text-purple-500 font-bold">HD Banner</span>
+            </div>
+
+            <div class="relative h-28 rounded-xl overflow-hidden bg-slate-200 dark:bg-zinc-700 border border-slate-300 dark:border-zinc-600">
+              <img id="admin-event-cover-preview" src="${adminEventDraftCover}" class="w-full h-full object-cover" />
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <label class="cursor-pointer py-2 px-3 rounded-xl bg-white dark:bg-zinc-700 border border-slate-200 dark:border-zinc-600 hover:border-purple-500 text-[11px] font-bold text-center text-slate-700 dark:text-zinc-200 flex items-center justify-center gap-1.5 shadow-2xs">
+                <i data-lucide="upload" class="w-3.5 h-3.5 text-purple-500"></i>
+                <span>Upload File</span>
+                <input type="file" id="admin-event-cover-file" accept="image/*" onchange="handleAdminEventCoverSelect(event)" class="hidden" />
+              </label>
+
+              <button type="button" onclick="promptAdminEventCoverUrl()" class="py-2 px-3 rounded-xl bg-white dark:bg-zinc-700 border border-slate-200 dark:border-zinc-600 hover:border-purple-500 text-[11px] font-bold text-slate-700 dark:text-zinc-200 flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer">
+                <i data-lucide="link" class="w-3.5 h-3.5 text-blue-500"></i>
+                <span>Paste URL</span>
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase rounded-xl shadow cursor-pointer transition-all">
+            Schedule Gathering 📅
+          </button>
+        </form>
       </div>
 
-      <form onsubmit="handleCreateEventSubmit(event)" class="space-y-4">
-        <div>
-          <label class="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">Event Title</label>
-          <input type="text" id="admin-event-title" required placeholder="e.g. Kingdom Leaders Summit" class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl p-3" />
+      <!-- Scheduled Events List with Cover Manager -->
+      <div class="lg:col-span-2 space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h4 class="font-black text-base text-slate-900 dark:text-zinc-100">Scheduled Gatherings & Events</h4>
+            <p class="text-xs text-slate-400">Click 'Change Cover' on any event to update its banner image with an uploaded file or URL.</p>
+          </div>
         </div>
-        <div>
-          <label class="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">Date & Time</label>
-          <input type="text" id="admin-event-datetime" required placeholder="e.g. Sunday, 10:00 AM" class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl p-3" />
+        <div id="admin-events-list-container" class="space-y-3 max-h-[750px] overflow-y-auto pr-1">
+          <div class="p-8 text-center text-xs text-slate-400">Loading scheduled gatherings...</div>
         </div>
-        <div>
-          <label class="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">Location / Venue</label>
-          <input type="text" id="admin-event-location" required placeholder="e.g. Main Sanctuary & Online Livestream" class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl p-3" />
-        </div>
-        <div>
-          <label class="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">Description</label>
-          <textarea id="admin-event-desc" rows="3" required placeholder="Details about this gathering..." class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl p-3"></textarea>
-        </div>
-        <button type="submit" class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase rounded-xl shadow cursor-pointer transition-all">
-          Schedule Gathering 📅
-        </button>
-      </form>
+      </div>
     </div>
   `;
+
+  syncAdminEventsList();
+  if (window.lucide) window.lucide.createIcons();
+}
+
+function handleAdminEventCoverSelect(e) {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    adminEventDraftCover = event.target.result;
+    const prev = document.getElementById('admin-event-cover-preview');
+    if (prev) prev.src = adminEventDraftCover;
+  };
+  reader.readAsDataURL(file);
+}
+
+function promptAdminEventCoverUrl() {
+  const url = prompt("Enter Image URL for Gathering Cover:", adminEventDraftCover);
+  if (url && url.trim()) {
+    adminEventDraftCover = url.trim();
+    const prev = document.getElementById('admin-event-cover-preview');
+    if (prev) prev.src = adminEventDraftCover;
+  }
+}
+
+function syncAdminEventsList() {
+  const container = document.getElementById('admin-events-list-container');
+  if (!container) return;
+
+  if (adminEventsListener) adminEventsListener();
+  const db = window.db;
+  if (!db) return;
+
+  adminEventsListener = db.collection('upcoming_events')
+    .orderBy('eventDate', 'desc')
+    .onSnapshot(snap => {
+      container.innerHTML = '';
+      if (snap.empty) {
+        db.collection('events').get().then(fallbackSnap => {
+          if (fallbackSnap.empty) {
+            container.innerHTML = `<div class="p-8 text-center text-xs text-slate-400">No upcoming events scheduled yet.</div>`;
+            return;
+          }
+          renderAdminEventsCards(fallbackSnap);
+        }).catch(() => {
+          container.innerHTML = `<div class="p-8 text-center text-xs text-slate-400">No upcoming events scheduled yet.</div>`;
+        });
+        return;
+      }
+      renderAdminEventsCards(snap);
+    }, err => console.warn("Admin events sync error:", err));
+}
+
+function renderAdminEventsCards(snap) {
+  const container = document.getElementById('admin-events-list-container');
+  if (!container) return;
+  container.innerHTML = '';
+
+  snap.forEach(doc => {
+    const ev = doc.data();
+    const docId = doc.id;
+    const card = document.createElement('div');
+    card.className = "glass-panel rounded-2xl p-4 sm:p-5 space-y-3 border border-slate-200 dark:border-zinc-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4";
+
+    const safeTitle = (ev.title || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    const safeImg = (ev.imageUrl || '').replace(/'/g, "\\'");
+
+    card.innerHTML = `
+      <div class="flex items-center gap-3.5">
+        <div class="relative w-20 h-16 rounded-xl overflow-hidden bg-slate-100 dark:bg-zinc-800 shrink-0 border border-slate-200 dark:border-zinc-700">
+          ${ev.imageUrl ? `
+            <img src="${ev.imageUrl}" class="w-full h-full object-cover" alt="${ev.title}" />
+          ` : `
+            <div class="w-full h-full flex items-center justify-center text-purple-500"><i data-lucide="calendar" class="w-6 h-6"></i></div>
+          `}
+        </div>
+        <div class="space-y-0.5">
+          <span class="text-[10px] font-black uppercase text-purple-600 dark:text-purple-400 font-mono">${ev.eventDate || 'Date TBA'}</span>
+          <h5 class="font-black text-sm text-slate-900 dark:text-zinc-100 line-clamp-1">${ev.title}</h5>
+          <p class="text-xs text-slate-400 line-clamp-1">📍 ${ev.location || 'Church'} • ${ev.attendeesCount || 0} RSVPs</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 shrink-0 self-end sm:self-center">
+        <button onclick="window.openChangeCoverModal({ type: 'event', id: '${docId}', title: '${safeTitle}', imageUrl: '${safeImg}' })" class="px-3.5 py-2 bg-purple-500/10 hover:bg-purple-600 text-purple-700 dark:text-purple-300 hover:text-white font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center gap-1.5 border border-purple-500/30">
+          <i data-lucide="camera" class="w-3.5 h-3.5"></i>
+          <span>Change Cover</span>
+        </button>
+
+        <button onclick="deleteEventDirect('${docId}')" class="px-3 py-2 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 font-bold text-xs rounded-xl transition-all cursor-pointer">
+          Delete
+        </button>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+
+  if (window.lucide) window.lucide.createIcons();
+}
+
+async function deleteEventDirect(eventId) {
+  if (!confirm("Are you sure you want to delete this event?")) return;
+  try {
+    await window.db.collection('upcoming_events').doc(eventId).delete();
+    await window.db.collection('events').doc(eventId).delete().catch(() => {});
+    window.showToast?.("Gathering removed.", "info");
+  } catch (err) {
+    window.showToast?.("Error deleting: " + err.message, "error");
+  }
 }
 
 async function handleCreateEventSubmit(e) {
@@ -813,7 +1130,7 @@ async function handleCreateEventSubmit(e) {
       description: desc,
       attendeesCount: 0,
       attendees: {},
-      imageUrl: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=1200&q=80',
+      imageUrl: adminEventDraftCover || 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=1200&q=80',
       createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
     };
 

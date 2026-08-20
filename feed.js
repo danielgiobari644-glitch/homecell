@@ -561,12 +561,20 @@ function syncFeedDailyDevotionals() {
       container.innerHTML = '';
       if (snap.empty) return;
 
+      const isSuperAdmin = window.checkIsSuperAdmin ? window.checkIsSuperAdmin() : (
+        window.currentUserRole === 'Super Admin' ||
+        window.auth?.currentUser?.email?.toLowerCase() === 'danielgiobari644@gmail.com'
+      );
+
       window.devotionalsCache = window.devotionalsCache || {};
 
       snap.forEach(doc => {
         const d = doc.data();
         d.id = doc.id;
         window.devotionalsCache[doc.id] = d;
+
+        const safeTitle = (d.title || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        const safeImg = (d.imageUrl || '').replace(/'/g, "\\'");
 
         const card = document.createElement('div');
         card.className = "bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent border border-amber-200 dark:border-amber-900/50 rounded-3xl p-6 shadow-xs space-y-4 animate-fade-in";
@@ -581,14 +589,23 @@ function syncFeedDailyDevotionals() {
                 <span class="text-xs font-bold text-slate-500 dark:text-zinc-400">${d.devotionalDate} • ${d.scripture}</span>
               </div>
             </div>
-            <span class="text-[10px] font-bold px-2.5 py-1 bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 rounded-full">
-              ☀️ Faith Bread
-            </span>
+            <div class="flex items-center gap-2">
+              ${isSuperAdmin ? `
+                <button onclick="window.openChangeCoverModal({ type: 'devotional', id: '${doc.id}', title: '${safeTitle}', imageUrl: '${safeImg}' })" class="text-[10px] font-bold px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-full flex items-center gap-1 shadow-2xs cursor-pointer transition-all">
+                  <i data-lucide="camera" class="w-3 h-3"></i>
+                  <span>Change Cover</span>
+                </button>
+              ` : `
+                <span class="text-[10px] font-bold px-2.5 py-1 bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 rounded-full">
+                  ☀️ Faith Bread
+                </span>
+              `}
+            </div>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
             ${d.imageUrl ? `
-              <div onclick="window.openFullDevotionalModal(window.devotionalsCache['${doc.id}'])" class="md:col-span-1 rounded-2xl overflow-hidden shadow-xs border border-amber-200/60 dark:border-amber-900/40 h-44 cursor-pointer group">
+              <div onclick="window.openFullDevotionalModal(window.devotionalsCache['${doc.id}'])" class="md:col-span-1 rounded-2xl overflow-hidden shadow-xs border border-amber-200/60 dark:border-amber-900/40 h-44 cursor-pointer group relative">
                 <img src="${d.imageUrl}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" alt="${d.title}" />
               </div>
             ` : ''}
@@ -596,7 +613,7 @@ function syncFeedDailyDevotionals() {
               <h3 onclick="window.openFullDevotionalModal(window.devotionalsCache['${doc.id}'])" class="text-lg sm:text-xl font-black font-display text-slate-900 dark:text-zinc-50 tracking-tight cursor-pointer hover:text-amber-600 transition-colors">${d.title}</h3>
               <p class="text-xs text-slate-700 dark:text-zinc-300 leading-relaxed line-clamp-3">${d.body}</p>
               
-              <div class="pt-2">
+              <div class="pt-2 flex items-center gap-3">
                 <button onclick="window.openFullDevotionalModal(window.devotionalsCache['${doc.id}'])" class="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-xs">
                   <span>Read Full Devotional</span>
                   <i data-lucide="book-open" class="w-4 h-4"></i>
@@ -626,13 +643,22 @@ function syncFeedUpcomingEvents() {
       container.innerHTML = '';
       if (snap.empty) return;
 
+      const isSuperAdmin = window.checkIsSuperAdmin ? window.checkIsSuperAdmin() : (
+        window.currentUserRole === 'Super Admin' ||
+        window.auth?.currentUser?.email?.toLowerCase() === 'danielgiobari644@gmail.com'
+      );
+
       const section = document.createElement('div');
       section.className = "bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-xs space-y-4";
       
       let eventsHTML = '';
       snap.forEach(doc => {
         const ev = doc.data();
+        const docId = doc.id;
         const formattedDate = window.formatEventDatesDisplay ? window.formatEventDatesDisplay(ev) : new Date(ev.eventDate).toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+        const safeTitle = (ev.title || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        const safeImg = (ev.imageUrl || '').replace(/'/g, "\\'");
 
         eventsHTML += `
           <div class="p-4 bg-slate-50 dark:bg-zinc-800/50 border border-slate-100 dark:border-zinc-800 rounded-2xl flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
@@ -653,6 +679,13 @@ function syncFeedUpcomingEvents() {
                 <span class="text-[10px] font-semibold text-slate-400 block">📍 ${ev.location}</span>
               </div>
             </div>
+
+            ${isSuperAdmin ? `
+              <button onclick="window.openChangeCoverModal({ type: 'event', id: '${docId}', title: '${safeTitle}', imageUrl: '${safeImg}' })" class="px-3 py-1.5 rounded-xl bg-purple-500/10 hover:bg-purple-600 text-purple-700 dark:text-purple-300 hover:text-white text-xs font-bold transition-all flex items-center gap-1.5 border border-purple-500/30 cursor-pointer shrink-0">
+                <i data-lucide="camera" class="w-3.5 h-3.5"></i>
+                <span>Change Cover</span>
+              </button>
+            ` : ''}
           </div>
         `;
       });

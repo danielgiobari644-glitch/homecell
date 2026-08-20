@@ -384,6 +384,20 @@ async function finishTriviaQuiz() {
 
   if (user && db) {
     try {
+      const todayStr = new Date().toISOString().split('T')[0];
+      await db.collection('quiz_scores').add({
+        userUid: user.uid,
+        userName: user.displayName || user.email.split('@')[0],
+        userPhoto: user.photoURL || null,
+        quizId: activeQuizId,
+        quizTitle: activeQuizTitle,
+        score: activeQuizScore,
+        totalQuestions: total,
+        earnedKc: earnedKc,
+        date: todayStr,
+        createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
+      });
+
       if (activeQuizId !== 'daily-quick') {
         await db.collection('custom_quizzes').doc(activeQuizId).collection('participants').doc(user.uid).update({
           score: activeQuizScore,
@@ -431,22 +445,46 @@ function listenToQuizParticipants(quizId) {
 
   if (quizParticipantsListener) quizParticipantsListener();
 
-  if (quizId === 'daily-quick') {
-    if (countEl) countEl.innerText = "12 Believers Playing Live";
-    if (container) {
-      container.innerHTML = `
-        <div class="flex items-center -space-x-2">
-          <div class="w-7 h-7 rounded-full bg-blue-500 text-white font-bold text-[10px] flex items-center justify-center border-2 border-white dark:border-zinc-900">✝</div>
-          <div class="w-7 h-7 rounded-full bg-purple-500 text-white font-bold text-[10px] flex items-center justify-center border-2 border-white dark:border-zinc-900">🙏</div>
-          <div class="w-7 h-7 rounded-full bg-amber-500 text-slate-950 font-bold text-[10px] flex items-center justify-center border-2 border-white dark:border-zinc-900">+10</div>
-        </div>
-      `;
-    }
-    return;
-  }
-
   const db = window.db;
   if (!db) return;
+
+  if (quizId === 'daily-quick') {
+    const todayStr = new Date().toISOString().split('T')[0];
+    quizParticipantsListener = db.collection('quiz_scores')
+      .where('date', '==', todayStr)
+      .limit(20)
+      .onSnapshot(snap => {
+        const total = snap.size;
+        if (countEl) countEl.innerText = total > 0 ? `${total} Believer${total === 1 ? '' : 's'} Completed Today` : "Be the first to finish today's sprint!";
+        
+        if (container) {
+          container.innerHTML = '';
+          if (total === 0) {
+            container.innerHTML = `<span class="text-[10px] text-slate-400 font-mono">⚡ Open to all</span>`;
+            return;
+          }
+
+          const avatarRow = document.createElement('div');
+          avatarRow.className = "flex items-center -space-x-2";
+          let count = 0;
+          snap.forEach(doc => {
+            if (count < 6) {
+              const p = doc.data();
+              const av = document.createElement('div');
+              av.className = "w-7 h-7 rounded-full overflow-hidden border-2 border-white dark:border-zinc-900 bg-blue-600 text-[10px] text-white flex items-center justify-center font-bold shadow-xs";
+              av.title = `${p.userName || 'Believer'} (${p.score || 0} pts)`;
+              av.innerText = (p.userName || 'B')[0].toUpperCase();
+              avatarRow.appendChild(av);
+              count++;
+            }
+          });
+          container.appendChild(avatarRow);
+        }
+      }, err => {
+        if (countEl) countEl.innerText = "Daily Scripture Sprint Live";
+      });
+    return;
+  }
 
   quizParticipantsListener = db.collection('custom_quizzes').doc(quizId).collection('participants').onSnapshot(snap => {
     const total = snap.size;

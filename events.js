@@ -57,20 +57,38 @@ function renderEventsGrid(events) {
   if (!container) return;
 
   const user = window.auth?.currentUser;
+  const isSuperAdmin = window.checkIsSuperAdmin ? window.checkIsSuperAdmin() : (
+    window.currentUserRole === 'Super Admin' ||
+    user?.email?.toLowerCase() === 'danielgiobari644@gmail.com'
+  );
 
   container.innerHTML = events.map(ev => {
     const isAttending = user && ev.attendees && ev.attendees[user.uid] === true;
     const attendeesCount = ev.attendeesCount || 0;
     const formattedDate = formatEventDatesDisplay(ev);
+    const safeTitle = (ev.title || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    const safeImg = (ev.imageUrl || '').replace(/'/g, "\\'");
 
     return `
-      <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between group">
+      <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between group relative">
         <div>
-          ${ev.imageUrl ? `
-            <div class="relative h-44 bg-slate-100 dark:bg-zinc-800 overflow-hidden">
+          <div class="relative h-44 bg-slate-100 dark:bg-zinc-800 overflow-hidden">
+            ${ev.imageUrl ? `
               <img src="${ev.imageUrl}" alt="${ev.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-            </div>
-          ` : ''}
+            ` : `
+              <div class="w-full h-full flex flex-col items-center justify-center text-slate-400 p-4 text-center">
+                <i data-lucide="calendar" class="w-10 h-10 mb-1 opacity-40"></i>
+                <span class="text-xs font-bold">Church Gathering</span>
+              </div>
+            `}
+            
+            ${isSuperAdmin ? `
+              <button onclick="event.stopPropagation(); window.openChangeCoverModal({ type: 'event', id: '${ev.id}', title: '${safeTitle}', imageUrl: '${safeImg}' })" class="absolute top-3 right-3 px-2.5 py-1.5 rounded-xl bg-slate-950/80 hover:bg-slate-950 text-white text-[10px] font-black uppercase tracking-wider backdrop-blur-md shadow-md flex items-center gap-1.5 border border-white/20 z-10 cursor-pointer transition-all hover:scale-105">
+                <i data-lucide="camera" class="w-3.5 h-3.5 text-amber-400"></i>
+                <span>Change Cover</span>
+              </button>
+            ` : ''}
+          </div>
 
           <div class="p-5 space-y-2">
             <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase font-mono bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300 inline-block">

@@ -165,11 +165,35 @@ auth.onAuthStateChanged(async (user) => {
   const headerKcCount = document.getElementById('header-kc-count');
   const headerStreakCount = document.getElementById('header-streak-count');
 
+  // Desktop Sidebar Elements
+  const sidebarName = document.getElementById('sidebar-user-name');
+  const sidebarRole = document.getElementById('sidebar-user-role');
+  const sidebarAvatar = document.getElementById('sidebar-avatar-circle');
+  const sidebarKcCount = document.getElementById('sidebar-kc-count');
+  const sidebarStreakCount = document.getElementById('sidebar-streak-count');
+  const sidebarAdminBtn = document.getElementById('sidebar-btn-admin');
+
+  // Mobile More Sheet Elements
+  const moreSheetName = document.getElementById('more-sheet-user-name');
+  const moreSheetAvatar = document.getElementById('more-sheet-avatar-circle');
+  const moreSheetKcCount = document.getElementById('more-sheet-kc-count');
+  const moreSheetStreakCount = document.getElementById('more-sheet-streak-count');
+  const moreSheetAdminBtn = document.getElementById('more-sheet-admin-btn');
+
+  // Tablet More Menu Elements
+  const tabletMoreAdminItem = document.getElementById('tablet-more-admin-item');
+
   if (user) {
-    if (headerName) headerName.innerText = user.displayName || user.email.split('@')[0];
-    if (headerAvatar) {
-      headerAvatar.innerHTML = `<img src="${user.photoURL || `https://api.dicebear.com/7.x/bottts/svg?seed=${user.uid}`}" class="w-full h-full object-cover" />`;
-    }
+    const displayName = user.displayName || user.email.split('@')[0];
+    const initial = displayName.charAt(0).toUpperCase();
+    const avatarHtml = `<img src="${user.photoURL || `https://api.dicebear.com/7.x/bottts/svg?seed=${user.uid}`}" class="w-full h-full object-cover" />`;
+
+    if (headerName) headerName.innerText = displayName;
+    if (headerAvatar) headerAvatar.innerHTML = avatarHtml;
+    if (sidebarName) sidebarName.innerText = displayName;
+    if (sidebarAvatar) sidebarAvatar.innerHTML = avatarHtml;
+    if (moreSheetName) moreSheetName.innerText = displayName;
+    if (moreSheetAvatar) moreSheetAvatar.innerHTML = avatarHtml;
 
     try {
       const userDocRef = db.collection('users').doc(user.uid);
@@ -181,17 +205,31 @@ auth.onAuthStateChanged(async (user) => {
           window.currentUserProfile = userData;
           window.currentKcBalance = userData.kingdomCoins !== undefined ? userData.kingdomCoins : 100;
 
-          if (headerKcCount) headerKcCount.innerText = `${(userData.kingdomCoins || 0).toLocaleString()} KC`;
+          const kcStr = `${(userData.kingdomCoins || 0).toLocaleString()} KC`;
+          const streakStr = `🔥 ${userData.streak || 1}d`;
+
+          if (headerKcCount) headerKcCount.innerText = kcStr;
           if (headerStreakCount) headerStreakCount.innerText = `${userData.streak || 1}d`;
+          if (sidebarKcCount) sidebarKcCount.innerText = kcStr;
+          if (sidebarStreakCount) sidebarStreakCount.innerText = streakStr;
+          if (sidebarRole) sidebarRole.innerText = window.currentUserRole;
+          if (moreSheetKcCount) moreSheetKcCount.innerText = kcStr;
+          if (moreSheetStreakCount) moreSheetStreakCount.innerText = streakStr;
 
           if (isSuperAdmin) {
             if (superAdminBadge) superAdminBadge.classList.remove('hidden');
             if (adminNavBtn) adminNavBtn.classList.remove('hidden');
             if (mobileAdminBtn) mobileAdminBtn.classList.remove('hidden');
+            if (sidebarAdminBtn) { sidebarAdminBtn.classList.remove('hidden'); sidebarAdminBtn.classList.add('flex'); }
+            if (moreSheetAdminBtn) moreSheetAdminBtn.classList.remove('hidden');
+            if (tabletMoreAdminItem) tabletMoreAdminItem.classList.remove('hidden');
           } else {
             if (superAdminBadge) superAdminBadge.classList.add('hidden');
             if (adminNavBtn) adminNavBtn.classList.add('hidden');
             if (mobileAdminBtn) mobileAdminBtn.classList.add('hidden');
+            if (sidebarAdminBtn) { sidebarAdminBtn.classList.add('hidden'); sidebarAdminBtn.classList.remove('flex'); }
+            if (moreSheetAdminBtn) moreSheetAdminBtn.classList.add('hidden');
+            if (tabletMoreAdminItem) tabletMoreAdminItem.classList.add('hidden');
           }
 
           if (window.renderStoreKcHeader) window.renderStoreKcHeader();
@@ -208,15 +246,36 @@ auth.onAuthStateChanged(async (user) => {
     window.currentKcBalance = 100;
     if (headerName) headerName.innerText = 'Guest Believer';
     if (headerAvatar) headerAvatar.innerText = '✝';
+    if (sidebarName) sidebarName.innerText = 'Guest Believer';
+    if (sidebarRole) sidebarRole.innerText = 'Guest';
+    if (sidebarAvatar) sidebarAvatar.innerText = '✝';
+    if (moreSheetName) moreSheetName.innerText = 'Guest Believer';
+    if (moreSheetAvatar) moreSheetAvatar.innerText = '✝';
     if (superAdminBadge) superAdminBadge.classList.add('hidden');
     if (adminNavBtn) adminNavBtn.classList.add('hidden');
     if (mobileAdminBtn) mobileAdminBtn.classList.add('hidden');
+    if (sidebarAdminBtn) { sidebarAdminBtn.classList.add('hidden'); sidebarAdminBtn.classList.remove('flex'); }
+    if (moreSheetAdminBtn) moreSheetAdminBtn.classList.add('hidden');
+    if (tabletMoreAdminItem) tabletMoreAdminItem.classList.add('hidden');
     if (headerKcCount) headerKcCount.innerText = '100 KC';
     if (headerStreakCount) headerStreakCount.innerText = '1d';
+    if (sidebarKcCount) sidebarKcCount.innerText = '100 KC';
+    if (sidebarStreakCount) sidebarStreakCount.innerText = '🔥 1d';
+    if (moreSheetKcCount) moreSheetKcCount.innerText = '100 KC';
+    if (moreSheetStreakCount) moreSheetStreakCount.innerText = '🔥 1d';
     if (window.renderStoreKcHeader) window.renderStoreKcHeader();
     if (window.checkSuperAdminStoreControls) window.checkSuperAdminStoreControls();
   }
 });
+
+window.checkIsSuperAdmin = function() {
+  const user = window.auth?.currentUser;
+  if (!user) return false;
+  if (user.email && user.email.toLowerCase() === 'danielgiobari644@gmail.com') return true;
+  if (window.currentUserRole === 'Super Admin') return true;
+  if (window.currentUserProfile && window.currentUserProfile.role === 'Super Admin') return true;
+  return false;
+};
 
 console.log("Firebase Engine initialized successfully.");
 

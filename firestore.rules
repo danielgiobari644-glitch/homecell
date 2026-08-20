@@ -157,10 +157,22 @@ service cloud.firestore {
     // --- Upcoming Events & Devotionals ---
     match /upcoming_events/{eventId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow create, delete: if isAdmin();
+      allow update: if isSignedIn() || isAdmin();
+    }
+
+    match /events/{eventId} {
+      allow read: if true;
+      allow create, delete: if isAdmin();
+      allow update: if isSignedIn() || isAdmin();
     }
 
     match /daily_devotionals/{devotionalId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /devotionals/{devotionalId} {
       allow read: if true;
       allow write: if isAdmin();
     }
@@ -179,7 +191,7 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
-    // --- Kingdom Store Products & User Rewards ---
+    // --- Kingdom Store Products, Purchases & User Rewards ---
     match /products/{productId} {
       allow read: if true;
       allow write: if isAdmin() || isSignedIn();
@@ -188,6 +200,12 @@ service cloud.firestore {
     match /storeProducts/{productId} {
       allow read: if true;
       allow write: if isAdmin() || isSignedIn();
+    }
+
+    match /purchases/{purchaseId} {
+      allow read: if true;
+      allow create, update: if isSignedIn();
+      allow delete: if isAdmin();
     }
 
     match /user_rewards/{rewardId} {
@@ -204,6 +222,23 @@ service cloud.firestore {
 
     match /feedback_items/{feedbackId} {
       allow read, create, update: if true;
+      allow delete: if isAdmin();
+    }
+
+    // --- Notifications ---
+    match /notifications/{notificationId} {
+      allow read, create, update: if true;
+      allow delete: if isAdmin();
+    }
+
+    // --- Custom Quizzes & Devotional Reads ---
+    match /custom_quizzes/{quizId} {
+      allow read: if true;
+      allow write: if isSignedIn() || isAdmin();
+    }
+
+    match /devotional_reads/{readId} {
+      allow read, create, update: if isSignedIn();
       allow delete: if isAdmin();
     }
   }

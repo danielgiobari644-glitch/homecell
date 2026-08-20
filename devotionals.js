@@ -67,32 +67,54 @@ function renderDevotionalsGrid(items) {
   const container = document.getElementById('devotionals-list-container');
   if (!container) return;
 
-  container.innerHTML = items.map(d => `
-    <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between group">
-      <div>
-        ${d.imageUrl ? `
+  const isSuperAdmin = window.checkIsSuperAdmin ? window.checkIsSuperAdmin() : (
+    window.currentUserRole === 'Super Admin' ||
+    window.auth?.currentUser?.email?.toLowerCase() === 'danielgiobari644@gmail.com'
+  );
+
+  container.innerHTML = items.map(d => {
+    const safeTitle = (d.title || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    const safeImg = (d.imageUrl || '').replace(/'/g, "\\'");
+
+    return `
+      <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between group relative">
+        <div>
           <div class="relative h-44 bg-slate-100 dark:bg-zinc-800 overflow-hidden">
-            <img src="${d.imageUrl}" alt="${d.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+            ${d.imageUrl ? `
+              <img src="${d.imageUrl}" alt="${d.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+            ` : `
+              <div class="w-full h-full flex flex-col items-center justify-center text-slate-400 p-4 text-center">
+                <i data-lucide="sun" class="w-10 h-10 mb-1 opacity-40 text-amber-500"></i>
+                <span class="text-xs font-bold">Daily Devotional</span>
+              </div>
+            `}
             <div class="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-slate-950/70 backdrop-blur-md text-amber-400 text-[10px] font-black uppercase font-mono">
               ${d.devotionalDate}
             </div>
-          </div>
-        ` : ''}
 
-        <div class="p-5 space-y-2">
-          <span class="text-[10px] font-extrabold uppercase tracking-wider text-amber-600 dark:text-amber-400 block">${d.scripture}</span>
-          <h4 class="font-black text-slate-900 dark:text-zinc-100 text-base line-clamp-1">${d.title}</h4>
-          <p class="text-xs text-slate-500 dark:text-zinc-400 line-clamp-3 leading-relaxed">${d.body}</p>
+            ${isSuperAdmin ? `
+              <button onclick="event.stopPropagation(); window.openChangeCoverModal({ type: 'devotional', id: '${d.id}', title: '${safeTitle}', imageUrl: '${safeImg}' })" class="absolute top-3 right-3 px-2.5 py-1.5 rounded-xl bg-slate-950/80 hover:bg-slate-950 text-white text-[10px] font-black uppercase tracking-wider backdrop-blur-md shadow-md flex items-center gap-1.5 border border-white/20 z-10 cursor-pointer transition-all hover:scale-105">
+                <i data-lucide="camera" class="w-3.5 h-3.5 text-amber-400"></i>
+                <span>Change Cover</span>
+              </button>
+            ` : ''}
+          </div>
+
+          <div class="p-5 space-y-2">
+            <span class="text-[10px] font-extrabold uppercase tracking-wider text-amber-600 dark:text-amber-400 block">${d.scripture}</span>
+            <h4 class="font-black text-slate-900 dark:text-zinc-100 text-base line-clamp-1">${d.title}</h4>
+            <p class="text-xs text-slate-500 dark:text-zinc-400 line-clamp-3 leading-relaxed">${d.body}</p>
+          </div>
+        </div>
+
+        <div class="p-5 pt-0">
+          <button onclick="openFullDevotionalModal(window.devotionalsCache['${d.id}'])" class="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer shadow-xs transition-all">
+            <i data-lucide="book-open" class="w-4 h-4"></i> Read Devotional
+          </button>
         </div>
       </div>
-
-      <div class="p-5 pt-0">
-        <button onclick="openFullDevotionalModal(window.devotionalsCache['${d.id}'])" class="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer shadow-xs transition-all">
-          <i data-lucide="book-open" class="w-4 h-4"></i> Read Devotional
-        </button>
-      </div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 
   if (window.lucide) window.lucide.createIcons();
 }
@@ -108,6 +130,7 @@ function openFullDevotionalModal(devotional) {
   const bodyEl = document.getElementById('modal-devotional-body');
   const prayerEl = document.getElementById('modal-devotional-prayer');
   const imgEl = document.getElementById('modal-devotional-img');
+  const adminCoverBtn = document.getElementById('modal-devotional-admin-cover-btn');
 
   if (titleEl) titleEl.innerText = devotional.title;
   if (scriptureEl) scriptureEl.innerText = devotional.scripture;
@@ -121,6 +144,29 @@ function openFullDevotionalModal(devotional) {
       imgEl.parentElement.classList.remove('hidden');
     } else {
       imgEl.parentElement.classList.add('hidden');
+    }
+  }
+
+  const isSuperAdmin = window.checkIsSuperAdmin ? window.checkIsSuperAdmin() : (
+    window.currentUserRole === 'Super Admin' ||
+    window.auth?.currentUser?.email?.toLowerCase() === 'danielgiobari644@gmail.com'
+  );
+
+  if (adminCoverBtn) {
+    if (isSuperAdmin) {
+      adminCoverBtn.classList.remove('hidden');
+      adminCoverBtn.onclick = () => {
+        const safeTitle = (devotional.title || '').replace(/'/g, "\\'");
+        const safeImg = (devotional.imageUrl || '').replace(/'/g, "\\'");
+        window.openChangeCoverModal({
+          type: 'devotional',
+          id: devotional.id,
+          title: safeTitle,
+          imageUrl: safeImg
+        });
+      };
+    } else {
+      adminCoverBtn.classList.add('hidden');
     }
   }
 
