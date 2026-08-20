@@ -1369,9 +1369,9 @@
               <p class="text-[10px] text-slate-500 dark:text-zinc-400">All features & fellowship destinations</p>
             </div>
           </div>
-          <button onclick="closeMobileMoreSheet()" class="px-2.5 py-1 rounded-xl text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 cursor-pointer text-xs font-bold flex items-center gap-1 transition-all shadow-2xs">
-            <i data-lucide="x" class="w-3.5 h-3.5"></i>
-            <span>Close</span>
+          <button type="button" id="kingdom-nav-close-top-btn" onclick="closeMobileMoreSheet()" class="px-3 py-1.5 rounded-xl text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 cursor-pointer text-xs font-bold flex items-center gap-1.5 transition-all shadow-2xs">
+            <i data-lucide="x" class="w-3.5 h-3.5 pointer-events-none"></i>
+            <span class="pointer-events-none">Close</span>
           </button>
         </div>
 
@@ -1494,9 +1494,9 @@
         </div>
 
         <!-- Prominent Bottom Close Button -->
-        <button type="button" onclick="closeMobileMoreSheet()" class="w-full py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300 font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer border border-slate-200 dark:border-zinc-700">
-          <i data-lucide="x" class="w-4 h-4 text-slate-500"></i>
-          <span>Close Kingdom Navigation</span>
+        <button type="button" id="kingdom-nav-close-bottom-btn" onclick="closeMobileMoreSheet()" class="w-full py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300 font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer border border-slate-200 dark:border-zinc-700">
+          <i data-lucide="x" class="w-4 h-4 text-slate-500 pointer-events-none"></i>
+          <span class="pointer-events-none">Close Kingdom Navigation</span>
         </button>
       </div>
     </div>
@@ -1825,12 +1825,26 @@
         if (modal) modal.classList.add('hidden');
       }
 
-      function toggleMobileMoreSheet(forceState) {
+      function openMobileMoreSheet() {
+        const sheet = document.getElementById('more-menu-sheet-modal');
+        if (sheet) {
+          sheet.classList.remove('hidden');
+          if (window.lucide) window.lucide.createIcons();
+        }
+      }
+
+      function closeMobileMoreSheet() {
+        const sheet = document.getElementById('more-menu-sheet-modal');
+        if (sheet) {
+          sheet.classList.add('hidden');
+        }
+      }
+
+      function toggleMobileMoreSheet(forceOpen) {
         const sheet = document.getElementById('more-menu-sheet-modal');
         if (!sheet) return;
-        const isHidden = sheet.classList.contains('hidden');
-        const nextState = (typeof forceState === 'boolean') ? !forceState : isHidden;
-        if (nextState) {
+        const willOpen = (typeof forceOpen === 'boolean') ? forceOpen : sheet.classList.contains('hidden');
+        if (willOpen) {
           sheet.classList.remove('hidden');
           if (window.lucide) window.lucide.createIcons();
         } else {
@@ -1838,12 +1852,9 @@
         }
       }
 
-      function closeMobileMoreSheet() {
-        toggleMobileMoreSheet(false);
-      }
-
-      window.toggleMobileMoreSheet = toggleMobileMoreSheet;
+      window.openMobileMoreSheet = openMobileMoreSheet;
       window.closeMobileMoreSheet = closeMobileMoreSheet;
+      window.toggleMobileMoreSheet = toggleMobileMoreSheet;
 
       function toggleTabletMoreDropdown(e) {
         if (e) e.stopPropagation();
