@@ -235,6 +235,14 @@ service cloud.firestore {
     match /custom_quizzes/{quizId} {
       allow read: if true;
       allow write: if isSignedIn() || isAdmin();
+
+      match /participants/{participantId} {
+        allow read, write: if isSignedIn() || isAdmin();
+      }
+
+      match /chat/{chatId} {
+        allow read, write: if isSignedIn() || isAdmin();
+      }
     }
 
     match /devotional_reads/{readId} {

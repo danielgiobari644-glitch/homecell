@@ -244,6 +244,60 @@ function syncAdminUsers() {
 }
 
 // 2. Super Admin Trivia Quiz Builder & Live Manager
+let adminDraftQuizCover = 'https://images.unsplash.com/photo-1504052434569-70ad5836ab65?auto=format&fit=crop&w=1200&q=80';
+let adminEditingQuizId = null;
+let adminEditingQuizCover = '';
+let adminEditingQuizQuestions = [];
+
+let adminEditingDevId = null;
+let adminEditingDevCover = '';
+
+const SAMPLE_QUIZ_JSON_DATA = {
+  title: "Heroes of Faith & Gospel Miracles",
+  category: "Gospels & Miracles",
+  description: "Challenge your biblical knowledge on the miracles, parables, and faith heroes of the New and Old Testament.",
+  coverUrl: "https://images.unsplash.com/photo-1504052434569-70ad5836ab65?auto=format&fit=crop&w=1200&q=80",
+  rewardPerCorrect: 10,
+  bonusReward: 25,
+  questions: [
+    {
+      question: "Who was called the friend of God in scripture?",
+      options: ["Moses", "Abraham", "David", "Elijah"],
+      answerIndex: 1,
+      scriptureReference: "James 2:23 / Genesis 15:6",
+      explanation: "Abraham believed God, and it was credited to him as righteousness, and he was called God's friend."
+    },
+    {
+      question: "In what town was Jesus Christ born?",
+      options: ["Nazareth", "Jerusalem", "Bethlehem", "Capernaum"],
+      answerIndex: 2,
+      scriptureReference: "Micah 5:2 / Luke 2:4-7",
+      explanation: "Jesus was born in Bethlehem of Judea, fulfilling the ancient prophecy in Micah 5:2."
+    },
+    {
+      question: "How many books are in the New Testament?",
+      options: ["27", "39", "66", "12"],
+      answerIndex: 0,
+      scriptureReference: "Canonical New Testament",
+      explanation: "There are 27 books in the New Testament and 39 in the Old Testament, making 66 in total."
+    },
+    {
+      question: "Who walked on water towards Jesus during the storm on the Sea of Galilee?",
+      options: ["John", "Peter", "James", "Andrew"],
+      answerIndex: 1,
+      scriptureReference: "Matthew 14:29",
+      explanation: "Peter stepped out of the boat and walked on the water toward Jesus before his faith faltered."
+    },
+    {
+      question: "What is the fruit of the Spirit listed first in Galatians 5:22?",
+      options: ["Joy", "Peace", "Love", "Patience"],
+      answerIndex: 2,
+      scriptureReference: "Galatians 5:22",
+      explanation: "The fruit of the Spirit is love, joy, peace, forbearance, kindness, goodness, faithfulness..."
+    }
+  ]
+};
+
 let adminDraftQuizQuestions = [
   {
     question: "Who was called the friend of God in scripture?",
@@ -265,44 +319,134 @@ let adminDraftQuizQuestions = [
   }
 ];
 
+function compressImageToDataUrlSafe(dataUrl, maxWidth = 1280, maxHeight = 720, quality = 0.85, callback) {
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = () => {
+    let { width, height } = img;
+    if (width > maxWidth) {
+      height = Math.round((height * maxWidth) / width);
+      width = maxWidth;
+    }
+    if (height > maxHeight) {
+      width = Math.round((width * maxHeight) / height);
+      height = maxHeight;
+    }
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, width, height);
+    const compressed = canvas.toDataURL('image/jpeg', quality);
+    callback(compressed);
+  };
+  img.onerror = () => callback(dataUrl);
+  img.src = dataUrl;
+}
+
 function renderAdminQuizzesPane(container) {
+  adminDraftQuizCover = 'https://images.unsplash.com/photo-1504052434569-70ad5836ab65?auto=format&fit=crop&w=1200&q=80';
+
   container.innerHTML = `
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
       <!-- Quiz Creator Form -->
       <div class="glass-panel rounded-3xl p-6 sm:p-8 space-y-6">
         <div>
-          <span class="px-2.5 py-1 rounded-full bg-purple-100 text-purple-700 text-[10px] font-black uppercase font-mono">
+          <span class="px-2.5 py-1 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 text-[10px] font-black uppercase font-mono">
             👑 Super Admin Live Tool
           </span>
           <h3 class="text-lg font-black text-slate-900 dark:text-zinc-100 mt-1">Create Live Trivia Quiz</h3>
-          <p class="text-xs text-slate-400">Launch real-time Bible competitions where believers participate together with live chat.</p>
+          <p class="text-xs text-slate-400">Launch real-time Bible competitions with custom cover banners, rewards, and real-time chat.</p>
+        </div>
+
+        <!-- JSON Bulk Import / Sample Card -->
+        <div class="p-4 rounded-2xl bg-gradient-to-br from-purple-500/10 via-indigo-500/10 to-blue-500/10 border border-purple-500/30 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-black text-purple-900 dark:text-purple-300 flex items-center gap-1.5">
+              <span>📥</span> JSON Quick Import
+            </span>
+            <button type="button" onclick="downloadSampleQuizJson()" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] uppercase rounded-lg flex items-center gap-1 cursor-pointer transition-all shadow-xs">
+              <i data-lucide="download" class="w-3 h-3"></i>
+              <span>Sample JSON</span>
+            </button>
+          </div>
+          <p class="text-[11px] text-slate-600 dark:text-zinc-300 leading-snug">
+            Import an entire quiz from a JSON file or download our ready-to-use template.
+          </p>
+
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1">
+            <label class="cursor-pointer py-2 px-2.5 rounded-xl bg-white dark:bg-zinc-800 border border-purple-200 dark:border-purple-800/60 hover:border-purple-500 text-[10px] font-bold text-center text-purple-700 dark:text-purple-300 flex items-center justify-center gap-1 shadow-2xs">
+              <i data-lucide="file-up" class="w-3 h-3 text-purple-500"></i>
+              <span>Upload JSON</span>
+              <input type="file" accept=".json,application/json" onchange="handleQuizJsonFileInput(event)" class="hidden" />
+            </label>
+
+            <button type="button" onclick="handlePasteJsonImport()" class="py-2 px-2.5 rounded-xl bg-white dark:bg-zinc-800 border border-purple-200 dark:border-purple-800/60 hover:border-purple-500 text-[10px] font-bold text-slate-700 dark:text-zinc-300 flex items-center justify-center gap-1 shadow-2xs cursor-pointer">
+              <i data-lucide="clipboard" class="w-3 h-3 text-blue-500"></i>
+              <span>Paste JSON</span>
+            </button>
+
+            <button type="button" onclick="openJsonSampleModal()" class="col-span-2 sm:col-span-1 py-2 px-2.5 rounded-xl bg-white dark:bg-zinc-800 border border-purple-200 dark:border-purple-800/60 hover:border-purple-500 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center justify-center gap-1 shadow-2xs cursor-pointer">
+              <i data-lucide="code" class="w-3 h-3"></i>
+              <span>View Schema</span>
+            </button>
+          </div>
         </div>
 
         <form id="admin-create-quiz-form" onsubmit="handleCreateQuizSubmit(event)" class="space-y-4">
           <div>
-            <label class="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">Quiz Title</label>
-            <input type="text" id="admin-quiz-title" required placeholder="e.g. Acts of the Apostles Champions Sprint" class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl p-3" />
+            <label class="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">Quiz Title *</label>
+            <input type="text" id="admin-quiz-title" required placeholder="e.g. Acts of the Apostles Champions Sprint" class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl p-3 text-slate-900 dark:text-zinc-100" />
           </div>
 
           <div>
-            <label class="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">Category</label>
-            <select id="admin-quiz-category" class="w-full text-xs font-bold bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl p-3">
+            <label class="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">Category *</label>
+            <select id="admin-quiz-category" class="w-full text-xs font-bold bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl p-3 text-slate-900 dark:text-zinc-100">
               <option value="New Testament">New Testament</option>
               <option value="Old Testament">Old Testament</option>
               <option value="Gospels & Miracles">Gospels & Miracles</option>
               <option value="General Scripture">General Scripture</option>
               <option value="Prophets & Kings">Prophets & Kings</option>
+              <option value="Parables & Teachings">Parables & Teachings</option>
+              <option value="Youth & Teens">Youth & Teens</option>
             </select>
           </div>
 
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">KC per Correct</label>
-              <input type="number" id="admin-quiz-reward-per-q" value="10" min="1" max="100" class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl p-3 font-mono font-bold" />
+              <input type="number" id="admin-quiz-reward-per-q" value="10" min="1" max="100" class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl p-3 font-mono font-bold text-slate-900 dark:text-zinc-100" />
             </div>
             <div>
               <label class="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">Bonus KC</label>
-              <input type="number" id="admin-quiz-bonus-reward" value="25" min="0" max="500" class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl p-3 font-mono font-bold" />
+              <input type="number" id="admin-quiz-bonus-reward" value="25" min="0" max="500" class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl p-3 font-mono font-bold text-slate-900 dark:text-zinc-100" />
+            </div>
+          </div>
+
+          <!-- Cover Photo Picker Box -->
+          <div class="p-4 bg-slate-50 dark:bg-zinc-800/80 rounded-2xl border border-slate-200 dark:border-zinc-700 space-y-3">
+            <div class="flex items-center justify-between">
+              <label class="block text-xs font-bold text-slate-800 dark:text-zinc-200">
+                🖼️ Quiz Cover Banner
+              </label>
+              <span class="text-[10px] text-purple-500 font-bold font-mono">Custom Artwork</span>
+            </div>
+
+            <div class="relative h-28 rounded-xl overflow-hidden bg-slate-200 dark:bg-zinc-700 border border-slate-300 dark:border-zinc-600 shadow-inner">
+              <img id="admin-quiz-cover-preview" src="${adminDraftQuizCover}" class="w-full h-full object-cover" alt="Quiz Banner Preview" />
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <label class="cursor-pointer py-2 px-3 rounded-xl bg-white dark:bg-zinc-700 border border-slate-200 dark:border-zinc-600 hover:border-purple-500 text-[11px] font-bold text-center text-slate-700 dark:text-zinc-200 flex items-center justify-center gap-1.5 shadow-2xs">
+                <i data-lucide="upload" class="w-3.5 h-3.5 text-purple-500"></i>
+                <span>Upload File</span>
+                <input type="file" id="admin-quiz-cover-file" accept="image/*" onchange="handleAdminQuizCoverSelect(event)" class="hidden" />
+              </label>
+
+              <button type="button" onclick="promptAdminQuizCoverUrl()" class="py-2 px-3 rounded-xl bg-white dark:bg-zinc-700 border border-slate-200 dark:border-zinc-600 hover:border-purple-500 text-[11px] font-bold text-slate-700 dark:text-zinc-200 flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer">
+                <i data-lucide="link" class="w-3.5 h-3.5 text-blue-500"></i>
+                <span>Paste URL</span>
+              </button>
             </div>
           </div>
 
@@ -325,9 +469,11 @@ function renderAdminQuizzesPane(container) {
 
       <!-- Live Quizzes List & Participant Tracking -->
       <div class="lg:col-span-2 space-y-6">
-        <div>
-          <h3 class="text-lg font-black text-slate-900 dark:text-zinc-100">Live Quizzes & Real-Time Participants</h3>
-          <p class="text-xs text-slate-400">Monitor active participant counts, manage live quiz statuses, and view live results.</p>
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <h3 class="text-lg font-black text-slate-900 dark:text-zinc-100">Live Quizzes & Real-Time Participants</h3>
+            <p class="text-xs text-slate-400">Edit existing quizzes, modify artwork, export JSON, and monitor participant activity.</p>
+          </div>
         </div>
 
         <div id="admin-quizzes-list-container" class="space-y-4">
@@ -339,6 +485,198 @@ function renderAdminQuizzesPane(container) {
 
   renderDraftQuestionsList();
   syncAdminQuizzesList();
+  if (window.lucide) window.lucide.createIcons();
+}
+
+function handleAdminQuizCoverSelect(e) {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    compressImageToDataUrlSafe(event.target.result, 1280, 720, 0.85, (compressed) => {
+      adminDraftQuizCover = compressed;
+      const prev = document.getElementById('admin-quiz-cover-preview');
+      if (prev) prev.src = adminDraftQuizCover;
+    });
+  };
+  reader.readAsDataURL(file);
+}
+
+function promptAdminQuizCoverUrl() {
+  const url = prompt("Enter Image URL for Quiz Cover Banner:", adminDraftQuizCover);
+  if (url && url.trim()) {
+    adminDraftQuizCover = url.trim();
+    const prev = document.getElementById('admin-quiz-cover-preview');
+    if (prev) prev.src = adminDraftQuizCover;
+  }
+}
+
+function downloadSampleQuizJson() {
+  const jsonStr = JSON.stringify(SAMPLE_QUIZ_JSON_DATA, null, 2);
+  const blob = new Blob([jsonStr], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'sample_kingdom_quiz.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  window.showToast?.("📥 Downloaded sample_kingdom_quiz.json!", "success");
+}
+
+function openJsonSampleModal() {
+  const modal = document.getElementById('json-sample-modal');
+  const codeBlock = document.getElementById('sample-json-code-block');
+  if (codeBlock) {
+    codeBlock.textContent = JSON.stringify(SAMPLE_QUIZ_JSON_DATA, null, 2);
+  }
+  if (modal) modal.classList.remove('hidden');
+  if (window.lucide) window.lucide.createIcons();
+}
+
+function closeJsonSampleModal() {
+  const modal = document.getElementById('json-sample-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+async function copySampleJsonToClipboard() {
+  const jsonStr = JSON.stringify(SAMPLE_QUIZ_JSON_DATA, null, 2);
+  try {
+    await navigator.clipboard.writeText(jsonStr);
+    const label = document.getElementById('copy-json-btn-label');
+    if (label) label.innerText = "Copied to Clipboard! ✓";
+    window.showToast?.("Sample JSON copied to clipboard!", "success");
+    setTimeout(() => {
+      if (label) label.innerText = "Copy Template to Clipboard";
+    }, 2500);
+  } catch (err) {
+    window.showToast?.("Failed to copy. Please select and copy manually.", "info");
+  }
+}
+
+function handleQuizJsonFileInput(e) {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    try {
+      const parsed = JSON.parse(event.target.result);
+      applyImportedQuizJson(parsed);
+      e.target.value = '';
+    } catch (err) {
+      window.showToast?.("Invalid JSON file: " + err.message, "error");
+    }
+  };
+  reader.readAsText(file);
+}
+
+function handlePasteJsonImport() {
+  const input = prompt("Paste your Quiz JSON structure below:");
+  if (!input || !input.trim()) return;
+  try {
+    const parsed = JSON.parse(input.trim());
+    applyImportedQuizJson(parsed);
+  } catch (err) {
+    window.showToast?.("Invalid JSON format: " + err.message, "error");
+  }
+}
+
+function applyImportedQuizJson(data) {
+  const quiz = Array.isArray(data) ? data[0] : data;
+  if (!quiz) {
+    window.showToast?.("JSON contains no quiz data.", "error");
+    return;
+  }
+
+  if (!quiz.questions || !Array.isArray(quiz.questions) || quiz.questions.length === 0) {
+    window.showToast?.("JSON must contain a non-empty 'questions' array.", "error");
+    return;
+  }
+
+  const normalizedQuestions = quiz.questions.map((q, idx) => {
+    let qText = q.question || q.prompt || q.title || `Question ${idx + 1}`;
+    let opts = q.options || q.choices || ["Option A", "Option B", "Option C", "Option D"];
+    if (!Array.isArray(opts) || opts.length === 0) {
+      opts = ["True", "False"];
+    }
+
+    let ansIdx = 0;
+    if (typeof q.answerIndex === 'number' && q.answerIndex >= 0 && q.answerIndex < opts.length) {
+      ansIdx = q.answerIndex;
+    } else if (typeof q.answer === 'string') {
+      const letterIdx = ['A', 'B', 'C', 'D'].indexOf(q.answer.toUpperCase());
+      if (letterIdx !== -1 && letterIdx < opts.length) {
+        ansIdx = letterIdx;
+      } else {
+        const textIdx = opts.findIndex(o => o.toLowerCase() === q.answer.toLowerCase());
+        if (textIdx !== -1) ansIdx = textIdx;
+      }
+    }
+
+    return {
+      question: qText,
+      options: opts,
+      answerIndex: ansIdx,
+      scriptureReference: q.scriptureReference || q.reference || q.scripture || '',
+      explanation: q.explanation || ''
+    };
+  });
+
+  adminDraftQuizQuestions = normalizedQuestions;
+
+  const titleEl = document.getElementById('admin-quiz-title');
+  const catEl = document.getElementById('admin-quiz-category');
+  const rewardEl = document.getElementById('admin-quiz-reward-per-q');
+  const bonusEl = document.getElementById('admin-quiz-bonus-reward');
+
+  if (titleEl && quiz.title) titleEl.value = quiz.title;
+  if (catEl && quiz.category) catEl.value = quiz.category;
+  if (rewardEl && quiz.rewardPerCorrect) rewardEl.value = quiz.rewardPerCorrect;
+  if (bonusEl && quiz.bonusReward) bonusEl.value = quiz.bonusReward;
+
+  if (quiz.coverUrl || quiz.imageUrl) {
+    adminDraftQuizCover = quiz.coverUrl || quiz.imageUrl;
+    const prev = document.getElementById('admin-quiz-cover-preview');
+    if (prev) prev.src = adminDraftQuizCover;
+  }
+
+  renderDraftQuestionsList();
+  window.soundEngine?.playSuccess?.();
+  window.showToast?.(`✓ Imported "${quiz.title || 'Bible Quiz'}" (${normalizedQuestions.length} questions)!`, "success");
+}
+
+async function exportQuizToJson(quizId) {
+  try {
+    const doc = await window.db.collection('custom_quizzes').doc(quizId).get();
+    if (!doc.exists) {
+      window.showToast?.("Quiz not found.", "error");
+      return;
+    }
+    const q = doc.data();
+    const exportData = {
+      title: q.title || 'Kingdom Quiz',
+      category: q.category || 'General',
+      description: q.description || '',
+      coverUrl: q.coverUrl || q.imageUrl || '',
+      rewardPerCorrect: q.rewardPerCorrect || 10,
+      bonusReward: q.bonusReward || 25,
+      questions: q.questions || []
+    };
+    const jsonStr = JSON.stringify(exportData, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${(q.title || 'quiz').toLowerCase().replace(/[^a-z0-9]/g, '_')}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    window.showToast?.("📥 Quiz exported as JSON!", "success");
+  } catch (err) {
+    window.showToast?.("Error exporting quiz: " + err.message, "error");
+  }
 }
 
 function renderDraftQuestionsList() {
@@ -353,7 +691,7 @@ function renderDraftQuestionsList() {
         <span class="font-bold text-slate-900 dark:text-zinc-100">Q${idx + 1}: ${q.question}</span>
         <span class="text-[10px] text-emerald-600 block">Answer: ${q.options[q.answerIndex]} (${q.scriptureReference || ''})</span>
       </div>
-      <button type="button" onclick="removeDraftQuestion(${idx})" class="text-red-500 hover:text-red-700 p-1 font-bold">✕</button>
+      <button type="button" onclick="removeDraftQuestion(${idx})" class="text-red-500 hover:text-red-700 p-1 font-bold cursor-pointer">✕</button>
     </div>
   `).join('');
 }
@@ -409,6 +747,8 @@ async function handleCreateQuizSubmit(e) {
       rewardPerCorrect: rewardPerQ,
       bonusReward: bonusReward,
       questions: adminDraftQuizQuestions,
+      coverUrl: adminDraftQuizCover,
+      imageUrl: adminDraftQuizCover,
       participantsCount: 0,
       status: 'live',
       createdById: user?.uid || 'admin',
@@ -419,6 +759,9 @@ async function handleCreateQuizSubmit(e) {
     window.soundEngine?.playSuccess?.();
     window.showToast?.("🎉 Live Quiz launched successfully! Believers can now participate and chat in real-time.", "success");
     document.getElementById('admin-create-quiz-form')?.reset();
+    adminDraftQuizCover = 'https://images.unsplash.com/photo-1504052434569-70ad5836ab65?auto=format&fit=crop&w=1200&q=80';
+    const prev = document.getElementById('admin-quiz-cover-preview');
+    if (prev) prev.src = adminDraftQuizCover;
   } catch (err) {
     console.error("Error creating quiz:", err);
     window.showToast?.("Error creating quiz: " + err.message, "error");
@@ -436,7 +779,7 @@ function syncAdminQuizzesList() {
   adminQuizzesListener = db.collection('custom_quizzes').orderBy('createdAt', 'desc').onSnapshot(snap => {
     container.innerHTML = '';
     if (snap.empty) {
-      container.innerHTML = `<div class="py-8 text-center text-xs text-slate-400">No custom live quizzes launched yet. Use the form on the left to create one!</div>`;
+      container.innerHTML = `<div class="py-8 text-center text-xs text-slate-400">No custom live quizzes launched yet. Use the form on the left or import JSON to create one!</div>`;
       return;
     }
 
@@ -446,17 +789,30 @@ function syncAdminQuizzesList() {
       const card = document.createElement('div');
       card.className = "glass-panel rounded-3xl p-5 sm:p-6 space-y-4 border border-slate-200 dark:border-zinc-800";
 
+      const safeTitle = (q.title || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+      const safeImg = (q.coverUrl || q.imageUrl || '').replace(/'/g, "\\'");
+      const coverUrl = q.coverUrl || q.imageUrl || '';
+
       card.innerHTML = `
         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <div>
-            <div class="flex items-center gap-2">
-              <span class="px-2.5 py-0.5 rounded-full ${isLive ? 'bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300' : 'bg-slate-100 text-slate-600'} text-[10px] font-black uppercase font-mono">
-                ${isLive ? '🔴 LIVE NOW' : 'ENDED'}
-              </span>
-              <span class="text-xs font-bold text-amber-500 font-mono">🪙 +${q.rewardPerCorrect || 10} KC/Q</span>
+          <div class="flex items-center gap-3.5">
+            <div class="relative w-20 h-16 rounded-xl overflow-hidden bg-slate-100 dark:bg-zinc-800 shrink-0 border border-slate-200 dark:border-zinc-700">
+              ${coverUrl ? `
+                <img src="${coverUrl}" class="w-full h-full object-cover" alt="${q.title}" />
+              ` : `
+                <div class="w-full h-full flex items-center justify-center text-purple-500"><i data-lucide="trophy" class="w-6 h-6"></i></div>
+              `}
             </div>
-            <h4 class="font-black text-base text-slate-900 dark:text-zinc-100 font-display mt-1">${q.title}</h4>
-            <p class="text-xs text-slate-400">${q.questions ? q.questions.length : 0} Questions • Category: ${q.category || 'General'}</p>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="px-2.5 py-0.5 rounded-full ${isLive ? 'bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300' : 'bg-slate-100 text-slate-600'} text-[10px] font-black uppercase font-mono">
+                  ${isLive ? '🔴 LIVE NOW' : 'ENDED'}
+                </span>
+                <span class="text-xs font-bold text-amber-500 font-mono">🪙 +${q.rewardPerCorrect || 10} KC/Q</span>
+              </div>
+              <h4 class="font-black text-base text-slate-900 dark:text-zinc-100 font-display mt-1">${q.title}</h4>
+              <p class="text-xs text-slate-400">${q.questions ? q.questions.length : 0} Questions • Category: ${q.category || 'General'}</p>
+            </div>
           </div>
 
           <!-- Real-time Participant Count Badge -->
@@ -470,9 +826,18 @@ function syncAdminQuizzesList() {
         </div>
 
         <div class="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-slate-100 dark:border-zinc-800">
-          <div class="flex items-center gap-2">
-            <button onclick="switchTab('quiz'); window.joinSuperAdminQuiz('${doc.id}');" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer flex items-center gap-1.5">
-              <i data-lucide="play" class="w-3.5 h-3.5"></i> Enter Room & Chat
+          <div class="flex flex-wrap items-center gap-2">
+            <button onclick="switchTab('quiz'); window.joinSuperAdminQuiz('${doc.id}');" class="px-3.5 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer flex items-center gap-1.5">
+              <i data-lucide="play" class="w-3.5 h-3.5"></i> Enter Room
+            </button>
+            <button onclick="openEditQuizModal('${doc.id}')" class="px-3 py-2 bg-purple-500/10 hover:bg-purple-500 text-purple-700 dark:text-purple-300 hover:text-white font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center gap-1 border border-purple-500/30">
+              <i data-lucide="edit-3" class="w-3.5 h-3.5"></i> Edit Quiz
+            </button>
+            <button onclick="window.openChangeCoverModal({ type: 'quiz', id: '${doc.id}', title: '${safeTitle}', imageUrl: '${safeImg}' })" class="px-3 py-2 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 text-slate-700 dark:text-zinc-300 font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center gap-1">
+              <i data-lucide="camera" class="w-3.5 h-3.5 text-purple-500"></i> Change Cover
+            </button>
+            <button onclick="exportQuizToJson('${doc.id}')" class="px-3 py-2 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 text-slate-700 dark:text-zinc-300 font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center gap-1">
+              <i data-lucide="download" class="w-3.5 h-3.5 text-emerald-500"></i> Export JSON
             </button>
             <button onclick="toggleQuizLiveStatus('${doc.id}', '${isLive ? 'ended' : 'live'}')" class="px-3 py-2 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 text-slate-700 dark:text-zinc-300 font-bold text-xs rounded-xl transition-all cursor-pointer">
               ${isLive ? 'End Quiz' : 'Re-Open Quiz'}
@@ -489,6 +854,168 @@ function syncAdminQuizzesList() {
 
     if (window.lucide) window.lucide.createIcons();
   }, err => console.warn("Admin quizzes sync error:", err));
+}
+
+// Edit Quiz Modal Logic
+async function openEditQuizModal(quizId) {
+  adminEditingQuizId = quizId;
+  const modal = document.getElementById('edit-quiz-modal');
+  if (!modal) return;
+
+  try {
+    const doc = await window.db.collection('custom_quizzes').doc(quizId).get();
+    if (!doc.exists) {
+      window.showToast?.("Quiz not found.", "error");
+      return;
+    }
+    const q = doc.data();
+
+    const idEl = document.getElementById('edit-quiz-id');
+    const titleEl = document.getElementById('edit-quiz-title');
+    const catEl = document.getElementById('edit-quiz-category');
+    const descEl = document.getElementById('edit-quiz-desc');
+    const rewardEl = document.getElementById('edit-quiz-reward-per-q');
+    const bonusEl = document.getElementById('edit-quiz-bonus-reward');
+    const statusEl = document.getElementById('edit-quiz-status');
+
+    if (idEl) idEl.value = quizId;
+    if (titleEl) titleEl.value = q.title || '';
+    if (catEl) catEl.value = q.category || 'New Testament';
+    if (descEl) descEl.value = q.description || '';
+    if (rewardEl) rewardEl.value = q.rewardPerCorrect || 10;
+    if (bonusEl) bonusEl.value = q.bonusReward || 25;
+    if (statusEl) statusEl.value = q.status || 'live';
+
+    adminEditingQuizCover = q.coverUrl || q.imageUrl || 'https://images.unsplash.com/photo-1504052434569-70ad5836ab65?auto=format&fit=crop&w=1200&q=80';
+    const prev = document.getElementById('edit-quiz-cover-preview');
+    if (prev) prev.src = adminEditingQuizCover;
+
+    adminEditingQuizQuestions = (q.questions || []).map(item => ({ ...item }));
+    renderEditQuizQuestionsList();
+
+    modal.classList.remove('hidden');
+    if (window.lucide) window.lucide.createIcons();
+  } catch (err) {
+    window.showToast?.("Error loading quiz: " + err.message, "error");
+  }
+}
+
+function closeEditQuizModal() {
+  const modal = document.getElementById('edit-quiz-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+function renderEditQuizQuestionsList() {
+  const container = document.getElementById('edit-quiz-questions-list');
+  const countEl = document.getElementById('edit-quiz-q-count');
+  if (countEl) countEl.innerText = adminEditingQuizQuestions.length;
+  if (!container) return;
+
+  if (adminEditingQuizQuestions.length === 0) {
+    container.innerHTML = `<div class="p-4 text-center text-xs text-slate-400">No questions. Click "+ Add Question" to add one.</div>`;
+    return;
+  }
+
+  container.innerHTML = adminEditingQuizQuestions.map((q, idx) => `
+    <div class="p-3 bg-slate-50 dark:bg-zinc-800/80 rounded-xl border border-slate-200 dark:border-zinc-700 text-xs flex items-center justify-between gap-2">
+      <div class="truncate">
+        <span class="font-bold text-slate-900 dark:text-zinc-100">Q${idx + 1}: ${q.question}</span>
+        <span class="text-[10px] text-purple-600 dark:text-purple-400 block font-semibold">Answer: ${q.options[q.answerIndex] || 'None'} ${q.scriptureReference ? `(${q.scriptureReference})` : ''}</span>
+      </div>
+      <button type="button" onclick="removeQuestionFromEditQuiz(${idx})" class="text-red-500 hover:text-red-700 p-1 font-bold cursor-pointer">✕</button>
+    </div>
+  `).join('');
+}
+
+function removeQuestionFromEditQuiz(idx) {
+  adminEditingQuizQuestions.splice(idx, 1);
+  renderEditQuizQuestionsList();
+}
+
+function openAddQuestionToEditQuizModal() {
+  const qPrompt = prompt("Enter the question prompt:");
+  if (!qPrompt) return;
+  const optA = prompt("Option A:") || "Option A";
+  const optB = prompt("Option B:") || "Option B";
+  const optC = prompt("Option C:") || "Option C";
+  const optD = prompt("Option D:") || "Option D";
+  const correctLetter = (prompt("Which option is correct? (A, B, C, or D):") || "A").toUpperCase();
+  const scriptRef = prompt("Scripture Reference (optional):") || "";
+
+  let answerIdx = 0;
+  if (correctLetter === 'B') answerIdx = 1;
+  if (correctLetter === 'C') answerIdx = 2;
+  if (correctLetter === 'D') answerIdx = 3;
+
+  adminEditingQuizQuestions.push({
+    question: qPrompt,
+    options: [optA, optB, optC, optD],
+    answerIndex: answerIdx,
+    scriptureReference: scriptRef
+  });
+
+  renderEditQuizQuestionsList();
+}
+
+function handleEditQuizCoverSelect(e) {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    compressImageToDataUrlSafe(event.target.result, 1280, 720, 0.85, (compressed) => {
+      adminEditingQuizCover = compressed;
+      const prev = document.getElementById('edit-quiz-cover-preview');
+      if (prev) prev.src = adminEditingQuizCover;
+    });
+  };
+  reader.readAsDataURL(file);
+}
+
+function promptEditQuizCoverUrl() {
+  const url = prompt("Enter Image URL for Quiz Cover Banner:", adminEditingQuizCover);
+  if (url && url.trim()) {
+    adminEditingQuizCover = url.trim();
+    const prev = document.getElementById('edit-quiz-cover-preview');
+    if (prev) prev.src = adminEditingQuizCover;
+  }
+}
+
+async function handleSaveEditedQuiz(e) {
+  e.preventDefault();
+  if (!adminEditingQuizId) return;
+
+  if (adminEditingQuizQuestions.length === 0) {
+    window.showToast?.("Please keep at least 1 question in the quiz.", "warning");
+    return;
+  }
+
+  const title = document.getElementById('edit-quiz-title')?.value?.trim();
+  const category = document.getElementById('edit-quiz-category')?.value;
+  const desc = document.getElementById('edit-quiz-desc')?.value?.trim();
+  const rewardPerQ = parseInt(document.getElementById('edit-quiz-reward-per-q')?.value) || 10;
+  const bonusReward = parseInt(document.getElementById('edit-quiz-bonus-reward')?.value) || 25;
+  const status = document.getElementById('edit-quiz-status')?.value || 'live';
+
+  try {
+    await window.db.collection('custom_quizzes').doc(adminEditingQuizId).update({
+      title: title,
+      category: category,
+      description: desc,
+      rewardPerCorrect: rewardPerQ,
+      bonusReward: bonusReward,
+      status: status,
+      coverUrl: adminEditingQuizCover,
+      imageUrl: adminEditingQuizCover,
+      questions: adminEditingQuizQuestions,
+      updatedAt: window.firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    window.soundEngine?.playSuccess?.();
+    window.showToast?.("🚀 Quiz updated successfully!", "success");
+    closeEditQuizModal();
+  } catch (err) {
+    window.showToast?.("Error updating quiz: " + err.message, "error");
+  }
 }
 
 async function toggleQuizLiveStatus(quizId, newStatus) {
@@ -769,7 +1296,7 @@ function renderAdminDevotionalsPane(container) {
         <div class="flex items-center justify-between">
           <div>
             <h4 class="font-black text-base text-slate-900 dark:text-zinc-100">Published Daily Devotionals</h4>
-            <p class="text-xs text-slate-400">Click 'Change Cover' on any devotional to update its banner with an image file or custom URL.</p>
+            <p class="text-xs text-slate-400">Edit devotional text, update cover banners, or delete devotionals.</p>
           </div>
         </div>
         <div id="admin-devotionals-list-container" class="space-y-3 max-h-[750px] overflow-y-auto pr-1">
@@ -788,9 +1315,11 @@ function handleAdminDevCoverSelect(e) {
   if (!file) return;
   const reader = new FileReader();
   reader.onload = (event) => {
-    adminDevDraftCover = event.target.result;
-    const prev = document.getElementById('admin-dev-cover-preview');
-    if (prev) prev.src = adminDevDraftCover;
+    compressImageToDataUrlSafe(event.target.result, 1280, 720, 0.85, (compressed) => {
+      adminDevDraftCover = compressed;
+      const prev = document.getElementById('admin-dev-cover-preview');
+      if (prev) prev.src = adminDevDraftCover;
+    });
   };
   reader.readAsDataURL(file);
 }
@@ -857,15 +1386,20 @@ function renderAdminDevotionalsCards(snap) {
           `}
         </div>
         <div class="space-y-0.5">
-          <span class="text-[10px] font-black uppercase text-amber-600 dark:text-amber-400 font-mono">${d.devotionalDate || 'Daily'} • ${d.scripture || ''}</span>
+          <span class="text-[10px] font-black uppercase text-amber-600 dark:text-amber-400 font-mono">${d.devotionalDate || d.date || 'Daily'} • ${d.scripture || ''}</span>
           <h5 class="font-black text-sm text-slate-900 dark:text-zinc-100 line-clamp-1">${d.title}</h5>
           <p class="text-xs text-slate-400 line-clamp-1">${d.body || ''}</p>
         </div>
       </div>
 
-      <div class="flex items-center gap-2 shrink-0 self-end sm:self-center">
-        <button onclick="window.openChangeCoverModal({ type: 'devotional', id: '${docId}', title: '${safeTitle}', imageUrl: '${safeImg}' })" class="px-3.5 py-2 bg-amber-500/10 hover:bg-amber-500 text-amber-700 dark:text-amber-300 hover:text-slate-950 font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center gap-1.5 border border-amber-500/30">
-          <i data-lucide="camera" class="w-3.5 h-3.5"></i>
+      <div class="flex flex-wrap items-center gap-2 shrink-0 self-end sm:self-center">
+        <button onclick="openEditDevotionalModal('${docId}')" class="px-3.5 py-2 bg-amber-500/10 hover:bg-amber-500 text-amber-700 dark:text-amber-300 hover:text-slate-950 font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center gap-1.5 border border-amber-500/30">
+          <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+          <span>Edit</span>
+        </button>
+
+        <button onclick="window.openChangeCoverModal({ type: 'devotional', id: '${docId}', title: '${safeTitle}', imageUrl: '${safeImg}' })" class="px-3.5 py-2 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 text-slate-700 dark:text-zinc-300 font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center gap-1.5">
+          <i data-lucide="camera" class="w-3.5 h-3.5 text-amber-500"></i>
           <span>Change Cover</span>
         </button>
 
@@ -878,6 +1412,137 @@ function renderAdminDevotionalsCards(snap) {
   });
 
   if (window.lucide) window.lucide.createIcons();
+}
+
+async function openEditDevotionalModal(devId) {
+  adminEditingDevId = devId;
+  const modal = document.getElementById('edit-devotional-modal');
+  if (!modal) return;
+
+  try {
+    let d = window.devotionalsCache?.[devId];
+    if (!d) {
+      const doc = await window.db.collection('daily_devotionals').doc(devId).get();
+      if (doc.exists) {
+        d = { id: doc.id, ...doc.data() };
+      } else {
+        const fallbackDoc = await window.db.collection('devotionals').doc(devId).get();
+        if (fallbackDoc.exists) d = { id: fallbackDoc.id, ...fallbackDoc.data() };
+      }
+    }
+
+    if (!d) {
+      window.showToast?.("Devotional not found.", "error");
+      return;
+    }
+
+    const idEl = document.getElementById('edit-dev-id');
+    const titleEl = document.getElementById('edit-dev-title');
+    const scriptureEl = document.getElementById('edit-dev-scripture');
+    const dateEl = document.getElementById('edit-dev-date');
+    const bodyEl = document.getElementById('edit-dev-body');
+    const prayerEl = document.getElementById('edit-dev-prayer');
+
+    if (idEl) idEl.value = devId;
+    if (titleEl) titleEl.value = d.title || '';
+    if (scriptureEl) scriptureEl.value = d.scripture || '';
+    if (dateEl) dateEl.value = d.devotionalDate || d.date || new Date().toISOString().split('T')[0];
+    if (bodyEl) bodyEl.value = d.body || '';
+    if (prayerEl) prayerEl.value = d.prayer || '';
+
+    adminEditingDevCover = d.imageUrl || 'https://images.unsplash.com/photo-1507692049790-de58290a4334?auto=format&fit=crop&w=1200&q=80';
+    const prev = document.getElementById('edit-dev-cover-preview');
+    if (prev) prev.src = adminEditingDevCover;
+
+    modal.classList.remove('hidden');
+    if (window.lucide) window.lucide.createIcons();
+  } catch (err) {
+    window.showToast?.("Error opening devotional: " + err.message, "error");
+  }
+}
+
+function closeEditDevotionalModal() {
+  const modal = document.getElementById('edit-devotional-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+function handleEditDevCoverSelect(e) {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    compressImageToDataUrlSafe(event.target.result, 1280, 720, 0.85, (compressed) => {
+      adminEditingDevCover = compressed;
+      const prev = document.getElementById('edit-dev-cover-preview');
+      if (prev) prev.src = adminEditingDevCover;
+    });
+  };
+  reader.readAsDataURL(file);
+}
+
+function promptEditDevCoverUrl() {
+  const url = prompt("Enter Image URL for Devotional Cover:", adminEditingDevCover);
+  if (url && url.trim()) {
+    adminEditingDevCover = url.trim();
+    const prev = document.getElementById('edit-dev-cover-preview');
+    if (prev) prev.src = adminEditingDevCover;
+  }
+}
+
+async function handleSaveEditedDevotional(e) {
+  e.preventDefault();
+  if (!adminEditingDevId) return;
+
+  const title = document.getElementById('edit-dev-title')?.value?.trim();
+  const scripture = document.getElementById('edit-dev-scripture')?.value?.trim();
+  const devDate = document.getElementById('edit-dev-date')?.value?.trim();
+  const body = document.getElementById('edit-dev-body')?.value?.trim();
+  const prayer = document.getElementById('edit-dev-prayer')?.value?.trim();
+
+  try {
+    const updateData = {
+      title: title,
+      scripture: scripture,
+      devotionalDate: devDate,
+      date: devDate,
+      body: body,
+      prayer: prayer,
+      imageUrl: adminEditingDevCover,
+      updatedAt: window.firebase.firestore.FieldValue.serverTimestamp()
+    };
+
+    await window.db.collection('daily_devotionals').doc(adminEditingDevId).update(updateData);
+    await window.db.collection('devotionals').doc(adminEditingDevId).update(updateData).catch(() => {});
+
+    if (window.devotionalsCache && window.devotionalsCache[adminEditingDevId]) {
+      Object.assign(window.devotionalsCache[adminEditingDevId], updateData);
+    }
+
+    const modalTitle = document.getElementById('modal-devotional-title');
+    if (modalTitle) {
+      const modalDate = document.getElementById('modal-devotional-date');
+      const modalScripture = document.getElementById('modal-devotional-scripture');
+      const modalBody = document.getElementById('modal-devotional-body');
+      const modalPrayer = document.getElementById('modal-devotional-prayer');
+      const modalImg = document.getElementById('modal-devotional-img');
+
+      if (modalDate) modalDate.innerText = devDate;
+      if (modalScripture) modalScripture.innerText = scripture;
+      if (modalTitle) modalTitle.innerText = title;
+      if (modalBody) modalBody.innerText = body;
+      if (modalPrayer) modalPrayer.innerText = prayer;
+      if (modalImg && adminEditingDevCover) {
+        modalImg.src = adminEditingDevCover;
+        modalImg.parentElement?.classList?.remove('hidden');
+      }
+    }
+
+    window.soundEngine?.playSuccess?.();
+    window.showToast?.("☀️ Devotional updated successfully!", "success");
+    closeEditDevotionalModal();
+  } catch (err) {
+    window.showToast?.("Error updating devotional: " + err.message, "error");
+  }
 }
 
 async function deleteDevotionalDirect(devId) {
@@ -1642,4 +2307,34 @@ window.handleAdminResourceFileSelect = handleAdminResourceFileSelect;
 window.handleAdminStoreProductUploadSubmit = handleAdminStoreProductUploadSubmit;
 window.syncAdminStoreProductsCatalog = syncAdminStoreProductsCatalog;
 window.deleteAdminStoreProduct = deleteAdminStoreProduct;
+
+// Quiz cover & JSON import/export & editor bindings
+window.handleAdminQuizCoverSelect = handleAdminQuizCoverSelect;
+window.promptAdminQuizCoverUrl = promptAdminQuizCoverUrl;
+window.downloadSampleQuizJson = downloadSampleQuizJson;
+window.openJsonSampleModal = openJsonSampleModal;
+window.closeJsonSampleModal = closeJsonSampleModal;
+window.copySampleJsonToClipboard = copySampleJsonToClipboard;
+window.handleQuizJsonFileInput = handleQuizJsonFileInput;
+window.handlePasteJsonImport = handlePasteJsonImport;
+window.exportQuizToJson = exportQuizToJson;
+window.openEditQuizModal = openEditQuizModal;
+window.closeEditQuizModal = closeEditQuizModal;
+window.handleEditQuizCoverSelect = handleEditQuizCoverSelect;
+window.promptEditQuizCoverUrl = promptEditQuizCoverUrl;
+window.openAddQuestionToEditQuizModal = openAddQuestionToEditQuizModal;
+window.removeQuestionFromEditQuiz = removeQuestionFromEditQuiz;
+window.handleSaveEditedQuiz = handleSaveEditedQuiz;
+
+// Devotionals editor & cover bindings
+window.openEditDevotionalModal = openEditDevotionalModal;
+window.closeEditDevotionalModal = closeEditDevotionalModal;
+window.handleEditDevCoverSelect = handleEditDevCoverSelect;
+window.promptEditDevCoverUrl = promptEditDevCoverUrl;
+window.handleSaveEditedDevotional = handleSaveEditedDevotional;
+window.deleteDevotionalDirect = deleteDevotionalDirect;
+window.handleAdminDevCoverSelect = handleAdminDevCoverSelect;
+window.promptAdminDevCoverUrl = promptAdminDevCoverUrl;
+window.handlePublishDevotionalSubmit = handlePublishDevotionalSubmit;
+
 

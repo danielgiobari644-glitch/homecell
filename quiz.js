@@ -156,20 +156,40 @@ function syncAdminAndLiveQuizzes() {
       const q = doc.data();
       const card = document.createElement('div');
       const isLive = q.status !== 'ended';
-      card.className = `glass-panel rounded-3xl p-6 space-y-4 border ${isLive ? 'border-purple-500/30' : 'border-slate-200 dark:border-zinc-800'} hover:border-purple-500 transition-all flex flex-col justify-between relative overflow-hidden`;
+      const coverUrl = q.coverUrl || q.imageUrl || '';
+      const isSuperAdmin = (typeof window.isSuperAdmin === 'function') ? window.isSuperAdmin() : (window.auth?.currentUser?.email === 'danielgiobari644@gmail.com');
+      const safeTitle = (q.title || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+      const safeImg = coverUrl.replace(/'/g, "\\'");
+
+      card.className = `glass-panel rounded-3xl p-5 sm:p-6 space-y-4 border ${isLive ? 'border-purple-500/30' : 'border-slate-200 dark:border-zinc-800'} hover:border-purple-500 transition-all flex flex-col justify-between relative overflow-hidden`;
       
       const qCount = q.questions ? q.questions.length : 5;
       const rewardPer = q.rewardPerCorrect || 10;
       const maxReward = qCount * rewardPer + (q.bonusReward || 0);
 
       card.innerHTML = `
-        <div class="space-y-2">
-          <div class="flex items-center justify-between">
-            <span class="px-2.5 py-1 rounded-full ${isLive ? 'bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300' : 'bg-slate-100 text-slate-600'} text-[10px] font-black uppercase font-mono flex items-center gap-1">
-              ${isLive ? '<span class="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse"></span> SUPER ADMIN LIVE' : 'ENDED'}
-            </span>
-            <span class="text-xs font-mono font-bold text-amber-500">🪙 +${maxReward} KC</span>
-          </div>
+        <div class="space-y-3">
+          ${coverUrl ? `
+            <div class="relative h-32 -mx-5 -mt-5 sm:-mx-6 sm:-mt-6 mb-3 overflow-hidden bg-slate-900 border-b border-slate-200 dark:border-zinc-800">
+              <img src="${coverUrl}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="${q.title || 'Quiz Banner'}" />
+              <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-black/20"></div>
+              <div class="absolute top-3 left-3">
+                <span class="px-2.5 py-1 rounded-full ${isLive ? 'bg-purple-600/90 text-white' : 'bg-slate-800/90 text-slate-300'} text-[10px] font-black uppercase font-mono backdrop-blur-md flex items-center gap-1 shadow-sm">
+                  ${isLive ? '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> SUPER ADMIN LIVE' : 'ENDED'}
+                </span>
+              </div>
+              <div class="absolute bottom-2 right-3">
+                <span class="text-xs font-mono font-black text-amber-400 drop-shadow-md">🪙 +${maxReward} KC</span>
+              </div>
+            </div>
+          ` : `
+            <div class="flex items-center justify-between">
+              <span class="px-2.5 py-1 rounded-full ${isLive ? 'bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300' : 'bg-slate-100 text-slate-600'} text-[10px] font-black uppercase font-mono flex items-center gap-1">
+                ${isLive ? '<span class="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse"></span> SUPER ADMIN LIVE' : 'ENDED'}
+              </span>
+              <span class="text-xs font-mono font-bold text-amber-500">🪙 +${maxReward} KC</span>
+            </div>
+          `}
 
           <h4 class="font-black text-lg text-slate-900 dark:text-zinc-100 font-display">${q.title || 'Kingdom Champions Quiz'}</h4>
           <p class="text-xs text-slate-400 line-clamp-2">${q.description || `Created by ${q.createdByName || 'Super Admin'} • Category: ${q.category || 'General'}`}</p>
@@ -188,6 +208,23 @@ function syncAdminAndLiveQuizzes() {
           <button onclick="joinSuperAdminQuiz('${doc.id}')" class="w-full py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-purple-500/25 cursor-pointer transition-all">
             Join Live Challenge 🚀
           </button>
+
+          ${isSuperAdmin ? `
+            <div class="grid grid-cols-3 gap-1.5 pt-2 border-t border-slate-100 dark:border-zinc-800/80">
+              <button onclick="window.openEditQuizModal?.('${doc.id}')" class="py-1.5 px-2 bg-purple-50 dark:bg-purple-950/40 hover:bg-purple-100 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 text-[10px] font-bold rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer">
+                <i data-lucide="edit-3" class="w-3 h-3"></i>
+                <span>Edit</span>
+              </button>
+              <button onclick="window.openChangeCoverModal?.({ type: 'quiz', id: '${doc.id}', title: '${safeTitle}', imageUrl: '${safeImg}' })" class="py-1.5 px-2 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 text-slate-700 dark:text-zinc-300 text-[10px] font-bold rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer">
+                <i data-lucide="camera" class="w-3 h-3 text-purple-500"></i>
+                <span>Cover</span>
+              </button>
+              <button onclick="window.exportQuizToJson?.('${doc.id}')" class="py-1.5 px-2 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 text-slate-700 dark:text-zinc-300 text-[10px] font-bold rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer">
+                <i data-lucide="download" class="w-3 h-3 text-emerald-500"></i>
+                <span>JSON</span>
+              </button>
+            </div>
+          ` : ''}
         </div>
       `;
       container.appendChild(card);

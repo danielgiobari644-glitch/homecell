@@ -1,8 +1,8 @@
 // cover-manager.js
-// Super Admin Cover Photo Management Engine for Events & Daily Devotionals
+// Super Admin Universal Cover Photo Management Engine for Quizzes, Events & Daily Devotionals
 // Supports direct device file upload, custom image URL, curated worship presets, and Firestore synchronization
 
-let activeCoverTarget = null; // { type: 'event' | 'devotional', id: string, title: string, imageUrl: string }
+let activeCoverTarget = null; // { type: 'event' | 'devotional' | 'quiz', id: string, title: string, imageUrl: string }
 let selectedCoverDataUrl = null;
 
 // Curated high-resolution Christian & Worship themed presets
@@ -46,6 +46,16 @@ const COVER_PRESETS = [
     name: "Hands Lifted in Praise",
     category: "Praise",
     url: "https://images.unsplash.com/photo-1438232992991-995b7058bbb3?auto=format&fit=crop&w=1200&q=80"
+  },
+  {
+    name: "Crown of Life & Victory",
+    category: "Quiz",
+    url: "https://images.unsplash.com/photo-1579783902614-a3fb3927b675?auto=format&fit=crop&w=1200&q=80"
+  },
+  {
+    name: "Scrolls of Wisdom & Prophecy",
+    category: "Quiz",
+    url: "https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=1200&q=80"
   }
 ];
 
@@ -67,37 +77,44 @@ function openChangeCoverModal(target) {
   }
 
   activeCoverTarget = target;
-  selectedCoverDataUrl = target.imageUrl || '';
+  selectedCoverDataUrl = target.imageUrl || target.coverUrl || '';
 
-  const modal = document.getElementById('change-cover-modal');
-  const titleEl = document.getElementById('cover-modal-target-title');
-  const typeBadge = document.getElementById('cover-modal-target-badge');
+  const modal = document.getElementById('universal-cover-modal') || document.getElementById('change-cover-modal');
+  const titleEl = document.getElementById('cover-modal-item-title') || document.getElementById('cover-modal-target-title');
+  const typeBadge = document.getElementById('cover-modal-item-type') || document.getElementById('cover-modal-target-badge');
   const urlInput = document.getElementById('cover-modal-url-input');
-  const previewImg = document.getElementById('cover-modal-preview-img');
-  const noPreviewBox = document.getElementById('cover-modal-no-preview');
   const presetsContainer = document.getElementById('cover-modal-presets-grid');
 
-  if (titleEl) titleEl.innerText = target.title || (target.type === 'event' ? 'Church Gathering' : 'Daily Devotional');
+  if (titleEl) {
+    titleEl.innerText = target.title || (
+      target.type === 'event' ? 'Church Gathering Cover' :
+      target.type === 'quiz' ? 'Bible Trivia Quiz Cover' : 'Daily Devotional Cover'
+    );
+  }
   
   if (typeBadge) {
     if (target.type === 'event') {
-      typeBadge.innerHTML = `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase font-mono bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300">📅 Church Event Cover</span>`;
+      typeBadge.innerHTML = `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase font-mono bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300">📅 Church Gathering Cover</span>`;
+    } else if (target.type === 'quiz') {
+      typeBadge.innerHTML = `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase font-mono bg-indigo-100 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300">🏆 Live Trivia Quiz Cover</span>`;
     } else {
       typeBadge.innerHTML = `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase font-mono bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-300">☀️ Daily Devotional Cover</span>`;
     }
   }
 
-  if (urlInput) urlInput.value = target.imageUrl && !target.imageUrl.startsWith('data:') ? target.imageUrl : '';
+  if (urlInput) {
+    urlInput.value = (selectedCoverDataUrl && !selectedCoverDataUrl.startsWith('data:')) ? selectedCoverDataUrl : '';
+  }
 
   updateCoverModalPreview(selectedCoverDataUrl);
 
   // Render presets
   if (presetsContainer) {
-    presetsContainer.innerHTML = COVER_PRESETS.map((p, idx) => `
-      <div onclick="selectPresetCover('${p.url}')" class="relative group rounded-xl overflow-hidden border border-slate-200 dark:border-zinc-700 cursor-pointer hover:border-amber-500 transition-all aspect-video bg-slate-100 dark:bg-zinc-800">
+    presetsContainer.innerHTML = COVER_PRESETS.map((p) => `
+      <div onclick="window.selectPresetCover('${p.url}')" class="relative group rounded-xl overflow-hidden border border-slate-200 dark:border-zinc-700 cursor-pointer hover:border-amber-500 transition-all aspect-video bg-slate-100 dark:bg-zinc-800 shadow-2xs">
         <img src="${p.url}" alt="${p.name}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end p-2">
-          <span class="text-[10px] font-bold text-white leading-tight line-clamp-1">${p.name}</span>
+        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex items-end p-1.5">
+          <span class="text-[9px] font-bold text-white leading-tight line-clamp-1">${p.name}</span>
         </div>
       </div>
     `).join('');
@@ -108,7 +125,7 @@ function openChangeCoverModal(target) {
 }
 
 function closeChangeCoverModal() {
-  const modal = document.getElementById('change-cover-modal');
+  const modal = document.getElementById('universal-cover-modal') || document.getElementById('change-cover-modal');
   if (modal) modal.classList.add('hidden');
   activeCoverTarget = null;
   selectedCoverDataUrl = null;
@@ -118,17 +135,30 @@ function updateCoverModalPreview(url) {
   const previewImg = document.getElementById('cover-modal-preview-img');
   const noPreviewBox = document.getElementById('cover-modal-no-preview');
   
-  if (!previewImg || !noPreviewBox) return;
-
-  if (url && url.trim() !== '') {
-    previewImg.src = url.trim();
-    previewImg.classList.remove('hidden');
-    noPreviewBox.classList.add('hidden');
-  } else {
-    previewImg.src = '';
-    previewImg.classList.add('hidden');
-    noPreviewBox.classList.remove('hidden');
+  if (previewImg) {
+    if (url && url.trim() !== '') {
+      previewImg.src = url.trim();
+      previewImg.classList.remove('hidden');
+      if (noPreviewBox) noPreviewBox.classList.add('hidden');
+    } else {
+      previewImg.src = 'https://images.unsplash.com/photo-1507692049790-de58290a4334?auto=format&fit=crop&w=1200&q=80';
+      previewImg.classList.remove('hidden');
+      if (noPreviewBox) noPreviewBox.classList.add('hidden');
+    }
   }
+}
+
+function applyCoverModalUrlInput() {
+  const urlInput = document.getElementById('cover-modal-url-input');
+  if (!urlInput) return;
+  const url = urlInput.value.trim();
+  if (!url) {
+    window.showToast?.("Please enter a valid image URL.", "warning");
+    return;
+  }
+  selectedCoverDataUrl = url;
+  updateCoverModalPreview(url);
+  window.showToast?.("Image URL preview loaded. Click 'Save & Apply' to finalize.", "info");
 }
 
 function handleCoverUrlInput(e) {
@@ -142,10 +172,10 @@ function selectPresetCover(presetUrl) {
   const urlInput = document.getElementById('cover-modal-url-input');
   if (urlInput) urlInput.value = presetUrl;
   updateCoverModalPreview(presetUrl);
-  window.showToast?.("Preset banner selected. Click 'Save Cover Photo' to apply.", "info");
+  window.showToast?.("Preset banner selected. Click 'Save & Apply Cover' to update.", "info");
 }
 
-function handleCoverFileSelect(e) {
+function handleCoverModalFileSelect(e) {
   const file = e.target.files?.[0];
   if (!file) return;
 
@@ -182,7 +212,7 @@ function compressImageToDataUrl(dataUrl, maxWidth, maxHeight, quality, callback)
     }
     if (height > maxHeight) {
       width = Math.round((width * maxHeight) / height);
-      height = maxHeight;
+      width = maxHeight;
     }
 
     const canvas = document.createElement('canvas');
@@ -206,10 +236,10 @@ function clearCurrentCoverPhoto() {
   if (urlInput) urlInput.value = '';
   if (fileInput) fileInput.value = '';
   updateCoverModalPreview('');
-  window.showToast?.("Cover photo cleared. Click 'Save' to apply.", "info");
+  window.showToast?.("Cover photo cleared. Click 'Save & Apply' to confirm.", "info");
 }
 
-async function saveCoverPhoto() {
+async function saveSelectedCoverPhoto() {
   if (!activeCoverTarget) return;
 
   const db = window.db;
@@ -218,14 +248,14 @@ async function saveCoverPhoto() {
     return;
   }
 
-  const finalImageUrl = selectedCoverDataUrl || '';
+  const finalImageUrl = selectedCoverDataUrl || 'https://images.unsplash.com/photo-1507692049790-de58290a4334?auto=format&fit=crop&w=1200&q=80';
   const targetType = activeCoverTarget.type;
   const targetId = activeCoverTarget.id;
 
-  const saveBtn = document.getElementById('btn-save-cover-photo');
+  const saveBtn = document.getElementById('cover-modal-save-btn') || document.getElementById('btn-save-cover-photo');
   if (saveBtn) {
     saveBtn.disabled = true;
-    saveBtn.innerText = "Updating Cover...";
+    saveBtn.innerHTML = `<span class="animate-spin inline-block mr-1">⏳</span> Updating Cover...`;
   }
 
   try {
@@ -235,13 +265,9 @@ async function saveCoverPhoto() {
         updatedAt: window.firebase.firestore.FieldValue.serverTimestamp()
       };
 
-      // Update primary collection
-      await db.collection('upcoming_events').doc(targetId).update(updateData).catch(async (e) => {
-        // If not in upcoming_events, try set or try events collection
+      await db.collection('upcoming_events').doc(targetId).update(updateData).catch(async () => {
         await db.collection('events').doc(targetId).update(updateData);
       });
-
-      // Also update mirror collection if exists
       await db.collection('events').doc(targetId).update(updateData).catch(() => {});
 
       window.soundEngine?.playSuccess?.();
@@ -252,21 +278,33 @@ async function saveCoverPhoto() {
         updatedAt: window.firebase.firestore.FieldValue.serverTimestamp()
       };
 
-      // Update primary collection
-      await db.collection('daily_devotionals').doc(targetId).update(updateData).catch(async (e) => {
+      await db.collection('daily_devotionals').doc(targetId).update(updateData).catch(async () => {
         await db.collection('devotionals').doc(targetId).update(updateData);
       });
-
-      // Also update mirror collection if exists
       await db.collection('devotionals').doc(targetId).update(updateData).catch(() => {});
 
-      // Update local cache if available
       if (window.devotionalsCache && window.devotionalsCache[targetId]) {
         window.devotionalsCache[targetId].imageUrl = finalImageUrl;
+      }
+      const fullImg = document.getElementById('modal-devotional-img');
+      if (fullImg && fullImg.parentElement) {
+        fullImg.src = finalImageUrl;
+        fullImg.parentElement.classList.remove('hidden');
       }
 
       window.soundEngine?.playSuccess?.();
       window.showToast?.("☀️ Devotional cover photo updated successfully!", "success");
+    } else if (targetType === 'quiz') {
+      const updateData = {
+        imageUrl: finalImageUrl,
+        coverUrl: finalImageUrl,
+        updatedAt: window.firebase.firestore.FieldValue.serverTimestamp()
+      };
+
+      await db.collection('custom_quizzes').doc(targetId).update(updateData);
+
+      window.soundEngine?.playSuccess?.();
+      window.showToast?.("🏆 Quiz cover photo updated successfully!", "success");
     }
 
     closeChangeCoverModal();
@@ -276,7 +314,8 @@ async function saveCoverPhoto() {
   } finally {
     if (saveBtn) {
       saveBtn.disabled = false;
-      saveBtn.innerText = "Save Cover Photo ✨";
+      saveBtn.innerHTML = `<i data-lucide="check" class="w-4 h-4"></i><span>Save & Apply Cover</span>`;
+      if (window.lucide) window.lucide.createIcons();
     }
   }
 }
@@ -285,8 +324,12 @@ async function saveCoverPhoto() {
 window.openChangeCoverModal = openChangeCoverModal;
 window.closeChangeCoverModal = closeChangeCoverModal;
 window.handleCoverUrlInput = handleCoverUrlInput;
-window.handleCoverFileSelect = handleCoverFileSelect;
+window.handleCoverModalFileSelect = handleCoverModalFileSelect;
+window.handleCoverFileSelect = handleCoverModalFileSelect;
 window.selectPresetCover = selectPresetCover;
 window.clearCurrentCoverPhoto = clearCurrentCoverPhoto;
-window.saveCoverPhoto = saveCoverPhoto;
+window.applyCoverModalUrlInput = applyCoverModalUrlInput;
+window.saveSelectedCoverPhoto = saveSelectedCoverPhoto;
+window.saveCoverPhoto = saveSelectedCoverPhoto;
+window.compressImageToDataUrl = compressImageToDataUrl;
 window.COVER_PRESETS = COVER_PRESETS;

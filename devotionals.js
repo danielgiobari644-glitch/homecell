@@ -131,10 +131,11 @@ function openFullDevotionalModal(devotional) {
   const prayerEl = document.getElementById('modal-devotional-prayer');
   const imgEl = document.getElementById('modal-devotional-img');
   const adminCoverBtn = document.getElementById('modal-devotional-admin-cover-btn');
+  const adminEditBtn = document.getElementById('modal-devotional-admin-edit-btn');
 
   if (titleEl) titleEl.innerText = devotional.title;
   if (scriptureEl) scriptureEl.innerText = devotional.scripture;
-  if (dateEl) dateEl.innerText = devotional.devotionalDate;
+  if (dateEl) dateEl.innerText = devotional.devotionalDate || devotional.date || '';
   if (bodyEl) bodyEl.innerText = devotional.body;
   if (prayerEl) prayerEl.innerText = devotional.prayer || "Lord, let Your Word guide my steps today and transform my heart. In Jesus' name, Amen.";
 
@@ -151,6 +152,19 @@ function openFullDevotionalModal(devotional) {
     window.currentUserRole === 'Super Admin' ||
     window.auth?.currentUser?.email?.toLowerCase() === 'danielgiobari644@gmail.com'
   );
+
+  if (adminEditBtn) {
+    if (isSuperAdmin) {
+      adminEditBtn.classList.remove('hidden');
+      adminEditBtn.onclick = () => {
+        if (window.openEditDevotionalModal) {
+          window.openEditDevotionalModal(devotional.id);
+        }
+      };
+    } else {
+      adminEditBtn.classList.add('hidden');
+    }
+  }
 
   if (adminCoverBtn) {
     if (isSuperAdmin) {
