@@ -887,29 +887,150 @@
       </section>
 
       <!-- ===================================================================== -->
-      <!-- VIEW 6: BIBLE STUDY -->
+      <!-- ===================================================================== -->
+      <!-- VIEW 6: BIBLE STUDY & STUDY NOTES JOURNAL -->
       <!-- ===================================================================== -->
       <section id="view-bible" class="app-tab-view tab-animate-in space-y-6 sm:space-y-8 hidden">
-        <div class="glass-panel rounded-3xl p-5 sm:p-8 space-y-6">
-          <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
-            <div class="flex flex-wrap items-center gap-2 sm:gap-3">
-              <select id="bible-book-select" onchange="loadChapters()" class="text-xs sm:text-sm font-black bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-2xl px-3 sm:px-4 py-2.5 sm:py-3 text-slate-800 dark:text-zinc-200 cursor-pointer"></select>
-              <select id="bible-chapter-select" onchange="loadVerses()" class="text-xs sm:text-sm font-black bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-2xl px-3 sm:px-4 py-2.5 sm:py-3 text-slate-800 dark:text-zinc-200 cursor-pointer"></select>
-            </div>
-
-            <div class="flex items-center gap-3">
-              <div class="relative flex-1 sm:w-64">
-                <input type="text" id="bible-search-input" oninput="filterVerses()" placeholder="Filter verses..." class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl pl-9 pr-3 py-2.5" />
-                <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-3"></i>
-              </div>
-
-              <button id="btn-chapter-tts" onclick="speakFullChapter()" class="px-4 sm:px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold text-xs uppercase rounded-xl transition-all cursor-pointer flex items-center gap-1.5 shrink-0 shadow-md">
-                <i data-lucide="volume-2" class="w-4 h-4"></i> <span class="hidden sm:inline">Read</span> Audio
-              </button>
-            </div>
+        <!-- Top Sub-Navigation Header -->
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white/70 dark:bg-zinc-900/70 backdrop-blur-md p-3 sm:p-4 rounded-3xl border border-slate-200/80 dark:border-zinc-800 shadow-sm">
+          <div class="flex items-center gap-2">
+            <button id="bible-subtab-btn-reader" onclick="switchBibleSubTab('reader')" class="px-4 py-2 rounded-xl text-xs font-black bg-blue-600 text-white shadow-sm flex items-center gap-1.5 transition-all cursor-pointer">
+              <i data-lucide="book-open" class="w-3.5 h-3.5"></i>
+              <span>Holy Scriptures</span>
+            </button>
+            <button id="bible-subtab-btn-notes" onclick="switchBibleSubTab('notes')" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 flex items-center gap-1.5 transition-all cursor-pointer">
+              <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+              <span>Study Notes & Journal</span>
+              <span id="study-notes-count-badge" class="px-1.5 py-0.5 rounded-full text-[10px] font-mono font-black bg-slate-200 dark:bg-zinc-700 text-slate-700 dark:text-zinc-200">0</span>
+            </button>
           </div>
 
-          <div id="bible-verses-box" class="space-y-2 max-h-[580px] overflow-y-auto pr-2 divide-y divide-slate-100 dark:divide-zinc-850"></div>
+          <button onclick="openStudyNoteModal()" class="px-4 py-2 rounded-xl text-xs font-black bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-slate-950 shadow-sm flex items-center justify-center gap-1.5 transition-all cursor-pointer">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+            <span>+ New Study Note</span>
+          </button>
+        </div>
+
+        <!-- 1. SUB-VIEW: SCRIPTURE READER -->
+        <div id="bible-subview-reader" class="space-y-5">
+          <div class="glass-panel rounded-3xl p-5 sm:p-7 space-y-6">
+            <!-- Reader Navigation Toolbar -->
+            <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+              <!-- Book, Chapter & Version Selectors -->
+              <div class="flex flex-wrap items-center gap-2 sm:gap-2.5">
+                <!-- Version Select -->
+                <select id="bible-version-select" onchange="changeBibleVersion()" class="text-xs font-black bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl px-3 py-2.5 text-slate-800 dark:text-zinc-200 cursor-pointer">
+                  <option value="kjv">KJV (King James)</option>
+                  <option value="web">WEB (World English)</option>
+                  <option value="bbe">BBE (Basic English)</option>
+                </select>
+
+                <!-- Book Select -->
+                <select id="bible-book-select" onchange="loadChapters()" class="text-xs sm:text-sm font-black bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl px-3.5 py-2.5 text-slate-800 dark:text-zinc-200 cursor-pointer"></select>
+
+                <!-- Chapter Select -->
+                <select id="bible-chapter-select" onchange="loadVerses()" class="text-xs sm:text-sm font-black bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl px-3 py-2.5 text-slate-800 dark:text-zinc-200 cursor-pointer"></select>
+
+                <!-- Prev / Next Chapter Quick Controls -->
+                <div class="flex items-center gap-1 bg-slate-100 dark:bg-zinc-800 p-1 rounded-xl border border-slate-200 dark:border-zinc-700">
+                  <button onclick="prevBibleChapter()" class="p-1.5 rounded-lg hover:bg-white dark:hover:bg-zinc-700 text-slate-600 dark:text-zinc-300 transition-all cursor-pointer" title="Previous Chapter">
+                    <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                  </button>
+                  <button onclick="nextBibleChapter()" class="p-1.5 rounded-lg hover:bg-white dark:hover:bg-zinc-700 text-slate-600 dark:text-zinc-300 transition-all cursor-pointer" title="Next Chapter">
+                    <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                  </button>
+                </div>
+
+                <!-- Font Size Controls -->
+                <div class="flex items-center gap-1 bg-slate-100 dark:bg-zinc-800 p-1 rounded-xl border border-slate-200 dark:border-zinc-700">
+                  <button onclick="zoomBibleFont(-1)" class="px-2 py-1 text-xs font-black rounded-lg hover:bg-white dark:hover:bg-zinc-700 text-slate-600 dark:text-zinc-300 cursor-pointer" title="Decrease Font">A-</button>
+                  <button onclick="zoomBibleFont(1)" class="px-2 py-1 text-xs font-black rounded-lg hover:bg-white dark:hover:bg-zinc-700 text-slate-600 dark:text-zinc-300 cursor-pointer" title="Increase Font">A+</button>
+                </div>
+              </div>
+
+              <!-- Search & Audio Narration Trigger -->
+              <div class="flex items-center gap-2.5">
+                <div class="relative flex-1 sm:w-60">
+                  <input type="text" id="bible-search-input" oninput="filterVerses()" placeholder="Filter verses in chapter..." class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl pl-8 pr-3 py-2.5" />
+                  <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-3"></i>
+                </div>
+
+                <button id="btn-chapter-tts" onclick="toggleChapterAudio()" class="px-4 sm:px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold text-xs uppercase rounded-xl transition-all cursor-pointer flex items-center gap-1.5 shrink-0 shadow-md">
+                  <i data-lucide="volume-2" class="w-4 h-4"></i> <span class="hidden sm:inline">Read</span> Audio
+                </button>
+              </div>
+            </div>
+
+            <!-- FLOATING SCRIPTURE AUDIO PLAYER BAR -->
+            <div id="bible-audio-player-bar" class="hidden p-4 rounded-2xl bg-gradient-to-r from-purple-900/90 via-indigo-900/90 to-slate-900/90 text-white border border-purple-500/30 backdrop-blur-md shadow-lg flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div class="flex items-center gap-3 w-full sm:w-auto">
+                <div class="w-9 h-9 rounded-xl bg-purple-500/20 text-purple-300 flex items-center justify-center shrink-0 border border-purple-400/30">
+                  <i data-lucide="volume-2" class="w-4 h-4 animate-pulse"></i>
+                </div>
+                <div>
+                  <div id="bible-audio-now-playing" class="text-xs font-black text-white line-clamp-1">🔊 Audio Narration Active</div>
+                  <div class="text-[10px] text-purple-200/80 font-mono">Verse-by-Verse Speech Synthesis</div>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-2">
+                <button onclick="skipAudioVerse(-1)" class="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white cursor-pointer transition-all" title="Previous Verse">
+                  <i data-lucide="skip-back" class="w-3.5 h-3.5"></i>
+                </button>
+
+                <button id="bible-audio-playpause-btn" onclick="toggleAudioPlayPause()" class="px-3.5 py-2 rounded-xl bg-white text-slate-950 font-black hover:bg-purple-50 cursor-pointer shadow transition-all flex items-center justify-center">
+                  <i data-lucide="pause" class="w-4 h-4"></i>
+                </button>
+
+                <button onclick="skipAudioVerse(1)" class="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white cursor-pointer transition-all" title="Next Verse">
+                  <i data-lucide="skip-forward" class="w-3.5 h-3.5"></i>
+                </button>
+
+                <!-- Speed Selector -->
+                <select id="bible-audio-speed" onchange="changeAudioSpeed(this.value)" class="text-[11px] font-bold bg-white/10 text-white border border-white/20 rounded-xl px-2 py-1.5 cursor-pointer">
+                  <option value="0.75" class="text-slate-900">0.75x</option>
+                  <option value="1.0" selected class="text-slate-900">1.0x</option>
+                  <option value="1.25" class="text-slate-900">1.25x</option>
+                  <option value="1.5" class="text-slate-900">1.5x</option>
+                </select>
+
+                <button onclick="stopSpeech()" class="p-2 rounded-xl bg-rose-500/30 hover:bg-rose-500/50 text-rose-200 cursor-pointer transition-all ml-1" title="Stop Audio">
+                  <i data-lucide="square" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Chapter Header Banner -->
+            <div id="bible-chapter-header-banner" class="pb-3 border-b border-slate-100 dark:border-zinc-800"></div>
+
+            <!-- Scripture Verses Container -->
+            <div id="bible-verses-box" class="space-y-2 max-h-[620px] overflow-y-auto pr-2 divide-y divide-slate-100 dark:divide-zinc-850"></div>
+          </div>
+        </div>
+
+        <!-- 2. SUB-VIEW: STUDY NOTES & JOURNAL -->
+        <div id="bible-subview-notes" class="hidden space-y-6">
+          <div class="glass-panel rounded-3xl p-5 sm:p-8 space-y-6">
+            <!-- Search & Category Filters -->
+            <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+              <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                <button data-cat="all" onclick="filterStudyNotesCategory('all')" class="study-notes-filter-pill px-3 py-1.5 rounded-xl text-xs font-black bg-blue-600 text-white shadow-xs transition-all cursor-pointer">All Notes</button>
+                <button data-cat="Bible Study" onclick="filterStudyNotesCategory('Bible Study')" class="study-notes-filter-pill px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer">Bible Study</button>
+                <button data-cat="Sermon Notes" onclick="filterStudyNotesCategory('Sermon Notes')" class="study-notes-filter-pill px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer">Sermon Notes</button>
+                <button data-cat="Prophetic Word" onclick="filterStudyNotesCategory('Prophetic Word')" class="study-notes-filter-pill px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer">Prophetic Word</button>
+                <button data-cat="Personal Reflection" onclick="filterStudyNotesCategory('Personal Reflection')" class="study-notes-filter-pill px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer">Personal Reflection</button>
+                <button data-cat="Cell Group" onclick="filterStudyNotesCategory('Cell Group')" class="study-notes-filter-pill px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer">Cell Group</button>
+              </div>
+
+              <div class="relative w-full md:w-64">
+                <input type="text" id="study-notes-search" oninput="filterStudyNotesUI()" placeholder="Search study notes..." class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl pl-8 pr-3 py-2.5" />
+                <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-3"></i>
+              </div>
+            </div>
+
+            <!-- Notes Grid -->
+            <div id="study-notes-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"></div>
+          </div>
         </div>
       </section>
 
@@ -1205,16 +1326,33 @@
               </div>
             </div>
 
-            <!-- Referral Code Card -->
-            <div class="p-4 rounded-2xl bg-gradient-to-br from-amber-500/10 to-yellow-500/10 border border-amber-300/40 dark:border-amber-700/40 text-center sm:text-right space-y-2 shrink-0">
-              <span class="text-[10px] font-black uppercase text-amber-700 dark:text-amber-300 block">Your Referral Code</span>
-              <div class="flex items-center gap-2 justify-center sm:justify-end">
-                <span id="profile-referral-code" class="text-lg font-black font-mono text-slate-950 dark:text-amber-300 tracking-wider">HC-777</span>
-                <button onclick="window.copyReferralCode()" class="p-2 rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-950 text-xs font-bold transition-all cursor-pointer" title="Copy Referral Code">
+            <!-- Fellowship Referral Link Card -->
+            <div class="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-amber-500/10 via-yellow-500/10 to-amber-600/5 border border-amber-300/50 dark:border-amber-700/50 text-left space-y-2.5 max-w-md w-full sm:w-auto shrink-0 shadow-xs">
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-[10px] font-black uppercase text-amber-700 dark:text-amber-300 tracking-wider flex items-center gap-1">
+                  👑 Fellowship Referral Link
+                </span>
+                <span class="text-[10px] font-black font-mono px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-800 dark:text-amber-300" id="profile-referral-code">HC-777</span>
+              </div>
+              
+              <div class="flex items-center gap-1.5">
+                <input type="text" readonly id="profile-referral-link-input" value="https://homecell.app/?r=HC-777" class="w-full text-xs font-mono font-bold bg-white/90 dark:bg-zinc-900/90 border border-amber-200 dark:border-amber-800/60 rounded-xl px-3 py-2 text-slate-800 dark:text-zinc-200 select-all min-w-[190px]" />
+                <button onclick="window.copyReferralLink()" class="px-3 py-2 rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-950 text-xs font-bold transition-all cursor-pointer flex items-center gap-1 shrink-0 shadow-xs active:scale-95" title="Copy Full Referral Link">
                   <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                  <span class="hidden sm:inline">Copy</span>
+                </button>
+                <button onclick="window.shareReferralNative()" class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300 text-xs font-bold transition-all cursor-pointer shrink-0" title="Share Referral Link">
+                  <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
+                </button>
+                <button onclick="window.shareReferralWhatsApp()" class="p-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition-all cursor-pointer shrink-0" title="Share via WhatsApp">
+                  💬
                 </button>
               </div>
-              <p class="text-[10px] text-slate-500 dark:text-zinc-400">Share with friends to earn <strong class="text-amber-600 dark:text-amber-400">+50 KC</strong> each!</p>
+
+              <div class="flex items-center justify-between text-[10px] text-slate-500 dark:text-zinc-400 pt-0.5">
+                <span>🎁 When opened: <strong class="text-emerald-600 dark:text-emerald-400">You & friend get +50 KC</strong></span>
+                <span>🤝 Friend joins: <strong class="text-amber-600 dark:text-amber-400">+100 KC</strong></span>
+              </div>
             </div>
           </div>
 
@@ -2225,6 +2363,117 @@
             </button>
           </div>
         </form>
+      </div>
+    </div>
+
+
+    <!-- HOLY SCRIPTURE STUDY NOTE & JOURNAL MODAL -->
+    <div id="study-note-modal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+      <div class="glass-panel rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 sm:p-8 space-y-5 shadow-2xl tab-animate-in relative">
+        <button onclick="closeStudyNoteModal()" class="absolute top-5 right-5 text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 p-2 rounded-full bg-slate-100 dark:bg-zinc-800 text-xs font-black cursor-pointer">✕</button>
+
+        <div class="space-y-1">
+          <div class="flex items-center gap-2">
+            <span class="px-3 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 font-mono text-[10px] font-black uppercase">
+              📝 Holy Scripture Journal
+            </span>
+            <span class="text-xs font-bold text-emerald-500">+5 Kingdom Coins</span>
+          </div>
+          <h3 class="text-xl font-black font-display text-slate-900 dark:text-zinc-100">Study Note & Reflection</h3>
+          <p class="text-xs text-slate-400">Capture what the Holy Spirit is ministering to your spirit.</p>
+        </div>
+
+        <form id="study-note-form" onsubmit="handleStudyNoteSubmit(event)" class="space-y-4">
+          <input type="hidden" id="note-modal-id" value="" />
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">Note Title *</label>
+            <input type="text" id="note-modal-title" required placeholder="e.g. Walking by Faith in Hard Times" class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl p-3 text-slate-900 dark:text-zinc-100 font-medium" />
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">Scripture Reference</label>
+              <input type="text" id="note-modal-scripture-ref" placeholder="e.g. Hebrews 11:1, John 3:16" class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl p-3 text-slate-900 dark:text-zinc-100 font-mono" />
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">Category</label>
+              <select id="note-modal-category" class="w-full text-xs font-bold bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl p-3 text-slate-800 dark:text-zinc-200 cursor-pointer">
+                <option value="Bible Study">Bible Study</option>
+                <option value="Sermon Notes">Sermon Notes</option>
+                <option value="Prophetic Word">Prophetic Word</option>
+                <option value="Personal Reflection">Personal Reflection</option>
+                <option value="Cell Group">Cell Group</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">Color Theme Accent</label>
+            <select id="note-modal-color" class="w-full text-xs font-bold bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl p-3 text-slate-800 dark:text-zinc-200 cursor-pointer">
+              <option value="amber">Amber (Golden Revelation)</option>
+              <option value="emerald">Emerald (Living Hope)</option>
+              <option value="sky">Sky (Heavenly Peace)</option>
+              <option value="purple">Purple (Royal Dominion)</option>
+              <option value="rose">Rose (Agape Love)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">Note & Spiritual Takeaways *</label>
+            <textarea id="note-modal-body" rows="5" required placeholder="Write down key revelations, rhema words, application points, or personal prayers..." class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl p-3 text-slate-900 dark:text-zinc-100 leading-relaxed"></textarea>
+          </div>
+
+          <div class="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-zinc-800">
+            <button type="button" onclick="closeStudyNoteModal()" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-600 dark:text-zinc-300 text-xs font-bold cursor-pointer">
+              Cancel
+            </button>
+            <button type="submit" class="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-500 hover:brightness-105 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl shadow cursor-pointer transition-all">
+              Save Study Note 💾
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- REFERRAL QR CODE & SHARE MODAL -->
+    <div id="referral-qrcode-modal" onclick="if(event.target === this) window.closeReferralQRCodeModal?.()" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+      <div class="glass-panel w-full max-w-sm rounded-3xl p-6 sm:p-7 space-y-5 text-center relative border border-slate-200 dark:border-zinc-800 shadow-2xl animate-fade-in">
+        <button onclick="window.closeReferralQRCodeModal?.()" class="absolute top-4 right-4 p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-500 cursor-pointer">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+
+        <div class="space-y-1 pt-1">
+          <span class="px-3 py-1 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 font-mono text-[10px] font-black uppercase">
+            👑 Scan & Fellowship
+          </span>
+          <h3 class="text-xl font-black font-display text-slate-900 dark:text-zinc-100">Fellowship QR Code</h3>
+          <p class="text-xs text-slate-500 dark:text-zinc-400">Scan to open referral link and earn +50 KC immediately!</p>
+        </div>
+
+        <div class="p-4 bg-white rounded-2xl border border-slate-200 inline-block shadow-inner mx-auto">
+          <div id="referral-qr-code-img" class="w-48 h-48 flex items-center justify-center">
+            <!-- QR code dynamically injected -->
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <div class="flex items-center justify-center gap-2">
+            <span class="text-xs text-slate-400 font-bold uppercase">Referral Code:</span>
+            <span id="modal-qr-ref-code" class="text-sm font-black font-mono text-amber-600 dark:text-amber-400">HOMECELL</span>
+          </div>
+          <p id="modal-qr-ref-url" class="text-[10px] font-mono text-slate-400 truncate max-w-[280px] mx-auto"></p>
+        </div>
+
+        <div class="flex items-center gap-2 pt-1">
+          <button onclick="window.copyReferralLink()" class="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold uppercase cursor-pointer flex items-center justify-center gap-1.5 shadow-xs">
+            <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copy Link
+          </button>
+          <button onclick="window.shareReferralWhatsApp()" class="py-2.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition-all cursor-pointer">
+            💬 WhatsApp
+          </button>
+        </div>
       </div>
     </div>
 

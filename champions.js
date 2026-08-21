@@ -80,7 +80,17 @@ function initChampionsModule() {
 
 window.initChampionsHub = initChampionsModule;
 
-function checkUrlReferralCode() {
+// Global Referral Link Helper
+window.getReferralLink = function(code) {
+  const user = window.auth?.currentUser;
+  const userCode = code || (currentChampionUserData && currentChampionUserData.referralCode) || (window.currentUserProfile && window.currentUserProfile.referralCode) || (user ? 'HC-' + user.uid.substring(0, 6).toUpperCase() : 'HOMECELL');
+  const cleanCode = (userCode || 'HOMECELL').trim().toUpperCase();
+  const origin = window.location.origin;
+  const path = window.location.pathname.replace(/\/$/, '');
+  return `${origin}${path}/?r=${encodeURIComponent(cleanCode)}`;
+};
+
+async function checkUrlReferralCode() {
   try {
     const urlParams = new URLSearchParams(window.location.search);
     const refCode = urlParams.get('r') || urlParams.get('ref');
@@ -88,10 +98,11 @@ function checkUrlReferralCode() {
       const cleanCode = refCode.trim().toUpperCase();
       localStorage.setItem('homecell_referrer_code', cleanCode);
 
-      const trackKey = `ref_click_tracked_${cleanCode}`;
+      // Check if opening reward has already been granted in this session
+      const trackKey = `ref_opened_awarded_${cleanCode}`;
       if (!sessionStorage.getItem(trackKey)) {
         sessionStorage.setItem(trackKey, 'true');
-        recordReferralLinkClick(cleanCode);
+        await awardReferralLinkOpenBonus(cleanCode);
       }
     }
   } catch (e) {
@@ -100,16 +111,117 @@ function checkUrlReferralCode() {
 }
 window.checkUrlReferralCode = checkUrlReferralCode;
 
-async function recordReferralLinkClick(code) {
-  try {
-    if (!window.db) return;
-    await window.db.collection('referral_clicks').add({
-      referrerCode: code,
-      session: sessionStorage.getItem(`ref_click_session`) || Math.random().toString(36).substring(2),
-      createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
+// Auto-trigger referral check immediately on load and on DOM ready
+if (typeof document !== 'undefined') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      setTimeout(() => checkUrlReferralCode(), 300);
     });
-  } catch (e) {}
+  } else {
+    setTimeout(() => checkUrlReferralCode(), 300);
+  }
 }
+
+async function awardReferralLinkOpenBonus(code) {
+  try {
+    const user = window.auth?.currentUser;
+    const cleanCode = (code || '').trim().toUpperCase();
+    if (!cleanCode) return;
+
+    let referrerDoc = null;
+    let referrerUid = null;
+
+    // 1. Locate the Referrer (Owner of the referral code)
+    if (window.db) {
+      try {
+        const snap = await window.db.collection('users').where('referralCode', '==', cleanCode).limit(1).get();
+        if (!snap.empty) {
+          referrerDoc = snap.docs[0];
+          referrerUid = referrerDoc.id;
+        }
+      } catch (findErr) {
+        console.warn("Could not query referrer by code:", findErr);
+      }
+    }
+
+    // Check if the current user is opening their own link
+    const isOwnLink = user && referrerUid && user.uid === referrerUid;
+    if (isOwnLink) {
+      window.showToast?.(`ℹ️ This is your personal fellowship link! When other brethren open it, you earn +50 KC every time!`, 'info');
+      return;
+    }
+
+    // 2. Record Click / Open Event in Firestore
+    if (window.db) {
+      try {
+        await window.db.collection('referral_clicks').add({
+          referrerCode: cleanCode,
+          referrerUid: referrerUid || '',
+          visitorUid: user ? user.uid : 'guest',
+          visitorEmail: user ? user.email : '',
+          session: sessionStorage.getItem(`ref_click_session`) || Math.random().toString(36).substring(2),
+          status: 'opened',
+          rewardAwarded: true,
+          kcAwarded: 50,
+          claimed: false,
+          createdAt: window.firebase?.firestore?.FieldValue ? window.firebase.firestore.FieldValue.serverTimestamp() : new Date()
+        });
+
+        // If referrer exists, create a notification for them
+        if (referrerUid) {
+          await window.db.collection('notifications').add({
+            recipientUid: referrerUid,
+            title: '🎉 Fellowship Link Opened!',
+            message: `A believer just opened your fellowship invitation link (${cleanCode})! You received +50 Kingdom Coins!`,
+            type: 'referral_open',
+            kc: 50,
+            read: false,
+            createdAt: window.firebase?.firestore?.FieldValue ? window.firebase.firestore.FieldValue.serverTimestamp() : new Date()
+          }).catch(() => {});
+        }
+      } catch (e) {
+        console.warn("Referral click log error:", e);
+      }
+    }
+
+    // 3. Award the visitor opening the link with discovery Kingdom Coins
+    if (user && window.db) {
+      const userRef = window.db.collection('users').doc(user.uid);
+      const userDoc = await userRef.get();
+      if (userDoc.exists) {
+        const userData = userDoc.data();
+        const currentKc = userData.kingdomCoins !== undefined ? userData.kingdomCoins : 100;
+        const currentTotal = userData.totalKcEarned || currentKc;
+        const newBalance = currentKc + 50;
+
+        await userRef.update({
+          kingdomCoins: newBalance,
+          totalKcEarned: currentTotal + 50
+        });
+
+        window.recordKcTransaction?.('credit', 50, 'Fellowship Link Discovery Bonus', `Opened invitation link from ${cleanCode}`);
+        window.soundEngine?.playCoins?.();
+        window.showToast?.(`🎉 Fellowship Link Opened! You received +50 Kingdom Coins from ${cleanCode}'s link! (Referrer also rewarded +50 KC!)`, 'success');
+      }
+    } else {
+      // Guest Believer opening the link: give instant local bonus & notify
+      window.currentKcBalance = (window.currentKcBalance || 100) + 50;
+      
+      const headerKcEl = document.getElementById('header-kc-count');
+      if (headerKcEl) headerKcEl.innerText = `${window.currentKcBalance.toLocaleString()} KC`;
+      const sidebarKcEl = document.getElementById('sidebar-kc-count');
+      if (sidebarKcEl) sidebarKcEl.innerText = `${window.currentKcBalance.toLocaleString()} KC`;
+      const moreSheetKcEl = document.getElementById('more-sheet-kc-count');
+      if (moreSheetKcEl) moreSheetKcEl.innerText = `${window.currentKcBalance.toLocaleString()} KC`;
+
+      window.soundEngine?.playCoins?.();
+      window.showToast?.(`🎉 Welcome! You opened a fellowship referral link and earned +50 Kingdom Coins! (Referrer also earned +50 KC!) Sign in or register to keep and multiply your rewards!`, 'success');
+    }
+  } catch (err) {
+    console.warn("Award referral open bonus error:", err);
+  }
+}
+window.awardReferralLinkOpenBonus = awardReferralLinkOpenBonus;
 
 async function processReferralForNewUser(userUid, userEmail, userName) {
   const code = localStorage.getItem('homecell_referrer_code');
@@ -145,22 +257,41 @@ async function processReferralForNewUser(userUid, userEmail, userName) {
       referredEmail: userEmail || '',
       referredName: userName || 'New Believer',
       status: 'active',
-      rewardClaimed: false,
+      rewardClaimed: true,
       kcAwarded: 100,
-      createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
+      createdAt: window.firebase?.firestore?.FieldValue ? window.firebase.firestore.FieldValue.serverTimestamp() : new Date()
     }, { merge: true });
 
+    // Credit New User
     const currentKc = userDoc.exists ? (userDoc.data().kingdomCoins || 0) : 0;
+    const currentTotalKc = userDoc.exists ? (userDoc.data().totalKcEarned || currentKc) : 0;
     await userDocRef.set({
       referredBy: cleanCode,
       referredByUid: referrerDoc.id,
       kingdomCoins: currentKc + 100,
-      totalKcEarned: currentKc + 100
+      totalKcEarned: currentTotalKc + 100
     }, { merge: true });
 
-    window.recordKcTransaction?.('credit', 100, 'Referral Welcome Reward', `Joined using referral code ${cleanCode}`);
+    // Credit Referrer
+    try {
+      const refData = referrerDoc.data();
+      const refKc = refData.kingdomCoins !== undefined ? refData.kingdomCoins : 100;
+      const refTotalKc = refData.totalKcEarned || refKc;
+      const refCount = (refData.totalReferrals || 0) + 1;
+
+      await window.db.collection('users').doc(referrerDoc.id).update({
+        kingdomCoins: refKc + 100,
+        totalKcEarned: refTotalKc + 100,
+        totalReferrals: refCount
+      });
+    } catch (refUpdateErr) {
+      console.warn("Could not directly update referrer doc, will batch on next login:", refUpdateErr);
+    }
+
+    window.recordKcTransaction?.('credit', 100, 'Referral Welcome Reward', `Joined fellowship through referral link ${cleanCode}`);
     localStorage.removeItem('homecell_referrer_code');
-    window.showToast?.(`🎉 Referral link connected! You received +100 Kingdom Coins welcome reward!`, 'success');
+    window.soundEngine?.playLevelUp?.();
+    window.showToast?.(`🎉 Fellowship link connected! You received +100 Kingdom Coins welcome reward!`, 'success');
   } catch (err) {
     console.warn("Process referral error:", err);
   }
@@ -190,8 +321,9 @@ function syncChampionsUserData(uid) {
       data.referralCode = userReferralCode;
     }
 
-    // Check unclaimed referral rewards
+    // Check unclaimed referral join & link open rewards
     try {
+      // 1. Unclaimed Member Joins (+100 KC each)
       const refSnap = await window.db.collection('referrals').where('referrerUid', '==', uid).get();
       let pendingKc = 0;
       let totalRefs = refSnap.size;
@@ -205,24 +337,98 @@ function syncChampionsUserData(uid) {
         }
       });
 
-      if (pendingKc > 0) {
-        const updatedKc = (data.kingdomCoins || 0) + pendingKc;
-        const updatedTotalKc = (data.totalKcEarned || data.kingdomCoins || 0) + pendingKc;
+      // 2. Unclaimed Link Opens (+50 KC each for the owner)
+      let pendingClickKc = 0;
+      let clickDocsToClaim = [];
+      let totalClicksCount = 0;
+      try {
+        const clickSnap = await window.db.collection('referral_clicks')
+          .where('referrerUid', '==', uid)
+          .get();
+        totalClicksCount = clickSnap.size;
+        clickSnap.forEach(cDoc => {
+          const cData = cDoc.data();
+          if (cData.claimed === false) {
+            pendingClickKc += (cData.kcAwarded || 50);
+            clickDocsToClaim.push(cDoc.ref);
+          }
+        });
+      } catch (clickErr) {
+        console.warn("Click snap query error:", clickErr);
+      }
+
+      const totalNewKc = pendingKc + pendingClickKc;
+      if (totalNewKc > 0) {
+        const updatedKc = (data.kingdomCoins || 0) + totalNewKc;
+        const updatedTotalKc = (data.totalKcEarned || data.kingdomCoins || 0) + totalNewKc;
         await userRef.update({
           kingdomCoins: updatedKc,
           totalKcEarned: updatedTotalKc,
-          totalReferrals: totalRefs
+          totalReferrals: totalRefs,
+          totalLinkClicks: totalClicksCount
         });
         for (const rRef of batchClaims) {
           await rRef.update({ rewardClaimed: true }).catch(() => {});
         }
-        window.recordKcTransaction?.('credit', pendingKc, 'Referral Fellowship Reward', `Earned from ${totalRefs} successful member referral(s)`);
-        window.showToast?.(`🎁 You received +${pendingKc} Kingdom Coins from referrals!`, 'success');
+        for (const cRef of clickDocsToClaim) {
+          await cRef.update({ claimed: true }).catch(() => {});
+        }
+        if (pendingClickKc > 0) {
+          window.recordKcTransaction?.('credit', pendingClickKc, 'Referral Link Open Bonus', `Earned from ${clickDocsToClaim.length} person(s) opening your fellowship link`);
+        }
+        if (pendingKc > 0) {
+          window.recordKcTransaction?.('credit', pendingKc, 'Referral Join Bonus', `Earned from ${batchClaims.length} new member(s) joining through your link`);
+        }
+        window.soundEngine?.playCoins?.();
+        window.showToast?.(`🎁 You received +${totalNewKc} Kingdom Coins from your fellowship referral link!`, 'success');
         data.kingdomCoins = updatedKc;
         data.totalReferrals = totalRefs;
+        data.totalLinkClicks = totalClicksCount;
         window.currentKcBalance = updatedKc;
       }
-    } catch (refCheckErr) {}
+    } catch (refCheckErr) {
+      console.warn("Referral sync error:", refCheckErr);
+    }
+
+    // Attach real-time listener for incoming referral link clicks so owner gets instant KC
+    if (window.db && !window._referralClicksListenerActive) {
+      window._referralClicksListenerActive = true;
+      try {
+        window.db.collection('referral_clicks')
+          .where('referrerUid', '==', uid)
+          .where('claimed', '==', false)
+          .onSnapshot(async snap => {
+            if (!snap || snap.empty) return;
+            let realTimeKc = 0;
+            let realTimeRefs = [];
+            snap.forEach(doc => {
+              realTimeKc += (doc.data().kcAwarded || 50);
+              realTimeRefs.push(doc.ref);
+            });
+            if (realTimeKc > 0) {
+              for (const ref of realTimeRefs) {
+                await ref.update({ claimed: true }).catch(() => {});
+              }
+              const currentDoc = await userRef.get();
+              if (currentDoc.exists) {
+                const curData = currentDoc.data();
+                const curKc = curData.kingdomCoins !== undefined ? curData.kingdomCoins : 100;
+                const newKc = curKc + realTimeKc;
+                const newTot = (curData.totalKcEarned || curKc) + realTimeKc;
+                const newClicks = (curData.totalLinkClicks || 0) + realTimeRefs.length;
+                await userRef.update({
+                  kingdomCoins: newKc,
+                  totalKcEarned: newTot,
+                  totalLinkClicks: newClicks
+                });
+                window.recordKcTransaction?.('credit', realTimeKc, 'Referral Link Open Bonus', `Someone just opened your fellowship referral link!`);
+                window.soundEngine?.playCoins?.();
+                window.showToast?.(`🎉 Someone just opened your fellowship referral link! You earned +${realTimeKc} Kingdom Coins!`, 'success');
+              }
+            }
+          }, () => {});
+      } catch (listenerErr) {}
+    }
 
     renderChampionOverviewCards(data);
     renderStreakTracker(data);
@@ -775,59 +981,123 @@ function renderChampionLevelsPath(userKc = 0) {
 }
 
 // ----------------------------------------------------
-// REAL REFERRAL HUB
+// REAL REFERRAL HUB & FULL LINK SHARING ENGINE
 // ----------------------------------------------------
 function renderReferralHub(userData) {
   const container = document.getElementById('kingdom-referral-container');
   if (!container) return;
 
-  const code = userData?.referralCode || 'HOMECELL';
-  const url = `${window.location.origin}${window.location.pathname}?r=${code}`;
-  const totalRefs = userData?.totalReferrals || 0;
-  const earnedKc = totalRefs * 100;
+  const code = userData?.referralCode || (window.currentUserProfile?.referralCode) || 'HOMECELL';
+  const url = window.getReferralLink ? window.getReferralLink(code) : `${window.location.origin}${window.location.pathname}?r=${code}`;
+  const totalRefs = userData?.totalReferrals || (window.currentUserProfile?.totalReferrals) || 0;
+  const totalClicks = userData?.totalLinkClicks || 0;
+  const earnedKc = (totalRefs * 100) + (totalClicks * 50);
 
   container.innerHTML = `
     <div class="glass-panel rounded-3xl p-6 sm:p-8 space-y-6">
-      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <span class="px-3 py-1 rounded-full bg-blue-100 text-blue-900 dark:bg-blue-950/60 dark:text-blue-300 text-xs font-black font-mono">
-            👑 KINGDOM REFERRAL PROGRAM
-          </span>
-          <h3 class="text-2xl sm:text-3xl font-black font-display text-slate-900 dark:text-zinc-100 mt-1">
-            Invite Brethren • Earn +100 KC Each
+      <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5">
+        <div class="space-y-1">
+          <div class="flex items-center gap-2">
+            <span class="px-3 py-1 rounded-full bg-blue-100 text-blue-900 dark:bg-blue-950/60 dark:text-blue-300 text-xs font-black font-mono">
+              👑 KINGDOM REFERRAL PROGRAM
+            </span>
+            <span class="px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 font-mono text-[10px] font-black">
+              Code: ${code}
+            </span>
+          </div>
+          <h3 class="text-2xl sm:text-3xl font-black font-display text-slate-900 dark:text-zinc-100">
+            Invite Brethren • Earn Kingdom Coins
           </h3>
-          <p class="text-xs text-slate-500 dark:text-zinc-400">Share your custom fellowship link. When a new believer joins, both of you receive +100 Kingdom Coins!</p>
+          <p class="text-xs text-slate-500 dark:text-zinc-400 max-w-xl">
+            Share your fellowship link. Whenever anyone opens your link, <strong>YOU (the owner) get +50 KC</strong> instantly! When they register, you both receive <strong>+100 Kingdom Coins</strong>!
+          </p>
         </div>
 
-        <div class="flex items-center gap-3">
-          <div class="p-3 bg-slate-100 dark:bg-zinc-800 rounded-2xl text-center min-w-[90px]">
-            <span class="text-lg font-black text-slate-900 dark:text-zinc-100 font-mono block">${totalRefs}</span>
-            <span class="text-[10px] text-slate-400 uppercase font-bold">Believers</span>
+        <div class="flex items-center gap-2.5 w-full sm:w-auto flex-wrap">
+          <div class="p-3 bg-slate-100 dark:bg-zinc-800 rounded-2xl text-center flex-1 sm:min-w-[90px] border border-slate-200/60 dark:border-zinc-700/60">
+            <span class="text-lg font-black text-slate-900 dark:text-zinc-100 font-mono block">${totalClicks}</span>
+            <span class="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Link Opens (+50 KC)</span>
           </div>
-          <div class="p-3 bg-amber-50 dark:bg-amber-950/40 rounded-2xl text-center min-w-[90px] border border-amber-200 dark:border-amber-900/60">
+          <div class="p-3 bg-blue-50 dark:bg-blue-950/40 rounded-2xl text-center flex-1 sm:min-w-[90px] border border-blue-200 dark:border-blue-900/60">
+            <span class="text-lg font-black text-blue-600 dark:text-blue-400 font-mono block">${totalRefs}</span>
+            <span class="text-[9px] text-blue-700 dark:text-blue-300 uppercase font-bold tracking-wider">Joined (+100 KC)</span>
+          </div>
+          <div class="p-3 bg-amber-50 dark:bg-amber-950/40 rounded-2xl text-center flex-1 sm:min-w-[95px] border border-amber-200 dark:border-amber-900/60 shadow-xs">
             <span class="text-lg font-black text-amber-600 dark:text-amber-400 font-mono block">+${earnedKc}</span>
-            <span class="text-[10px] text-amber-700 dark:text-amber-300 uppercase font-bold">KC Earned</span>
+            <span class="text-[9px] text-amber-700 dark:text-amber-300 uppercase font-bold tracking-wider">Total KC Earned</span>
           </div>
         </div>
       </div>
 
       <!-- Share Link & Controls -->
-      <div class="p-4 bg-slate-50 dark:bg-zinc-800/60 rounded-2xl border border-slate-200 dark:border-zinc-700 flex flex-col sm:flex-row items-center gap-3">
-        <div class="w-full flex-1 min-w-0">
-          <label class="block text-[10px] font-black uppercase text-slate-400 mb-1">Your Personal Invitation Link</label>
-          <input type="text" readonly id="champ-ref-link-input" value="${url}" class="w-full text-xs font-mono font-bold bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-xl px-3 py-2 text-blue-600 dark:text-blue-400 select-all" />
+      <div class="p-5 bg-slate-50 dark:bg-zinc-850/80 rounded-2xl border border-slate-200 dark:border-zinc-700/80 space-y-4">
+        <div class="space-y-1.5">
+          <div class="flex items-center justify-between">
+            <label class="block text-[11px] font-black uppercase text-slate-700 dark:text-zinc-300 tracking-wider">
+              🔗 Your Whole Referral Link
+            </label>
+            <span class="text-[10px] font-bold text-amber-600 dark:text-amber-400">Earns +50 KC for you on every open!</span>
+          </div>
+          
+          <div class="flex flex-col sm:flex-row items-center gap-2">
+            <input type="text" readonly id="champ-ref-link-input" value="${url}" class="w-full text-xs font-mono font-bold bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-xl px-4 py-3 text-blue-600 dark:text-blue-400 select-all shadow-xs" />
+            
+            <div class="flex items-center gap-2 w-full sm:w-auto shrink-0">
+              <button onclick="window.copyReferralLink()" class="flex-1 sm:flex-initial px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase rounded-xl cursor-pointer transition-all shadow-md flex items-center justify-center gap-2 active:scale-95">
+                <i data-lucide="copy" class="w-4 h-4"></i> Copy Link
+              </button>
+              <button onclick="window.shareReferralNative()" class="px-4 py-3 bg-slate-200 hover:bg-slate-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-800 dark:text-zinc-200 font-bold text-xs uppercase rounded-xl cursor-pointer transition-all flex items-center justify-center gap-1.5" title="Native Share">
+                <i data-lucide="share-2" class="w-4 h-4"></i> Share
+              </button>
+              <button onclick="window.showReferralQRCodeModal()" class="px-3.5 py-3 bg-slate-200 hover:bg-slate-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-800 dark:text-zinc-200 font-bold text-xs uppercase rounded-xl cursor-pointer transition-all" title="Show QR Code">
+                <i data-lucide="qr-code" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
         </div>
 
-        <div class="flex items-center gap-2 w-full sm:w-auto shrink-0 pt-2 sm:pt-4">
-          <button onclick="copyReferralLink()" class="flex-1 sm:flex-initial px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase rounded-xl cursor-pointer transition-all shadow-xs flex items-center justify-center gap-1.5">
-            <i data-lucide="copy" class="w-4 h-4"></i> Copy Link
-          </button>
-          <button onclick="shareReferralNative()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200 font-bold text-xs uppercase rounded-xl cursor-pointer transition-all flex items-center justify-center gap-1.5">
-            <i data-lucide="share-2" class="w-4 h-4"></i> Share
-          </button>
-          <button onclick="showReferralQRCodeModal()" class="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200 font-bold text-xs uppercase rounded-xl cursor-pointer transition-all" title="Show QR Code">
-            <i data-lucide="qr-code" class="w-4 h-4"></i>
-          </button>
+        <!-- Quick 1-Click Social Channels -->
+        <div class="pt-3 border-t border-slate-200/60 dark:border-zinc-800 flex flex-wrap items-center justify-between gap-3">
+          <span class="text-xs font-bold text-slate-500 dark:text-zinc-400">Quick Share via:</span>
+          
+          <div class="flex flex-wrap items-center gap-2">
+            <button onclick="window.shareReferralWhatsApp()" class="px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-xs">
+              <span>💬 WhatsApp</span>
+            </button>
+            <button onclick="window.shareReferralTelegram()" class="px-3.5 py-2 rounded-xl bg-sky-500 hover:bg-sky-600 text-white text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-xs">
+              <span>✈️ Telegram</span>
+            </button>
+            <button onclick="window.shareReferralTwitter()" class="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-black text-white text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-xs">
+              <span>𝕏 / Twitter</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- How Fellowship Referral Works -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+        <div class="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-850/60 border border-slate-200/60 dark:border-zinc-800 space-y-1.5">
+          <div class="w-8 h-8 rounded-xl bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center font-black text-sm">
+            1
+          </div>
+          <h4 class="font-bold text-xs text-slate-900 dark:text-zinc-100">Share Your Link</h4>
+          <p class="text-[11px] text-slate-500 dark:text-zinc-400">Share your whole custom link with church members, family, or cell group friends.</p>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-850/60 border border-slate-200/60 dark:border-zinc-800 space-y-1.5">
+          <div class="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-black text-sm">
+            2
+          </div>
+          <h4 class="font-bold text-xs text-slate-900 dark:text-zinc-100">When Opened: You Get +50 KC</h4>
+          <p class="text-[11px] text-slate-500 dark:text-zinc-400">Every time someone opens your link, YOU (the owner) earn +50 Kingdom Coins immediately, and the visitor also receives +50 KC!</p>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-850/60 border border-slate-200/60 dark:border-zinc-800 space-y-1.5">
+          <div class="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center font-black text-sm">
+            3
+          </div>
+          <h4 class="font-bold text-xs text-slate-900 dark:text-zinc-100">When They Join: Both Get +100 KC</h4>
+          <p class="text-[11px] text-slate-500 dark:text-zinc-400">When they sign in or register, both of you are rewarded with +100 Kingdom Coins and rank progress!</p>
         </div>
       </div>
     </div>
@@ -836,54 +1106,93 @@ function renderReferralHub(userData) {
   if (window.lucide) window.lucide.createIcons();
 }
 
-function copyReferralLink() {
-  const linkInput = document.getElementById('champ-ref-link-input');
-  const code = currentChampionUserData?.referralCode || 'HOMECELL';
-  const url = `${window.location.origin}${window.location.pathname}?r=${code}`;
-  const text = linkInput && linkInput.value ? linkInput.value : url;
+window.copyReferralLink = function(explicitCode) {
+  const code = explicitCode || currentChampionUserData?.referralCode || (window.currentUserProfile?.referralCode) || 'HOMECELL';
+  const url = window.getReferralLink ? window.getReferralLink(code) : `${window.location.origin}${window.location.pathname}?r=${code}`;
 
-  navigator.clipboard.writeText(text).then(() => {
-    window.showToast?.("📋 Referral link copied to clipboard!", "success");
-  }).catch(() => {
-    prompt("Copy Referral Link:", text);
-  });
-}
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(() => {
+      window.showToast?.("📋 Referral link copied to clipboard! Send to friends to give & receive Kingdom Coins!", "success");
+    }).catch(() => {
+      fallbackCopy(url);
+    });
+  } else {
+    fallbackCopy(url);
+  }
+};
 
-function shareReferralNative() {
-  const code = currentChampionUserData?.referralCode || 'HOMECELL';
-  const url = `${window.location.origin}${window.location.pathname}?r=${code}`;
-  const text = `Join me on Home.cell! Experience daily scripture devotionals, trivia quizzes, and fellowship with believers. Use my referral code: ${code}`;
+window.copyReferralCode = function() {
+  window.copyReferralLink();
+};
+
+window.shareReferralNative = function(explicitCode) {
+  const code = explicitCode || currentChampionUserData?.referralCode || (window.currentUserProfile?.referralCode) || 'HOMECELL';
+  const url = window.getReferralLink ? window.getReferralLink(code) : `${window.location.origin}${window.location.pathname}?r=${code}`;
+  const text = `✝ Join me on Home.cell! Experience daily scripture devotionals, trivia quizzes, and fellowship with believers. Open my referral link to get your Kingdom Coins welcome reward: ${url}`;
 
   if (navigator.share) {
     navigator.share({ title: 'Join Home.cell Fellowship', text: text, url: url }).catch(() => {});
   } else {
-    copyReferralLink();
+    window.copyReferralLink(code);
   }
-}
+};
 
-function showReferralQRCodeModal() {
-  const code = currentChampionUserData?.referralCode || 'HOMECELL';
-  const url = `${window.location.origin}${window.location.pathname}?r=${code}`;
+window.shareReferralWhatsApp = function(explicitCode) {
+  const code = explicitCode || currentChampionUserData?.referralCode || (window.currentUserProfile?.referralCode) || 'HOMECELL';
+  const url = window.getReferralLink ? window.getReferralLink(code) : `${window.location.origin}${window.location.pathname}?r=${code}`;
+  const text = `✝ Join me on Home.cell! Experience daily scripture devotionals, live fellowship, and Bible study. Open my link to receive your Kingdom Coins welcome bonus: ${url}`;
+  window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
+};
+
+window.shareReferralTelegram = function(explicitCode) {
+  const code = explicitCode || currentChampionUserData?.referralCode || (window.currentUserProfile?.referralCode) || 'HOMECELL';
+  const url = window.getReferralLink ? window.getReferralLink(code) : `${window.location.origin}${window.location.pathname}?r=${code}`;
+  const text = `✝ Join me on Home.cell! Experience daily scripture devotionals, live fellowship, and spiritual growth. Open my link to get your Kingdom Coins welcome reward!`;
+  window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`, '_blank');
+};
+
+window.shareReferralTwitter = function(explicitCode) {
+  const code = explicitCode || currentChampionUserData?.referralCode || (window.currentUserProfile?.referralCode) || 'HOMECELL';
+  const url = window.getReferralLink ? window.getReferralLink(code) : `${window.location.origin}${window.location.pathname}?r=${code}`;
+  const text = `Join me on Home.cell! Daily scripture devotionals, live fellowship, and Christian study. Open my link to get your welcome reward:`;
+  window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, '_blank');
+};
+
+window.showReferralQRCodeModal = function(explicitCode) {
+  const code = explicitCode || currentChampionUserData?.referralCode || (window.currentUserProfile?.referralCode) || 'HOMECELL';
+  const url = window.getReferralLink ? window.getReferralLink(code) : `${window.location.origin}${window.location.pathname}?r=${code}`;
   const modal = document.getElementById('referral-qrcode-modal');
   const qrBox = document.getElementById('referral-qr-code-img');
   const codeText = document.getElementById('modal-qr-ref-code');
+  const linkText = document.getElementById('modal-qr-ref-url');
 
   if (codeText) codeText.innerText = code;
+  if (linkText) linkText.innerText = url;
   if (qrBox) {
-    qrBox.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(url)}" class="w-full h-full object-contain mx-auto" alt="Referral QR Code" />`;
+    qrBox.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}" class="w-full h-full object-contain mx-auto rounded-xl shadow-xs" alt="Referral QR Code" />`;
   }
   if (modal) {
     modal.classList.remove('hidden');
     modal.classList.add('flex');
   }
-}
+};
 
-function closeReferralQRCodeModal() {
+window.closeReferralQRCodeModal = function() {
   const modal = document.getElementById('referral-qrcode-modal');
   if (modal) {
     modal.classList.add('hidden');
     modal.classList.remove('flex');
   }
+};
+
+function fallbackCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  document.body.appendChild(ta);
+  ta.select();
+  document.execCommand('copy');
+  document.body.removeChild(ta);
+  window.showToast?.(`📋 Link copied to clipboard!`, "success");
 }
 
 // Sub-Tab Switcher for Champions Hub

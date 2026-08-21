@@ -17,6 +17,7 @@ window.syncProfileData = function() {
   const avatarEl = document.getElementById('profile-user-avatar');
   const joinedEl = document.getElementById('profile-user-joined');
   const refCodeEl = document.getElementById('profile-referral-code');
+  const refLinkInput = document.getElementById('profile-referral-link-input');
   const refCountEl = document.getElementById('profile-stat-referrals');
 
   const statKcEl = document.getElementById('profile-stat-kc');
@@ -34,6 +35,7 @@ window.syncProfileData = function() {
     if (statQuizWinsEl) statQuizWinsEl.innerText = "0";
     if (statLibraryCountEl) statLibraryCountEl.innerText = "0 Items";
     if (refCodeEl) refCodeEl.innerText = "SIGNIN";
+    if (refLinkInput) refLinkInput.value = `${window.location.origin}${window.location.pathname}?r=SIGNIN`;
     if (refCountEl) refCountEl.innerText = "0";
     renderProfileLibrary([]);
     return;
@@ -59,12 +61,16 @@ window.syncProfileData = function() {
     db.collection('users').doc(user.uid).get().then(doc => {
       if (doc.exists) {
         const data = doc.data();
+        const code = data.referralCode || user.uid.substring(0, 7).toUpperCase();
+        const fullLink = window.getReferralLink ? window.getReferralLink(code) : `${window.location.origin}${window.location.pathname}?r=${code}`;
+
         if (roleEl) roleEl.innerText = data.role || 'Member';
-        if (statKcEl) statKcEl.innerText = `${data.kingdomCoins || 0} KC`;
-        if (statStreakEl) statStreakEl.innerText = `${data.streakDays || 1} Days`;
+        if (statKcEl) statKcEl.innerText = `${(data.kingdomCoins || 0).toLocaleString()} KC`;
+        if (statStreakEl) statStreakEl.innerText = `${data.streak || data.streakDays || 1} Days`;
         if (statQuizWinsEl) statQuizWinsEl.innerText = `${data.quizWinsCount || 0}`;
-        if (refCodeEl) refCodeEl.innerText = data.referralCode || user.uid.substring(0, 7).toUpperCase();
-        if (refCountEl) refCountEl.innerText = `${data.referralsCount || 0}`;
+        if (refCodeEl) refCodeEl.innerText = code;
+        if (refLinkInput) refLinkInput.value = fullLink;
+        if (refCountEl) refCountEl.innerText = `${data.totalReferrals || data.referralsCount || 0}`;
 
         if (joinedEl && data.createdAt) {
           try {
@@ -181,18 +187,37 @@ window.saveProfileName = async function(event) {
 };
 
 window.copyReferralCode = function() {
+  const linkInput = document.getElementById('profile-referral-link-input');
   const codeEl = document.getElementById('profile-referral-code');
-  if (!codeEl) return;
-  const code = codeEl.innerText.trim();
+  const code = codeEl ? codeEl.innerText.trim() : '';
+  const url = linkInput && linkInput.value ? linkInput.value : (window.getReferralLink ? window.getReferralLink(code) : `${window.location.origin}${window.location.pathname}?r=${code}`);
 
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(code).then(() => {
-      window.showToast?.(`📋 Referral Code "${code}" copied to clipboard! Share with friends for +50 KC!`, "success");
+  if (window.copyReferralLink) {
+    window.copyReferralLink(code);
+  } else if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(() => {
+      window.showToast?.(`📋 Whole Referral Link copied to clipboard! Share with friends to give & receive Kingdom Coins!`, "success");
     }).catch(() => {
-      fallbackCopy(code);
+      fallbackCopy(url);
     });
   } else {
-    fallbackCopy(code);
+    fallbackCopy(url);
+  }
+};
+
+window.copyReferralLink = function(explicitCode) {
+  const codeEl = document.getElementById('profile-referral-code');
+  const code = explicitCode || (codeEl ? codeEl.innerText.trim() : '') || (window.currentUserProfile?.referralCode) || 'HOMECELL';
+  const url = window.getReferralLink ? window.getReferralLink(code) : `${window.location.origin}${window.location.pathname}?r=${code}`;
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(() => {
+      window.showToast?.(`📋 Whole Referral Link copied to clipboard! Share with friends to give & receive Kingdom Coins!`, "success");
+    }).catch(() => {
+      fallbackCopy(url);
+    });
+  } else {
+    fallbackCopy(url);
   }
 };
 
@@ -203,7 +228,7 @@ function fallbackCopy(text) {
   ta.select();
   document.execCommand('copy');
   document.body.removeChild(ta);
-  window.showToast?.(`📋 Referral Code "${text}" copied!`, "success");
+  window.showToast?.(`📋 Referral Link copied!`, "success");
 }
 
 window.addEventListener('DOMContentLoaded', () => {

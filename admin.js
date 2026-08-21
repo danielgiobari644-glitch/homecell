@@ -2306,18 +2306,20 @@ function syncAdminStoreProductsCatalog() {
   adminProductsListener = db.collection('products').onSnapshot(snap => {
     const docs = [];
     const seenIds = new Set();
+    const currentDeletedIds = window.getDeletedStoreProductIds ? window.getDeletedStoreProductIds() : [];
+    const currentLocalUploads = window.getUploadedStoreProductsLocal ? window.getUploadedStoreProductsLocal().filter(p => !currentDeletedIds.includes(p.id)) : [];
 
     if (!snap.empty) {
       snap.forEach(doc => {
-        if (!deletedIds.includes(doc.id)) {
+        if (!currentDeletedIds.includes(doc.id)) {
           docs.push({ id: doc.id, ...doc.data() });
           seenIds.add(doc.id);
         }
       });
     }
 
-    localUploads.forEach(lp => {
-      if (!seenIds.has(lp.id) && !deletedIds.includes(lp.id)) {
+    currentLocalUploads.forEach(lp => {
+      if (!seenIds.has(lp.id) && !currentDeletedIds.includes(lp.id)) {
         docs.push(lp);
         seenIds.add(lp.id);
       }
@@ -2325,7 +2327,7 @@ function syncAdminStoreProductsCatalog() {
 
     if (docs.length === 0 && window.DEFAULT_KINGDOM_PRODUCTS) {
       window.DEFAULT_KINGDOM_PRODUCTS.forEach(dp => {
-        if (!deletedIds.includes(dp.id)) docs.push(dp);
+        if (!currentDeletedIds.includes(dp.id)) docs.push(dp);
       });
     }
 

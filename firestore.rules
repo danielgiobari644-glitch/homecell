@@ -30,6 +30,18 @@ service cloud.firestore {
         allow create, update: if isSignedIn() && (request.auth.uid == userId || isAdmin());
         allow delete: if isAdmin();
       }
+
+      match /notes/{noteId} {
+        allow read: if true;
+        allow create, update, delete: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      }
+    }
+
+    // --- Holy Scripture Study Notes & Reflections ---
+    match /user_notes/{noteId} {
+      allow read: if true;
+      allow create: if isSignedIn();
+      allow update, delete: if isSignedIn() && (resource.data.userUid == request.auth.uid || isAdmin());
     }
 
     // --- Mission Completions ---

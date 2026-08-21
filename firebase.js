@@ -195,6 +195,11 @@ auth.onAuthStateChanged(async (user) => {
     if (moreSheetName) moreSheetName.innerText = displayName;
     if (moreSheetAvatar) moreSheetAvatar.innerHTML = avatarHtml;
 
+    // Process referral bonus if user was referred
+    if (window.processReferralForNewUser) {
+      window.processReferralForNewUser(user.uid, user.email, user.displayName).catch(() => {});
+    }
+
     try {
       const userDocRef = db.collection('users').doc(user.uid);
       userDocRef.onSnapshot(doc => {

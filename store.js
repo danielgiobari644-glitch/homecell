@@ -289,13 +289,13 @@ function syncStoreProducts() {
   if (storeProductsListener) storeProductsListener();
 
   const db = window.db;
-  const deletedIds = getDeletedStoreProductIds();
-  const localUploads = getUploadedStoreProductsLocal().filter(p => !deletedIds.includes(p.id));
 
   if (!db) {
-    let combined = [...localUploads];
+    const currentDeletedIds = getDeletedStoreProductIds();
+    const currentLocalUploads = getUploadedStoreProductsLocal().filter(p => !currentDeletedIds.includes(p.id));
+    let combined = [...currentLocalUploads];
     DEFAULT_KINGDOM_PRODUCTS.forEach(dp => {
-      if (!deletedIds.includes(dp.id) && !combined.some(c => c.id === dp.id)) {
+      if (!currentDeletedIds.includes(dp.id) && !combined.some(c => c.id === dp.id)) {
         combined.push(dp);
       }
     });
@@ -308,11 +308,13 @@ function syncStoreProducts() {
   storeProductsListener = db.collection('products').onSnapshot(snap => {
     let products = [];
     const seenIds = new Set();
+    const currentDeletedIds = getDeletedStoreProductIds();
+    const currentLocalUploads = getUploadedStoreProductsLocal().filter(p => !currentDeletedIds.includes(p.id));
 
     if (!snap.empty) {
       snap.forEach(doc => {
         const d = doc.data();
-        if (d.published !== false && !deletedIds.includes(doc.id)) {
+        if (d.published !== false && !currentDeletedIds.includes(doc.id)) {
           products.push({ id: doc.id, ...d });
           seenIds.add(doc.id);
         }
@@ -320,15 +322,15 @@ function syncStoreProducts() {
     }
 
     // Merge any locally uploaded items that haven't synced yet
-    localUploads.forEach(lp => {
-      if (!seenIds.has(lp.id) && !deletedIds.includes(lp.id)) {
+    currentLocalUploads.forEach(lp => {
+      if (!seenIds.has(lp.id) && !currentDeletedIds.includes(lp.id)) {
         products.push(lp);
         seenIds.add(lp.id);
       }
     });
     
     if (products.length === 0) {
-      const filteredDefaults = DEFAULT_KINGDOM_PRODUCTS.filter(p => !deletedIds.includes(p.id));
+      const filteredDefaults = DEFAULT_KINGDOM_PRODUCTS.filter(p => !currentDeletedIds.includes(p.id));
       products = filteredDefaults;
     }
 
@@ -343,9 +345,11 @@ function syncStoreProducts() {
     renderProductsGrid(products);
   }, err => {
     console.warn("Store products listener note:", err);
-    let combined = [...localUploads];
+    const currentDeletedIds = getDeletedStoreProductIds();
+    const currentLocalUploads = getUploadedStoreProductsLocal().filter(p => !currentDeletedIds.includes(p.id));
+    let combined = [...currentLocalUploads];
     DEFAULT_KINGDOM_PRODUCTS.forEach(dp => {
-      if (!deletedIds.includes(dp.id) && !combined.some(c => c.id === dp.id)) {
+      if (!currentDeletedIds.includes(dp.id) && !combined.some(c => c.id === dp.id)) {
         combined.push(dp);
       }
     });
@@ -386,7 +390,9 @@ function renderProductsGrid(products) {
   const container = document.getElementById('store-products-grid');
   if (!container) return;
 
-  let filtered = products || storeCachedProducts || DEFAULT_KINGDOM_PRODUCTS;
+  const currentDeletedIds = getDeletedStoreProductIds();
+  const rawList = products || storeCachedProducts || DEFAULT_KINGDOM_PRODUCTS;
+  let filtered = rawList.filter(p => !currentDeletedIds.includes(p.id));
 
   if (activeStoreCategory !== 'all') {
     filtered = filtered.filter(p => (p.category || '').toLowerCase() === activeStoreCategory.toLowerCase());
