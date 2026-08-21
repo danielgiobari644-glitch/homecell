@@ -58,127 +58,143 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js"></script>
   </head>
   <body class="bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 min-h-screen flex flex-col antialiased selection:bg-amber-400 selection:text-slate-950">
+    <script>
+      (function() {
+        try {
+          if (localStorage.getItem('homecell_sidebar_collapsed_v2') === 'true') {
+            document.body.classList.add('sidebar-collapsed');
+          }
+        } catch(e){}
+      })();
+    </script>
 
-    <!-- DESKTOP FIXED SIDEBAR NAVIGATION (Visible on Desktop lg: >= 1024px, fits 100% in viewport with 0 vertical scrolling) -->
+    <!-- DESKTOP FIXED SIDEBAR NAVIGATION (Collapsible on Desktop lg: >= 1024px, fits 100% in viewport) -->
     <aside id="app-desktop-sidebar" class="desktop-sidebar hidden lg:flex fixed top-0 left-0 bottom-0 w-64 h-screen z-40 flex-col justify-between p-4 select-none">
       <div class="space-y-4">
-        <!-- Brand Logo -->
-        <div class="flex items-center gap-3 cursor-pointer select-none group px-2 py-1" onclick="switchTab('feed')">
-          <div class="relative w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-violet-600 p-0.5 shadow-md shadow-blue-500/25 group-hover:scale-105 transition-all shrink-0">
-            <div class="w-full h-full rounded-[14px] bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white">
-              <svg class="w-5 h-5 text-white drop-shadow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 2v20M6 8h12" />
-                <circle cx="12" cy="8" r="1.5" fill="currentColor" opacity="0.3" />
-              </svg>
+        <!-- Brand Logo & Collapse Toggle -->
+        <div class="flex items-center justify-between px-1 py-1">
+          <div class="flex items-center gap-3 cursor-pointer select-none group min-w-0" onclick="switchTab('feed')" title="Home.cell Home">
+            <div class="relative w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-violet-600 p-0.5 shadow-md shadow-blue-500/25 group-hover:scale-105 transition-all shrink-0">
+              <div class="w-full h-full rounded-[14px] bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white">
+                <svg class="w-5 h-5 text-white drop-shadow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 2v20M6 8h12" />
+                  <circle cx="12" cy="8" r="1.5" fill="currentColor" opacity="0.3" />
+                </svg>
+              </div>
+            </div>
+            <div class="sidebar-text-label truncate">
+              <div class="flex items-center gap-1.5">
+                <span class="text-lg font-black font-display tracking-tight text-slate-900 dark:text-zinc-50">Home<span class="text-blue-600 dark:text-blue-400">.cell</span></span>
+                <span class="text-[9px] font-black uppercase font-mono px-1.5 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 shadow-xs">v2.0</span>
+              </div>
+              <p class="text-[10px] text-slate-500 dark:text-zinc-400 font-medium truncate">Faith • Fellowship</p>
             </div>
           </div>
-          <div>
-            <div class="flex items-center gap-1.5">
-              <span class="text-lg font-black font-display tracking-tight text-slate-900 dark:text-zinc-50">Home<span class="text-blue-600 dark:text-blue-400">.cell</span></span>
-              <span class="text-[9px] font-black uppercase font-mono px-1.5 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 shadow-xs">v2.0</span>
-            </div>
-            <p class="text-[10px] text-slate-500 dark:text-zinc-400 font-medium">Faith • Fellowship • Discipleship</p>
-          </div>
+
+          <!-- Collapse Button -->
+          <button id="sidebar-collapse-toggle-btn" onclick="toggleDesktopSidebar()" class="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer shrink-0" title="Collapse Sidebar (Ctrl+B)">
+            <i id="sidebar-collapse-icon" data-lucide="panel-left-close" class="w-4 h-4"></i>
+          </button>
         </div>
 
         <!-- Believer Quick Profile Card -->
-        <div onclick="switchTab('profile')" class="p-2.5 rounded-2xl bg-slate-100/80 dark:bg-zinc-850/80 border border-slate-200/80 dark:border-zinc-800/80 flex items-center justify-between gap-2 cursor-pointer hover:border-blue-500/40 transition-all">
+        <div id="sidebar-profile-card" onclick="switchTab('profile')" class="p-2.5 rounded-2xl bg-slate-100/80 dark:bg-zinc-850/80 border border-slate-200/80 dark:border-zinc-800/80 flex items-center justify-between gap-2 cursor-pointer hover:border-blue-500/40 transition-all" title="Believer Profile">
           <div class="flex items-center gap-2.5 min-w-0">
             <div id="sidebar-avatar-circle" class="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-black text-xs flex items-center justify-center overflow-hidden shrink-0 shadow-xs">
               ✝
             </div>
-            <div class="min-w-0">
+            <div class="min-w-0 sidebar-text-label">
               <div id="sidebar-user-name" class="text-xs font-bold text-slate-800 dark:text-zinc-200 truncate">Believer</div>
               <div id="sidebar-user-role" class="text-[10px] font-medium text-slate-500 dark:text-zinc-400">Member</div>
             </div>
           </div>
-          <div class="flex flex-col items-end shrink-0">
+          <div class="flex flex-col items-end shrink-0 sidebar-text-label">
             <span id="sidebar-kc-count" class="text-[11px] font-mono font-black text-amber-500">100 KC</span>
             <span id="sidebar-streak-count" class="text-[10px] font-mono text-orange-500 font-bold">🔥 1d</span>
           </div>
         </div>
 
-        <!-- Categorized Navigation Links (Mathematically calculated to fit in 480px) -->
-        <nav class="space-y-3">
+        <!-- Categorized Navigation Links -->
+        <nav class="space-y-2.5">
           <!-- FELLOWSHIP GROUP -->
           <div>
-            <span class="text-[9px] font-black uppercase tracking-wider text-slate-400 dark:text-zinc-500 px-3 block mb-1">Fellowship</span>
+            <span class="sidebar-category-header text-[9px] font-black uppercase tracking-wider text-slate-400 dark:text-zinc-500 px-3 block mb-1">Fellowship</span>
             <div class="space-y-0.5">
-              <button id="sidebar-btn-feed" onclick="switchTab('feed')" class="sidebar-nav-btn w-full px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-2.5 text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer">
-                <i data-lucide="newspaper" class="w-4 h-4 text-blue-500"></i>
-                <span>Fellowship Feed</span>
+              <button id="sidebar-btn-feed" onclick="switchTab('feed')" data-tooltip="Fellowship Feed" class="sidebar-nav-btn w-full px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-2.5 text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer" title="Fellowship Feed">
+                <i data-lucide="newspaper" class="w-4 h-4 text-blue-500 shrink-0"></i>
+                <span class="sidebar-btn-text truncate">Fellowship Feed</span>
               </button>
-              <button id="sidebar-btn-cells" onclick="switchTab('cells')" class="sidebar-nav-btn w-full px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-2.5 text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer">
-                <i data-lucide="users" class="w-4 h-4 text-indigo-500"></i>
-                <span>House Cells</span>
+              <button id="sidebar-btn-cells" onclick="switchTab('cells')" data-tooltip="House Cells" class="sidebar-nav-btn w-full px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-2.5 text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer" title="House Cells">
+                <i data-lucide="users" class="w-4 h-4 text-indigo-500 shrink-0"></i>
+                <span class="sidebar-btn-text truncate">House Cells</span>
               </button>
-              <button id="sidebar-btn-prayer" onclick="switchTab('prayer')" class="sidebar-nav-btn w-full px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-2.5 text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer">
-                <i data-lucide="heart-handshake" class="w-4 h-4 text-rose-500"></i>
-                <span>Prayer Wall</span>
+              <button id="sidebar-btn-prayer" onclick="switchTab('prayer')" data-tooltip="Prayer Wall" class="sidebar-nav-btn w-full px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-2.5 text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer" title="Prayer Wall">
+                <i data-lucide="heart-handshake" class="w-4 h-4 text-rose-500 shrink-0"></i>
+                <span class="sidebar-btn-text truncate">Prayer Wall</span>
               </button>
-              <button id="sidebar-btn-events" onclick="switchTab('events')" class="sidebar-nav-btn w-full px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-2.5 text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer">
-                <i data-lucide="calendar" class="w-4 h-4 text-teal-500"></i>
-                <span>Gatherings</span>
+              <button id="sidebar-btn-events" onclick="switchTab('events')" data-tooltip="Gatherings" class="sidebar-nav-btn w-full px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-2.5 text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer" title="Gatherings">
+                <i data-lucide="calendar" class="w-4 h-4 text-teal-500 shrink-0"></i>
+                <span class="sidebar-btn-text truncate">Gatherings</span>
               </button>
             </div>
           </div>
 
           <!-- DISCIPLESHIP & THE WORD -->
           <div>
-            <span class="text-[9px] font-black uppercase tracking-wider text-slate-400 dark:text-zinc-500 px-3 block mb-1">The Word</span>
+            <span class="sidebar-category-header text-[9px] font-black uppercase tracking-wider text-slate-400 dark:text-zinc-500 px-3 block mb-1">The Word</span>
             <div class="space-y-0.5">
-              <button id="sidebar-btn-bible" onclick="switchTab('bible')" class="sidebar-nav-btn w-full px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-2.5 text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer">
-                <i data-lucide="book-open" class="w-4 h-4 text-blue-500"></i>
-                <span>Bible Study</span>
+              <button id="sidebar-btn-bible" onclick="switchTab('bible')" data-tooltip="Bible Study" class="sidebar-nav-btn w-full px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-2.5 text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer" title="Bible Study">
+                <i data-lucide="book-open" class="w-4 h-4 text-blue-500 shrink-0"></i>
+                <span class="sidebar-btn-text truncate">Bible Study</span>
               </button>
-              <button id="sidebar-btn-devotionals" onclick="switchTab('devotionals')" class="sidebar-nav-btn w-full px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-2.5 text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer">
-                <i data-lucide="sun" class="w-4 h-4 text-amber-500"></i>
-                <span>Daily Bread</span>
+              <button id="sidebar-btn-devotionals" onclick="switchTab('devotionals')" data-tooltip="Daily Bread" class="sidebar-nav-btn w-full px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-2.5 text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer" title="Daily Bread">
+                <i data-lucide="sun" class="w-4 h-4 text-amber-500 shrink-0"></i>
+                <span class="sidebar-btn-text truncate">Daily Bread</span>
               </button>
-              <button id="sidebar-btn-quiz" onclick="switchTab('quiz')" class="sidebar-nav-btn w-full px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-2.5 text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer">
-                <i data-lucide="help-circle" class="w-4 h-4 text-purple-500"></i>
-                <span>Live Trivia</span>
+              <button id="sidebar-btn-quiz" onclick="switchTab('quiz')" data-tooltip="Live Trivia" class="sidebar-nav-btn w-full px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-2.5 text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer" title="Live Trivia">
+                <i data-lucide="help-circle" class="w-4 h-4 text-purple-500 shrink-0"></i>
+                <span class="sidebar-btn-text truncate">Live Trivia</span>
               </button>
             </div>
           </div>
 
           <!-- KINGDOM & REWARDS -->
           <div>
-            <span class="text-[9px] font-black uppercase tracking-wider text-slate-400 dark:text-zinc-500 px-3 block mb-1">Kingdom Rewards</span>
+            <span class="sidebar-category-header text-[9px] font-black uppercase tracking-wider text-slate-400 dark:text-zinc-500 px-3 block mb-1">Kingdom Rewards</span>
             <div class="space-y-0.5">
-              <button id="sidebar-btn-champions" onclick="switchTab('champions')" class="sidebar-nav-btn w-full px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-2.5 text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer">
-                <i data-lucide="crown" class="w-4 h-4 text-amber-500"></i>
-                <span>Champions Hub</span>
+              <button id="sidebar-btn-champions" onclick="switchTab('champions')" data-tooltip="Champions Hub" class="sidebar-nav-btn w-full px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-2.5 text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer" title="Champions Hub">
+                <i data-lucide="crown" class="w-4 h-4 text-amber-500 shrink-0"></i>
+                <span class="sidebar-btn-text truncate">Champions Hub</span>
               </button>
-              <button id="sidebar-btn-store" onclick="switchTab('store')" class="sidebar-nav-btn w-full px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-2.5 text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer">
-                <i data-lucide="shopping-bag" class="w-4 h-4 text-emerald-500"></i>
-                <span>Kingdom Store</span>
+              <button id="sidebar-btn-store" onclick="switchTab('store')" data-tooltip="Kingdom Store" class="sidebar-nav-btn w-full px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-2.5 text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer" title="Kingdom Store">
+                <i data-lucide="shopping-bag" class="w-4 h-4 text-emerald-500 shrink-0"></i>
+                <span class="sidebar-btn-text truncate">Kingdom Store</span>
               </button>
-              <button id="sidebar-btn-halloffame" onclick="switchTab('halloffame')" class="sidebar-nav-btn w-full px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-2.5 text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer">
-                <i data-lucide="trophy" class="w-4 h-4 text-yellow-500"></i>
-                <span>Hall of Fame</span>
+              <button id="sidebar-btn-halloffame" onclick="switchTab('halloffame')" data-tooltip="Hall of Fame" class="sidebar-nav-btn w-full px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-2.5 text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer" title="Hall of Fame">
+                <i data-lucide="trophy" class="w-4 h-4 text-yellow-500 shrink-0"></i>
+                <span class="sidebar-btn-text truncate">Hall of Fame</span>
               </button>
             </div>
           </div>
 
           <!-- SYSTEM & ACCOUNT -->
           <div>
-            <span class="text-[9px] font-black uppercase tracking-wider text-slate-400 dark:text-zinc-500 px-3 block mb-1">Account & Settings</span>
+            <span class="sidebar-category-header text-[9px] font-black uppercase tracking-wider text-slate-400 dark:text-zinc-500 px-3 block mb-1">Account & Settings</span>
             <div class="space-y-0.5">
-              <button id="sidebar-btn-notifications" onclick="switchTab('notifications')" class="sidebar-nav-btn w-full px-3 py-1.5 rounded-xl text-xs font-bold flex items-center justify-between text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer">
-                <div class="flex items-center gap-2.5">
-                  <i data-lucide="bell" class="w-4 h-4 text-blue-500"></i>
-                  <span>Notifications</span>
+              <button id="sidebar-btn-notifications" onclick="switchTab('notifications')" data-tooltip="Notifications" class="sidebar-nav-btn relative w-full px-3 py-1.5 rounded-xl text-xs font-bold flex items-center justify-between text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer" title="Notifications">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <i data-lucide="bell" class="w-4 h-4 text-blue-500 shrink-0"></i>
+                  <span class="sidebar-btn-text truncate">Notifications</span>
                 </div>
-                <span class="notification-unread-badge hidden px-1.5 py-0.2 min-w-[16px] text-[9px] font-black font-mono rounded-full bg-rose-600 text-white flex items-center justify-center">0</span>
+                <span class="notification-unread-badge hidden px-1.5 py-0.2 min-w-[16px] text-[9px] font-black font-mono rounded-full bg-rose-600 text-white flex items-center justify-center shrink-0">0</span>
               </button>
-              <button id="sidebar-btn-profile" onclick="switchTab('profile')" class="sidebar-nav-btn w-full px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-2.5 text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer">
-                <i data-lucide="user" class="w-4 h-4 text-slate-500"></i>
-                <span>Believer Profile</span>
+              <button id="sidebar-btn-profile" onclick="switchTab('profile')" data-tooltip="Believer Profile" class="sidebar-nav-btn w-full px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-2.5 text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer" title="Believer Profile">
+                <i data-lucide="user" class="w-4 h-4 text-slate-500 shrink-0"></i>
+                <span class="sidebar-btn-text truncate">Believer Profile</span>
               </button>
-              <button id="sidebar-btn-admin" onclick="switchTab('admin')" class="sidebar-nav-btn hidden w-full px-3 py-1.5 rounded-xl text-xs font-bold items-center gap-2.5 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/30 transition-all cursor-pointer border border-purple-200 dark:border-purple-900/40">
-                <i data-lucide="shield-check" class="w-4 h-4 text-purple-500"></i>
-                <span>Super Admin</span>
+              <button id="sidebar-btn-admin" onclick="switchTab('admin')" data-tooltip="Super Admin" class="sidebar-nav-btn hidden w-full px-3 py-1.5 rounded-xl text-xs font-bold items-center gap-2.5 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/30 transition-all cursor-pointer border border-purple-200 dark:border-purple-900/40" title="Super Admin">
+                <i data-lucide="shield-check" class="w-4 h-4 text-purple-500 shrink-0"></i>
+                <span class="sidebar-btn-text truncate">Super Admin</span>
               </button>
             </div>
           </div>
@@ -186,42 +202,49 @@
       </div>
 
       <!-- Bottom Utilities in Sidebar -->
-      <div class="pt-3 border-t border-slate-200/80 dark:border-zinc-800/80 flex items-center justify-between px-2">
+      <div id="sidebar-bottom-utils" class="pt-3 border-t border-slate-200/80 dark:border-zinc-800/80 flex items-center justify-between px-1">
         <div class="flex items-center gap-1.5">
-          <button onclick="toggleQuickTheme()" class="p-2 rounded-xl text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer" title="Toggle Theme">
+          <button onclick="toggleQuickTheme()" class="p-2 rounded-xl text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer" title="Toggle Theme (Light / Dark)">
             <i data-lucide="moon" class="w-4 h-4"></i>
           </button>
           <button onclick="window.soundEngine?.toggleMute?.()" class="p-2 rounded-xl text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer" title="Toggle Sound FX">
             <i data-lucide="volume-2" class="w-4 h-4"></i>
           </button>
         </div>
-        <button onclick="handleHeaderAuthClick()" class="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
+        <button onclick="handleHeaderAuthClick()" class="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer sidebar-text-label">
           Account ↗
         </button>
       </div>
     </aside>
 
     <!-- TOP HEADER & BRANDING BAR (Mobile & Tablet: sticky header; Desktop: seamless integrated bar) -->
-    <header class="sticky top-0 z-30 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl border-b border-slate-200/80 dark:border-zinc-800/80 transition-colors lg:ml-64">
+    <header id="app-top-header" class="app-top-header sticky top-0 z-30 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl border-b border-slate-200/80 dark:border-zinc-800/80 transition-colors lg:ml-64">
       <div class="max-w-6xl mx-auto px-3 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-2 sm:gap-4">
         
         <!-- LOGO & BRAND (Shown on Mobile/Tablet, on Desktop quick tab title) -->
-        <div class="flex items-center gap-2 sm:gap-3 cursor-pointer select-none group shrink-0" onclick="switchTab('feed')">
+        <div class="flex items-center gap-2 sm:gap-3 cursor-pointer select-none group shrink-0">
+          <!-- Desktop Sidebar Toggle Button inside Header -->
+          <button id="header-sidebar-toggle-btn" onclick="toggleDesktopSidebar()" class="hidden lg:flex p-2 rounded-xl text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer mr-1 shrink-0" title="Toggle Desktop Sidebar (Ctrl+B)">
+            <i id="header-sidebar-toggle-icon" data-lucide="panel-left" class="w-4 h-4"></i>
+          </button>
+
           <!-- Radiant Vector Cross Logo -->
-          <div class="relative w-9 h-9 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-violet-600 p-0.5 shadow-md shadow-blue-500/25 group-hover:scale-105 transition-all duration-300 shrink-0">
-            <div class="w-full h-full rounded-[14px] bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white">
-              <svg class="w-4 h-4 sm:w-6 sm:h-6 text-white drop-shadow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 2v20M6 8h12" />
-                <circle cx="12" cy="8" r="1.5" fill="currentColor" opacity="0.3" />
-              </svg>
+          <div onclick="switchTab('feed')" class="flex items-center gap-2 sm:gap-3">
+            <div class="relative w-9 h-9 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-violet-600 p-0.5 shadow-md shadow-blue-500/25 group-hover:scale-105 transition-all duration-300 shrink-0">
+              <div class="w-full h-full rounded-[14px] bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white">
+                <svg class="w-4 h-4 sm:w-6 sm:h-6 text-white drop-shadow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 2v20M6 8h12" />
+                  <circle cx="12" cy="8" r="1.5" fill="currentColor" opacity="0.3" />
+                </svg>
+              </div>
             </div>
-          </div>
-          <div>
-            <div class="flex items-center gap-1.5 sm:gap-2">
-              <span class="text-base sm:text-xl font-black font-display tracking-tight text-slate-900 dark:text-zinc-50">Home<span class="text-blue-600 dark:text-blue-400">.cell</span></span>
-              <span class="text-[8px] sm:text-[10px] font-black uppercase font-mono px-1.5 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 shadow-xs">v2.0</span>
+            <div>
+              <div class="flex items-center gap-1.5 sm:gap-2">
+                <span class="text-base sm:text-xl font-black font-display tracking-tight text-slate-900 dark:text-zinc-50">Home<span class="text-blue-600 dark:text-blue-400">.cell</span></span>
+                <span class="text-[8px] sm:text-[10px] font-black uppercase font-mono px-1.5 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 shadow-xs">v2.0</span>
+              </div>
+              <p class="text-[10px] sm:text-[11px] text-slate-500 dark:text-zinc-400 font-medium tracking-wide hidden xs:block">Faith • Fellowship • Discipleship</p>
             </div>
-            <p class="text-[10px] sm:text-[11px] text-slate-500 dark:text-zinc-400 font-medium tracking-wide hidden xs:block">Faith • Fellowship • Discipleship</p>
           </div>
         </div>
 
@@ -358,7 +381,7 @@
     </header>
 
     <!-- MAIN APP VIEW CONTAINER (Fluid Scrolling across all Devices, offset for desktop sidebar) -->
-    <main class="flex-1 max-w-6xl w-full mx-auto lg:ml-64 px-3.5 sm:px-6 lg:px-8 pt-4 sm:pt-6 pb-28 md:pb-12 lg:pb-12 space-y-6 sm:space-y-8">
+    <main id="app-main-content" class="app-main-content flex-1 max-w-6xl w-full mx-auto lg:ml-64 px-3.5 sm:px-6 lg:px-8 pt-4 sm:pt-6 pb-28 md:pb-12 lg:pb-12 space-y-6 sm:space-y-8">
 
 
       <!-- ===================================================================== -->
@@ -2051,6 +2074,47 @@
     <script>
       let currentAppTab = 'feed';
       let isAuthRegisterMode = false;
+      const SIDEBAR_COLLAPSED_KEY = 'homecell_sidebar_collapsed_v2';
+
+      function initDesktopSidebar() {
+        const isCollapsed = localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === 'true';
+        applySidebarState(isCollapsed);
+      }
+
+      function toggleDesktopSidebar(forcedState) {
+        const currentlyCollapsed = document.body.classList.contains('sidebar-collapsed');
+        const willCollapse = (typeof forcedState === 'boolean') ? forcedState : !currentlyCollapsed;
+        applySidebarState(willCollapse);
+        localStorage.setItem(SIDEBAR_COLLAPSED_KEY, willCollapse ? 'true' : 'false');
+        if (window.soundEngine?.playClick) window.soundEngine.playClick();
+      }
+
+      function applySidebarState(isCollapsed) {
+        if (isCollapsed) {
+          document.body.classList.add('sidebar-collapsed');
+        } else {
+          document.body.classList.remove('sidebar-collapsed');
+        }
+
+        const collapseIcon = document.getElementById('sidebar-collapse-icon');
+        const toggleBtn = document.getElementById('sidebar-collapse-toggle-btn');
+        const headerToggleIcon = document.getElementById('header-sidebar-toggle-icon');
+
+        if (collapseIcon) {
+          collapseIcon.setAttribute('data-lucide', isCollapsed ? 'panel-left-open' : 'panel-left-close');
+        }
+        if (toggleBtn) {
+          toggleBtn.title = isCollapsed ? "Expand Sidebar (Ctrl+B)" : "Collapse Sidebar (Ctrl+B)";
+        }
+        if (headerToggleIcon) {
+          headerToggleIcon.setAttribute('data-lucide', isCollapsed ? 'panel-left-open' : 'panel-left');
+        }
+
+        if (window.lucide) window.lucide.createIcons();
+      }
+
+      window.toggleDesktopSidebar = toggleDesktopSidebar;
+      window.initDesktopSidebar = initDesktopSidebar;
 
       function openCreateActionSheet() {
         const modal = document.getElementById('create-action-sheet-modal');
@@ -2107,7 +2171,7 @@
         if (popover) popover.classList.add('hidden');
       }
 
-      // Global Escape key listener to close Kingdom navigation, action sheets, and modals
+      // Global Escape key listener to close Kingdom navigation, action sheets, and modals & Ctrl+B for Sidebar
       window.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
           closeMobileMoreSheet();
@@ -2116,6 +2180,10 @@
           if (window.closeChangeCoverModal) window.closeChangeCoverModal();
           if (window.closeFullDevotionalModal) window.closeFullDevotionalModal();
           if (window.closeAuthModal) window.closeAuthModal();
+        }
+        if ((e.ctrlKey || e.metaKey) && (e.key === 'b' || e.key === 'B')) {
+          e.preventDefault();
+          toggleDesktopSidebar();
         }
       });
 
@@ -2390,6 +2458,7 @@
 
       // Initialize App on DOM Ready
       document.addEventListener('DOMContentLoaded', () => {
+        initDesktopSidebar();
         if (window.lucide) window.lucide.createIcons();
         switchTab('feed');
       });

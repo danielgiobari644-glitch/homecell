@@ -1191,8 +1191,19 @@ async function handleAdminBroadcastSubmit(e) {
   const content = document.getElementById('broadcast-content')?.value?.trim();
   const push = document.getElementById('broadcast-push')?.checked;
 
+  if (!title || !content) {
+    window.showToast?.("Please enter broadcast title and message.", "warning");
+    return;
+  }
+
+  const btn = e.target.querySelector('button[type="submit"]');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<span class="animate-spin inline-block mr-2">⏳</span> Broadcasting to Fellowship...`;
+  }
+
   const user = window.auth?.currentUser;
-  const newPostId = window.db.collection('community_feed').doc().id;
+  const newPostId = window.db ? window.db.collection('community_feed').doc().id : `post_${Date.now()}`;
 
   try {
     const postData = {
@@ -1210,20 +1221,32 @@ async function handleAdminBroadcastSubmit(e) {
       createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
     };
 
-    // Save to primary community_feed collection
-    await window.db.collection('community_feed').doc(newPostId).set(postData);
-    // Also save to posts collection for backwards compatibility
-    await window.db.collection('posts').doc(newPostId).set(postData).catch(() => {});
+    if (window.db) {
+      // Save to primary community_feed collection
+      await window.db.collection('community_feed').doc(newPostId).set(postData);
+      // Also save to posts collection for backwards compatibility
+      await window.db.collection('posts').doc(newPostId).set(postData).catch(() => {});
+    }
 
-    if (push && window.dispatchPushNotification) {
-      window.dispatchPushNotification(title, content);
+    if (push) {
+      if (window.dispatchPushNotification) {
+        await window.dispatchPushNotification(title, content, 'announcement', './#view-feed');
+      } else if (window.recordNotification) {
+        await window.recordNotification(title, content, 'announcement', './#view-feed', 'all');
+      }
     }
 
     window.soundEngine?.playSuccess?.();
-    window.showToast?.("📢 Church broadcast published to the fellowship feed!", "success");
-    switchTab('feed');
+    window.showToast?.("📢 Church broadcast published to feed & dispatched off-app!", "success");
+    e.target.reset();
+    if (window.switchTab) switchTab('feed');
   } catch (err) {
     window.showToast?.("Error: " + err.message, "error");
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = `Broadcast Message 📢`;
+    }
   }
 }
 
@@ -2036,9 +2059,15 @@ function renderAdminInventoryPane(container) {
   if (window.lucide) window.lucide.createIcons();
 }
 
+let adminUploadedFileBlob = null;
+let adminUploadedFileName = null;
+let adminUploadedFileMime = null;
+
 function handleAdminCoverFileSelect(event) {
-  const file = event.target.files[0];
+  const file = event.target.files?.[0];
   if (!file) return;
+
+  window.showToast?.("Optimizing cover photo...", "info");
 
   const reader = new FileReader();
   reader.onload = (e) => {
@@ -2047,7 +2076,7 @@ function handleAdminCoverFileSelect(event) {
       const canvas = document.createElement('canvas');
       let width = img.width;
       let height = img.height;
-      const maxWidth = 1200;
+      const maxWidth = 800;
       if (width > maxWidth) {
         height = Math.round((height * maxWidth) / width);
         width = maxWidth;
@@ -2056,12 +2085,13 @@ function handleAdminCoverFileSelect(event) {
       canvas.height = height;
       const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0, width, height);
-      adminUploadedCoverBase64 = canvas.toDataURL('image/jpeg', 0.82);
+      adminUploadedCoverBase64 = canvas.toDataURL('image/jpeg', 0.78);
 
       const previewBox = document.getElementById('admin-prod-cover-preview-box');
       const previewImg = document.getElementById('admin-prod-cover-preview');
       if (previewImg) previewImg.src = adminUploadedCoverBase64;
       if (previewBox) previewBox.classList.remove('hidden');
+      window.soundEngine?.playSuccess?.();
       window.showToast?.("Cover image ready from device!", "success");
     };
     img.src = e.target.result;
@@ -2078,8 +2108,12 @@ function clearAdminCoverFile() {
 }
 
 function handleAdminResourceFileSelect(event) {
-  const file = event.target.files[0];
+  const file = event.target.files?.[0];
   if (!file) return;
+
+  adminUploadedFileName = file.name;
+  adminUploadedFileMime = file.type || 'application/octet-stream';
+  adminUploadedFileBlob = file;
 
   const reader = new FileReader();
   reader.onload = (e) => {
@@ -2089,6 +2123,7 @@ function handleAdminResourceFileSelect(event) {
       statusBox.innerText = `✓ Selected: ${file.name} (${Math.round(file.size / 1024)} KB)`;
       statusBox.classList.remove('hidden');
     }
+    window.soundEngine?.playSuccess?.();
     window.showToast?.(`Resource "${file.name}" loaded from device!`, "success");
   };
   reader.readAsDataURL(file);
@@ -2119,6 +2154,19 @@ async function handleAdminStoreProductUploadSubmit(e) {
 
   try {
     const prodId = `prod_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+
+    // Save full asset in client IndexedDB cache if direct device file was selected
+    if (adminUploadedFileBlob || adminUploadedFileBase64) {
+      if (window.saveStoreAssetIndexedDB) {
+        await window.saveStoreAssetIndexedDB(
+          prodId, 
+          adminUploadedFileBlob || adminUploadedFileBase64, 
+          adminUploadedFileName || `${title.replace(/[^a-zA-Z0-9_\-]/g, '_')}.pdf`, 
+          adminUploadedFileMime || 'application/octet-stream'
+        );
+      }
+    }
+
     const productPayload = {
       id: prodId,
       title: title,
@@ -2132,6 +2180,7 @@ async function handleAdminStoreProductUploadSubmit(e) {
       imageUrl: coverUrl,
       fileUrl: fileUrl,
       downloadUrl: fileUrl,
+      fileName: adminUploadedFileName || `${title}.pdf`,
       featured: featured,
       published: true,
       downloadable: true,
@@ -2141,8 +2190,10 @@ async function handleAdminStoreProductUploadSubmit(e) {
       createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
     };
 
-    await window.db.collection('products').doc(prodId).set(productPayload);
-    await window.db.collection('storeProducts').doc(prodId).set(productPayload).catch(() => {});
+    if (window.db) {
+      await window.db.collection('products').doc(prodId).set(productPayload);
+      await window.db.collection('storeProducts').doc(prodId).set(productPayload).catch(() => {});
+    }
 
     window.soundEngine?.playSuccess?.();
     window.showToast?.("🛍️ Product uploaded directly to Kingdom Store!", "success");
@@ -2151,6 +2202,9 @@ async function handleAdminStoreProductUploadSubmit(e) {
     document.getElementById('admin-product-upload-form')?.reset();
     clearAdminCoverFile();
     adminUploadedFileBase64 = null;
+    adminUploadedFileBlob = null;
+    adminUploadedFileName = null;
+    adminUploadedFileMime = null;
     const statusBox = document.getElementById('admin-prod-file-status');
     if (statusBox) statusBox.classList.add('hidden');
 
@@ -2172,19 +2226,32 @@ function syncAdminStoreProductsCatalog() {
   if (!tbody) return;
 
   const db = window.db;
-  if (!db) return;
+  const deletedIds = window.getDeletedStoreProductIds ? window.getDeletedStoreProductIds() : [];
+
+  if (!db) {
+    tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-xs text-slate-400">Offline mode. Connect to internet for live catalog.</td></tr>`;
+    return;
+  }
 
   if (adminProductsListener) adminProductsListener();
 
   adminProductsListener = db.collection('products').orderBy('createdAt', 'desc').onSnapshot(snap => {
     tbody.innerHTML = '';
-    if (snap.empty) {
-      tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-xs text-slate-400">No products uploaded yet. Use the form above to add resources!</td></tr>`;
+    const docs = [];
+    if (!snap.empty) {
+      snap.forEach(doc => {
+        if (!deletedIds.includes(doc.id)) {
+          docs.push({ id: doc.id, ...doc.data() });
+        }
+      });
+    }
+
+    if (docs.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-xs text-slate-400">No active products in catalog. Upload resources using the form above!</td></tr>`;
       return;
     }
 
-    snap.forEach(doc => {
-      const p = doc.data();
+    docs.forEach(p => {
       const tr = document.createElement('tr');
       tr.className = "border-b border-slate-100 dark:border-zinc-800 text-xs hover:bg-slate-50/50 dark:hover:bg-zinc-800/40";
       
@@ -2196,7 +2263,7 @@ function syncAdminStoreProductsCatalog() {
           <div class="flex items-center gap-3">
             <img src="${cover}" class="w-10 h-10 rounded-xl object-cover border border-slate-200 dark:border-zinc-700 shrink-0" />
             <div>
-              <span class="font-bold text-slate-900 dark:text-zinc-100 block">${p.title}</span>
+              <span class="font-bold text-slate-900 dark:text-zinc-100 block">${p.title || 'Untitled Resource'}</span>
               <span class="text-[10px] text-slate-400 line-clamp-1">${p.description || ''}</span>
             </div>
           </div>
@@ -2213,7 +2280,7 @@ function syncAdminStoreProductsCatalog() {
           ${p.collectionName || 'General'}
         </td>
         <td class="py-3 px-4 text-right">
-          <button onclick="deleteAdminStoreProduct('${doc.id}', '${encodeURIComponent(p.title || '')}')" class="px-3 py-1.5 bg-red-100 dark:bg-red-950/60 text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white font-bold rounded-xl text-xs cursor-pointer transition-all">
+          <button onclick="deleteAdminStoreProduct('${p.id}', '${encodeURIComponent(p.title || '')}')" class="px-3 py-1.5 bg-red-100 dark:bg-red-950/60 text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white font-bold rounded-xl text-xs cursor-pointer transition-all">
             Delete
           </button>
         </td>
@@ -2225,17 +2292,36 @@ function syncAdminStoreProductsCatalog() {
 
 async function deleteAdminStoreProduct(prodId, encodedTitle) {
   const title = decodeURIComponent(encodedTitle || 'Resource');
-  if (!confirm(`Delete product "${title}" from the Kingdom Store catalog?`)) return;
+  if (!confirm(`Delete product "${title}" permanently from the Kingdom Store catalog?`)) return;
 
   try {
-    await window.db.collection('products').doc(prodId).delete();
-    await window.db.collection('storeProducts').doc(prodId).delete().catch(() => {});
+    if (window.markStoreProductAsDeleted) {
+      window.markStoreProductAsDeleted(prodId);
+    }
+    if (window.deleteStoreAssetIndexedDB) {
+      await window.deleteStoreAssetIndexedDB(prodId);
+    }
+
+    if (window.db) {
+      await window.db.collection('products').doc(prodId).delete().catch(() => {});
+      await window.db.collection('storeProducts').doc(prodId).delete().catch(() => {});
+    }
+
+    window.soundEngine?.playSuccess?.();
     window.showToast?.(`"${title}" removed from Kingdom Store.`, "info");
+    
     syncAdminStoreProductsCatalog();
+    if (window.syncStoreProducts) {
+      window.syncStoreProducts();
+    }
   } catch (err) {
     window.showToast?.("Error: " + err.message, "error");
   }
 }
+
+window.syncAdminStoreProductsCatalog = syncAdminStoreProductsCatalog;
+window.deleteAdminStoreProduct = deleteAdminStoreProduct;
+window.handleAdminStoreProductUploadSubmit = handleAdminStoreProductUploadSubmit;
 
 // KPI Stats Counter
 function syncAdminKPIStats() {

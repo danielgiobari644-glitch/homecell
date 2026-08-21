@@ -240,10 +240,52 @@ window.recordNotification = async function(title, body, type = 'general', target
         targetUid: targetUid === 'all' ? null : targetUid,
         excludeUid
       })
+    }).catch(async () => {
+      // Fallback direct root path
+      await fetch('/api/broadcast-push', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, body, url: targetUrl, targetUid: targetUid === 'all' ? null : targetUid, excludeUid })
+      }).catch(() => {});
     });
   } catch (error) {
     console.warn("Failed sending push notification broadcast:", error);
   }
+};
+
+// Global Super Admin Broadcast Push Dispatcher
+window.dispatchPushNotification = async function(title, body, type = 'announcement', targetUrl = './#view-feed', targetUid = 'all') {
+  if (!title || !body) return;
+
+  // 1. Record in Firestore for notification inboxes & badges
+  await window.recordNotification(title, body, type, targetUrl, targetUid);
+
+  // 2. Dispatch live browser service worker notification if supported and granted
+  if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistration().then(reg => {
+        if (reg) {
+          reg.showNotification(title, {
+            body: body,
+            icon: './favicon.svg',
+            badge: './favicon.svg',
+            data: { url: targetUrl },
+            vibrate: [150, 50, 150]
+          });
+        }
+      }).catch(() => {});
+    } else {
+      try {
+        new Notification(title, {
+          body: body,
+          icon: './favicon.svg'
+        });
+      } catch (e) {}
+    }
+  }
+
+  // 3. Audio feedback
+  window.soundEngine?.playSuccess?.();
 };
 
 window.sendTestPushNotification = async function() {

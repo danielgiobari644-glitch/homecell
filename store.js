@@ -140,6 +140,107 @@ function renderStoreKcHeader() {
   });
 }
 
+// IndexedDB Asset Cache for high-performance direct device uploads & offline downloads
+const STORE_ASSET_DB_NAME = 'HomeCellStoreAssetDB';
+const STORE_ASSET_STORE_NAME = 'assets';
+
+function openStoreAssetDB() {
+  return new Promise((resolve, reject) => {
+    if (!window.indexedDB) return resolve(null);
+    const req = indexedDB.open(STORE_ASSET_DB_NAME, 1);
+    req.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(STORE_ASSET_STORE_NAME)) {
+        db.createObjectStore(STORE_ASSET_STORE_NAME, { keyPath: 'id' });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => resolve(null);
+  });
+}
+
+async function saveStoreAssetIndexedDB(id, blobOrDataUrl, name, mimeType) {
+  try {
+    const db = await openStoreAssetDB();
+    if (!db) return;
+    return new Promise((resolve) => {
+      const tx = db.transaction(STORE_ASSET_STORE_NAME, 'readwrite');
+      const store = tx.objectStore(STORE_ASSET_STORE_NAME);
+      store.put({ id, data: blobOrDataUrl, name, mimeType, timestamp: Date.now() });
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => resolve(false);
+    });
+  } catch (e) {
+    console.warn("IndexedDB save note:", e);
+  }
+}
+
+async function getStoreAssetIndexedDB(id) {
+  try {
+    const db = await openStoreAssetDB();
+    if (!db) return null;
+    return new Promise((resolve) => {
+      const tx = db.transaction(STORE_ASSET_STORE_NAME, 'readonly');
+      const store = tx.objectStore(STORE_ASSET_STORE_NAME);
+      const req = store.get(id);
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => resolve(null);
+    });
+  } catch (e) {
+    return null;
+  }
+}
+
+async function deleteStoreAssetIndexedDB(id) {
+  try {
+    const db = await openStoreAssetDB();
+    if (!db) return;
+    const tx = db.transaction(STORE_ASSET_STORE_NAME, 'readwrite');
+    tx.objectStore(STORE_ASSET_STORE_NAME).delete(id);
+  } catch (e) {}
+}
+
+function dataUrlToBlob(dataUrl) {
+  try {
+    const parts = dataUrl.split(',');
+    const mime = parts[0].match(/:(.*?);/)[1];
+    const bstr = atob(parts[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new Blob([u8arr], { type: mime });
+  } catch (e) {
+    return null;
+  }
+}
+
+function getDeletedStoreProductIds() {
+  try {
+    const raw = localStorage.getItem('homecell_deleted_store_products');
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function markStoreProductAsDeleted(productId) {
+  try {
+    const current = getDeletedStoreProductIds();
+    if (!current.includes(productId)) {
+      current.push(productId);
+      localStorage.setItem('homecell_deleted_store_products', JSON.stringify(current));
+    }
+  } catch (e) {}
+}
+
+window.getDeletedStoreProductIds = getDeletedStoreProductIds;
+window.markStoreProductAsDeleted = markStoreProductAsDeleted;
+window.deleteStoreAssetIndexedDB = deleteStoreAssetIndexedDB;
+window.saveStoreAssetIndexedDB = saveStoreAssetIndexedDB;
+window.getStoreAssetIndexedDB = getStoreAssetIndexedDB;
+
 function syncStoreProducts() {
   const container = document.getElementById('store-products-grid');
   if (!container) return;
@@ -147,9 +248,12 @@ function syncStoreProducts() {
   if (storeProductsListener) storeProductsListener();
 
   const db = window.db;
+  const deletedIds = getDeletedStoreProductIds();
+
   if (!db) {
-    storeCachedProducts = DEFAULT_KINGDOM_PRODUCTS;
-    renderProductsGrid(DEFAULT_KINGDOM_PRODUCTS);
+    const filteredDefaults = DEFAULT_KINGDOM_PRODUCTS.filter(p => !deletedIds.includes(p.id));
+    storeCachedProducts = filteredDefaults;
+    renderProductsGrid(filteredDefaults);
     return;
   }
 
@@ -159,23 +263,27 @@ function syncStoreProducts() {
     if (!snap.empty) {
       snap.forEach(doc => {
         const d = doc.data();
-        if (d.published !== false) {
+        if (d.published !== false && !deletedIds.includes(doc.id)) {
           products.push({ id: doc.id, ...d });
         }
       });
     }
     
     if (products.length === 0) {
-      products = DEFAULT_KINGDOM_PRODUCTS;
-      seedDefaultProductsIfEmpty();
+      const filteredDefaults = DEFAULT_KINGDOM_PRODUCTS.filter(p => !deletedIds.includes(p.id));
+      products = filteredDefaults;
+      if (filteredDefaults.length > 0) {
+        seedDefaultProductsIfEmpty();
+      }
     }
 
     storeCachedProducts = products;
     renderProductsGrid(products);
   }, err => {
     console.warn("Store products listener error:", err);
-    storeCachedProducts = DEFAULT_KINGDOM_PRODUCTS;
-    renderProductsGrid(DEFAULT_KINGDOM_PRODUCTS);
+    const filteredDefaults = DEFAULT_KINGDOM_PRODUCTS.filter(p => !deletedIds.includes(p.id));
+    storeCachedProducts = filteredDefaults;
+    renderProductsGrid(filteredDefaults);
   });
 }
 
@@ -186,14 +294,21 @@ async function seedDefaultProductsIfEmpty() {
     const isSuperAdmin = window.currentUserRole === 'Super Admin' || window.auth?.currentUser?.email === 'danielgiobari644@gmail.com';
     if (!isSuperAdmin) return;
 
+    const hasSeeded = localStorage.getItem('homecell_seeded_default_products');
+    if (hasSeeded) return;
+
+    const deletedIds = getDeletedStoreProductIds();
     const snap = await db.collection('products').limit(1).get();
     if (snap.empty) {
       for (const prod of DEFAULT_KINGDOM_PRODUCTS) {
-        await db.collection('products').doc(prod.id).set({
-          ...prod,
-          createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
-        }, { merge: true });
+        if (!deletedIds.includes(prod.id)) {
+          await db.collection('products').doc(prod.id).set({
+            ...prod,
+            createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
+          }, { merge: true });
+        }
       }
+      localStorage.setItem('homecell_seeded_default_products', 'true');
     }
   } catch (e) {
     console.warn("Error seeding default products:", e);
@@ -535,11 +650,44 @@ async function executeProductPurchase(productId, costKC, title, fileUrl, categor
   }
 }
 
-// Direct File Download for Base64 Data URLs and Web links
-function downloadStoreProductDirect(productId, encodedUrl, encodedFileName) {
+// Direct File Download with IndexedDB and Data URL support
+async function downloadStoreProductDirect(productId, encodedUrl, encodedFileName) {
   const url = decodeURIComponent(encodedUrl || '');
   const fileName = decodeURIComponent(encodedFileName || 'HomeCell_Resource');
   
+  // 1. Check if we have an IndexedDB direct device upload asset cached
+  const localAsset = await getStoreAssetIndexedDB(productId);
+  if (localAsset && localAsset.data) {
+    try {
+      const blob = localAsset.data instanceof Blob ? localAsset.data : (
+        typeof localAsset.data === 'string' && localAsset.data.startsWith('data:') ? dataUrlToBlob(localAsset.data) : null
+      );
+      if (blob) {
+        const objectUrl = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = objectUrl;
+        let ext = localAsset.mimeType ? (
+          localAsset.mimeType.includes('pdf') ? '.pdf' :
+          localAsset.mimeType.includes('png') ? '.png' :
+          localAsset.mimeType.includes('jpeg') ? '.jpg' :
+          localAsset.mimeType.includes('zip') ? '.zip' :
+          localAsset.mimeType.includes('audio') ? '.mp3' : ''
+        ) : '';
+        const baseName = localAsset.name || fileName;
+        link.download = baseName.includes('.') ? baseName : `${baseName.replace(/[^a-zA-Z0-9_\-]/g, '_')}${ext || '.pdf'}`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 2000);
+        window.soundEngine?.playSuccess?.();
+        window.showToast?.(`Downloaded "${fileName}" to your device!`, "success");
+        return;
+      }
+    } catch (e) {
+      console.warn("IndexedDB direct download notice:", e);
+    }
+  }
+
   if (!url) {
     window.showToast?.("Download link is currently unavailable for this item.", "warning");
     return;
@@ -559,10 +707,11 @@ function downloadStoreProductDirect(productId, encodedUrl, encodedFileName) {
       else if (url.startsWith('data:application/zip')) ext = '.zip';
       
       const safeName = fileName.replace(/[^a-zA-Z0-9_\-]/g, '_');
-      link.download = `${safeName}${ext}`;
+      link.download = fileName.includes('.') ? fileName : `${safeName}${ext}`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      window.soundEngine?.playSuccess?.();
       window.showToast?.(`Downloaded "${fileName}" to your device!`, "success");
     } else {
       // Direct Web URL
@@ -716,25 +865,25 @@ function setupRequestPriceCalculator() {
 // Super Admin Direct Product Upload Helpers
 let uploadedStoreCoverBase64 = null;
 let uploadedStoreFileBase64 = null;
+let uploadedStoreFileBlob = null;
+let uploadedStoreFileName = null;
+let uploadedStoreFileMime = null;
 
 function handleStoreCoverFileSelect(event) {
-  const file = event.target.files[0];
+  const file = event.target.files?.[0];
   if (!file) return;
 
-  if (file.size > 8 * 1024 * 1024) {
-    window.showToast?.("Image is too large. Please select an image under 8MB.", "warning");
-    event.target.value = '';
-    return;
-  }
+  window.showToast?.("Optimizing cover photo from device...", "info");
 
-  // Compress image on client-side to ensure swift Firestore performance
-  compressImageToDataUrl(file, 1200, 0.82).then(dataUrl => {
+  // Compress image on client-side to ensure swift Firestore performance (~30-50KB)
+  compressImageToDataUrl(file, 800, 0.78).then(dataUrl => {
     uploadedStoreCoverBase64 = dataUrl;
     const previewBox = document.getElementById('store-upload-cover-preview-box');
     const previewImg = document.getElementById('store-upload-cover-preview');
     if (previewImg) previewImg.src = dataUrl;
     if (previewBox) previewBox.classList.remove('hidden');
-    window.showToast?.("Cover image loaded directly from device!", "success");
+    window.soundEngine?.playSuccess?.();
+    window.showToast?.("Cover photo loaded directly from device!", "success");
   }).catch(err => {
     console.error("Image compression error:", err);
     window.showToast?.("Error loading image from device.", "error");
@@ -742,12 +891,12 @@ function handleStoreCoverFileSelect(event) {
 }
 
 function handleStoreResourceFileSelect(event) {
-  const file = event.target.files[0];
+  const file = event.target.files?.[0];
   if (!file) return;
 
-  if (file.size > 6 * 1024 * 1024) {
-    window.showToast?.("File is large. Files up to 6MB can be uploaded directly.", "warning");
-  }
+  uploadedStoreFileName = file.name;
+  uploadedStoreFileMime = file.type || 'application/octet-stream';
+  uploadedStoreFileBlob = file;
 
   const reader = new FileReader();
   reader.onload = function(e) {
@@ -757,7 +906,11 @@ function handleStoreResourceFileSelect(event) {
       fileLabel.innerText = `✓ Selected: ${file.name} (${Math.round(file.size / 1024)} KB)`;
       fileLabel.classList.remove('hidden');
     }
-    window.showToast?.(`File "${file.name}" ready to upload!`, "success");
+    window.soundEngine?.playSuccess?.();
+    window.showToast?.(`Resource "${file.name}" loaded from device!`, "success");
+  };
+  reader.onerror = function() {
+    window.showToast?.("Could not read resource file from device.", "error");
   };
   reader.readAsDataURL(file);
 }
@@ -771,7 +924,7 @@ function clearStoreUploadCover() {
 }
 
 // Client-side Image Resizer & Compressor
-function compressImageToDataUrl(file, maxWidth = 1200, quality = 0.82) {
+function compressImageToDataUrl(file, maxWidth = 800, quality = 0.78) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -856,6 +1009,16 @@ async function handleSuperAdminStoreUploadSubmit(e) {
     const prodId = `prod_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     const tags = tagsStr.split(',').map(t => t.trim()).filter(Boolean);
 
+    // Save full asset in client IndexedDB cache if direct device file was selected
+    if (uploadedStoreFileBlob || uploadedStoreFileBase64) {
+      await saveStoreAssetIndexedDB(
+        prodId, 
+        uploadedStoreFileBlob || uploadedStoreFileBase64, 
+        uploadedStoreFileName || `${title.replace(/[^a-zA-Z0-9_\-]/g, '_')}.pdf`, 
+        uploadedStoreFileMime || 'application/octet-stream'
+      );
+    }
+
     const payload = {
       id: prodId,
       title: title,
@@ -869,6 +1032,7 @@ async function handleSuperAdminStoreUploadSubmit(e) {
       imageUrl: finalCoverUrl,
       fileUrl: finalFileUrl,
       downloadUrl: finalFileUrl,
+      fileName: uploadedStoreFileName || `${title}.pdf`,
       tags: tags.length > 0 ? tags : [category, "Kingdom"],
       featured: isFeatured,
       published: true,
@@ -888,11 +1052,17 @@ async function handleSuperAdminStoreUploadSubmit(e) {
     document.getElementById('store-upload-form')?.reset();
     clearStoreUploadCover();
     uploadedStoreFileBase64 = null;
+    uploadedStoreFileBlob = null;
+    uploadedStoreFileName = null;
+    uploadedStoreFileMime = null;
     const fileStatus = document.getElementById('store-upload-file-status');
     if (fileStatus) fileStatus.classList.add('hidden');
 
     closeSuperAdminStoreUploadModal();
     syncStoreProducts();
+    if (window.syncAdminStoreProductsCatalog) {
+      window.syncAdminStoreProductsCatalog();
+    }
 
   } catch (err) {
     console.error("Upload product error:", err);
@@ -913,19 +1083,37 @@ async function deleteStoreProductDirect(productId, encodedTitle) {
   }
 
   const title = decodeURIComponent(encodedTitle || 'Product');
-  const confirmDelete = confirm(`Are you sure you want to remove "${title}" from the Kingdom Store catalog?`);
+  const confirmDelete = confirm(`Are you sure you want to permanently delete "${title}" from the Kingdom Store catalog?`);
   if (!confirmDelete) return;
 
   try {
+    // 1. Mark as deleted locally so it never reappears
+    markStoreProductAsDeleted(productId);
+
+    // 2. Delete from IndexedDB asset cache
+    await deleteStoreAssetIndexedDB(productId);
+
+    // 3. Remove from memory immediately
+    storeCachedProducts = storeCachedProducts.filter(p => p.id !== productId);
+    renderProductsGrid(storeCachedProducts);
+
+    // 4. Delete from Firestore products and storeProducts
     const db = window.db;
-    if (!db) return;
+    if (db) {
+      await db.collection('products').doc(productId).delete().catch(() => {});
+      await db.collection('storeProducts').doc(productId).delete().catch(() => {});
+    }
 
-    await db.collection('products').doc(productId).delete();
-    await db.collection('storeProducts').doc(productId).delete().catch(() => {});
-
+    window.soundEngine?.playSuccess?.();
     window.showToast?.(`"${title}" deleted from Kingdom Store.`, "info");
+    
+    // 5. Update catalog tables and grids
     syncStoreProducts();
+    if (window.syncAdminStoreProductsCatalog) {
+      window.syncAdminStoreProductsCatalog();
+    }
   } catch (err) {
+    console.error("Delete product error:", err);
     window.showToast?.("Error deleting product: " + err.message, "error");
   }
 }

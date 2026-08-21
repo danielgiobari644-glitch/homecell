@@ -33,13 +33,14 @@ function pushNotificationPlugin() {
     name: 'push-notification-server',
     configureServer(server) {
       server.middlewares.use(async (req, res, next) => {
-        if (req.url === '/api/vapid-public-key' && req.method === 'GET') {
+        const pathOnly = req.url ? req.url.split('?')[0] : '';
+        if ((pathOnly === '/api/vapid-public-key' || pathOnly.endsWith('/api/vapid-public-key')) && req.method === 'GET') {
           res.setHeader('Content-Type', 'application/json');
           res.statusCode = 200;
           return res.end(JSON.stringify({ publicKey: vapidKeys.publicKey }));
         }
 
-        if (req.url === '/api/subscribe' && req.method === 'POST') {
+        if ((pathOnly === '/api/subscribe' || pathOnly.endsWith('/api/subscribe')) && req.method === 'POST') {
           let body = '';
           req.on('data', chunk => { body += chunk; });
           req.on('end', () => {
@@ -66,7 +67,7 @@ function pushNotificationPlugin() {
           return;
         }
 
-        if (req.url === '/api/broadcast-push' && req.method === 'POST') {
+        if ((pathOnly === '/api/broadcast-push' || pathOnly.endsWith('/api/broadcast-push')) && req.method === 'POST') {
           let body = '';
           req.on('data', chunk => { body += chunk; });
           req.on('end', async () => {
