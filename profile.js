@@ -75,9 +75,10 @@ window.syncProfileData = function() {
       }
     }).catch(e => console.warn("Error loading profile details:", e));
 
-    // Listen to purchased library
+    // Listen to purchased library from both user_rewards collection and subcollection
     if (profileRewardsListener) profileRewardsListener();
-    profileRewardsListener = db.collection('users').doc(user.uid).collection('user_rewards')
+    profileRewardsListener = db.collection('user_rewards')
+      .where('userUid', '==', user.uid)
       .onSnapshot(snap => {
         let items = [];
         if (!snap.empty) {
@@ -86,7 +87,16 @@ window.syncProfileData = function() {
         if (statLibraryCountEl) statLibraryCountEl.innerText = `${items.length} Items`;
         renderProfileLibrary(items);
       }, err => {
-        console.warn("Profile library listener error:", err);
+        console.warn("Profile library listener fallback note:", err);
+        // Fallback to subcollection
+        db.collection('users').doc(user.uid).collection('user_rewards').get().then(subSnap => {
+          let subItems = [];
+          if (!subSnap.empty) {
+            subSnap.forEach(d => subItems.push({ id: d.id, ...d.data() }));
+          }
+          if (statLibraryCountEl) statLibraryCountEl.innerText = `${subItems.length} Items`;
+          renderProfileLibrary(subItems);
+        }).catch(() => {});
       });
   }
 };

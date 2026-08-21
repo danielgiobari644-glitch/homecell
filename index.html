@@ -1263,7 +1263,7 @@
               <span class="text-xs font-bold text-slate-700 dark:text-zinc-300">Push Notification Status</span>
               <p id="settings-push-status" class="text-xs text-slate-400">Real push notifications are configured in the Notifications tab.</p>
             </div>
-            <button onclick="handleHeaderAuthClick()" class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-zinc-800 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-rose-600 dark:text-rose-400 font-bold text-xs transition-all cursor-pointer flex items-center gap-1.5 border border-slate-200 dark:border-zinc-700">
+            <button onclick="handleSignOut()" class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-zinc-800 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-rose-600 dark:text-rose-400 font-bold text-xs transition-all cursor-pointer flex items-center gap-1.5 border border-slate-200 dark:border-zinc-700 active:scale-95 shadow-xs">
               <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
               <span>Sign Out / Switch Account</span>
             </button>
@@ -2476,9 +2476,41 @@
         if (user) {
           switchTab('profile');
         } else {
-          openAuthModal();
+          openAuthModal('signin');
         }
       }
+
+      async function handleSignOut() {
+        try {
+          if (window.auth) {
+            await window.auth.signOut();
+          }
+
+          window.currentUserRole = 'Guest';
+          window.currentUserProfile = null;
+          window.currentKcBalance = 100;
+          window.currentUserPurchasedItemIds = [];
+
+          if (window.syncHeaderUserUI) window.syncHeaderUserUI();
+          if (window.syncProfileData) window.syncProfileData();
+          if (window.renderStoreKcHeader) window.renderStoreKcHeader();
+          if (window.checkSuperAdminStoreControls) window.checkSuperAdminStoreControls();
+          if (window.syncMyLibrary) window.syncMyLibrary();
+          if (window.checkSuperAdminRole) window.checkSuperAdminRole();
+
+          window.soundEngine?.playClick?.();
+          window.showToast?.("You have been signed out safely. Blessings!", "info");
+
+          // Open the modern Auth modal to allow switching accounts or signing in afresh
+          setTimeout(() => {
+            openAuthModal('signin');
+          }, 350);
+        } catch (err) {
+          console.error("Sign out error:", err);
+          window.showToast?.("Failed to sign out: " + err.message, "error");
+        }
+      }
+      window.handleSignOut = handleSignOut;
 
       let currentAuthMode = 'signin'; // 'signin' | 'register' | 'forgot'
 

@@ -603,6 +603,7 @@ async function executeProductPurchase(productId, costKC, title, fileUrl, categor
   const user = window.auth?.currentUser;
   if (!user) {
     window.showToast?.("Please sign in to purchase items.", "warning");
+    if (window.openAuthModal) window.openAuthModal();
     return;
   }
 
@@ -619,15 +620,16 @@ async function executeProductPurchase(productId, costKC, title, fileUrl, categor
   const buyBtn = document.getElementById(`btn-buy-prod-${productId}`);
   if (buyBtn) {
     buyBtn.disabled = true;
-    buyBtn.innerHTML = `<span class="animate-spin inline-block mr-1">⏳</span> Purchasing...`;
+    buyBtn.innerHTML = `<span class="animate-spin inline-block mr-1">⏳</span> Processing...`;
   }
 
-  window.showToast?.("Processing Kingdom Coins purchase...", "info");
+  window.showToast?.(costKC > 0 ? "Processing Kingdom Coins purchase..." : "Unlocking free resource...", "info");
 
   try {
     const userRef = db.collection('users').doc(user.uid);
     const rewardDocId = `${user.uid}_${productId}`;
     const rewardRef = db.collection('user_rewards').doc(rewardDocId);
+    const userSubRewardRef = db.collection('users').doc(user.uid).collection('user_rewards').doc(rewardDocId);
     const purchaseRef = db.collection('purchases').doc(rewardDocId);
     const txnRef = db.collection('kc_transactions').doc();
 
@@ -640,41 +642,54 @@ async function executeProductPurchase(productId, costKC, title, fileUrl, categor
       const userData = userDoc.data();
       const currentKc = parseInt(userData.kingdomCoins !== undefined ? userData.kingdomCoins : 100);
 
-      if (currentKc < costKC) {
+      if (costKC > 0 && currentKc < costKC) {
         throw new Error(`Insufficient KC. You have ${currentKc} KC, but this item requires ${costKC} KC.`);
       }
 
-      newKcBalance = currentKc - costKC;
+      newKcBalance = Math.max(0, currentKc - costKC);
       const storePurchases = (userData.storePurchases || 0) + 1;
 
-      transaction.update(userRef, {
-        kingdomCoins: newKcBalance,
-        storePurchases: storePurchases
-      });
+      if (costKC > 0) {
+        transaction.update(userRef, {
+          kingdomCoins: newKcBalance,
+          storePurchases: storePurchases
+        });
+      } else {
+        transaction.update(userRef, {
+          storePurchases: storePurchases
+        });
+      }
 
       const rewardPayload = {
         id: rewardDocId,
+        rewardId: rewardDocId,
         userUid: user.uid,
         itemId: productId,
         title: title,
+        resourceTitle: title,
         category: category,
         kcCost: costKC,
         fileUrl: fileUrl || '',
-        claimedAt: window.firebase.firestore.FieldValue.serverTimestamp()
+        downloadUrl: fileUrl || '',
+        claimedAt: window.firebase.firestore.FieldValue.serverTimestamp(),
+        purchasedAt: window.firebase.firestore.FieldValue.serverTimestamp()
       };
 
       transaction.set(rewardRef, rewardPayload);
+      transaction.set(userSubRewardRef, rewardPayload);
       transaction.set(purchaseRef, rewardPayload);
 
-      transaction.set(txnRef, {
-        id: txnRef.id,
-        userUid: user.uid,
-        type: "debit",
-        amount: costKC,
-        title: `Purchased "${title}"`,
-        description: `Kingdom Store resource unlock for ${costKC} KC`,
-        createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
-      });
+      if (costKC > 0) {
+        transaction.set(txnRef, {
+          id: txnRef.id,
+          userUid: user.uid,
+          type: "debit",
+          amount: costKC,
+          title: `Purchased "${title}"`,
+          description: `Kingdom Store resource unlock for ${costKC} KC`,
+          createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
+        });
+      }
     });
 
     // Update Local and Global State
@@ -692,15 +707,16 @@ async function executeProductPurchase(productId, costKC, title, fileUrl, categor
     // Sound and Visual Feedback
     window.soundEngine?.playCoins?.();
     if (window.triggerConfetti) window.triggerConfetti();
-    window.showToast?.(`🎉 Purchase successful! "${title}" is now available in My Library.`, "success");
+    window.showToast?.(`🎉 Success! "${title}" is unlocked and available in My Library.`, "success");
 
     renderStoreKcHeader();
     renderProductsGrid(storeCachedProducts);
     syncMyLibrary();
+    if (window.syncProfileData) window.syncProfileData();
 
     // Auto-prompt to switch to My Library or download
     setTimeout(() => {
-      const wantToDownload = confirm(`Resource "${title}" unlocked successfully!\n\nWould you like to view it in My Library and download now?`);
+      const wantToDownload = confirm(`Resource "${title}" unlocked successfully!\n\nWould you like to view it in My Library and download to your device now?`);
       if (wantToDownload) {
         switchStoreTab('my-library');
       }
@@ -717,15 +733,21 @@ async function executeProductPurchase(productId, costKC, title, fileUrl, categor
   }
 }
 
-// Direct File Download with IndexedDB and Data URL support
+// Direct File Download with IndexedDB, Blob, and Data URL support
 async function downloadStoreProductDirect(productId, encodedUrl, encodedFileName) {
   let url = decodeURIComponent(encodedUrl || '');
   let fileName = decodeURIComponent(encodedFileName || 'HomeCell_Resource');
   
-  // If url is missing or placeholder, look up from cached products
+  // Extract clean ID if compound id (e.g. userId_prodId)
+  const cleanId = productId && productId.includes('_') && productId.split('_').length > 2 && !productId.startsWith('prod_')
+    ? productId.substring(productId.indexOf('_') + 1)
+    : productId;
+
+  // If url is missing or placeholder, look up from cached products or database
   if (!url || url === 'undefined' || url === 'null' || url === 'indexeddb_local_asset') {
-    const cached = (storeCachedProducts || []).find(p => p.id === productId) ||
-                   (DEFAULT_KINGDOM_PRODUCTS || []).find(p => p.id === productId);
+    const cached = (storeCachedProducts || []).find(p => p.id === cleanId || p.id === productId) ||
+                   (DEFAULT_KINGDOM_PRODUCTS || []).find(p => p.id === cleanId || p.id === productId) ||
+                   (getUploadedStoreProductsLocal() || []).find(p => p.id === cleanId || p.id === productId);
     if (cached) {
       url = cached.fileUrl || cached.downloadUrl || cached.coverUrl || cached.imageUrl || '';
       if (!fileName || fileName === 'HomeCell_Resource') {
@@ -734,9 +756,13 @@ async function downloadStoreProductDirect(productId, encodedUrl, encodedFileName
     }
   }
 
-  // 1. Check if we have an IndexedDB direct device upload asset cached
+  // 1. Check IndexedDB direct device upload asset cache
   try {
-    const localAsset = await getStoreAssetIndexedDB(productId);
+    let localAsset = await getStoreAssetIndexedDB(cleanId);
+    if (!localAsset && cleanId !== productId) {
+      localAsset = await getStoreAssetIndexedDB(productId);
+    }
+
     if (localAsset && localAsset.data) {
       const blob = localAsset.data instanceof Blob ? localAsset.data : (
         typeof localAsset.data === 'string' && localAsset.data.startsWith('data:') ? dataUrlToBlob(localAsset.data) : null
@@ -745,6 +771,7 @@ async function downloadStoreProductDirect(productId, encodedUrl, encodedFileName
         const objectUrl = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = objectUrl;
+        const baseName = localAsset.fileName || localAsset.name || fileName;
         let ext = localAsset.mimeType ? (
           localAsset.mimeType.includes('pdf') ? '.pdf' :
           localAsset.mimeType.includes('png') ? '.png' :
@@ -752,7 +779,6 @@ async function downloadStoreProductDirect(productId, encodedUrl, encodedFileName
           localAsset.mimeType.includes('zip') ? '.zip' :
           localAsset.mimeType.includes('audio') ? '.mp3' : ''
         ) : '';
-        const baseName = localAsset.name || fileName;
         link.download = baseName.includes('.') ? baseName : `${baseName.replace(/[^a-zA-Z0-9_\-]/g, '_')}${ext || '.jpg'}`;
         document.body.appendChild(link);
         link.click();
@@ -765,6 +791,20 @@ async function downloadStoreProductDirect(productId, encodedUrl, encodedFileName
     }
   } catch (e) {
     console.warn("IndexedDB direct download notice:", e);
+  }
+
+  // If still no url or placeholder, check Firestore product/user_rewards doc
+  if ((!url || url === 'indexeddb_local_asset') && window.db) {
+    try {
+      const doc = await window.db.collection('products').doc(cleanId).get();
+      if (doc.exists) {
+        const data = doc.data();
+        url = data.fileUrl || data.downloadUrl || data.coverUrl || data.imageUrl || '';
+        if (!fileName || fileName === 'HomeCell_Resource') {
+          fileName = data.fileName || `${(data.title || 'Resource').replace(/[^a-zA-Z0-9_\-]/g, '_')}.jpg`;
+        }
+      }
+    } catch (e) {}
   }
 
   if (!url || url === 'indexeddb_local_asset') {
@@ -841,6 +881,12 @@ async function downloadStoreProductDirect(productId, encodedUrl, encodedFileName
     window.open(url, '_blank');
   }
 }
+
+// Global helper for downloading unlocked resources from anywhere in app (e.g. Believer Profile)
+window.downloadPurchasedResource = async function(rewardIdOrItemId, encodedTitle) {
+  const safeTitle = decodeURIComponent(encodedTitle || 'Kingdom_Resource');
+  await downloadStoreProductDirect(rewardIdOrItemId, '', safeTitle);
+};
 
 function syncMyLibrary() {
   const container = document.getElementById('my-library-grid');
