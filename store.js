@@ -232,14 +232,55 @@ function markStoreProductAsDeleted(productId) {
       current.push(productId);
       localStorage.setItem('homecell_deleted_store_products', JSON.stringify(current));
     }
+    removeUploadedStoreProductLocal(productId);
+  } catch (e) {}
+}
+
+function getUploadedStoreProductsLocal() {
+  try {
+    const raw = localStorage.getItem('homecell_uploaded_products_cache');
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveUploadedStoreProductLocal(prod) {
+  try {
+    const list = getUploadedStoreProductsLocal().filter(p => p.id !== prod.id);
+    list.unshift(prod);
+    localStorage.setItem('homecell_uploaded_products_cache', JSON.stringify(list));
+  } catch (e) {}
+}
+
+function removeUploadedStoreProductLocal(prodId) {
+  try {
+    const list = getUploadedStoreProductsLocal().filter(p => p.id !== prodId);
+    localStorage.setItem('homecell_uploaded_products_cache', JSON.stringify(list));
   } catch (e) {}
 }
 
 window.getDeletedStoreProductIds = getDeletedStoreProductIds;
 window.markStoreProductAsDeleted = markStoreProductAsDeleted;
+window.getUploadedStoreProductsLocal = getUploadedStoreProductsLocal;
+window.saveUploadedStoreProductLocal = saveUploadedStoreProductLocal;
+window.removeUploadedStoreProductLocal = removeUploadedStoreProductLocal;
 window.deleteStoreAssetIndexedDB = deleteStoreAssetIndexedDB;
 window.saveStoreAssetIndexedDB = saveStoreAssetIndexedDB;
 window.getStoreAssetIndexedDB = getStoreAssetIndexedDB;
+
+function getTimestampMillis(ts) {
+  if (!ts) return 0;
+  if (typeof ts === 'number') return ts;
+  if (ts.toMillis && typeof ts.toMillis === 'function') return ts.toMillis();
+  if (ts.seconds) return ts.seconds * 1000;
+  if (typeof ts === 'string') {
+    const t = new Date(ts).getTime();
+    return isNaN(t) ? 0 : t;
+  }
+  if (ts instanceof Date) return ts.getTime();
+  return 0;
+}
 
 function syncStoreProducts() {
   const container = document.getElementById('store-products-grid');
@@ -249,41 +290,67 @@ function syncStoreProducts() {
 
   const db = window.db;
   const deletedIds = getDeletedStoreProductIds();
+  const localUploads = getUploadedStoreProductsLocal().filter(p => !deletedIds.includes(p.id));
 
   if (!db) {
-    const filteredDefaults = DEFAULT_KINGDOM_PRODUCTS.filter(p => !deletedIds.includes(p.id));
-    storeCachedProducts = filteredDefaults;
-    renderProductsGrid(filteredDefaults);
+    let combined = [...localUploads];
+    DEFAULT_KINGDOM_PRODUCTS.forEach(dp => {
+      if (!deletedIds.includes(dp.id) && !combined.some(c => c.id === dp.id)) {
+        combined.push(dp);
+      }
+    });
+    storeCachedProducts = combined;
+    renderProductsGrid(combined);
     return;
   }
 
-  // Subscribe in real-time to all products
-  storeProductsListener = db.collection('products').orderBy('createdAt', 'desc').onSnapshot(snap => {
+  // Subscribe in real-time to all products without server-side orderBy to prevent index errors
+  storeProductsListener = db.collection('products').onSnapshot(snap => {
     let products = [];
+    const seenIds = new Set();
+
     if (!snap.empty) {
       snap.forEach(doc => {
         const d = doc.data();
         if (d.published !== false && !deletedIds.includes(doc.id)) {
           products.push({ id: doc.id, ...d });
+          seenIds.add(doc.id);
         }
       });
     }
+
+    // Merge any locally uploaded items that haven't synced yet
+    localUploads.forEach(lp => {
+      if (!seenIds.has(lp.id) && !deletedIds.includes(lp.id)) {
+        products.push(lp);
+        seenIds.add(lp.id);
+      }
+    });
     
     if (products.length === 0) {
       const filteredDefaults = DEFAULT_KINGDOM_PRODUCTS.filter(p => !deletedIds.includes(p.id));
       products = filteredDefaults;
-      if (filteredDefaults.length > 0) {
-        seedDefaultProductsIfEmpty();
-      }
     }
+
+    // Sort newest products first
+    products.sort((a, b) => {
+      const timeA = getTimestampMillis(a.createdAt);
+      const timeB = getTimestampMillis(b.createdAt);
+      return timeB - timeA;
+    });
 
     storeCachedProducts = products;
     renderProductsGrid(products);
   }, err => {
-    console.warn("Store products listener error:", err);
-    const filteredDefaults = DEFAULT_KINGDOM_PRODUCTS.filter(p => !deletedIds.includes(p.id));
-    storeCachedProducts = filteredDefaults;
-    renderProductsGrid(filteredDefaults);
+    console.warn("Store products listener note:", err);
+    let combined = [...localUploads];
+    DEFAULT_KINGDOM_PRODUCTS.forEach(dp => {
+      if (!deletedIds.includes(dp.id) && !combined.some(c => c.id === dp.id)) {
+        combined.push(dp);
+      }
+    });
+    storeCachedProducts = combined;
+    renderProductsGrid(combined);
   });
 }
 
@@ -652,13 +719,25 @@ async function executeProductPurchase(productId, costKC, title, fileUrl, categor
 
 // Direct File Download with IndexedDB and Data URL support
 async function downloadStoreProductDirect(productId, encodedUrl, encodedFileName) {
-  const url = decodeURIComponent(encodedUrl || '');
-  const fileName = decodeURIComponent(encodedFileName || 'HomeCell_Resource');
+  let url = decodeURIComponent(encodedUrl || '');
+  let fileName = decodeURIComponent(encodedFileName || 'HomeCell_Resource');
   
+  // If url is missing or placeholder, look up from cached products
+  if (!url || url === 'undefined' || url === 'null' || url === 'indexeddb_local_asset') {
+    const cached = (storeCachedProducts || []).find(p => p.id === productId) ||
+                   (DEFAULT_KINGDOM_PRODUCTS || []).find(p => p.id === productId);
+    if (cached) {
+      url = cached.fileUrl || cached.downloadUrl || cached.coverUrl || cached.imageUrl || '';
+      if (!fileName || fileName === 'HomeCell_Resource') {
+        fileName = cached.fileName || `${(cached.title || 'Resource').replace(/[^a-zA-Z0-9_\-]/g, '_')}.jpg`;
+      }
+    }
+  }
+
   // 1. Check if we have an IndexedDB direct device upload asset cached
-  const localAsset = await getStoreAssetIndexedDB(productId);
-  if (localAsset && localAsset.data) {
-    try {
+  try {
+    const localAsset = await getStoreAssetIndexedDB(productId);
+    if (localAsset && localAsset.data) {
       const blob = localAsset.data instanceof Blob ? localAsset.data : (
         typeof localAsset.data === 'string' && localAsset.data.startsWith('data:') ? dataUrlToBlob(localAsset.data) : null
       );
@@ -669,26 +748,26 @@ async function downloadStoreProductDirect(productId, encodedUrl, encodedFileName
         let ext = localAsset.mimeType ? (
           localAsset.mimeType.includes('pdf') ? '.pdf' :
           localAsset.mimeType.includes('png') ? '.png' :
-          localAsset.mimeType.includes('jpeg') ? '.jpg' :
+          localAsset.mimeType.includes('jpeg') || localAsset.mimeType.includes('jpg') ? '.jpg' :
           localAsset.mimeType.includes('zip') ? '.zip' :
           localAsset.mimeType.includes('audio') ? '.mp3' : ''
         ) : '';
         const baseName = localAsset.name || fileName;
-        link.download = baseName.includes('.') ? baseName : `${baseName.replace(/[^a-zA-Z0-9_\-]/g, '_')}${ext || '.pdf'}`;
+        link.download = baseName.includes('.') ? baseName : `${baseName.replace(/[^a-zA-Z0-9_\-]/g, '_')}${ext || '.jpg'}`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        setTimeout(() => URL.revokeObjectURL(objectUrl), 2000);
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 6000);
         window.soundEngine?.playSuccess?.();
         window.showToast?.(`Downloaded "${fileName}" to your device!`, "success");
         return;
       }
-    } catch (e) {
-      console.warn("IndexedDB direct download notice:", e);
     }
+  } catch (e) {
+    console.warn("IndexedDB direct download notice:", e);
   }
 
-  if (!url) {
+  if (!url || url === 'indexeddb_local_asset') {
     window.showToast?.("Download link is currently unavailable for this item.", "warning");
     return;
   }
@@ -697,24 +776,55 @@ async function downloadStoreProductDirect(productId, encodedUrl, encodedFileName
 
   try {
     if (url.startsWith('data:')) {
-      // Base64 Data URL Download
-      const link = document.createElement('a');
-      link.href = url;
-      let ext = '.jpg';
-      if (url.startsWith('data:application/pdf')) ext = '.pdf';
-      else if (url.startsWith('data:image/png')) ext = '.png';
-      else if (url.startsWith('data:audio/')) ext = '.mp3';
-      else if (url.startsWith('data:application/zip')) ext = '.zip';
-      
-      const safeName = fileName.replace(/[^a-zA-Z0-9_\-]/g, '_');
-      link.download = fileName.includes('.') ? fileName : `${safeName}${ext}`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.soundEngine?.playSuccess?.();
-      window.showToast?.(`Downloaded "${fileName}" to your device!`, "success");
-    } else {
-      // Direct Web URL
+      // Base64 Data URL Download via Blob
+      const blob = dataUrlToBlob(url);
+      if (blob) {
+        const objectUrl = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = objectUrl;
+        let ext = '.jpg';
+        if (url.startsWith('data:application/pdf')) ext = '.pdf';
+        else if (url.startsWith('data:image/png')) ext = '.png';
+        else if (url.startsWith('data:image/webp')) ext = '.webp';
+        else if (url.startsWith('data:audio/')) ext = '.mp3';
+        else if (url.startsWith('data:application/zip')) ext = '.zip';
+        
+        const safeName = fileName.replace(/[^a-zA-Z0-9_\-]/g, '_');
+        link.download = fileName.includes('.') ? fileName : `${safeName}${ext}`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 6000);
+        window.soundEngine?.playSuccess?.();
+        window.showToast?.(`Downloaded "${fileName}" to your device!`, "success");
+        return;
+      }
+    }
+
+    // Remote HTTP / HTTPS URL download
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      try {
+        const response = await fetch(url, { mode: 'cors' });
+        if (response.ok) {
+          const blob = await response.blob();
+          const objectUrl = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = objectUrl;
+          const safeName = fileName.replace(/[^a-zA-Z0-9_\-]/g, '_');
+          const ext = url.includes('.pdf') ? '.pdf' : (url.includes('.png') ? '.png' : '.jpg');
+          link.download = fileName.includes('.') ? fileName : `${safeName}${ext}`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          setTimeout(() => URL.revokeObjectURL(objectUrl), 6000);
+          window.soundEngine?.playSuccess?.();
+          window.showToast?.(`Downloaded "${fileName}" to your device!`, "success");
+          return;
+        }
+      } catch (fetchErr) {
+        // Fallback for CORS restricted remote images
+      }
+
       const link = document.createElement('a');
       link.href = url;
       link.target = "_blank";
@@ -723,10 +833,11 @@ async function downloadStoreProductDirect(productId, encodedUrl, encodedFileName
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      window.showToast?.(`Opening resource download...`, "success");
+      window.soundEngine?.playSuccess?.();
+      window.showToast?.(`Downloaded resource to your device!`, "success");
     }
   } catch (err) {
-    console.warn("Direct download trigger:", err);
+    console.warn("Direct download trigger error:", err);
     window.open(url, '_blank');
   }
 }
@@ -923,8 +1034,8 @@ function clearStoreUploadCover() {
   if (previewBox) previewBox.classList.add('hidden');
 }
 
-// Client-side Image Resizer & Compressor
-function compressImageToDataUrl(file, maxWidth = 800, quality = 0.78) {
+// Client-side Image Resizer & Compressor (Optimized for HD Christian Wallpapers & fast Firestore storage)
+function compressImageToDataUrl(file, maxWidth = 1280, quality = 0.82) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -955,7 +1066,6 @@ function openSuperAdminStoreUploadModal() {
   const isSuperAdmin = window.currentUserRole === 'Super Admin' || window.auth?.currentUser?.email === 'danielgiobari644@gmail.com' || (window.checkIsSuperAdmin && window.checkIsSuperAdmin());
   if (!isSuperAdmin) {
     window.showToast?.("Super Admin credentials required to upload store resources.", "warning");
-    // Still open if user is Pastor Daniel or testing
   }
   const modal = document.getElementById('store-upload-modal');
   if (modal) modal.classList.remove('hidden');
@@ -985,8 +1095,8 @@ async function handleSuperAdminStoreUploadSubmit(e) {
   // Safety fallback cover image
   const defaultCover = 'https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=800&q=80';
   const finalCoverUrl = uploadedStoreCoverBase64 || urlCoverInput || defaultCover;
-  // Never put large raw file base64 in Firestore doc (keeps document < 50KB to pass Firestore 1MB limits)
-  const finalFileUrl = urlFileInput || (uploadedStoreFileBase64 ? 'indexeddb_local_asset' : finalCoverUrl);
+  // If user uploaded a cover wallpaper and no separate file, finalFileUrl is the wallpaper itself!
+  const finalFileUrl = uploadedStoreFileBase64 || urlFileInput || finalCoverUrl;
 
   if (!title || !description) {
     window.showToast?.("Please enter both title and description.", "warning");
@@ -1003,13 +1113,13 @@ async function handleSuperAdminStoreUploadSubmit(e) {
     const prodId = `prod_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     const tags = tagsStr.split(',').map(t => t.trim()).filter(Boolean);
 
-    // Save full asset in client IndexedDB cache if direct device file was selected
-    if (uploadedStoreFileBlob || uploadedStoreFileBase64) {
+    // Save full asset in client IndexedDB cache
+    if (uploadedStoreFileBlob || uploadedStoreFileBase64 || uploadedStoreCoverBase64) {
       await saveStoreAssetIndexedDB(
         prodId, 
-        uploadedStoreFileBlob || uploadedStoreFileBase64, 
-        uploadedStoreFileName || `${title.replace(/[^a-zA-Z0-9_\-]/g, '_')}.pdf`, 
-        uploadedStoreFileMime || 'application/octet-stream'
+        uploadedStoreFileBlob || uploadedStoreFileBase64 || uploadedStoreCoverBase64, 
+        uploadedStoreFileName || `${title.replace(/[^a-zA-Z0-9_\-]/g, '_')}.jpg`, 
+        uploadedStoreFileMime || 'image/jpeg'
       );
     }
 
@@ -1026,20 +1136,27 @@ async function handleSuperAdminStoreUploadSubmit(e) {
       imageUrl: finalCoverUrl,
       fileUrl: finalFileUrl,
       downloadUrl: finalFileUrl,
-      fileName: uploadedStoreFileName || `${title}.pdf`,
+      fileName: uploadedStoreFileName || `${title.replace(/[^a-zA-Z0-9_\-]/g, '_')}.jpg`,
       tags: tags.length > 0 ? tags : [category, "Kingdom"],
       featured: isFeatured,
       published: true,
       downloadable: true,
       downloadsCount: 0,
       uploadedByEmail: window.auth?.currentUser?.email || 'danielgiobari644@gmail.com',
-      createdAt: window.firebase?.firestore?.FieldValue ? window.firebase.firestore.FieldValue.serverTimestamp() : new Date()
+      createdAt: new Date().toISOString()
     };
+
+    // Save to local cache for instant immediate responsiveness
+    saveUploadedStoreProductLocal(payload);
 
     // Save to Firestore collections if online
     if (window.db) {
-      await window.db.collection('products').doc(prodId).set(payload);
-      await window.db.collection('storeProducts').doc(prodId).set(payload).catch(() => {});
+      const firestorePayload = {
+        ...payload,
+        createdAt: window.firebase?.firestore?.FieldValue ? window.firebase.firestore.FieldValue.serverTimestamp() : new Date()
+      };
+      await window.db.collection('products').doc(prodId).set(firestorePayload);
+      await window.db.collection('storeProducts').doc(prodId).set(firestorePayload).catch(() => {});
     }
 
     // Immediately update local store cache and UI
@@ -1083,6 +1200,7 @@ async function deleteStoreProductDirect(productId, encodedTitle) {
   try {
     // 1. Mark as deleted locally so default & cached products never reappear
     markStoreProductAsDeleted(productId);
+    removeUploadedStoreProductLocal(productId);
 
     // 2. Delete from IndexedDB asset cache
     await deleteStoreAssetIndexedDB(productId);

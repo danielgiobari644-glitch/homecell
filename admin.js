@@ -2067,7 +2067,7 @@ function handleAdminCoverFileSelect(event) {
   const file = event.target.files?.[0];
   if (!file) return;
 
-  window.showToast?.("Optimizing cover photo...", "info");
+  window.showToast?.("Optimizing cover photo from device...", "info");
 
   const reader = new FileReader();
   reader.onload = (e) => {
@@ -2076,7 +2076,7 @@ function handleAdminCoverFileSelect(event) {
       const canvas = document.createElement('canvas');
       let width = img.width;
       let height = img.height;
-      const maxWidth = 800;
+      const maxWidth = 1280;
       if (width > maxWidth) {
         height = Math.round((height * maxWidth) / width);
         width = maxWidth;
@@ -2085,7 +2085,7 @@ function handleAdminCoverFileSelect(event) {
       canvas.height = height;
       const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0, width, height);
-      adminUploadedCoverBase64 = canvas.toDataURL('image/jpeg', 0.78);
+      adminUploadedCoverBase64 = canvas.toDataURL('image/jpeg', 0.82);
 
       const previewBox = document.getElementById('admin-prod-cover-preview-box');
       const previewImg = document.getElementById('admin-prod-cover-preview');
@@ -2144,7 +2144,7 @@ async function handleAdminStoreProductUploadSubmit(e) {
   const urlFile = document.getElementById('admin-prod-file-url')?.value?.trim();
 
   const coverUrl = adminUploadedCoverBase64 || urlCover || 'https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=800&q=80';
-  const fileUrl = urlFile || (adminUploadedFileBase64 ? 'indexeddb_local_asset' : coverUrl);
+  const fileUrl = adminUploadedFileBase64 || urlFile || coverUrl;
 
   if (!title || !desc) {
     window.showToast?.("Please enter product title and description.", "warning");
@@ -2160,14 +2160,14 @@ async function handleAdminStoreProductUploadSubmit(e) {
   try {
     const prodId = `prod_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
 
-    // Save full asset in client IndexedDB cache if direct device file was selected
-    if (adminUploadedFileBlob || adminUploadedFileBase64) {
+    // Save full asset in client IndexedDB cache
+    if (adminUploadedFileBlob || adminUploadedFileBase64 || adminUploadedCoverBase64) {
       if (window.saveStoreAssetIndexedDB) {
         await window.saveStoreAssetIndexedDB(
           prodId, 
-          adminUploadedFileBlob || adminUploadedFileBase64, 
-          adminUploadedFileName || `${title.replace(/[^a-zA-Z0-9_\-]/g, '_')}.pdf`, 
-          adminUploadedFileMime || 'application/octet-stream'
+          adminUploadedFileBlob || adminUploadedFileBase64 || adminUploadedCoverBase64, 
+          adminUploadedFileName || `${title.replace(/[^a-zA-Z0-9_\-]/g, '_')}.jpg`, 
+          adminUploadedFileMime || 'image/jpeg'
         );
       }
     }
@@ -2185,19 +2185,28 @@ async function handleAdminStoreProductUploadSubmit(e) {
       imageUrl: coverUrl,
       fileUrl: fileUrl,
       downloadUrl: fileUrl,
-      fileName: adminUploadedFileName || `${title}.pdf`,
+      fileName: adminUploadedFileName || `${title.replace(/[^a-zA-Z0-9_\-]/g, '_')}.jpg`,
       featured: featured,
       published: true,
       downloadable: true,
       downloadsCount: 0,
       tags: [category, "Kingdom", "Spiritual"],
       uploadedBy: window.auth?.currentUser?.email || 'danielgiobari644@gmail.com',
-      createdAt: window.firebase?.firestore?.FieldValue ? window.firebase.firestore.FieldValue.serverTimestamp() : new Date()
+      createdAt: new Date().toISOString()
     };
 
+    // Save locally for instant reactivity
+    if (window.saveUploadedStoreProductLocal) {
+      window.saveUploadedStoreProductLocal(productPayload);
+    }
+
     if (window.db) {
-      await window.db.collection('products').doc(prodId).set(productPayload);
-      await window.db.collection('storeProducts').doc(prodId).set(productPayload).catch(() => {});
+      const firestorePayload = {
+        ...productPayload,
+        createdAt: window.firebase?.firestore?.FieldValue ? window.firebase.firestore.FieldValue.serverTimestamp() : new Date()
+      };
+      await window.db.collection('products').doc(prodId).set(firestorePayload);
+      await window.db.collection('storeProducts').doc(prodId).set(firestorePayload).catch(() => {});
     }
 
     window.soundEngine?.playSuccess?.();
@@ -2233,37 +2242,14 @@ function syncAdminStoreProductsCatalog() {
 
   const db = window.db;
   const deletedIds = window.getDeletedStoreProductIds ? window.getDeletedStoreProductIds() : [];
+  const localUploads = window.getUploadedStoreProductsLocal ? window.getUploadedStoreProductsLocal().filter(p => !deletedIds.includes(p.id)) : [];
 
-  if (!db) {
-    tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-xs text-slate-400">Offline mode. Connect to internet for live catalog.</td></tr>`;
-    return;
-  }
-
-  if (adminProductsListener) adminProductsListener();
-
-  // Snapshot without strict index order to guarantee fast retrieval on all accounts
-  adminProductsListener = db.collection('products').onSnapshot(snap => {
+  const renderTableRows = (docs) => {
     tbody.innerHTML = '';
-    const docs = [];
-    if (!snap.empty) {
-      snap.forEach(doc => {
-        if (!deletedIds.includes(doc.id)) {
-          docs.push({ id: doc.id, ...doc.data() });
-        }
-      });
-    }
-
-    if (docs.length === 0) {
+    if (!docs || docs.length === 0) {
       tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-xs text-slate-400">No active products in catalog. Upload resources using the form above!</td></tr>`;
       return;
     }
-
-    // Sort newest first
-    docs.sort((a, b) => {
-      const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
-      const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
-      return timeB - timeA;
-    });
 
     docs.forEach(p => {
       const tr = document.createElement('tr');
@@ -2301,7 +2287,71 @@ function syncAdminStoreProductsCatalog() {
       `;
       tbody.appendChild(tr);
     });
-  }, err => console.warn("Catalog sync error:", err));
+  };
+
+  if (!db) {
+    let combined = [...localUploads];
+    if (window.DEFAULT_KINGDOM_PRODUCTS) {
+      window.DEFAULT_KINGDOM_PRODUCTS.forEach(dp => {
+        if (!deletedIds.includes(dp.id) && !combined.some(c => c.id === dp.id)) combined.push(dp);
+      });
+    }
+    renderTableRows(combined);
+    return;
+  }
+
+  if (adminProductsListener) adminProductsListener();
+
+  // Snapshot without strict index order to guarantee fast retrieval on all accounts
+  adminProductsListener = db.collection('products').onSnapshot(snap => {
+    const docs = [];
+    const seenIds = new Set();
+
+    if (!snap.empty) {
+      snap.forEach(doc => {
+        if (!deletedIds.includes(doc.id)) {
+          docs.push({ id: doc.id, ...doc.data() });
+          seenIds.add(doc.id);
+        }
+      });
+    }
+
+    localUploads.forEach(lp => {
+      if (!seenIds.has(lp.id) && !deletedIds.includes(lp.id)) {
+        docs.push(lp);
+        seenIds.add(lp.id);
+      }
+    });
+
+    if (docs.length === 0 && window.DEFAULT_KINGDOM_PRODUCTS) {
+      window.DEFAULT_KINGDOM_PRODUCTS.forEach(dp => {
+        if (!deletedIds.includes(dp.id)) docs.push(dp);
+      });
+    }
+
+    // Sort newest first
+    docs.sort((a, b) => {
+      const getT = (item) => {
+        if (!item?.createdAt) return 0;
+        if (typeof item.createdAt === 'number') return item.createdAt;
+        if (item.createdAt.toMillis) return item.createdAt.toMillis();
+        if (item.createdAt.seconds) return item.createdAt.seconds * 1000;
+        return new Date(item.createdAt).getTime() || 0;
+      };
+      return getT(b) - getT(a);
+    });
+
+    renderTableRows(docs);
+  }, err => {
+    console.warn("Catalog sync note:", err);
+    let combined = [...localUploads];
+    if (window.DEFAULT_KINGDOM_PRODUCTS) {
+      window.DEFAULT_KINGDOM_PRODUCTS.forEach(dp => {
+        if (!deletedIds.includes(dp.id) && !combined.some(c => c.id === dp.id)) combined.push(dp);
+      });
+    }
+    renderTableRows(combined);
+  });
 }
 
 async function deleteAdminStoreProduct(prodId, encodedTitle) {
@@ -2311,6 +2361,9 @@ async function deleteAdminStoreProduct(prodId, encodedTitle) {
   try {
     if (window.markStoreProductAsDeleted) {
       window.markStoreProductAsDeleted(prodId);
+    }
+    if (window.removeUploadedStoreProductLocal) {
+      window.removeUploadedStoreProductLocal(prodId);
     }
     if (window.deleteStoreAssetIndexedDB) {
       await window.deleteStoreAssetIndexedDB(prodId);
