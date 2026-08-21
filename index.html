@@ -1882,51 +1882,230 @@
       </div>
     </div>
 
-    <!-- AUTHENTICATION / ACCOUNT MODAL -->
-    <div id="auth-modal" onclick="if(event.target === this) closeAuthModal()" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-      <div class="glass-panel rounded-3xl max-w-md w-full p-6 sm:p-8 space-y-6 shadow-2xl tab-animate-in relative">
-        <button onclick="closeAuthModal()" class="absolute top-5 right-5 text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 p-2 rounded-full bg-slate-100 dark:bg-zinc-800 text-xs font-black cursor-pointer">✕</button>
+    <!-- MODERN GLOBAL AUTHENTICATION MODAL -->
+    <div id="auth-modal" onclick="if(event.target === this) closeAuthModal()" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 md:p-6 overflow-y-auto">
+      <div class="glass-panel w-full max-w-4xl rounded-3xl sm:rounded-[2rem] shadow-2xl tab-animate-in relative overflow-hidden my-auto border border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 grid grid-cols-1 md:grid-cols-12 min-h-[580px]">
+        
+        <!-- CLOSE BUTTON -->
+        <button onclick="closeAuthModal()" class="absolute top-4 right-4 z-20 w-9 h-9 rounded-full bg-slate-100 dark:bg-zinc-800/80 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-500 dark:text-zinc-300 flex items-center justify-center text-sm font-black transition-all cursor-pointer shadow-sm" title="Close">
+          ✕
+        </button>
 
-        <div class="text-center space-y-2">
-          <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-black text-2xl flex items-center justify-center mx-auto shadow-lg shadow-blue-500/25">✝</div>
-          <h3 id="auth-modal-title" class="text-xl sm:text-2xl font-black font-display text-slate-900 dark:text-zinc-100">Welcome to Home.cell</h3>
-          <p class="text-xs text-slate-400">Faith, fellowship, missions, and Kingdom resources.</p>
+        <!-- LEFT COLUMN: GLOBAL BRANDING & VISION (Desktop / Tablet) -->
+        <div class="hidden md:flex md:col-span-5 bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900 text-white p-8 lg:p-10 flex-col justify-between relative overflow-hidden border-r border-slate-800/60">
+          <!-- Ambient Glow Cones -->
+          <div class="absolute -top-24 -left-24 w-72 h-72 bg-blue-600/20 rounded-full blur-3xl pointer-events-none"></div>
+          <div class="absolute -bottom-24 -right-24 w-72 h-72 bg-amber-500/15 rounded-full blur-3xl pointer-events-none"></div>
+
+          <!-- Brand Top -->
+          <div class="relative z-10 space-y-6">
+            <div class="flex items-center gap-3">
+              <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-amber-500 p-0.5 shadow-lg shadow-blue-500/30 flex items-center justify-center">
+                <div class="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center font-black text-xl text-amber-300">
+                  ✝
+                </div>
+              </div>
+              <div>
+                <span class="font-black font-display tracking-wider text-base text-white block">HOME.CELL</span>
+                <span class="text-[10px] text-blue-300/80 font-mono font-bold uppercase tracking-widest">Global Kingdom Platform</span>
+              </div>
+            </div>
+
+            <div class="space-y-3 pt-2">
+              <h2 class="text-2xl lg:text-3xl font-black font-display text-white leading-tight">
+                Faith, Fellowship, & Spiritual Growth.
+              </h2>
+              <p class="text-xs text-slate-300/90 leading-relaxed">
+                Connect with active cell groups, read daily living devotionals, take biblical quizzes, and unlock verified Christian digital resources.
+              </p>
+            </div>
+
+            <!-- Platform Highlights -->
+            <div class="space-y-3 pt-3">
+              <div class="flex items-center gap-3 text-xs text-slate-200">
+                <div class="w-6 h-6 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center text-xs shrink-0">📖</div>
+                <span class="font-medium">Daily Scripture & Audio Devotionals</span>
+              </div>
+              <div class="flex items-center gap-3 text-xs text-slate-200">
+                <div class="w-6 h-6 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-xs shrink-0">👥</div>
+                <span class="font-medium">Local Cell Fellowship & Prayer Wall</span>
+              </div>
+              <div class="flex items-center gap-3 text-xs text-slate-200">
+                <div class="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center text-xs shrink-0">🏆</div>
+                <span class="font-medium">Scripture Trivia & Kingdom Coins</span>
+              </div>
+              <div class="flex items-center gap-3 text-xs text-slate-200">
+                <div class="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs shrink-0">🛍️</div>
+                <span class="font-medium">Digital Wallpapers & Study Resources</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom Scripture Card -->
+          <div class="relative z-10 pt-6 mt-6 border-t border-slate-800/80">
+            <p class="text-[11px] italic text-slate-300 font-serif leading-relaxed">
+              "For where two or three gather in my name, there am I with them."
+            </p>
+            <span class="text-[10px] font-bold text-amber-400/90 font-mono mt-1 block">Matthew 18:20</span>
+          </div>
         </div>
 
-        <form id="auth-form" onsubmit="handleAuthSubmit(event)" class="space-y-4">
-          <div>
-            <label class="block text-xs font-bold text-slate-600 dark:text-zinc-400 mb-1">Email Address</label>
-            <input type="email" id="auth-email" required placeholder="believer@example.com" class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-2xl p-3.5 text-slate-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        <!-- RIGHT COLUMN: MODERN AUTHENTICATION FORM (Desktop & Mobile) -->
+        <div class="md:col-span-7 p-6 sm:p-8 lg:p-10 flex flex-col justify-center relative bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100">
+          
+          <!-- MOBILE HEADER (Visible only on small screens) -->
+          <div class="md:hidden flex items-center gap-3 mb-5">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center text-base font-black shadow-md shadow-blue-500/20">
+              ✝
+            </div>
+            <div>
+              <span class="font-black font-display text-sm tracking-wider block">HOME.CELL</span>
+              <span class="text-[9px] text-slate-400 font-mono font-bold uppercase tracking-wider">Kingdom Fellowship</span>
+            </div>
           </div>
 
-          <div>
-            <label class="block text-xs font-bold text-slate-600 dark:text-zinc-400 mb-1">Password</label>
-            <input type="password" id="auth-password" required placeholder="••••••••" class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-2xl p-3.5 text-slate-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          <!-- DYNAMIC AUTH HEADER -->
+          <div class="space-y-1 mb-6">
+            <h3 id="auth-main-title" class="text-xl sm:text-2xl font-black font-display text-slate-900 dark:text-zinc-50 tracking-tight">
+              Welcome back
+            </h3>
+            <p id="auth-main-subtitle" class="text-xs text-slate-500 dark:text-zinc-400">
+              Sign in to continue your fellowship journey.
+            </p>
           </div>
 
-          <div id="auth-name-field-box" class="hidden">
-            <label class="block text-xs font-bold text-slate-600 dark:text-zinc-400 mb-1">Display Name</label>
-            <input type="text" id="auth-display-name" placeholder="Your Name or Fellowship Handle" class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-2xl p-3.5 text-slate-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          <!-- ALERT ERROR / SUCCESS BANNERS -->
+          <div id="auth-error-banner" class="hidden mb-4 p-3 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 text-rose-700 dark:text-rose-300 text-xs font-medium flex items-start gap-2.5">
+            <span class="text-sm shrink-0">⚠️</span>
+            <span id="auth-error-text" class="flex-1">Authentication error</span>
           </div>
 
-          <button type="submit" id="btn-auth-submit" class="w-full py-3.5 sm:py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-blue-500/25 cursor-pointer transition-all">
-            Sign In
-          </button>
-        </form>
+          <div id="auth-success-banner" class="hidden mb-4 p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-300 text-xs font-medium flex items-start gap-2.5">
+            <span class="text-sm shrink-0">✓</span>
+            <span id="auth-success-text" class="flex-1">Success!</span>
+          </div>
 
-        <div class="text-center space-y-3 pt-3 border-t border-slate-100 dark:border-zinc-800">
-          <button type="button" onclick="toggleAuthMode()" id="btn-toggle-auth-mode" class="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
-            Don't have an account? Register
-          </button>
+          <!-- 1. SIGN IN & REGISTRATION FORM -->
+          <form id="auth-form" onsubmit="handleAuthSubmit(event)" class="space-y-4">
+            
+            <!-- DISPLAY NAME FIELD (Register Mode Only) -->
+            <div id="auth-name-field-box" class="hidden space-y-1">
+              <label class="block text-xs font-bold text-slate-700 dark:text-zinc-300">
+                Display Name
+              </label>
+              <div class="relative">
+                <input type="text" id="auth-display-name" placeholder="e.g. Pastor Daniel or Sister Grace" autocomplete="name" class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-2xl py-3.5 px-4 pl-10 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all" />
+                <div class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                  <i data-lucide="user" class="w-4 h-4"></i>
+                </div>
+              </div>
+            </div>
 
-          <div class="flex flex-col gap-2">
-            <button type="button" onclick="signInWithQuickBeliever()" class="px-5 py-2.5 rounded-2xl bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 font-bold text-xs hover:bg-slate-200 dark:hover:bg-zinc-700 cursor-pointer transition-all">
-              ⚡ Quick Believer Sign-In
+            <!-- EMAIL ADDRESS FIELD -->
+            <div class="space-y-1">
+              <label class="block text-xs font-bold text-slate-700 dark:text-zinc-300">
+                Email Address
+              </label>
+              <div class="relative">
+                <input type="email" id="auth-email" required placeholder="believer@example.com" autocomplete="email" class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-2xl py-3.5 px-4 pl-10 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all" />
+                <div class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                  <i data-lucide="mail" class="w-4 h-4"></i>
+                </div>
+              </div>
+            </div>
+
+            <!-- PASSWORD FIELD -->
+            <div class="space-y-1">
+              <div class="flex items-center justify-between">
+                <label class="block text-xs font-bold text-slate-700 dark:text-zinc-300">
+                  Password
+                </label>
+                <button type="button" id="auth-forgot-link" onclick="setAuthMode('forgot')" class="text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
+                  Forgot password?
+                </button>
+              </div>
+              <div class="relative">
+                <input type="password" id="auth-password" required placeholder="••••••••" autocomplete="current-password" class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-2xl py-3.5 px-10 pl-10 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all" />
+                <div class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                  <i data-lucide="lock" class="w-4 h-4"></i>
+                </div>
+                <button type="button" onclick="togglePasswordVisibility()" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 p-1 cursor-pointer transition-all" title="Toggle password visibility">
+                  <i id="auth-password-eye-icon" data-lucide="eye" class="w-4 h-4"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- SUBMIT BUTTON -->
+            <button type="submit" id="btn-auth-submit" class="w-full py-3.5 sm:py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 active:scale-[0.99] text-white font-bold text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-blue-500/25 cursor-pointer transition-all flex items-center justify-center gap-2">
+              <span id="btn-auth-submit-text">Sign In</span>
             </button>
-            <button type="button" onclick="signInWithSuperAdminQuick()" class="px-5 py-2.5 rounded-2xl bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 font-bold text-xs hover:bg-purple-200 dark:hover:bg-purple-900/60 cursor-pointer transition-all border border-purple-300 dark:border-purple-800">
-              🛡️ Super Admin Quick Login (danielgiobari644@gmail.com)
+          </form>
+
+          <!-- 2. FORGOT PASSWORD VIEW (Initially Hidden) -->
+          <div id="auth-forgot-box" class="hidden space-y-4">
+            <div class="space-y-1">
+              <label class="block text-xs font-bold text-slate-700 dark:text-zinc-300">
+                Enter your account email
+              </label>
+              <div class="relative">
+                <input type="email" id="auth-forgot-email" placeholder="believer@example.com" class="w-full text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-2xl py-3.5 px-4 pl-10 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all" />
+                <div class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                  <i data-lucide="mail" class="w-4 h-4"></i>
+                </div>
+              </div>
+            </div>
+
+            <button type="button" onclick="handleForgotPasswordSubmit(event)" id="btn-auth-forgot-submit" class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-2xl shadow cursor-pointer transition-all flex items-center justify-center gap-2">
+              Send Password Reset Link
+            </button>
+
+            <button type="button" onclick="setAuthMode('signin')" class="w-full text-center text-xs font-bold text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 cursor-pointer pt-1">
+              ← Back to Sign In
             </button>
           </div>
+
+          <!-- DIVIDER -->
+          <div id="auth-social-divider" class="relative my-5 text-center">
+            <div class="absolute inset-0 flex items-center">
+              <div class="w-full border-t border-slate-200 dark:border-zinc-800"></div>
+            </div>
+            <span class="relative bg-white dark:bg-zinc-900 px-3 text-[11px] font-bold text-slate-400 uppercase tracking-widest font-mono">
+              Or
+            </span>
+          </div>
+
+          <!-- GOOGLE AUTHENTICATION BUTTON -->
+          <div id="auth-social-box" class="space-y-3">
+            <button type="button" onclick="handleGoogleSignIn()" id="btn-google-auth" class="w-full py-3.5 px-4 bg-slate-50 dark:bg-zinc-800/90 hover:bg-slate-100 dark:hover:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-2xl text-slate-800 dark:text-zinc-200 font-bold text-xs cursor-pointer transition-all flex items-center justify-center gap-2.5 shadow-sm active:scale-[0.99]">
+              <!-- Official Google Icon -->
+              <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+              </svg>
+              <span>Continue with Google</span>
+            </button>
+          </div>
+
+          <!-- TOGGLE AUTH MODE FOOTER -->
+          <div id="auth-mode-toggle-footer" class="text-center pt-5 mt-4 border-t border-slate-100 dark:border-zinc-800/80">
+            <span id="auth-toggle-label" class="text-xs text-slate-500 dark:text-zinc-400">Don't have an account?</span>
+            <button type="button" onclick="toggleAuthMode()" id="btn-toggle-auth-mode" class="ml-1 text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
+              Create account
+            </button>
+          </div>
+
+          <!-- QUICK TESTING & ADMIN ACCESS PILLS -->
+          <div class="mt-4 pt-3 border-t border-slate-100 dark:border-zinc-800/60 flex flex-wrap items-center justify-center gap-2">
+            <button type="button" onclick="signInWithQuickBeliever()" class="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-600 dark:text-zinc-300 font-bold text-[10px] cursor-pointer transition-all">
+              ⚡ Quick Believer
+            </button>
+            <button type="button" onclick="signInWithSuperAdminQuick()" class="px-3 py-1.5 rounded-xl bg-purple-50 dark:bg-purple-950/40 hover:bg-purple-100 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 font-bold text-[10px] cursor-pointer transition-all border border-purple-200 dark:border-purple-800/60">
+              🛡️ Super Admin Access
+            </button>
+          </div>
+
         </div>
       </div>
     </div>
@@ -2301,56 +2480,190 @@
         }
       }
 
-      function openAuthModal() {
+      let currentAuthMode = 'signin'; // 'signin' | 'register' | 'forgot'
+
+      function openAuthModal(initialMode = 'signin') {
+        setAuthMode(initialMode);
+        clearAuthAlerts();
         const modal = document.getElementById('auth-modal');
         if (modal) modal.classList.remove('hidden');
+        if (window.lucide) window.lucide.createIcons();
       }
 
       function closeAuthModal() {
         const modal = document.getElementById('auth-modal');
         if (modal) modal.classList.add('hidden');
+        clearAuthAlerts();
+      }
+
+      function clearAuthAlerts() {
+        const errBanner = document.getElementById('auth-error-banner');
+        const succBanner = document.getElementById('auth-success-banner');
+        if (errBanner) errBanner.classList.add('hidden');
+        if (succBanner) succBanner.classList.add('hidden');
+      }
+
+      function showAuthError(message) {
+        const errBanner = document.getElementById('auth-error-banner');
+        const errText = document.getElementById('auth-error-text');
+        const succBanner = document.getElementById('auth-success-banner');
+        if (succBanner) succBanner.classList.add('hidden');
+        if (errBanner && errText) {
+          errText.innerText = message;
+          errBanner.classList.remove('hidden');
+        }
+        window.showToast?.(message, "error");
+      }
+
+      function showAuthSuccess(message) {
+        const succBanner = document.getElementById('auth-success-banner');
+        const succText = document.getElementById('auth-success-text');
+        const errBanner = document.getElementById('auth-error-banner');
+        if (errBanner) errBanner.classList.add('hidden');
+        if (succBanner && succText) {
+          succText.innerText = message;
+          succBanner.classList.remove('hidden');
+        }
+        window.showToast?.(message, "success");
+      }
+
+      function setAuthMode(mode) {
+        currentAuthMode = mode;
+        clearAuthAlerts();
+
+        const form = document.getElementById('auth-form');
+        const forgotBox = document.getElementById('auth-forgot-box');
+        const mainTitle = document.getElementById('auth-main-title');
+        const mainSubtitle = document.getElementById('auth-main-subtitle');
+        const submitText = document.getElementById('btn-auth-submit-text');
+        const nameBox = document.getElementById('auth-name-field-box');
+        const toggleFooter = document.getElementById('auth-mode-toggle-footer');
+        const toggleLabel = document.getElementById('auth-toggle-label');
+        const toggleBtn = document.getElementById('btn-toggle-auth-mode');
+        const socialBox = document.getElementById('auth-social-box');
+        const socialDivider = document.getElementById('auth-social-divider');
+
+        if (mode === 'register') {
+          if (form) form.classList.remove('hidden');
+          if (forgotBox) forgotBox.classList.add('hidden');
+          if (socialBox) socialBox.classList.remove('hidden');
+          if (socialDivider) socialDivider.classList.remove('hidden');
+          if (toggleFooter) toggleFooter.classList.remove('hidden');
+
+          if (mainTitle) mainTitle.innerText = "Create an account";
+          if (mainSubtitle) mainSubtitle.innerText = "Join the fellowship & receive +100 Kingdom Coins bonus.";
+          if (submitText) submitText.innerText = "Create Account & Get 100 KC";
+          if (nameBox) nameBox.classList.remove('hidden');
+          if (toggleLabel) toggleLabel.innerText = "Already have an account?";
+          if (toggleBtn) toggleBtn.innerText = "Sign in";
+        } else if (mode === 'forgot') {
+          if (form) form.classList.add('hidden');
+          if (forgotBox) forgotBox.classList.remove('hidden');
+          if (socialBox) socialBox.classList.add('hidden');
+          if (socialDivider) socialDivider.classList.add('hidden');
+          if (toggleFooter) toggleFooter.classList.add('hidden');
+
+          if (mainTitle) mainTitle.innerText = "Reset your password";
+          if (mainSubtitle) mainSubtitle.innerText = "We'll send password recovery instructions to your email.";
+        } else {
+          // Default Sign In
+          if (form) form.classList.remove('hidden');
+          if (forgotBox) forgotBox.classList.add('hidden');
+          if (socialBox) socialBox.classList.remove('hidden');
+          if (socialDivider) socialDivider.classList.remove('hidden');
+          if (toggleFooter) toggleFooter.classList.remove('hidden');
+
+          if (mainTitle) mainTitle.innerText = "Welcome back";
+          if (mainSubtitle) mainSubtitle.innerText = "Sign in to continue your fellowship journey.";
+          if (submitText) submitText.innerText = "Sign In";
+          if (nameBox) nameBox.classList.add('hidden');
+          if (toggleLabel) toggleLabel.innerText = "Don't have an account?";
+          if (toggleBtn) toggleBtn.innerText = "Create account";
+        }
+
+        if (window.lucide) window.lucide.createIcons();
       }
 
       function toggleAuthMode() {
-        isAuthRegisterMode = !isAuthRegisterMode;
-        const title = document.getElementById('auth-modal-title');
-        const submitBtn = document.getElementById('btn-auth-submit');
-        const toggleBtn = document.getElementById('btn-toggle-auth-mode');
-        const nameBox = document.getElementById('auth-name-field-box');
-
-        if (isAuthRegisterMode) {
-          if (title) title.innerText = "Create Your Home.cell Account";
-          if (submitBtn) submitBtn.innerText = "Register & Get 100 KC";
-          if (toggleBtn) toggleBtn.innerText = "Already registered? Sign In";
-          if (nameBox) nameBox.classList.remove('hidden');
+        if (currentAuthMode === 'signin') {
+          setAuthMode('register');
         } else {
-          if (title) title.innerText = "Welcome to Home.cell";
-          if (submitBtn) submitBtn.innerText = "Sign In";
-          if (toggleBtn) toggleBtn.innerText = "Don't have an account? Register";
-          if (nameBox) nameBox.classList.add('hidden');
+          setAuthMode('signin');
         }
       }
 
+      function togglePasswordVisibility() {
+        const passInput = document.getElementById('auth-password');
+        const eyeIcon = document.getElementById('auth-password-eye-icon');
+        if (!passInput) return;
+
+        if (passInput.type === 'password') {
+          passInput.type = 'text';
+          if (eyeIcon) eyeIcon.setAttribute('data-lucide', 'eye-off');
+        } else {
+          passInput.type = 'password';
+          if (eyeIcon) eyeIcon.setAttribute('data-lucide', 'eye');
+        }
+        if (window.lucide) window.lucide.createIcons();
+      }
+
+      function getFriendlyAuthErrorMessage(err) {
+        if (!err) return "An unexpected authentication error occurred.";
+        const code = err.code || '';
+        if (code === 'auth/user-not-found' || code === 'auth/wrong-password' || code === 'auth/invalid-credential') {
+          return "Incorrect email or password. Please check your credentials and try again.";
+        }
+        if (code === 'auth/email-already-in-use') {
+          return "An account with this email already exists. Please sign in instead.";
+        }
+        if (code === 'auth/weak-password') {
+          return "Password is too weak. Please use at least 6 characters.";
+        }
+        if (code === 'auth/invalid-email') {
+          return "Please enter a valid email address.";
+        }
+        if (code === 'auth/popup-closed-by-user') {
+          return "Sign in popup was closed before completing.";
+        }
+        if (code === 'auth/network-request-failed') {
+          return "Network connection issue. Please check your internet connection.";
+        }
+        return err.message || "Authentication error occurred.";
+      }
+
       async function handleAuthSubmit(e) {
-        e.preventDefault();
+        if (e) e.preventDefault();
+        clearAuthAlerts();
+
         const email = document.getElementById('auth-email')?.value?.trim();
         const pass = document.getElementById('auth-password')?.value;
         const dName = document.getElementById('auth-display-name')?.value?.trim();
 
-        if (!email || !pass) return;
+        if (!email || !pass) {
+          showAuthError("Please enter both email and password.");
+          return;
+        }
 
-        window.showToast?.("Authenticating...", "info");
+        const submitBtn = document.getElementById('btn-auth-submit');
+        const submitText = document.getElementById('btn-auth-submit-text');
+        const originalText = submitText ? submitText.innerText : 'Submit';
+
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = `<span class="animate-spin inline-block mr-2">⏳</span> Processing...`;
+        }
 
         try {
-          if (isAuthRegisterMode) {
+          if (currentAuthMode === 'register') {
             const cred = await window.auth.createUserWithEmailAndPassword(email, pass);
             const user = cred.user;
             const refCode = generateUserReferralCode(user.uid);
+            const isSuperAdminEmail = email.toLowerCase() === 'danielgiobari644@gmail.com';
 
             await window.db.collection('users').doc(user.uid).set({
               displayName: dName || email.split('@')[0],
               email: email,
-              role: email === 'danielgiobari644@gmail.com' ? 'Super Admin' : 'Member',
+              role: isSuperAdminEmail ? 'Super Admin' : 'Member',
               cellId: 'none',
               kingdomCoins: 100,
               totalKcEarned: 100,
@@ -2362,7 +2675,7 @@
               quizWinsCount: 0,
               storePurchases: 0,
               photoURL: null,
-              createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
+              createdAt: window.firebase?.firestore?.FieldValue ? window.firebase.firestore.FieldValue.serverTimestamp() : new Date()
             });
 
             window.soundEngine?.playLevelUp?.();
@@ -2372,14 +2685,109 @@
             window.soundEngine?.playSuccess?.();
             window.showToast?.("Welcome back to Home.cell!", "success");
           }
+
           closeAuthModal();
         } catch (err) {
           console.error("Auth error:", err);
-          window.showToast?.(err.message || "Authentication error. Check email & password.", "error");
+          showAuthError(getFriendlyAuthErrorMessage(err));
+        } finally {
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = `<span id="btn-auth-submit-text">${originalText}</span>`;
+          }
+        }
+      }
+
+      async function handleGoogleSignIn() {
+        clearAuthAlerts();
+        const googleBtn = document.getElementById('btn-google-auth');
+        if (googleBtn) {
+          googleBtn.disabled = true;
+          googleBtn.classList.add('opacity-70');
+        }
+
+        try {
+          const provider = new window.firebase.auth.GoogleAuthProvider();
+          const cred = await window.auth.signInWithPopup(provider);
+          const user = cred.user;
+
+          if (window.db && user) {
+            const userDocRef = window.db.collection('users').doc(user.uid);
+            const docSnap = await userDocRef.get();
+
+            if (!docSnap.exists) {
+              const refCode = generateUserReferralCode(user.uid);
+              const isSuperAdminEmail = user.email?.toLowerCase() === 'danielgiobari644@gmail.com';
+
+              await userDocRef.set({
+                displayName: user.displayName || user.email.split('@')[0],
+                email: user.email,
+                role: isSuperAdminEmail ? 'Super Admin' : 'Member',
+                cellId: 'none',
+                kingdomCoins: 100,
+                totalKcEarned: 100,
+                streak: 1,
+                lastLoginDate: new Date().toISOString().split('T')[0],
+                referralCode: refCode,
+                referralCount: 0,
+                chaptersReadCount: 0,
+                quizWinsCount: 0,
+                storePurchases: 0,
+                photoURL: user.photoURL || null,
+                createdAt: window.firebase?.firestore?.FieldValue ? window.firebase.firestore.FieldValue.serverTimestamp() : new Date()
+              });
+              window.soundEngine?.playLevelUp?.();
+              window.showToast?.("🎉 Google account linked! +100 Kingdom Coins bonus added.", "success");
+            } else {
+              window.soundEngine?.playSuccess?.();
+              window.showToast?.(`Welcome back, ${user.displayName || 'Believer'}!`, "success");
+            }
+          }
+
+          closeAuthModal();
+        } catch (err) {
+          console.error("Google Auth error:", err);
+          showAuthError(getFriendlyAuthErrorMessage(err));
+        } finally {
+          if (googleBtn) {
+            googleBtn.disabled = false;
+            googleBtn.classList.remove('opacity-70');
+          }
+        }
+      }
+
+      async function handleForgotPasswordSubmit(e) {
+        if (e) e.preventDefault();
+        clearAuthAlerts();
+
+        const email = document.getElementById('auth-forgot-email')?.value?.trim();
+        if (!email) {
+          showAuthError("Please enter your account email address.");
+          return;
+        }
+
+        const btn = document.getElementById('btn-auth-forgot-submit');
+        if (btn) {
+          btn.disabled = true;
+          btn.innerHTML = `<span class="animate-spin inline-block mr-2">⏳</span> Sending Reset Link...`;
+        }
+
+        try {
+          await window.auth.sendPasswordResetEmail(email);
+          showAuthSuccess(`Password reset email sent to ${email}. Please check your inbox.`);
+        } catch (err) {
+          console.error("Password reset error:", err);
+          showAuthError(getFriendlyAuthErrorMessage(err));
+        } finally {
+          if (btn) {
+            btn.disabled = false;
+            btn.innerText = "Send Password Reset Link";
+          }
         }
       }
 
       async function signInWithQuickBeliever() {
+        clearAuthAlerts();
         const guestNum = Math.floor(1000 + Math.random() * 9000);
         const guestEmail = `believer${guestNum}@homecell.app`;
         const guestPass = 'HomeCellPass2026!';
@@ -2404,18 +2812,19 @@
             quizWinsCount: 0,
             storePurchases: 0,
             photoURL: null,
-            createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
+            createdAt: window.firebase?.firestore?.FieldValue ? window.firebase.firestore.FieldValue.serverTimestamp() : new Date()
           });
 
           closeAuthModal();
           window.soundEngine?.playLevelUp?.();
           window.showToast?.(`Logged in as Believer #${guestNum}! +100 KC bonus credited.`, "success");
         } catch (e) {
-          window.showToast?.("Quick sign in error: " + e.message, "error");
+          showAuthError("Quick sign in error: " + e.message);
         }
       }
 
       async function signInWithSuperAdminQuick() {
+        clearAuthAlerts();
         const email = 'danielgiobari644@gmail.com';
         const pass = 'HomeCellPass2026!';
 
@@ -2444,7 +2853,7 @@
             quizWinsCount: 20,
             storePurchases: 10,
             photoURL: null,
-            createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
+            createdAt: window.firebase?.firestore?.FieldValue ? window.firebase.firestore.FieldValue.serverTimestamp() : new Date()
           }, { merge: true });
 
           closeAuthModal();
@@ -2452,7 +2861,7 @@
           window.showToast?.("Welcome Pastor Daniel (Super Admin)! 🛡️", "success");
           switchTab('admin');
         } catch (e) {
-          window.showToast?.("Super Admin sign in error: " + e.message, "error");
+          showAuthError("Super Admin sign in error: " + e.message);
         }
       }
 

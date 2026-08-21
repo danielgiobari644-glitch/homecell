@@ -2130,13 +2130,13 @@ function handleAdminResourceFileSelect(event) {
 }
 
 async function handleAdminStoreProductUploadSubmit(e) {
-  e.preventDefault();
+  if (e) e.preventDefault();
 
   const title = document.getElementById('admin-prod-title')?.value?.trim();
   const category = document.getElementById('admin-prod-category')?.value || 'Wallpapers';
   const price = parseInt(document.getElementById('admin-prod-price')?.value) || 50;
   const collectionName = document.getElementById('admin-prod-collection')?.value?.trim() || 'Kingdom Collection';
-  const author = document.getElementById('admin-prod-author')?.value?.trim() || 'Super Admin';
+  const author = document.getElementById('admin-prod-author')?.value?.trim() || 'Pastor Daniel (Super Admin)';
   const desc = document.getElementById('admin-prod-desc')?.value?.trim();
   const featured = document.getElementById('admin-prod-featured')?.checked || false;
 
@@ -2144,7 +2144,12 @@ async function handleAdminStoreProductUploadSubmit(e) {
   const urlFile = document.getElementById('admin-prod-file-url')?.value?.trim();
 
   const coverUrl = adminUploadedCoverBase64 || urlCover || 'https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=800&q=80';
-  const fileUrl = adminUploadedFileBase64 || urlFile || coverUrl;
+  const fileUrl = urlFile || (adminUploadedFileBase64 ? 'indexeddb_local_asset' : coverUrl);
+
+  if (!title || !desc) {
+    window.showToast?.("Please enter product title and description.", "warning");
+    return;
+  }
 
   const btn = document.getElementById('btn-admin-upload-prod');
   if (btn) {
@@ -2187,7 +2192,7 @@ async function handleAdminStoreProductUploadSubmit(e) {
       downloadsCount: 0,
       tags: [category, "Kingdom", "Spiritual"],
       uploadedBy: window.auth?.currentUser?.email || 'danielgiobari644@gmail.com',
-      createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
+      createdAt: window.firebase?.firestore?.FieldValue ? window.firebase.firestore.FieldValue.serverTimestamp() : new Date()
     };
 
     if (window.db) {
@@ -2196,7 +2201,7 @@ async function handleAdminStoreProductUploadSubmit(e) {
     }
 
     window.soundEngine?.playSuccess?.();
-    window.showToast?.("🛍️ Product uploaded directly to Kingdom Store!", "success");
+    window.showToast?.(`🛍️ "${title}" uploaded to Kingdom Store!`, "success");
 
     // Reset Form
     document.getElementById('admin-product-upload-form')?.reset();
@@ -2212,6 +2217,7 @@ async function handleAdminStoreProductUploadSubmit(e) {
     if (window.syncStoreProducts) window.syncStoreProducts();
 
   } catch (err) {
+    console.error("Admin store upload error:", err);
     window.showToast?.("Error: " + err.message, "error");
   } finally {
     if (btn) {
@@ -2235,7 +2241,8 @@ function syncAdminStoreProductsCatalog() {
 
   if (adminProductsListener) adminProductsListener();
 
-  adminProductsListener = db.collection('products').orderBy('createdAt', 'desc').onSnapshot(snap => {
+  // Snapshot without strict index order to guarantee fast retrieval on all accounts
+  adminProductsListener = db.collection('products').onSnapshot(snap => {
     tbody.innerHTML = '';
     const docs = [];
     if (!snap.empty) {
@@ -2251,6 +2258,13 @@ function syncAdminStoreProductsCatalog() {
       return;
     }
 
+    // Sort newest first
+    docs.sort((a, b) => {
+      const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+      const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+      return timeB - timeA;
+    });
+
     docs.forEach(p => {
       const tr = document.createElement('tr');
       tr.className = "border-b border-slate-100 dark:border-zinc-800 text-xs hover:bg-slate-50/50 dark:hover:bg-zinc-800/40";
@@ -2261,7 +2275,7 @@ function syncAdminStoreProductsCatalog() {
       tr.innerHTML = `
         <td class="py-3 px-4">
           <div class="flex items-center gap-3">
-            <img src="${cover}" class="w-10 h-10 rounded-xl object-cover border border-slate-200 dark:border-zinc-700 shrink-0" />
+            <img src="${cover}" class="w-10 h-10 rounded-xl object-cover border border-slate-200 dark:border-zinc-700 shrink-0" onerror="this.src='https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=800&q=80'" />
             <div>
               <span class="font-bold text-slate-900 dark:text-zinc-100 block">${p.title || 'Untitled Resource'}</span>
               <span class="text-[10px] text-slate-400 line-clamp-1">${p.description || ''}</span>
@@ -2308,7 +2322,7 @@ async function deleteAdminStoreProduct(prodId, encodedTitle) {
     }
 
     window.soundEngine?.playSuccess?.();
-    window.showToast?.(`"${title}" removed from Kingdom Store.`, "info");
+    window.showToast?.(`"${title}" permanently removed from Kingdom Store.`, "info");
     
     syncAdminStoreProductsCatalog();
     if (window.syncStoreProducts) {

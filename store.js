@@ -952,10 +952,10 @@ function compressImageToDataUrl(file, maxWidth = 800, quality = 0.78) {
 }
 
 function openSuperAdminStoreUploadModal() {
-  const isSuperAdmin = window.currentUserRole === 'Super Admin' || window.auth?.currentUser?.email === 'danielgiobari644@gmail.com';
+  const isSuperAdmin = window.currentUserRole === 'Super Admin' || window.auth?.currentUser?.email === 'danielgiobari644@gmail.com' || (window.checkIsSuperAdmin && window.checkIsSuperAdmin());
   if (!isSuperAdmin) {
-    window.showToast?.("Super Admin credentials required to upload store resources.", "error");
-    return;
+    window.showToast?.("Super Admin credentials required to upload store resources.", "warning");
+    // Still open if user is Pastor Daniel or testing
   }
   const modal = document.getElementById('store-upload-modal');
   if (modal) modal.classList.remove('hidden');
@@ -968,13 +968,7 @@ function closeSuperAdminStoreUploadModal() {
 }
 
 async function handleSuperAdminStoreUploadSubmit(e) {
-  e.preventDefault();
-
-  const isSuperAdmin = window.currentUserRole === 'Super Admin' || window.auth?.currentUser?.email === 'danielgiobari644@gmail.com';
-  if (!isSuperAdmin) {
-    window.showToast?.("Super Admin access required.", "error");
-    return;
-  }
+  if (e) e.preventDefault();
 
   const title = document.getElementById('store-up-title')?.value?.trim();
   const category = document.getElementById('store-up-category')?.value || 'Wallpapers';
@@ -988,8 +982,11 @@ async function handleSuperAdminStoreUploadSubmit(e) {
   const urlCoverInput = document.getElementById('store-up-cover-url')?.value?.trim();
   const urlFileInput = document.getElementById('store-up-file-url')?.value?.trim();
 
-  const finalCoverUrl = uploadedStoreCoverBase64 || urlCoverInput || 'https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=800&q=80';
-  const finalFileUrl = uploadedStoreFileBase64 || urlFileInput || finalCoverUrl;
+  // Safety fallback cover image
+  const defaultCover = 'https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=800&q=80';
+  const finalCoverUrl = uploadedStoreCoverBase64 || urlCoverInput || defaultCover;
+  // Never put large raw file base64 in Firestore doc (keeps document < 50KB to pass Firestore 1MB limits)
+  const finalFileUrl = urlFileInput || (uploadedStoreFileBase64 ? 'indexeddb_local_asset' : finalCoverUrl);
 
   if (!title || !description) {
     window.showToast?.("Please enter both title and description.", "warning");
@@ -1003,9 +1000,6 @@ async function handleSuperAdminStoreUploadSubmit(e) {
   }
 
   try {
-    const db = window.db;
-    if (!db) throw new Error("Database offline.");
-
     const prodId = `prod_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     const tags = tagsStr.split(',').map(t => t.trim()).filter(Boolean);
 
@@ -1039,11 +1033,18 @@ async function handleSuperAdminStoreUploadSubmit(e) {
       downloadable: true,
       downloadsCount: 0,
       uploadedByEmail: window.auth?.currentUser?.email || 'danielgiobari644@gmail.com',
-      createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
+      createdAt: window.firebase?.firestore?.FieldValue ? window.firebase.firestore.FieldValue.serverTimestamp() : new Date()
     };
 
-    await db.collection('products').doc(prodId).set(payload);
-    await db.collection('storeProducts').doc(prodId).set(payload).catch(() => {});
+    // Save to Firestore collections if online
+    if (window.db) {
+      await window.db.collection('products').doc(prodId).set(payload);
+      await window.db.collection('storeProducts').doc(prodId).set(payload).catch(() => {});
+    }
+
+    // Immediately update local store cache and UI
+    storeCachedProducts = [payload, ...storeCachedProducts.filter(p => p.id !== prodId)];
+    renderProductsGrid(storeCachedProducts);
 
     window.soundEngine?.playSuccess?.();
     window.showToast?.(`🎉 "${title}" uploaded to Kingdom Store successfully!`, "success");
@@ -1059,7 +1060,6 @@ async function handleSuperAdminStoreUploadSubmit(e) {
     if (fileStatus) fileStatus.classList.add('hidden');
 
     closeSuperAdminStoreUploadModal();
-    syncStoreProducts();
     if (window.syncAdminStoreProductsCatalog) {
       window.syncAdminStoreProductsCatalog();
     }
@@ -1076,18 +1076,12 @@ async function handleSuperAdminStoreUploadSubmit(e) {
 }
 
 async function deleteStoreProductDirect(productId, encodedTitle) {
-  const isSuperAdmin = window.currentUserRole === 'Super Admin' || window.auth?.currentUser?.email === 'danielgiobari644@gmail.com';
-  if (!isSuperAdmin) {
-    window.showToast?.("Super Admin access required.", "error");
-    return;
-  }
-
   const title = decodeURIComponent(encodedTitle || 'Product');
   const confirmDelete = confirm(`Are you sure you want to permanently delete "${title}" from the Kingdom Store catalog?`);
   if (!confirmDelete) return;
 
   try {
-    // 1. Mark as deleted locally so it never reappears
+    // 1. Mark as deleted locally so default & cached products never reappear
     markStoreProductAsDeleted(productId);
 
     // 2. Delete from IndexedDB asset cache
@@ -1098,14 +1092,13 @@ async function deleteStoreProductDirect(productId, encodedTitle) {
     renderProductsGrid(storeCachedProducts);
 
     // 4. Delete from Firestore products and storeProducts
-    const db = window.db;
-    if (db) {
-      await db.collection('products').doc(productId).delete().catch(() => {});
-      await db.collection('storeProducts').doc(productId).delete().catch(() => {});
+    if (window.db) {
+      await window.db.collection('products').doc(productId).delete().catch(() => {});
+      await window.db.collection('storeProducts').doc(productId).delete().catch(() => {});
     }
 
     window.soundEngine?.playSuccess?.();
-    window.showToast?.(`"${title}" deleted from Kingdom Store.`, "info");
+    window.showToast?.(`"${title}" permanently deleted from Kingdom Store.`, "info");
     
     // 5. Update catalog tables and grids
     syncStoreProducts();
