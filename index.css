@@ -484,17 +484,79 @@ body.sidebar-collapsed .sidebar-nav-btn:hover {
   transform: scale(0.95) translateY(-6px);
 }
 
-/* More Sheet Grid Item Animation */
-.more-sheet-card {
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+/* High Contrast & Accessibility Guarantees (No white on white, no grey on white, crisp legibility) */
+.text-slate-400 {
+  color: #475569 !important;
+}
+html.dark .text-slate-400,
+html.sanctuary .text-slate-400 {
+  color: #94a3b8 !important;
 }
 
-.more-sheet-card:hover {
-  transform: translateY(-2px);
+.text-zinc-400 {
+  color: #52525b !important;
+}
+html.dark .text-zinc-400,
+html.sanctuary .text-zinc-400 {
+  color: #a1a1aa !important;
 }
 
-.more-sheet-card:active {
-  transform: scale(0.96);
+.text-slate-500 {
+  color: #334155 !important;
 }
+html.dark .text-slate-500,
+html.sanctuary .text-slate-500 {
+  color: #cbd5e1 !important;
+}
+
+.text-zinc-500 {
+  color: #3f3f46 !important;
+}
+html.dark .text-zinc-500,
+html.sanctuary .text-zinc-500 {
+  color: #d4d4d8 !important;
+}
+
+.text-gray-400 {
+  color: #4b5563 !important;
+}
+html.dark .text-gray-400,
+html.sanctuary .text-gray-400 {
+  color: #9ca3af !important;
+}
+
+.text-gray-500 {
+  color: #374151 !important;
+}
+html.dark .text-gray-500,
+html.sanctuary .text-gray-500 {
+  color: #d1d5db !important;
+}
+
+/* Ensure crisp input placeholders and label text */
+input::placeholder,
+textarea::placeholder {
+  color: #64748b !important;
+  opacity: 1 !important;
+}
+html.dark input::placeholder,
+html.dark textarea::placeholder,
+html.sanctuary input::placeholder,
+html.sanctuary textarea::placeholder {
+  color: #94a3b8 !important;
+  opacity: 1 !important;
+}
+
+/* Guarantee select option legibility across all browser platforms */
+select option {
+  background-color: #ffffff;
+  color: #0f172a;
+}
+html.dark select option,
+html.sanctuary select option {
+  background-color: #18181b;
+  color: #f8fafc;
+}
+
 
 

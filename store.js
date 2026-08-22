@@ -486,7 +486,7 @@ function renderProductsGrid(products) {
     }
 
     return `
-      <div class="bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800/90 rounded-3xl overflow-hidden shadow-xs hover:shadow-lg transition-all duration-300 flex flex-col justify-between group hover:border-amber-500/40 relative">
+      <div id="store-product-card-${p.id}" class="bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800/90 rounded-3xl overflow-hidden shadow-xs hover:shadow-lg transition-all duration-300 flex flex-col justify-between group hover:border-amber-500/40 relative">
         ${isSuperAdmin ? `
           <div class="absolute top-3 right-3 z-20 flex items-center gap-1">
             <button type="button" onclick="event.stopPropagation(); deleteStoreProductDirect('${p.id}', '${encodeURIComponent(p.title || '')}')" class="p-2 rounded-xl bg-slate-900/80 backdrop-blur-md text-red-400 hover:bg-red-600 hover:text-white transition-all cursor-pointer shadow-md" title="Delete Product (Super Admin)">
@@ -1428,19 +1428,29 @@ async function deleteStoreProductDirect(productId, encodedTitle) {
   if (!isConfirmed) return;
 
   try {
-    // 1. Mark as deleted locally so default & cached products never reappear
+    // 1. Instantly remove visual elements from DOM for zero latency feedback
+    const cardEl = document.getElementById(`store-product-card-${productId}`);
+    if (cardEl) {
+      cardEl.remove();
+    }
+    const adminRowEl = document.getElementById(`admin-store-row-${productId}`);
+    if (adminRowEl) {
+      adminRowEl.remove();
+    }
+
+    // 2. Mark as deleted locally so default & cached products never reappear
     markStoreProductAsDeleted(productId);
     removeUploadedStoreProductLocal(productId);
     globalFirestoreDeletedProductIds.add(productId);
 
-    // 2. Delete from IndexedDB asset cache
+    // 3. Delete from IndexedDB asset cache
     await deleteStoreAssetIndexedDB(productId);
 
-    // 3. Remove from memory immediately
-    storeCachedProducts = storeCachedProducts.filter(p => p.id !== productId);
+    // 4. Remove from memory immediately & refresh UI
+    storeCachedProducts = (storeCachedProducts || []).filter(p => p.id !== productId);
     renderProductsGrid(storeCachedProducts);
 
-    // 4. Delete from Firestore products and storeProducts
+    // 5. Delete from Firestore products and storeProducts
     if (window.db) {
       const FieldValue = window.firebase?.firestore?.FieldValue;
       
@@ -1469,7 +1479,7 @@ async function deleteStoreProductDirect(productId, encodedTitle) {
       window.showToast(`"${title}" permanently deleted from Kingdom Store.`, "info");
     }
     
-    // 5. Update catalog tables and grids
+    // 6. Update catalog tables and grids in all views
     syncStoreProducts();
     if (window.syncAdminStoreProductsCatalog) {
       window.syncAdminStoreProductsCatalog();
@@ -1816,3 +1826,13 @@ window.handleStoreResourceFileSelect = handleStoreResourceFileSelect;
 window.clearStoreUploadCover = clearStoreUploadCover;
 window.handleSuperAdminStoreUploadSubmit = handleSuperAdminStoreUploadSubmit;
 window.deleteStoreProductDirect = deleteStoreProductDirect;
+window.markStoreProductAsDeleted = markStoreProductAsDeleted;
+window.removeUploadedStoreProductLocal = removeUploadedStoreProductLocal;
+window.deleteStoreAssetIndexedDB = deleteStoreAssetIndexedDB;
+window.getDeletedStoreProductIds = getDeletedStoreProductIds;
+window.getUploadedStoreProductsLocal = getUploadedStoreProductsLocal;
+window.DEFAULT_KINGDOM_PRODUCTS = DEFAULT_KINGDOM_PRODUCTS;
+window.syncStoreProducts = syncStoreProducts;
+window.renderStoreKcHeader = renderStoreKcHeader;
+window.checkSuperAdminStoreControls = checkSuperAdminStoreControls;
+window.syncMyLibrary = syncMyLibrary;

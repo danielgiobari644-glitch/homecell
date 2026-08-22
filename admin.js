@@ -2321,6 +2321,7 @@ function syncAdminStoreProductsCatalog() {
 
     docs.forEach(p => {
       const tr = document.createElement('tr');
+      tr.id = `admin-store-row-${p.id}`;
       tr.className = "border-b border-slate-100 dark:border-zinc-800 text-xs hover:bg-slate-50/50 dark:hover:bg-zinc-800/40";
       
       const itemPrice = p.priceKC !== undefined ? p.priceKC : (p.price !== undefined ? p.price : 50);
@@ -2332,19 +2333,19 @@ function syncAdminStoreProductsCatalog() {
             <img src="${cover}" class="w-10 h-10 rounded-xl object-cover border border-slate-200 dark:border-zinc-700 shrink-0" onerror="this.src='https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=800&q=80'" />
             <div>
               <span class="font-bold text-slate-900 dark:text-zinc-100 block">${p.title || 'Untitled Resource'}</span>
-              <span class="text-[10px] text-slate-400 line-clamp-1">${p.description || ''}</span>
+              <span class="text-[10px] text-slate-600 dark:text-zinc-400 line-clamp-1">${p.description || ''}</span>
             </div>
           </div>
         </td>
         <td class="py-3 px-4">
-          <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300">
+          <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200">
             ${p.category || 'Resource'}
           </span>
         </td>
         <td class="py-3 px-4 font-mono font-black text-amber-500">
           🪙 ${itemPrice} KC
         </td>
-        <td class="py-3 px-4 text-slate-500 dark:text-zinc-400">
+        <td class="py-3 px-4 text-slate-600 dark:text-zinc-400">
           ${p.collectionName || 'General'}
         </td>
         <td class="py-3 px-4 text-right">
@@ -2379,8 +2380,9 @@ function syncAdminStoreProductsCatalog() {
 
     if (!snap.empty) {
       snap.forEach(doc => {
-        if (!currentDeletedIds.includes(doc.id)) {
-          docs.push({ id: doc.id, ...doc.data() });
+        const d = doc.data();
+        if (!currentDeletedIds.includes(doc.id) && d.isDeleted !== true && d.published !== false) {
+          docs.push({ id: doc.id, ...d });
           seenIds.add(doc.id);
         }
       });
