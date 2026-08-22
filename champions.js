@@ -167,8 +167,34 @@ async function awardReferralLinkOpenBonus(code) {
           createdAt: window.firebase?.firestore?.FieldValue ? window.firebase.firestore.FieldValue.serverTimestamp() : new Date()
         });
 
-        // If referrer exists, create a notification for them
+        // If referrer exists, credit them immediately and create a notification for them
         if (referrerUid) {
+          try {
+            const refUserDocRef = window.db.collection('users').doc(referrerUid);
+            const refUserDoc = await refUserDocRef.get();
+            if (refUserDoc.exists) {
+              const rData = refUserDoc.data();
+              const rKc = rData.kingdomCoins !== undefined ? rData.kingdomCoins : 100;
+              const rTot = rData.totalKcEarned || rKc;
+              const rClicks = (rData.totalLinkClicks || 0) + 1;
+              await refUserDocRef.update({
+                kingdomCoins: rKc + 50,
+                totalKcEarned: rTot + 50,
+                totalLinkClicks: rClicks
+              });
+              await window.db.collection('kc_transactions').add({
+                userUid: referrerUid,
+                type: 'credit',
+                amount: 50,
+                title: 'Referral Link Open Bonus',
+                description: `Someone opened your fellowship invitation link (${cleanCode})`,
+                createdAt: window.firebase?.firestore?.FieldValue ? window.firebase.firestore.FieldValue.serverTimestamp() : new Date()
+              }).catch(() => {});
+            }
+          } catch (refDocErr) {
+            console.warn("Direct update referrer doc note:", refDocErr);
+          }
+
           await window.db.collection('notifications').add({
             recipientUid: referrerUid,
             title: '🎉 Fellowship Link Opened!',
@@ -284,6 +310,17 @@ async function processReferralForNewUser(userUid, userEmail, userName) {
         totalKcEarned: refTotalKc + 100,
         totalReferrals: refCount
       });
+
+      await window.db.collection('notifications').add({
+        targetUid: referrerDoc.id,
+        recipientUid: referrerDoc.id,
+        title: '🎉 New Believer Joined via Your Link!',
+        body: `${userName || 'A new believer'} joined Home.cell through your fellowship link (${cleanCode})! You received +100 Kingdom Coins!`,
+        type: 'kc',
+        url: './#view-champions',
+        read: false,
+        createdAt: window.firebase?.firestore?.FieldValue ? window.firebase.firestore.FieldValue.serverTimestamp() : new Date()
+      }).catch(() => {});
     } catch (refUpdateErr) {
       console.warn("Could not directly update referrer doc, will batch on next login:", refUpdateErr);
     }

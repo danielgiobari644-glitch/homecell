@@ -139,7 +139,7 @@ function renderProfileLibrary(items) {
             <h4 class="font-black text-xs text-slate-900 dark:text-zinc-100 line-clamp-1">${item.title || item.resourceTitle || 'Kingdom Resource'}</h4>
             <p class="text-[11px] text-slate-500 dark:text-zinc-400 line-clamp-2">${item.description || 'Spiritual discipleship resource from Kingdom Store.'}</p>
           </div>
-          <button onclick="window.downloadPurchasedResource('${item.rewardId || item.id}', '${encodeURIComponent(item.title || 'resource')}')" class="w-full py-2 bg-slate-100 hover:bg-emerald-600 hover:text-white dark:bg-zinc-800 dark:hover:bg-emerald-600 text-slate-800 dark:text-zinc-200 font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5">
+          <button onclick="window.downloadStoreProductDirect('${item.rewardId || item.id || item.productId}', '${encodeURIComponent(item.fileUrl || item.downloadUrl || item.coverUrl || item.imageUrl || '')}', '${encodeURIComponent(item.title || item.resourceTitle || 'Kingdom_Resource')}')" class="w-full py-2 bg-slate-100 hover:bg-emerald-600 hover:text-white dark:bg-zinc-800 dark:hover:bg-emerald-600 text-slate-800 dark:text-zinc-200 font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs active:scale-95">
             <i data-lucide="download" class="w-3.5 h-3.5"></i>
             <span>Download Asset</span>
           </button>

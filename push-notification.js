@@ -7,6 +7,116 @@ const BROADCAST_URL = './api/broadcast-push';
 
 let notificationsListener = null;
 let cachedNotifications = [];
+const seenNotificationIds = new Set();
+let isInitialNotificationLoad = true;
+
+// Custom In-App Notification Toast / Floating Banner Engine
+window.showInAppNotification = function(data) {
+  if (!data || !data.title) return;
+
+  let container = document.getElementById('in-app-notifications-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'in-app-notifications-container';
+    container.className = 'fixed top-4 right-4 sm:top-5 sm:right-5 z-[999999] flex flex-col gap-3 pointer-events-none max-w-sm sm:max-w-md w-[calc(100%-2rem)] sm:w-96';
+    document.body.appendChild(container);
+  }
+
+  const iconMap = {
+    chat: { icon: 'message-circle', color: 'bg-blue-500 text-white', label: 'Fellowship Chat' },
+    praise: { icon: 'heart', color: 'bg-rose-500 text-white', label: 'Praise Report' },
+    announcement: { icon: 'megaphone', color: 'bg-purple-600 text-white', label: 'Announcement' },
+    devotional: { icon: 'book-open', color: 'bg-amber-500 text-white', label: 'Devotional' },
+    quiz: { icon: 'award', color: 'bg-indigo-600 text-white', label: 'Bible Quiz' },
+    kc: { icon: 'coins', color: 'bg-amber-500 text-white', label: 'Kingdom Coins' },
+    store: { icon: 'shopping-bag', color: 'bg-emerald-600 text-white', label: 'Kingdom Store' },
+    system: { icon: 'bell', color: 'bg-blue-600 text-white', label: 'System Alert' },
+    general: { icon: 'bell', color: 'bg-slate-700 text-white', label: 'Home.cell Alert' }
+  };
+
+  const meta = iconMap[data.type] || iconMap.general;
+  const targetUrl = data.url || './#view-notifications';
+
+  // Sound alert
+  if (data.type === 'kc' || (data.title && data.title.includes('KC'))) {
+    window.soundEngine?.playCoins?.();
+  } else {
+    window.soundEngine?.playSuccess?.();
+  }
+
+  const banner = document.createElement('div');
+  banner.className = 'pointer-events-auto bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl border border-slate-200/80 dark:border-zinc-700/80 shadow-2xl rounded-2xl p-4 transition-all duration-300 transform -translate-y-4 opacity-0 flex flex-col gap-2.5 relative overflow-hidden group cursor-pointer hover:border-blue-500/60 dark:hover:border-blue-400/60';
+
+  banner.innerHTML = `
+    <div class="flex items-start gap-3">
+      <div class="w-9 h-9 rounded-xl ${meta.color} flex items-center justify-center shrink-0 shadow-md">
+        <i data-lucide="${meta.icon}" class="w-4 h-4"></i>
+      </div>
+      <div class="flex-1 min-w-0 pr-6">
+        <div class="flex items-center gap-1.5 mb-0.5">
+          <span class="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400">${meta.label}</span>
+          <span class="text-[9px] text-slate-400 font-mono">Just now</span>
+        </div>
+        <h4 class="font-black text-xs text-slate-900 dark:text-zinc-100 line-clamp-1">${data.title}</h4>
+        <p class="text-xs text-slate-600 dark:text-zinc-300 leading-snug line-clamp-2 mt-0.5">${data.body || ''}</p>
+      </div>
+      <button type="button" class="dismiss-inapp-btn absolute top-3 right-3 text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer" title="Dismiss">
+        <i data-lucide="x" class="w-3.5 h-3.5"></i>
+      </button>
+    </div>
+    <div class="flex items-center justify-between pt-1 border-t border-slate-100 dark:border-zinc-800/60 text-[11px]">
+      <span class="text-blue-600 dark:text-blue-400 font-bold flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
+        <span>Open notification</span>
+        <i data-lucide="arrow-right" class="w-3 h-3"></i>
+      </span>
+      <span class="text-[10px] text-slate-400 font-medium">Tap to view</span>
+    </div>
+    <div class="inapp-progress absolute bottom-0 left-0 h-0.5 bg-blue-500/80 w-full transition-all ease-linear" style="transition-duration: 6000ms; width: 100%;"></div>
+  `;
+
+  container.appendChild(banner);
+
+  if (window.lucide) {
+    window.lucide.createIcons();
+  }
+
+  // Animate Entry
+  setTimeout(() => {
+    banner.classList.remove('-translate-y-4', 'opacity-0');
+    banner.classList.add('translate-y-0', 'opacity-100');
+    const prog = banner.querySelector('.inapp-progress');
+    if (prog) {
+      setTimeout(() => { prog.style.width = '0%'; }, 50);
+    }
+  }, 20);
+
+  const autoDismiss = setTimeout(() => {
+    dismissBanner();
+  }, 6200);
+
+  function dismissBanner() {
+    clearTimeout(autoDismiss);
+    banner.classList.add('opacity-0', '-translate-y-4');
+    setTimeout(() => {
+      banner.remove();
+    }, 300);
+  }
+
+  const dismissBtn = banner.querySelector('.dismiss-inapp-btn');
+  if (dismissBtn) {
+    dismissBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      dismissBanner();
+    });
+  }
+
+  banner.addEventListener('click', () => {
+    dismissBanner();
+    if (window.handleNotificationClick) {
+      window.handleNotificationClick(data.id || '', encodeURIComponent(targetUrl));
+    }
+  });
+};
 
 function urlBase64ToUint8Array(base64String) {
   const padding = '='.repeat((4 - base64String.length % 4) % 4);
@@ -210,10 +320,14 @@ window.updateSubscriptionOnServer = async function() {
 window.recordNotification = async function(title, body, type = 'general', targetUrl = './', targetUid = 'all', excludeUid = null) {
   if (!title || !body) return;
 
+  const currentUser = window.auth?.currentUser;
+  const currentUid = currentUser ? currentUser.uid : null;
+
   // 1. Write to Firestore notifications collection
+  let docId = null;
   if (window.db) {
     try {
-      await window.db.collection('notifications').add({
+      const docRef = await window.db.collection('notifications').add({
         title,
         body,
         type,
@@ -223,12 +337,28 @@ window.recordNotification = async function(title, body, type = 'general', target
         read: false,
         createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
       });
+      docId = docRef.id;
     } catch (dbErr) {
       console.warn("Could not save notification to Firestore:", dbErr);
     }
   }
 
-  // 2. Dispatch real off-app push notification via backend
+  // 2. If browser does not support push notifications, show in-app notification immediately if relevant
+  if (!window.isNotificationSupported() || Notification.permission !== 'granted') {
+    if (targetUid === 'all' || targetUid === currentUid) {
+      if (!excludeUid || excludeUid !== currentUid) {
+        window.showInAppNotification({
+          id: docId || 'temp_' + Date.now(),
+          title,
+          body,
+          type,
+          url: targetUrl
+        });
+      }
+    }
+  }
+
+  // 3. Dispatch real off-app push notification via backend for supported subscribed devices
   try {
     await fetch(BROADCAST_URL, {
       method: 'POST',
@@ -282,6 +412,15 @@ window.dispatchPushNotification = async function(title, body, type = 'announceme
         });
       } catch (e) {}
     }
+  } else {
+    // Show in-app banner for active browser
+    window.showInAppNotification({
+      id: 'local_' + Date.now(),
+      title,
+      body,
+      type,
+      url: targetUrl
+    });
   }
 
   // 3. Audio feedback
@@ -291,6 +430,22 @@ window.dispatchPushNotification = async function(title, body, type = 'announceme
 window.sendTestPushNotification = async function() {
   const user = window.auth?.currentUser;
   const targetUid = user ? user.uid : null;
+  const isSupported = window.isNotificationSupported();
+  const isGranted = typeof Notification !== 'undefined' && Notification.permission === 'granted';
+
+  if (!isSupported || !isGranted) {
+    window.showToast?.("Displaying live in-app fellowship alert...", "info");
+    window.showInAppNotification({
+      id: 'test_' + Date.now(),
+      title: "🔔 Home.cell Fellowship Alert",
+      body: "Grace and peace! This is a live in-app notification working smoothly in your browser.",
+      type: "system",
+      url: "./#view-notifications"
+    });
+    window.showToast?.("🔔 Live in-app alert tested successfully!", "success");
+    return;
+  }
+
   window.showToast?.("Sending live off-app push notification...", "info");
   
   await window.recordNotification(
@@ -337,17 +492,45 @@ window.syncNotificationHistory = function() {
 
   notificationsListener = query.onSnapshot(snap => {
     let items = [];
+    const newItemsToAlert = [];
+
     if (!snap.empty) {
       snap.forEach(doc => {
         const d = doc.data();
-        if (d.targetUid === 'all' || !currentUser || d.targetUid === currentUser.uid) {
-          if (!d.excludeUid || (currentUser && d.excludeUid !== currentUser.uid)) {
-            items.push({ id: doc.id, ...d });
+        const docId = doc.id;
+        const targetUser = d.targetUid || d.recipientUid || 'all';
+        const isForMe = (targetUser === 'all' || !currentUser || targetUser === currentUser.uid);
+        const isNotExcluded = (!d.excludeUid || (currentUser && d.excludeUid !== currentUser.uid));
+
+        if (isForMe && isNotExcluded) {
+          const itemObj = { 
+            id: docId, 
+            ...d, 
+            body: d.body || d.message || '',
+            url: d.url || './#view-notifications' 
+          };
+          items.push(itemObj);
+
+          if (!seenNotificationIds.has(docId)) {
+            if (!isInitialNotificationLoad && !d.read) {
+              newItemsToAlert.push(itemObj);
+            }
+            seenNotificationIds.add(docId);
           }
         }
       });
     }
 
+    // Trigger in-app alerts for real-time incoming notifications (browsers without push or active tab)
+    if (!isInitialNotificationLoad && newItemsToAlert.length > 0) {
+      newItemsToAlert.slice(0, 3).forEach((newItem, idx) => {
+        setTimeout(() => {
+          window.showInAppNotification(newItem);
+        }, idx * 400);
+      });
+    }
+
+    isInitialNotificationLoad = false;
     cachedNotifications = items;
     const unreadCount = items.filter(n => !n.read).length;
 
@@ -469,13 +652,13 @@ function updatePushUIState() {
       settingsStatus.innerText = "🟢 Push Notifications Enabled";
       settingsStatus.className = "text-xs font-semibold text-emerald-600 dark:text-emerald-400 block text-center uppercase tracking-wider";
     } else if (state === 'denied') {
-      settingsStatus.innerText = "🔴 Push Blocked in Browser";
-      settingsStatus.className = "text-xs font-semibold text-rose-500 block text-center uppercase tracking-wider";
+      settingsStatus.innerText = "🔴 Push Blocked (In-App Alerts Active)";
+      settingsStatus.className = "text-xs font-semibold text-amber-500 block text-center uppercase tracking-wider";
     } else if (state === 'unsupported') {
-      settingsStatus.innerText = "⚠️ Push Unsupported in Browser";
-      settingsStatus.className = "text-xs font-semibold text-slate-400 block text-center uppercase tracking-wider";
+      settingsStatus.innerText = "🟢 Live In-App Notifications Active";
+      settingsStatus.className = "text-xs font-semibold text-emerald-600 dark:text-emerald-400 block text-center uppercase tracking-wider";
     } else {
-      settingsStatus.innerText = "⚪ Offline push inactive";
+      settingsStatus.innerText = "🟢 In-App Alerts Active (Push optional)";
       settingsStatus.className = "text-xs text-slate-500 dark:text-zinc-400 block text-center uppercase tracking-wider";
     }
   }
@@ -488,21 +671,28 @@ function updatePushUIState() {
     statusIndicator.className = "text-xs font-semibold text-emerald-600 dark:text-emerald-400";
   } else if (state === 'denied') {
     btn.classList.remove('hidden');
-    btn.innerText = "Blocked in Browser Settings";
-    btn.disabled = true;
-    statusIndicator.innerText = "🔴 Blocked by browser settings";
-    statusIndicator.className = "text-xs font-semibold text-rose-500";
+    btn.innerHTML = `<i data-lucide="bell" class="w-4 h-4"></i><span>Test In-App Alert</span>`;
+    btn.disabled = false;
+    btn.onclick = () => window.sendTestPushNotification();
+    statusIndicator.innerText = "📱 In-App Fellowship Notifications Active (Push blocked in browser)";
+    statusIndicator.className = "text-xs font-semibold text-amber-600 dark:text-amber-400";
   } else if (state === 'unsupported') {
-    btn.classList.add('hidden');
-    statusIndicator.innerText = "⚠️ Unsupported browser";
-    statusIndicator.className = "text-xs font-semibold text-slate-400";
+    btn.classList.remove('hidden');
+    btn.innerHTML = `<i data-lucide="bell" class="w-4 h-4"></i><span>Test In-App Alert</span>`;
+    btn.disabled = false;
+    btn.onclick = () => window.sendTestPushNotification();
+    statusIndicator.innerText = "🟢 Live In-App Notifications Active (Real-time popups & sound alerts)";
+    statusIndicator.className = "text-xs font-semibold text-emerald-600 dark:text-emerald-400";
   } else {
     btn.classList.remove('hidden');
-    btn.innerText = "Enable Real Push Notifications";
+    btn.innerHTML = `<i data-lucide="bell-ring" class="w-4 h-4"></i><span>Enable Push Notifications</span>`;
     btn.disabled = false;
-    statusIndicator.innerText = "⚪ Receive updates even when app is closed";
+    btn.onclick = () => window.requestNotificationPermission();
+    statusIndicator.innerText = "📱 In-App Alerts active • Click to also receive off-app push";
     statusIndicator.className = "text-xs text-slate-500 dark:text-zinc-400";
   }
+
+  if (window.lucide) window.lucide.createIcons();
 }
 
 document.addEventListener("DOMContentLoaded", () => {

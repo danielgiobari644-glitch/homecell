@@ -2,8 +2,13 @@
 // Custom Toast Notification System for Home.cell
 
 function showToast(message, type = 'success') {
-  const container = document.getElementById('toast-container');
-  if (!container) return;
+  let container = document.getElementById('toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toast-container';
+    container.className = 'fixed bottom-5 right-5 sm:bottom-6 sm:right-6 z-[99999] flex flex-col gap-2 pointer-events-none max-w-sm w-full px-4 sm:px-0';
+    document.body.appendChild(container);
+  }
 
   const toast = document.createElement('div');
   toast.className = `flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-xl border text-xs sm:text-sm font-bold pointer-events-auto transition-all duration-300 transform translate-y-2 opacity-0 max-w-sm backdrop-blur-md ${
