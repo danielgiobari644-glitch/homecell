@@ -205,7 +205,7 @@ auth.onAuthStateChanged(async (user) => {
       userDocRef.onSnapshot(doc => {
         if (doc.exists) {
           const userData = doc.data();
-          const isSuperAdmin = userData.role === 'Super Admin' || user.email === 'danielgiobari644@gmail.com';
+          const isSuperAdmin = userData.role === 'Super Admin' || user.email?.toLowerCase() === 'danielgiobari644@gmail.com';
           window.currentUserRole = isSuperAdmin ? 'Super Admin' : (userData.role || 'Member');
           window.currentUserProfile = userData;
           window.currentKcBalance = userData.kingdomCoins !== undefined ? userData.kingdomCoins : 100;
@@ -240,6 +240,8 @@ auth.onAuthStateChanged(async (user) => {
           if (window.renderStoreKcHeader) window.renderStoreKcHeader();
           if (window.checkSuperAdminStoreControls) window.checkSuperAdminStoreControls();
           if (window.syncMyLibrary) window.syncMyLibrary();
+          if (window.syncStoreProducts) window.syncStoreProducts();
+          if (window.syncAdminStoreProductsCatalog) window.syncAdminStoreProductsCatalog();
         }
       });
     } catch (e) {

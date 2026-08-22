@@ -66,8 +66,6 @@ function renderEventsGrid(events) {
     const isAttending = user && ev.attendees && ev.attendees[user.uid] === true;
     const attendeesCount = ev.attendeesCount || 0;
     const formattedDate = formatEventDatesDisplay(ev);
-    const safeTitle = (ev.title || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-    const safeImg = (ev.imageUrl || '').replace(/'/g, "\\'");
 
     return `
       <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between group relative">
@@ -83,7 +81,7 @@ function renderEventsGrid(events) {
             `}
             
             ${isSuperAdmin ? `
-              <button onclick="event.stopPropagation(); window.openChangeCoverModal({ type: 'event', id: '${ev.id}', title: '${safeTitle}', imageUrl: '${safeImg}' })" class="absolute top-3 right-3 px-2.5 py-1.5 rounded-xl bg-slate-950/80 hover:bg-slate-950 text-white text-[10px] font-black uppercase tracking-wider backdrop-blur-md shadow-md flex items-center gap-1.5 border border-white/20 z-10 cursor-pointer transition-all hover:scale-105">
+              <button onclick="event.stopPropagation(); window.openChangeCoverModal('event', '${ev.id}')" class="absolute top-3 right-3 px-2.5 py-1.5 rounded-xl bg-slate-950/80 hover:bg-slate-950 text-white text-[10px] font-black uppercase tracking-wider backdrop-blur-md shadow-md flex items-center gap-1.5 border border-white/20 z-10 cursor-pointer transition-all hover:scale-105">
                 <i data-lucide="camera" class="w-3.5 h-3.5 text-amber-400"></i>
                 <span>Change Cover</span>
               </button>

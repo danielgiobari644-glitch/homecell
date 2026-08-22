@@ -2,6 +2,8 @@
 // Home.cell - Kingdom Store 2.0, Real Purchases, Ownership Protection, Custom Requests & My Library
 
 let storeProductsListener = null;
+let storeConfigListener = null;
+let globalFirestoreDeletedProductIds = new Set();
 let storeRequestsListener = null;
 let storeFeedbackListener = null;
 let storeLibraryListener = null;
@@ -115,7 +117,7 @@ function initKingdomStoreModule() {
 
 function checkSuperAdminStoreControls() {
   const user = window.auth?.currentUser;
-  const isSuperAdmin = window.currentUserRole === 'Super Admin' || user?.email === 'danielgiobari644@gmail.com';
+  const isSuperAdmin = window.checkIsSuperAdmin ? window.checkIsSuperAdmin() : (window.currentUserRole === 'Super Admin' || user?.email?.toLowerCase() === 'danielgiobari644@gmail.com');
   const uploadBtn = document.getElementById('store-superadmin-upload-btn');
   if (uploadBtn) {
     if (isSuperAdmin) uploadBtn.classList.remove('hidden');
@@ -219,19 +221,22 @@ function dataUrlToBlob(dataUrl) {
 function getDeletedStoreProductIds() {
   try {
     const raw = localStorage.getItem('homecell_deleted_store_products');
-    return raw ? JSON.parse(raw) : [];
+    const local = raw ? JSON.parse(raw) : [];
+    const merged = new Set([...local, ...globalFirestoreDeletedProductIds]);
+    return Array.from(merged);
   } catch (e) {
-    return [];
+    return Array.from(globalFirestoreDeletedProductIds);
   }
 }
 
 function markStoreProductAsDeleted(productId) {
   try {
+    globalFirestoreDeletedProductIds.add(productId);
     const current = getDeletedStoreProductIds();
     if (!current.includes(productId)) {
       current.push(productId);
-      localStorage.setItem('homecell_deleted_store_products', JSON.stringify(current));
     }
+    localStorage.setItem('homecell_deleted_store_products', JSON.stringify(current));
     removeUploadedStoreProductLocal(productId);
   } catch (e) {}
 }
@@ -304,6 +309,27 @@ function syncStoreProducts() {
     return;
   }
 
+  // Subscribe in real-time to global store configs (such as global deleted product IDs)
+  if (!storeConfigListener) {
+    storeConfigListener = db.collection('system_configs').doc('store_config').onSnapshot(doc => {
+      if (doc.exists) {
+        const data = doc.data();
+        if (Array.isArray(data?.deletedProductIds)) {
+          let hasNew = false;
+          data.deletedProductIds.forEach(id => {
+            if (!globalFirestoreDeletedProductIds.has(id)) {
+              globalFirestoreDeletedProductIds.add(id);
+              hasNew = true;
+            }
+          });
+          if (hasNew && storeCachedProducts.length > 0) {
+            renderProductsGrid(storeCachedProducts);
+          }
+        }
+      }
+    }, err => console.warn("Store config sync note:", err));
+  }
+
   // Subscribe in real-time to all products without server-side orderBy to prevent index errors
   storeProductsListener = db.collection('products').onSnapshot(snap => {
     let products = [];
@@ -314,7 +340,7 @@ function syncStoreProducts() {
     if (!snap.empty) {
       snap.forEach(doc => {
         const d = doc.data();
-        if (d.published !== false && !currentDeletedIds.includes(doc.id)) {
+        if (d.published !== false && !d.isDeleted && !currentDeletedIds.includes(doc.id)) {
           products.push({ id: doc.id, ...d });
           seenIds.add(doc.id);
         }
@@ -362,7 +388,7 @@ async function seedDefaultProductsIfEmpty() {
   try {
     const db = window.db;
     if (!db) return;
-    const isSuperAdmin = window.currentUserRole === 'Super Admin' || window.auth?.currentUser?.email === 'danielgiobari644@gmail.com';
+    const isSuperAdmin = window.checkIsSuperAdmin ? window.checkIsSuperAdmin() : (window.currentUserRole === 'Super Admin' || window.auth?.currentUser?.email?.toLowerCase() === 'danielgiobari644@gmail.com');
     if (!isSuperAdmin) return;
 
     const hasSeeded = localStorage.getItem('homecell_seeded_default_products');
@@ -429,7 +455,7 @@ function renderProductsGrid(products) {
   if (window.currentKcBalance !== undefined) currentKc = window.currentKcBalance;
   else if (window.currentUserProfile?.kingdomCoins !== undefined) currentKc = window.currentUserProfile.kingdomCoins;
 
-  const isSuperAdmin = window.currentUserRole === 'Super Admin' || window.auth?.currentUser?.email === 'danielgiobari644@gmail.com';
+  const isSuperAdmin = window.checkIsSuperAdmin ? window.checkIsSuperAdmin() : (window.currentUserRole === 'Super Admin' || window.auth?.currentUser?.email?.toLowerCase() === 'danielgiobari644@gmail.com');
 
   container.innerHTML = filtered.map(p => {
     const itemPrice = parseInt(p.priceKC !== undefined ? p.priceKC : (p.price !== undefined ? p.price : 50)) || 50;
@@ -463,7 +489,7 @@ function renderProductsGrid(products) {
       <div class="bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800/90 rounded-3xl overflow-hidden shadow-xs hover:shadow-lg transition-all duration-300 flex flex-col justify-between group hover:border-amber-500/40 relative">
         ${isSuperAdmin ? `
           <div class="absolute top-3 right-3 z-20 flex items-center gap-1">
-            <button onclick="deleteStoreProductDirect('${p.id}', '${encodeURIComponent(p.title || '')}')" class="p-2 rounded-xl bg-slate-900/80 backdrop-blur-md text-red-400 hover:bg-red-600 hover:text-white transition-all cursor-pointer shadow-md" title="Delete Product (Super Admin)">
+            <button type="button" onclick="event.stopPropagation(); deleteStoreProductDirect('${p.id}', '${encodeURIComponent(p.title || '')}')" class="p-2 rounded-xl bg-slate-900/80 backdrop-blur-md text-red-400 hover:bg-red-600 hover:text-white transition-all cursor-pointer shadow-md" title="Delete Product (Super Admin)">
               <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
             </button>
           </div>
@@ -1239,7 +1265,7 @@ function compressImageToDataUrl(file, maxWidth = 1280, quality = 0.82) {
 }
 
 function openSuperAdminStoreUploadModal() {
-  const isSuperAdmin = window.currentUserRole === 'Super Admin' || window.auth?.currentUser?.email === 'danielgiobari644@gmail.com' || (window.checkIsSuperAdmin && window.checkIsSuperAdmin());
+  const isSuperAdmin = window.checkIsSuperAdmin ? window.checkIsSuperAdmin() : (window.currentUserRole === 'Super Admin' || window.auth?.currentUser?.email?.toLowerCase() === 'danielgiobari644@gmail.com');
   if (!isSuperAdmin) {
     window.showToast?.("Super Admin credentials required to upload store resources.", "warning");
   }
@@ -1369,14 +1395,43 @@ async function handleSuperAdminStoreUploadSubmit(e) {
 }
 
 async function deleteStoreProductDirect(productId, encodedTitle) {
-  const title = decodeURIComponent(encodedTitle || 'Product');
-  const confirmDelete = confirm(`Are you sure you want to permanently delete "${title}" from the Kingdom Store catalog?`);
-  if (!confirmDelete) return;
+  let title = 'Resource';
+  if (encodedTitle) {
+    try {
+      title = decodeURIComponent(encodedTitle);
+    } catch (e) {
+      title = encodedTitle;
+    }
+  } else {
+    const found = (storeCachedProducts || []).find(p => p.id === productId);
+    if (found && found.title) title = found.title;
+  }
+
+  let isConfirmed = false;
+  if (window.showConfirmDialog) {
+    isConfirmed = await window.showConfirmDialog({
+      title: "Delete Kingdom Resource?",
+      message: `Are you sure you want to permanently delete "${title}" from the Kingdom Store catalog? This item will be removed for all members across all platforms.`,
+      confirmText: "Delete Permanently",
+      cancelText: "Cancel",
+      isDanger: true,
+      icon: "trash-2"
+    });
+  } else {
+    try {
+      isConfirmed = confirm(`Are you sure you want to permanently delete "${title}" from the Kingdom Store catalog?`);
+    } catch (e) {
+      isConfirmed = true;
+    }
+  }
+
+  if (!isConfirmed) return;
 
   try {
     // 1. Mark as deleted locally so default & cached products never reappear
     markStoreProductAsDeleted(productId);
     removeUploadedStoreProductLocal(productId);
+    globalFirestoreDeletedProductIds.add(productId);
 
     // 2. Delete from IndexedDB asset cache
     await deleteStoreAssetIndexedDB(productId);
@@ -1387,12 +1442,32 @@ async function deleteStoreProductDirect(productId, encodedTitle) {
 
     // 4. Delete from Firestore products and storeProducts
     if (window.db) {
-      await window.db.collection('products').doc(productId).delete().catch(() => {});
-      await window.db.collection('storeProducts').doc(productId).delete().catch(() => {});
+      const FieldValue = window.firebase?.firestore?.FieldValue;
+      
+      // Update global deleted products list in system_configs
+      if (FieldValue) {
+        window.db.collection('system_configs').doc('store_config').set({
+          deletedProductIds: FieldValue.arrayUnion(productId),
+          lastUpdated: FieldValue.serverTimestamp()
+        }, { merge: true }).catch(err => console.warn("Store config update note:", err));
+      }
+
+      // Mark unlisted before deleting
+      await window.db.collection('products').doc(productId).set({
+        published: false,
+        isDeleted: true
+      }, { merge: true }).catch(() => {});
+
+      await window.db.collection('products').doc(productId).delete().catch(err => console.warn("Product doc delete note:", err));
+      await window.db.collection('storeProducts').doc(productId).delete().catch(err => console.warn("StoreProducts doc delete note:", err));
     }
 
-    window.soundEngine?.playSuccess?.();
-    window.showToast?.(`"${title}" permanently deleted from Kingdom Store.`, "info");
+    if (window.soundEngine?.playSuccess) {
+      window.soundEngine.playSuccess();
+    }
+    if (window.showToast) {
+      window.showToast(`"${title}" permanently deleted from Kingdom Store.`, "info");
+    }
     
     // 5. Update catalog tables and grids
     syncStoreProducts();
@@ -1401,7 +1476,9 @@ async function deleteStoreProductDirect(productId, encodedTitle) {
     }
   } catch (err) {
     console.error("Delete product error:", err);
-    window.showToast?.("Error deleting product: " + err.message, "error");
+    if (window.showToast) {
+      window.showToast("Error deleting product: " + err.message, "error");
+    }
   }
 }
 

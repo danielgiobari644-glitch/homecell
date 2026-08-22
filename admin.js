@@ -789,8 +789,6 @@ function syncAdminQuizzesList() {
       const card = document.createElement('div');
       card.className = "glass-panel rounded-3xl p-5 sm:p-6 space-y-4 border border-slate-200 dark:border-zinc-800";
 
-      const safeTitle = (q.title || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-      const safeImg = (q.coverUrl || q.imageUrl || '').replace(/'/g, "\\'");
       const coverUrl = q.coverUrl || q.imageUrl || '';
 
       card.innerHTML = `
@@ -833,7 +831,7 @@ function syncAdminQuizzesList() {
             <button onclick="openEditQuizModal('${doc.id}')" class="px-3 py-2 bg-purple-500/10 hover:bg-purple-500 text-purple-700 dark:text-purple-300 hover:text-white font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center gap-1 border border-purple-500/30">
               <i data-lucide="edit-3" class="w-3.5 h-3.5"></i> Edit Quiz
             </button>
-            <button onclick="window.openChangeCoverModal({ type: 'quiz', id: '${doc.id}', title: '${safeTitle}', imageUrl: '${safeImg}' })" class="px-3 py-2 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 text-slate-700 dark:text-zinc-300 font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center gap-1">
+            <button onclick="window.openChangeCoverModal('quiz', '${doc.id}')" class="px-3 py-2 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 text-slate-700 dark:text-zinc-300 font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center gap-1">
               <i data-lucide="camera" class="w-3.5 h-3.5 text-purple-500"></i> Change Cover
             </button>
             <button onclick="exportQuizToJson('${doc.id}')" class="px-3 py-2 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 text-slate-700 dark:text-zinc-300 font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center gap-1">
@@ -1030,9 +1028,28 @@ async function toggleQuizLiveStatus(quizId, newStatus) {
 }
 
 async function deleteQuizDirect(quizId) {
-  if (!confirm("Are you sure you want to delete this live quiz?")) return;
+  let isConfirmed = false;
+  if (window.showConfirmDialog) {
+    isConfirmed = await window.showConfirmDialog({
+      title: "Delete Live Quiz?",
+      message: "Are you sure you want to delete this live quiz? This will remove it from the Kingdom Hub for all members.",
+      confirmText: "Delete Quiz",
+      cancelText: "Cancel",
+      isDanger: true,
+      icon: "trash-2"
+    });
+  } else {
+    try {
+      isConfirmed = confirm("Are you sure you want to delete this live quiz?");
+    } catch (e) {
+      isConfirmed = true;
+    }
+  }
+  if (!isConfirmed) return;
+
   try {
     await window.db.collection('custom_quizzes').doc(quizId).delete();
+    window.soundEngine?.playSuccess?.();
     window.showToast?.("Quiz deleted.", "info");
   } catch (err) {
     window.showToast?.("Error deleting quiz: " + err.message, "error");
@@ -1143,9 +1160,28 @@ async function handleCreateCellSubmit(e) {
 }
 
 async function deleteCellDirect(cellId) {
-  if (!confirm("Are you sure you want to delete this house cell?")) return;
+  let isConfirmed = false;
+  if (window.showConfirmDialog) {
+    isConfirmed = await window.showConfirmDialog({
+      title: "Delete House Cell?",
+      message: "Are you sure you want to delete this house cell from the church network?",
+      confirmText: "Delete Cell",
+      cancelText: "Cancel",
+      isDanger: true,
+      icon: "trash-2"
+    });
+  } else {
+    try {
+      isConfirmed = confirm("Are you sure you want to delete this house cell?");
+    } catch (e) {
+      isConfirmed = true;
+    }
+  }
+  if (!isConfirmed) return;
+
   try {
     await window.db.collection('cells').doc(cellId).delete();
+    window.soundEngine?.playSuccess?.();
     window.showToast?.("Cell removed.", "info");
   } catch (err) {
     window.showToast?.("Error deleting cell: " + err.message, "error");
@@ -1396,9 +1432,6 @@ function renderAdminDevotionalsCards(snap) {
     const card = document.createElement('div');
     card.className = "glass-panel rounded-2xl p-4 sm:p-5 space-y-3 border border-slate-200 dark:border-zinc-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4";
 
-    const safeTitle = (d.title || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-    const safeImg = (d.imageUrl || '').replace(/'/g, "\\'");
-
     card.innerHTML = `
       <div class="flex items-center gap-3.5">
         <div class="relative w-20 h-16 rounded-xl overflow-hidden bg-slate-100 dark:bg-zinc-800 shrink-0 border border-slate-200 dark:border-zinc-700">
@@ -1421,7 +1454,7 @@ function renderAdminDevotionalsCards(snap) {
           <span>Edit</span>
         </button>
 
-        <button onclick="window.openChangeCoverModal({ type: 'devotional', id: '${docId}', title: '${safeTitle}', imageUrl: '${safeImg}' })" class="px-3.5 py-2 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 text-slate-700 dark:text-zinc-300 font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center gap-1.5">
+        <button onclick="window.openChangeCoverModal('devotional', '${docId}')" class="px-3.5 py-2 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 text-slate-700 dark:text-zinc-300 font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center gap-1.5">
           <i data-lucide="camera" class="w-3.5 h-3.5 text-amber-500"></i>
           <span>Change Cover</span>
         </button>
@@ -1569,10 +1602,29 @@ async function handleSaveEditedDevotional(e) {
 }
 
 async function deleteDevotionalDirect(devId) {
-  if (!confirm("Are you sure you want to delete this devotional?")) return;
+  let isConfirmed = false;
+  if (window.showConfirmDialog) {
+    isConfirmed = await window.showConfirmDialog({
+      title: "Delete Devotional?",
+      message: "Are you sure you want to delete this devotional message?",
+      confirmText: "Delete Devotional",
+      cancelText: "Cancel",
+      isDanger: true,
+      icon: "trash-2"
+    });
+  } else {
+    try {
+      isConfirmed = confirm("Are you sure you want to delete this devotional?");
+    } catch (e) {
+      isConfirmed = true;
+    }
+  }
+  if (!isConfirmed) return;
+
   try {
     await window.db.collection('daily_devotionals').doc(devId).delete();
     await window.db.collection('devotionals').doc(devId).delete().catch(() => {});
+    window.soundEngine?.playSuccess?.();
     window.showToast?.("Devotional deleted.", "info");
   } catch (err) {
     window.showToast?.("Error deleting: " + err.message, "error");
@@ -1754,9 +1806,6 @@ function renderAdminEventsCards(snap) {
     const card = document.createElement('div');
     card.className = "glass-panel rounded-2xl p-4 sm:p-5 space-y-3 border border-slate-200 dark:border-zinc-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4";
 
-    const safeTitle = (ev.title || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-    const safeImg = (ev.imageUrl || '').replace(/'/g, "\\'");
-
     card.innerHTML = `
       <div class="flex items-center gap-3.5">
         <div class="relative w-20 h-16 rounded-xl overflow-hidden bg-slate-100 dark:bg-zinc-800 shrink-0 border border-slate-200 dark:border-zinc-700">
@@ -1774,7 +1823,7 @@ function renderAdminEventsCards(snap) {
       </div>
 
       <div class="flex items-center gap-2 shrink-0 self-end sm:self-center">
-        <button onclick="window.openChangeCoverModal({ type: 'event', id: '${docId}', title: '${safeTitle}', imageUrl: '${safeImg}' })" class="px-3.5 py-2 bg-purple-500/10 hover:bg-purple-600 text-purple-700 dark:text-purple-300 hover:text-white font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center gap-1.5 border border-purple-500/30">
+        <button onclick="window.openChangeCoverModal('event', '${docId}')" class="px-3.5 py-2 bg-purple-500/10 hover:bg-purple-600 text-purple-700 dark:text-purple-300 hover:text-white font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center gap-1.5 border border-purple-500/30">
           <i data-lucide="camera" class="w-3.5 h-3.5"></i>
           <span>Change Cover</span>
         </button>
@@ -1791,10 +1840,29 @@ function renderAdminEventsCards(snap) {
 }
 
 async function deleteEventDirect(eventId) {
-  if (!confirm("Are you sure you want to delete this event?")) return;
+  let isConfirmed = false;
+  if (window.showConfirmDialog) {
+    isConfirmed = await window.showConfirmDialog({
+      title: "Delete Event?",
+      message: "Are you sure you want to delete this upcoming church gathering?",
+      confirmText: "Delete Event",
+      cancelText: "Cancel",
+      isDanger: true,
+      icon: "trash-2"
+    });
+  } else {
+    try {
+      isConfirmed = confirm("Are you sure you want to delete this event?");
+    } catch (e) {
+      isConfirmed = true;
+    }
+  }
+  if (!isConfirmed) return;
+
   try {
     await window.db.collection('upcoming_events').doc(eventId).delete();
     await window.db.collection('events').doc(eventId).delete().catch(() => {});
+    window.soundEngine?.playSuccess?.();
     window.showToast?.("Gathering removed.", "info");
   } catch (err) {
     window.showToast?.("Error deleting: " + err.message, "error");
@@ -2357,8 +2425,30 @@ function syncAdminStoreProductsCatalog() {
 }
 
 async function deleteAdminStoreProduct(prodId, encodedTitle) {
+  if (window.deleteStoreProductDirect) {
+    return await window.deleteStoreProductDirect(prodId, encodedTitle);
+  }
+
   const title = decodeURIComponent(encodedTitle || 'Resource');
-  if (!confirm(`Delete product "${title}" permanently from the Kingdom Store catalog?`)) return;
+  let isConfirmed = false;
+  if (window.showConfirmDialog) {
+    isConfirmed = await window.showConfirmDialog({
+      title: "Delete Store Resource?",
+      message: `Delete product "${title}" permanently from the Kingdom Store catalog?`,
+      confirmText: "Delete Permanently",
+      cancelText: "Cancel",
+      isDanger: true,
+      icon: "trash-2"
+    });
+  } else {
+    try {
+      isConfirmed = confirm(`Delete product "${title}" permanently from the Kingdom Store catalog?`);
+    } catch (e) {
+      isConfirmed = true;
+    }
+  }
+
+  if (!isConfirmed) return;
 
   try {
     if (window.markStoreProductAsDeleted) {
@@ -2372,6 +2462,19 @@ async function deleteAdminStoreProduct(prodId, encodedTitle) {
     }
 
     if (window.db) {
+      const FieldValue = window.firebase?.firestore?.FieldValue;
+      if (FieldValue) {
+        window.db.collection('system_configs').doc('store_config').set({
+          deletedProductIds: FieldValue.arrayUnion(prodId),
+          lastUpdated: FieldValue.serverTimestamp()
+        }, { merge: true }).catch(() => {});
+      }
+
+      await window.db.collection('products').doc(prodId).set({
+        published: false,
+        isDeleted: true
+      }, { merge: true }).catch(() => {});
+
       await window.db.collection('products').doc(prodId).delete().catch(() => {});
       await window.db.collection('storeProducts').doc(prodId).delete().catch(() => {});
     }

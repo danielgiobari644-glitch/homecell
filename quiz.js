@@ -158,8 +158,6 @@ function syncAdminAndLiveQuizzes() {
       const isLive = q.status !== 'ended';
       const coverUrl = q.coverUrl || q.imageUrl || '';
       const isSuperAdmin = (typeof window.isSuperAdmin === 'function') ? window.isSuperAdmin() : (window.auth?.currentUser?.email === 'danielgiobari644@gmail.com');
-      const safeTitle = (q.title || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-      const safeImg = coverUrl.replace(/'/g, "\\'");
 
       card.className = `glass-panel rounded-3xl p-5 sm:p-6 space-y-4 border ${isLive ? 'border-purple-500/30' : 'border-slate-200 dark:border-zinc-800'} hover:border-purple-500 transition-all flex flex-col justify-between relative overflow-hidden`;
       
@@ -215,7 +213,7 @@ function syncAdminAndLiveQuizzes() {
                 <i data-lucide="edit-3" class="w-3 h-3"></i>
                 <span>Edit</span>
               </button>
-              <button onclick="window.openChangeCoverModal?.({ type: 'quiz', id: '${doc.id}', title: '${safeTitle}', imageUrl: '${safeImg}' })" class="py-1.5 px-2 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 text-slate-700 dark:text-zinc-300 text-[10px] font-bold rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer">
+              <button onclick="window.openChangeCoverModal?.('quiz', '${doc.id}')" class="py-1.5 px-2 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 text-slate-700 dark:text-zinc-300 text-[10px] font-bold rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer">
                 <i data-lucide="camera" class="w-3 h-3 text-purple-500"></i>
                 <span>Cover</span>
               </button>

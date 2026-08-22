@@ -59,7 +59,27 @@ const COVER_PRESETS = [
   }
 ];
 
-function openChangeCoverModal(target) {
+function openChangeCoverModal(targetOrType, itemId, itemTitle, itemImageUrl) {
+  let target = targetOrType;
+  if (typeof targetOrType === 'string') {
+    const type = targetOrType;
+    let foundTitle = itemTitle || '';
+    let foundImg = itemImageUrl || '';
+    if (!foundTitle || !foundImg) {
+      if (type === 'devotional' && window.devotionalsCache?.[itemId]) {
+        foundTitle = foundTitle || window.devotionalsCache[itemId].title;
+        foundImg = foundImg || window.devotionalsCache[itemId].imageUrl;
+      } else if (type === 'quiz' && window.quizzesCache?.[itemId]) {
+        foundTitle = foundTitle || window.quizzesCache[itemId].title;
+        foundImg = foundImg || window.quizzesCache[itemId].coverUrl || window.quizzesCache[itemId].imageUrl;
+      } else if (type === 'event' && window.eventsCache?.[itemId]) {
+        foundTitle = foundTitle || window.eventsCache[itemId].title;
+        foundImg = foundImg || window.eventsCache[itemId].imageUrl;
+      }
+    }
+    target = { type, id: itemId, title: foundTitle, imageUrl: foundImg };
+  }
+
   if (!target || !target.id || !target.type) {
     console.warn("Invalid cover target:", target);
     return;

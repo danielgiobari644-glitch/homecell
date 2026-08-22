@@ -60,4 +60,70 @@ function showToast(message, type = 'success') {
   }
 }
 
+function showConfirmDialog({
+  title = 'Are you sure?',
+  message = 'This action cannot be undone.',
+  confirmText = 'Delete',
+  cancelText = 'Cancel',
+  isDanger = true,
+  icon = 'trash-2'
+} = {}) {
+  return new Promise((resolve) => {
+    let modal = document.getElementById('global-confirm-modal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'global-confirm-modal';
+      modal.className = 'fixed inset-0 z-[999999] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4';
+      document.body.appendChild(modal);
+    }
+
+    const iconHtml = isDanger 
+      ? `<div class="w-14 h-14 rounded-2xl bg-red-500/15 text-red-500 flex items-center justify-center mx-auto text-2xl shadow-inner border border-red-500/20"><i data-lucide="${icon || 'trash-2'}" class="w-7 h-7"></i></div>`
+      : `<div class="w-14 h-14 rounded-2xl bg-blue-500/15 text-blue-500 flex items-center justify-center mx-auto text-2xl shadow-inner border border-blue-500/20"><i data-lucide="${icon || 'help-circle'}" class="w-7 h-7"></i></div>`;
+
+    const confirmBtnClass = isDanger
+      ? "flex-1 py-3 px-4 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-red-600/25 cursor-pointer transition-all active:scale-95 flex items-center justify-center gap-1.5"
+      : "flex-1 py-3 px-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-blue-600/25 cursor-pointer transition-all active:scale-95 flex items-center justify-center gap-1.5";
+
+    modal.innerHTML = `
+      <div class="glass-panel w-full max-w-md rounded-3xl p-6 sm:p-7 space-y-5 text-center relative border border-slate-200 dark:border-zinc-800 shadow-2xl animate-fade-in bg-white dark:bg-zinc-900">
+        ${iconHtml}
+        
+        <div class="space-y-1.5">
+          <h3 class="text-lg font-black text-slate-900 dark:text-zinc-100 font-display">${title}</h3>
+          <p class="text-xs text-slate-500 dark:text-zinc-400 leading-relaxed max-w-sm mx-auto">${message}</p>
+        </div>
+
+        <div class="flex items-center gap-3 pt-2">
+          <button type="button" id="confirm-modal-cancel-btn" class="flex-1 py-3 px-4 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300 font-bold text-xs cursor-pointer transition-all">
+            ${cancelText}
+          </button>
+          <button type="button" id="confirm-modal-action-btn" class="${confirmBtnClass}">
+            ${confirmText}
+          </button>
+        </div>
+      </div>
+    `;
+
+    modal.classList.remove('hidden');
+    if (window.lucide) window.lucide.createIcons();
+
+    const cleanup = (result) => {
+      modal.classList.add('hidden');
+      modal.innerHTML = '';
+      resolve(result);
+    };
+
+    const actionBtn = modal.querySelector('#confirm-modal-action-btn');
+    const cancelBtn = modal.querySelector('#confirm-modal-cancel-btn');
+
+    if (actionBtn) actionBtn.onclick = () => cleanup(true);
+    if (cancelBtn) cancelBtn.onclick = () => cleanup(false);
+    modal.onclick = (e) => {
+      if (e.target === modal) cleanup(false);
+    };
+  });
+}
+
 window.showToast = showToast;
+window.showConfirmDialog = showConfirmDialog;

@@ -288,9 +288,11 @@ function startCellChatMessagesSync(cellId) {
         return;
       }
 
+      window.cellMessagesCache = window.cellMessagesCache || {};
       snap.forEach(doc => {
         const msg = doc.data();
         const msgId = doc.id;
+        window.cellMessagesCache[msgId] = msg;
         const isSelf = msg.senderUid === window.auth?.currentUser?.uid;
 
         const wrapper = document.createElement('div');
@@ -344,7 +346,7 @@ function startCellChatMessagesSync(cellId) {
               <button onclick="window.reactToChatMessage('${cellId}', '${msgId}', '🙏')" class="px-1 hover:scale-125 transition-transform text-xs" title="Amen">🙏</button>
               <button onclick="window.reactToChatMessage('${cellId}', '${msgId}', '❤️')" class="px-1 hover:scale-125 transition-transform text-xs" title="Love">❤️</button>
               <button onclick="window.reactToChatMessage('${cellId}', '${msgId}', '🙌')" class="px-1 hover:scale-125 transition-transform text-xs" title="Praise">🙌</button>
-              <button onclick="window.setReplyTarget('${msgId}', '${msg.senderName.replace(/'/g, "\\'")}', '${msg.text.replace(/'/g, "\\'")}')" class="px-1 text-blue-500 hover:text-blue-700 text-xs font-bold" title="Reply">
+              <button onclick="window.setReplyTarget('${msgId}')" class="px-1 text-blue-500 hover:text-blue-700 text-xs font-bold" title="Reply">
                 <i data-lucide="reply" class="w-3.5 h-3.5 inline"></i>
               </button>
               ${
@@ -408,13 +410,19 @@ function reactToChatMessage(cellId, msgId, emoji) {
 }
 
 function setReplyTarget(msgId, senderName, text) {
-  currentReplyTarget = { msgId, senderName, text };
+  let name = senderName;
+  let body = text;
+  if (!name && window.cellMessagesCache?.[msgId]) {
+    name = window.cellMessagesCache[msgId].senderName;
+    body = window.cellMessagesCache[msgId].text;
+  }
+  currentReplyTarget = { msgId, senderName: name || 'Believer', text: body || '' };
   const replyBox = document.getElementById('cell-reply-preview');
   const targetSender = document.getElementById('reply-target-sender');
   const targetText = document.getElementById('reply-target-text');
 
-  if (targetSender) targetSender.innerText = senderName;
-  if (targetText) targetText.innerText = text;
+  if (targetSender) targetSender.innerText = currentReplyTarget.senderName;
+  if (targetText) targetText.innerText = currentReplyTarget.text;
   if (replyBox) replyBox.classList.remove('hidden');
 
   const chatInput = document.getElementById('cell-chat-input');

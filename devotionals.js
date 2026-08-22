@@ -73,9 +73,6 @@ function renderDevotionalsGrid(items) {
   );
 
   container.innerHTML = items.map(d => {
-    const safeTitle = (d.title || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-    const safeImg = (d.imageUrl || '').replace(/'/g, "\\'");
-
     return `
       <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between group relative">
         <div>
@@ -93,7 +90,7 @@ function renderDevotionalsGrid(items) {
             </div>
 
             ${isSuperAdmin ? `
-              <button onclick="event.stopPropagation(); window.openChangeCoverModal({ type: 'devotional', id: '${d.id}', title: '${safeTitle}', imageUrl: '${safeImg}' })" class="absolute top-3 right-3 px-2.5 py-1.5 rounded-xl bg-slate-950/80 hover:bg-slate-950 text-white text-[10px] font-black uppercase tracking-wider backdrop-blur-md shadow-md flex items-center gap-1.5 border border-white/20 z-10 cursor-pointer transition-all hover:scale-105">
+              <button onclick="event.stopPropagation(); window.openChangeCoverModal('devotional', '${d.id}')" class="absolute top-3 right-3 px-2.5 py-1.5 rounded-xl bg-slate-950/80 hover:bg-slate-950 text-white text-[10px] font-black uppercase tracking-wider backdrop-blur-md shadow-md flex items-center gap-1.5 border border-white/20 z-10 cursor-pointer transition-all hover:scale-105">
                 <i data-lucide="camera" class="w-3.5 h-3.5 text-amber-400"></i>
                 <span>Change Cover</span>
               </button>
@@ -108,7 +105,7 @@ function renderDevotionalsGrid(items) {
         </div>
 
         <div class="p-5 pt-0">
-          <button onclick="openFullDevotionalModal(window.devotionalsCache['${d.id}'])" class="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer shadow-xs transition-all">
+          <button onclick="openFullDevotionalModal('${d.id}')" class="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer shadow-xs transition-all">
             <i data-lucide="book-open" class="w-4 h-4"></i> Read Devotional
           </button>
         </div>
@@ -119,7 +116,11 @@ function renderDevotionalsGrid(items) {
   if (window.lucide) window.lucide.createIcons();
 }
 
-function openFullDevotionalModal(devotional) {
+function openFullDevotionalModal(devotionalOrId) {
+  let devotional = devotionalOrId;
+  if (typeof devotionalOrId === 'string') {
+    devotional = window.devotionalsCache?.[devotionalOrId] || { id: devotionalOrId };
+  }
   if (!devotional) return;
   currentDevotionalModalData = devotional;
 
@@ -170,14 +171,7 @@ function openFullDevotionalModal(devotional) {
     if (isSuperAdmin) {
       adminCoverBtn.classList.remove('hidden');
       adminCoverBtn.onclick = () => {
-        const safeTitle = (devotional.title || '').replace(/'/g, "\\'");
-        const safeImg = (devotional.imageUrl || '').replace(/'/g, "\\'");
-        window.openChangeCoverModal({
-          type: 'devotional',
-          id: devotional.id,
-          title: safeTitle,
-          imageUrl: safeImg
-        });
+        window.openChangeCoverModal?.('devotional', devotional.id, devotional.title, devotional.imageUrl);
       };
     } else {
       adminCoverBtn.classList.add('hidden');

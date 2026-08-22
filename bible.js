@@ -515,8 +515,6 @@ function renderScriptureVerses(verseMap) {
     verseDiv.id = `verse-item-${vNum}`;
     verseDiv.className = `p-3.5 sm:p-4 rounded-2xl border border-transparent ${hlBgClass} transition-all duration-200 group flex items-start justify-between gap-3`;
 
-    const safeEscapedText = (text || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-
     verseDiv.innerHTML = `
       <div class="flex items-start gap-3 flex-1">
         <span class="text-xs font-mono font-black text-blue-600 dark:text-blue-400 bg-blue-100/80 dark:bg-blue-950/80 px-2 py-0.5 rounded-lg shrink-0 mt-0.5">${vNum}</span>
@@ -525,12 +523,12 @@ function renderScriptureVerses(verseMap) {
 
       <div class="flex items-center gap-1 opacity-90 sm:opacity-0 group-hover:opacity-100 transition-opacity shrink-0 pt-0.5">
         <!-- Speak Individual Verse -->
-        <button onclick="speakIndividualVerse(${vNum}, '${safeEscapedText}')" class="p-1.5 rounded-lg bg-slate-100 hover:bg-purple-100 dark:bg-zinc-800 dark:hover:bg-purple-950/60 text-slate-600 hover:text-purple-600 dark:text-zinc-400 dark:hover:text-purple-300 transition-all cursor-pointer" title="Read Verse Aloud">
+        <button onclick="speakIndividualVerse(${vNum})" class="p-1.5 rounded-lg bg-slate-100 hover:bg-purple-100 dark:bg-zinc-800 dark:hover:bg-purple-950/60 text-slate-600 hover:text-purple-600 dark:text-zinc-400 dark:hover:text-purple-300 transition-all cursor-pointer" title="Read Verse Aloud">
           <i data-lucide="volume-2" class="w-3.5 h-3.5"></i>
         </button>
 
         <!-- Add Verse Note -->
-        <button onclick="openStudyNoteModal('${currentBibleBook} ${currentBibleChapter}:${vNum}', '${safeEscapedText}')" class="p-1.5 rounded-lg bg-slate-100 hover:bg-amber-100 dark:bg-zinc-800 dark:hover:bg-amber-950/60 text-slate-600 hover:text-amber-600 dark:text-zinc-400 dark:hover:text-amber-300 transition-all cursor-pointer" title="Write Study Note on Verse">
+        <button onclick="openVerseStudyNote(${vNum})" class="p-1.5 rounded-lg bg-slate-100 hover:bg-amber-100 dark:bg-zinc-800 dark:hover:bg-amber-950/60 text-slate-600 hover:text-amber-600 dark:text-zinc-400 dark:hover:text-amber-300 transition-all cursor-pointer" title="Write Study Note on Verse">
           <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
         </button>
 
@@ -540,7 +538,7 @@ function renderScriptureVerses(verseMap) {
         </button>
 
         <!-- Copy Verse -->
-        <button onclick="copyVerseToClipboard('${currentBibleBook}', ${currentBibleChapter}, ${vNum}, '${safeEscapedText}')" class="p-1.5 rounded-lg bg-slate-100 hover:bg-blue-100 dark:bg-zinc-800 dark:hover:bg-blue-950/60 text-slate-600 hover:text-blue-600 dark:text-zinc-400 dark:hover:text-blue-300 transition-all cursor-pointer" title="Copy with Citation">
+        <button onclick="copyVerseToClipboard('${currentBibleBook}', ${currentBibleChapter}, ${vNum})" class="p-1.5 rounded-lg bg-slate-100 hover:bg-blue-100 dark:bg-zinc-800 dark:hover:bg-blue-950/60 text-slate-600 hover:text-blue-600 dark:text-zinc-400 dark:hover:text-blue-300 transition-all cursor-pointer" title="Copy with Citation">
           <i data-lucide="copy" class="w-3.5 h-3.5"></i>
         </button>
       </div>
@@ -602,8 +600,9 @@ function filterVerses() {
 }
 
 function copyVerseToClipboard(book, chapter, vNum, text) {
+  const verseText = text || window.loadedBibleChapterData?.[vNum] || '';
   const citation = `${book} ${chapter}:${vNum} (${currentBibleTranslation.toUpperCase()})`;
-  const fullText = `"${text}" — ${citation}`;
+  const fullText = `"${verseText}" — ${citation}`;
   
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(fullText)
@@ -617,6 +616,12 @@ function copyVerseToClipboard(book, chapter, vNum, text) {
   } else {
     prompt("Copy scripture:", fullText);
   }
+}
+
+function openVerseStudyNote(vNum) {
+  const verseText = window.loadedBibleChapterData?.[vNum] || '';
+  const ref = `${currentBibleBook} ${currentBibleChapter}:${vNum}`;
+  openStudyNoteModal(ref, verseText);
 }
 
 function trackBibleChapterRead(book, chapter) {
@@ -755,15 +760,16 @@ function speakIndividualVerse(vNum, text) {
     return;
   }
 
+  const verseText = text || window.loadedBibleChapterData?.[vNum] || '';
   audioPlaying = true;
-  audioVerseQueue = [{ vNum: parseInt(vNum), text: text }];
+  audioVerseQueue = [{ vNum: parseInt(vNum), text: verseText }];
   currentAudioVerseIndex = 0;
 
   showAudioPlayerBar();
   updateAudioPlayerUI(vNum);
   highlightActiveSpokenVerse(vNum);
 
-  const utter = new SpeechSynthesisUtterance(`${currentBibleBook} ${currentBibleChapter} verse ${vNum}. ${text}`);
+  const utter = new SpeechSynthesisUtterance(`${currentBibleBook} ${currentBibleChapter} verse ${vNum}. ${verseText}`);
   utter.rate = audioSpeechRate;
   utter.onend = stopSpeech;
   utter.onerror = stopSpeech;
@@ -1251,5 +1257,7 @@ window.deleteStudyNote = deleteStudyNote;
 window.filterStudyNotesCategory = filterStudyNotesCategory;
 window.filterStudyNotesUI = filterStudyNotesUI;
 window.jumpToScripture = jumpToScripture;
+window.openVerseStudyNote = openVerseStudyNote;
+window.copyVerseToClipboard = copyVerseToClipboard;
 window.syncStudyNotes = syncStudyNotes;
 window.toggleVerseHighlight = toggleVerseHighlight;
