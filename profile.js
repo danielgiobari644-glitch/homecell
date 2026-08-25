@@ -113,12 +113,12 @@ function renderProfileLibrary(items) {
 
   if (!items || items.length === 0) {
     container.innerHTML = `
-      <div class="text-center py-10 text-slate-400 dark:text-zinc-500 bg-white/40 dark:bg-zinc-900/40 rounded-3xl border border-dashed border-slate-200 dark:border-zinc-800 p-6">
-        <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto mb-2 text-xl font-black">
+      <div class="text-center py-10 text-slate-700 dark:text-zinc-300 bg-white/40 dark:bg-zinc-900/40 rounded-3xl border border-dashed border-slate-300 dark:border-zinc-700 p-6">
+        <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 flex items-center justify-center mx-auto mb-2 text-xl font-black">
           🎁
         </div>
-        <h4 class="font-black text-sm text-slate-800 dark:text-zinc-200">No Unlocked Resources Yet</h4>
-        <p class="text-xs text-slate-500 dark:text-zinc-400 mt-1 max-w-xs mx-auto">Visit the Kingdom Store to redeem Christian wallpapers, Bible study PDF guides, and worship bundles with your KC!</p>
+        <h4 class="font-black text-sm text-slate-900 dark:text-zinc-100">No Unlocked Resources Yet</h4>
+        <p class="text-xs text-slate-600 dark:text-zinc-300 mt-1 max-w-xs mx-auto font-medium">Visit the Kingdom Store to redeem Christian wallpapers, Bible study PDF guides, and worship bundles with your KC!</p>
         <button onclick="switchTab('store')" class="mt-4 px-4 py-2 bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl shadow-md hover:scale-102 transition-all cursor-pointer">
           Explore Kingdom Store →
         </button>
@@ -130,16 +130,16 @@ function renderProfileLibrary(items) {
   container.innerHTML = `
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
       ${items.map(item => `
-        <div class="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-xs space-y-3 flex flex-col justify-between">
+        <div class="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-300 dark:border-zinc-800 shadow-xs space-y-3 flex flex-col justify-between">
           <div class="space-y-1.5">
             <div class="flex items-center justify-between">
-              <span class="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-mono text-[9px] font-black uppercase">Unlocked</span>
-              <span class="text-[10px] text-slate-400 font-mono">${item.purchasedAt?.toDate ? item.purchasedAt.toDate().toLocaleDateString([], { month: 'short', day: 'numeric' }) : 'Saved'}</span>
+              <span class="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-mono text-[9px] font-black uppercase">Unlocked</span>
+              <span class="text-[10px] text-slate-600 dark:text-zinc-400 font-mono font-medium">${item.purchasedAt?.toDate ? item.purchasedAt.toDate().toLocaleDateString([], { month: 'short', day: 'numeric' }) : 'Saved'}</span>
             </div>
             <h4 class="font-black text-xs text-slate-900 dark:text-zinc-100 line-clamp-1">${item.title || item.resourceTitle || 'Kingdom Resource'}</h4>
-            <p class="text-[11px] text-slate-500 dark:text-zinc-400 line-clamp-2">${item.description || 'Spiritual discipleship resource from Kingdom Store.'}</p>
+            <p class="text-[11px] text-slate-600 dark:text-zinc-300 line-clamp-2 font-medium">${item.description || 'Spiritual discipleship resource from Kingdom Store.'}</p>
           </div>
-          <button onclick="window.downloadStoreProductDirect('${item.rewardId || item.id || item.productId}', '${encodeURIComponent(item.fileUrl || item.downloadUrl || item.coverUrl || item.imageUrl || '')}', '${encodeURIComponent(item.title || item.resourceTitle || 'Kingdom_Resource')}')" class="w-full py-2 bg-slate-100 hover:bg-emerald-600 hover:text-white dark:bg-zinc-800 dark:hover:bg-emerald-600 text-slate-800 dark:text-zinc-200 font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs active:scale-95">
+          <button onclick="window.downloadStoreProductDirect('${item.rewardId || item.id || item.productId}', '${encodeURIComponent(item.fileUrl || item.downloadUrl || item.coverUrl || item.imageUrl || '')}', '${encodeURIComponent(item.title || item.resourceTitle || 'Kingdom_Resource')}')" class="w-full py-2 bg-slate-100 hover:bg-emerald-600 hover:text-white dark:bg-zinc-800 dark:hover:bg-emerald-600 text-slate-900 dark:text-zinc-100 font-black text-xs rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs active:scale-95 border border-slate-200 dark:border-zinc-700">
             <i data-lucide="download" class="w-3.5 h-3.5"></i>
             <span>Download Asset</span>
           </button>

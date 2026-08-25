@@ -279,8 +279,8 @@ function startCellChatMessagesSync(cellId) {
       messagesBox.innerHTML = '';
       if (snap.empty) {
         messagesBox.innerHTML = `
-          <div class="text-center py-12 text-slate-400 h-full flex flex-col items-center justify-center">
-            <i data-lucide="message-circle" class="w-8 h-8 opacity-40 mb-2"></i>
+          <div class="text-center py-12 text-slate-600 dark:text-zinc-300 h-full flex flex-col items-center justify-center">
+            <i data-lucide="message-circle" class="w-8 h-8 opacity-60 mb-2"></i>
             <p class="text-xs font-bold">No chat messages yet. Spark a holy greeting!</p>
           </div>
         `;
@@ -307,9 +307,9 @@ function startCellChatMessagesSync(cellId) {
             emojiCounts[emoji] = (emojiCounts[emoji] || 0) + 1;
           });
           reactionsHtml = `
-            <div class="flex flex-wrap gap-1 mt-1">
+            <div class="flex flex-wrap gap-1 mt-1.5">
               ${Object.entries(emojiCounts).map(([emoji, count]) => `
-                <span class="px-2 py-0.5 rounded-full bg-slate-200/80 dark:bg-zinc-800 text-[11px] font-bold border border-slate-300/50 dark:border-zinc-700 text-slate-700 dark:text-zinc-200 flex items-center gap-1">
+                <span class="px-2 py-0.5 rounded-full bg-slate-200 dark:bg-zinc-800 text-[11px] font-extrabold border border-slate-300 dark:border-zinc-700 text-slate-900 dark:text-zinc-100 flex items-center gap-1">
                   ${emoji} ${count}
                 </span>
               `).join('')}
@@ -320,29 +320,29 @@ function startCellChatMessagesSync(cellId) {
         let replyHtml = '';
         if (msg.replyTo) {
           replyHtml = `
-            <div class="mb-1 p-2 rounded-xl bg-black/10 dark:bg-white/10 border-l-2 border-blue-400 text-[11px] italic">
-              <span class="font-bold opacity-80 block">${msg.replyTo.senderName}</span>
-              <p class="truncate opacity-90">${msg.replyTo.text}</p>
+            <div class="mb-1.5 p-2 rounded-xl bg-slate-200/80 dark:bg-zinc-900/90 border-l-3 border-blue-500 text-[11px]">
+              <span class="font-black text-slate-900 dark:text-zinc-100 block">${msg.replyTo.senderName}</span>
+              <p class="truncate text-slate-700 dark:text-zinc-300 font-medium">${msg.replyTo.text}</p>
             </div>
           `;
         }
 
         wrapper.innerHTML = `
           <div class="flex items-center gap-1.5 px-1 mb-0.5">
-            <span class="text-[10px] font-bold text-slate-400">${msg.senderName}</span>
-            <span class="text-[9px] text-slate-400 font-mono">${formattedTime}</span>
+            <span class="text-[11px] font-black text-slate-700 dark:text-zinc-300">${msg.senderName}</span>
+            <span class="text-[10px] text-slate-600 dark:text-zinc-400 font-mono font-semibold">${formattedTime}</span>
           </div>
 
-          <div class="group relative px-4 py-2.5 rounded-2xl text-xs sm:text-sm leading-relaxed ${
+          <div class="group relative px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-medium leading-relaxed ${
             isSelf
               ? 'bg-blue-600 text-white rounded-br-none shadow-sm'
-              : 'bg-slate-100 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200 rounded-bl-none border border-slate-200/60 dark:border-zinc-700/60'
+              : 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 rounded-bl-none border border-slate-300/80 dark:border-zinc-700 shadow-xs'
           }">
             ${replyHtml}
             <p class="break-words">${msg.text}</p>
             ${reactionsHtml}
 
-            <div class="absolute hidden group-hover:flex items-center gap-1 -top-3.5 ${isSelf ? 'right-2' : 'left-2'} bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 p-1 rounded-full shadow-lg z-20">
+            <div class="absolute hidden group-hover:flex items-center gap-1 -top-3.5 ${isSelf ? 'right-2' : 'left-2'} bg-white dark:bg-zinc-900 border border-slate-300 dark:border-zinc-700 p-1 rounded-full shadow-lg z-20">
               <button onclick="window.reactToChatMessage('${cellId}', '${msgId}', '🙏')" class="px-1 hover:scale-125 transition-transform text-xs" title="Amen">🙏</button>
               <button onclick="window.reactToChatMessage('${cellId}', '${msgId}', '❤️')" class="px-1 hover:scale-125 transition-transform text-xs" title="Love">❤️</button>
               <button onclick="window.reactToChatMessage('${cellId}', '${msgId}', '🙌')" class="px-1 hover:scale-125 transition-transform text-xs" title="Praise">🙌</button>

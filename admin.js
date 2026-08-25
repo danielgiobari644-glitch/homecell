@@ -2228,18 +2228,6 @@ async function handleAdminStoreProductUploadSubmit(e) {
   try {
     const prodId = `prod_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
 
-    // Save full asset in client IndexedDB cache
-    if (adminUploadedFileBlob || adminUploadedFileBase64 || adminUploadedCoverBase64) {
-      if (window.saveStoreAssetIndexedDB) {
-        await window.saveStoreAssetIndexedDB(
-          prodId, 
-          adminUploadedFileBlob || adminUploadedFileBase64 || adminUploadedCoverBase64, 
-          adminUploadedFileName || `${title.replace(/[^a-zA-Z0-9_\-]/g, '_')}.jpg`, 
-          adminUploadedFileMime || 'image/jpeg'
-        );
-      }
-    }
-
     const productPayload = {
       id: prodId,
       title: title,
@@ -2458,9 +2446,6 @@ async function deleteAdminStoreProduct(prodId, encodedTitle) {
     }
     if (window.removeUploadedStoreProductLocal) {
       window.removeUploadedStoreProductLocal(prodId);
-    }
-    if (window.deleteStoreAssetIndexedDB) {
-      await window.deleteStoreAssetIndexedDB(prodId);
     }
 
     if (window.db) {

@@ -486,57 +486,57 @@ body.sidebar-collapsed .sidebar-nav-btn:hover {
 
 /* High Contrast & Accessibility Guarantees (No white on white, no grey on white, crisp legibility) */
 .text-slate-400 {
-  color: #475569 !important;
+  color: #334155 !important;
 }
 html.dark .text-slate-400,
 html.sanctuary .text-slate-400 {
-  color: #94a3b8 !important;
-}
-
-.text-zinc-400 {
-  color: #52525b !important;
-}
-html.dark .text-zinc-400,
-html.sanctuary .text-zinc-400 {
-  color: #a1a1aa !important;
-}
-
-.text-slate-500 {
-  color: #334155 !important;
-}
-html.dark .text-slate-500,
-html.sanctuary .text-slate-500 {
   color: #cbd5e1 !important;
 }
 
-.text-zinc-500 {
+.text-zinc-400 {
   color: #3f3f46 !important;
 }
-html.dark .text-zinc-500,
-html.sanctuary .text-zinc-500 {
+html.dark .text-zinc-400,
+html.sanctuary .text-zinc-400 {
   color: #d4d4d8 !important;
 }
 
+.text-slate-500 {
+  color: #1e293b !important;
+}
+html.dark .text-slate-500,
+html.sanctuary .text-slate-500 {
+  color: #e2e8f0 !important;
+}
+
+.text-zinc-500 {
+  color: #27272a !important;
+}
+html.dark .text-zinc-500,
+html.sanctuary .text-zinc-500 {
+  color: #e4e4e7 !important;
+}
+
 .text-gray-400 {
-  color: #4b5563 !important;
+  color: #374151 !important;
 }
 html.dark .text-gray-400,
 html.sanctuary .text-gray-400 {
-  color: #9ca3af !important;
+  color: #cbd5e1 !important;
 }
 
 .text-gray-500 {
-  color: #374151 !important;
+  color: #1f2937 !important;
 }
 html.dark .text-gray-500,
 html.sanctuary .text-gray-500 {
-  color: #d1d5db !important;
+  color: #e5e7eb !important;
 }
 
 /* Ensure crisp input placeholders and label text */
 input::placeholder,
 textarea::placeholder {
-  color: #64748b !important;
+  color: #475569 !important;
   opacity: 1 !important;
 }
 html.dark input::placeholder,
@@ -556,6 +556,21 @@ html.dark select option,
 html.sanctuary select option {
   background-color: #18181b;
   color: #f8fafc;
+}
+
+/* Table header & metadata contrast enforcement */
+th {
+  color: #0f172a;
+}
+html.dark th,
+html.sanctuary th {
+  color: #f1f5f9;
+}
+
+/* Table text and badge legibility */
+html.dark .glass-panel,
+html.sanctuary .glass-panel {
+  border-color: rgba(255, 255, 255, 0.12);
 }
 
 

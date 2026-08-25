@@ -142,63 +142,10 @@ function renderStoreKcHeader() {
   });
 }
 
-// IndexedDB Asset Cache for high-performance direct device uploads & offline downloads
-const STORE_ASSET_DB_NAME = 'HomeCellStoreAssetDB';
-const STORE_ASSET_STORE_NAME = 'assets';
-
-function openStoreAssetDB() {
-  return new Promise((resolve, reject) => {
-    if (!window.indexedDB) return resolve(null);
-    const req = indexedDB.open(STORE_ASSET_DB_NAME, 1);
-    req.onupgradeneeded = (e) => {
-      const db = e.target.result;
-      if (!db.objectStoreNames.contains(STORE_ASSET_STORE_NAME)) {
-        db.createObjectStore(STORE_ASSET_STORE_NAME, { keyPath: 'id' });
-      }
-    };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => resolve(null);
-  });
-}
-
-async function saveStoreAssetIndexedDB(id, blobOrDataUrl, name, mimeType) {
+// Purge any legacy IndexedDB database if present in browser
+if (typeof window !== 'undefined' && window.indexedDB?.deleteDatabase) {
   try {
-    const db = await openStoreAssetDB();
-    if (!db) return;
-    return new Promise((resolve) => {
-      const tx = db.transaction(STORE_ASSET_STORE_NAME, 'readwrite');
-      const store = tx.objectStore(STORE_ASSET_STORE_NAME);
-      store.put({ id, data: blobOrDataUrl, name, mimeType, timestamp: Date.now() });
-      tx.oncomplete = () => resolve(true);
-      tx.onerror = () => resolve(false);
-    });
-  } catch (e) {
-    console.warn("IndexedDB save note:", e);
-  }
-}
-
-async function getStoreAssetIndexedDB(id) {
-  try {
-    const db = await openStoreAssetDB();
-    if (!db) return null;
-    return new Promise((resolve) => {
-      const tx = db.transaction(STORE_ASSET_STORE_NAME, 'readonly');
-      const store = tx.objectStore(STORE_ASSET_STORE_NAME);
-      const req = store.get(id);
-      req.onsuccess = () => resolve(req.result);
-      req.onerror = () => resolve(null);
-    });
-  } catch (e) {
-    return null;
-  }
-}
-
-async function deleteStoreAssetIndexedDB(id) {
-  try {
-    const db = await openStoreAssetDB();
-    if (!db) return;
-    const tx = db.transaction(STORE_ASSET_STORE_NAME, 'readwrite');
-    tx.objectStore(STORE_ASSET_STORE_NAME).delete(id);
+    window.indexedDB.deleteDatabase('HomeCellStoreAssetDB');
   } catch (e) {}
 }
 
@@ -270,9 +217,6 @@ window.markStoreProductAsDeleted = markStoreProductAsDeleted;
 window.getUploadedStoreProductsLocal = getUploadedStoreProductsLocal;
 window.saveUploadedStoreProductLocal = saveUploadedStoreProductLocal;
 window.removeUploadedStoreProductLocal = removeUploadedStoreProductLocal;
-window.deleteStoreAssetIndexedDB = deleteStoreAssetIndexedDB;
-window.saveStoreAssetIndexedDB = saveStoreAssetIndexedDB;
-window.getStoreAssetIndexedDB = getStoreAssetIndexedDB;
 
 function getTimestampMillis(ts) {
   if (!ts) return 0;
@@ -765,7 +709,7 @@ async function executeProductPurchase(productId, costKC, title, fileUrl, categor
   }
 }
 
-// Direct File Download with IndexedDB, Blob, Canvas rendering, and Data URL support
+// Direct File Download with Blob, Canvas rendering, and Data URL support
 function triggerBlobFileDownload(blob, fileName) {
   if (!blob) return false;
   try {
@@ -871,7 +815,7 @@ async function downloadStoreProductDirect(productId, encodedUrl, encodedFileName
                        (getUploadedStoreProductsLocal() || []).find(p => p.id === cleanId || p.id === productId);
 
   // If url is missing or placeholder, look up from cached products or database
-  if (!url || url === 'undefined' || url === 'null' || url === 'indexeddb_local_asset') {
+  if (!url || url === 'undefined' || url === 'null') {
     if (productDetails) {
       url = productDetails.fileUrl || productDetails.downloadUrl || productDetails.coverUrl || productDetails.imageUrl || '';
       if (!fileName || fileName === 'HomeCell_Resource' || fileName === 'Resource') {
@@ -890,32 +834,8 @@ async function downloadStoreProductDirect(productId, encodedUrl, encodedFileName
 
   window.showToast?.(`📥 Downloading "${fileName}"...`, "info");
 
-  // 1. Check IndexedDB direct device upload asset cache
-  try {
-    let localAsset = await getStoreAssetIndexedDB(cleanId);
-    if (!localAsset && cleanId !== productId) {
-      localAsset = await getStoreAssetIndexedDB(productId);
-    }
-
-    if (localAsset && localAsset.data) {
-      const blob = localAsset.data instanceof Blob ? localAsset.data : (
-        typeof localAsset.data === 'string' && localAsset.data.startsWith('data:') ? dataUrlToBlob(localAsset.data) : null
-      );
-      if (blob) {
-        const success = triggerBlobFileDownload(blob, fileName);
-        if (success) {
-          window.soundEngine?.playSuccess?.();
-          window.showToast?.(`✅ Downloaded "${fileName}" to your device!`, "success");
-          return;
-        }
-      }
-    }
-  } catch (e) {
-    console.warn("IndexedDB direct download notice:", e);
-  }
-
-  // 2. If still no url or placeholder, query Firestore
-  if ((!url || url === 'indexeddb_local_asset') && window.db) {
+  // 1. If url is missing or placeholder, query Firestore
+  if (!url && window.db) {
     try {
       const doc = await window.db.collection('products').doc(cleanId).get();
       if (doc.exists) {
@@ -1315,16 +1235,6 @@ async function handleSuperAdminStoreUploadSubmit(e) {
     const prodId = `prod_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     const tags = tagsStr.split(',').map(t => t.trim()).filter(Boolean);
 
-    // Save full asset in client IndexedDB cache
-    if (uploadedStoreFileBlob || uploadedStoreFileBase64 || uploadedStoreCoverBase64) {
-      await saveStoreAssetIndexedDB(
-        prodId, 
-        uploadedStoreFileBlob || uploadedStoreFileBase64 || uploadedStoreCoverBase64, 
-        uploadedStoreFileName || `${title.replace(/[^a-zA-Z0-9_\-]/g, '_')}.jpg`, 
-        uploadedStoreFileMime || 'image/jpeg'
-      );
-    }
-
     const payload = {
       id: prodId,
       title: title,
@@ -1443,10 +1353,7 @@ async function deleteStoreProductDirect(productId, encodedTitle) {
     removeUploadedStoreProductLocal(productId);
     globalFirestoreDeletedProductIds.add(productId);
 
-    // 3. Delete from IndexedDB asset cache
-    await deleteStoreAssetIndexedDB(productId);
-
-    // 4. Remove from memory immediately & refresh UI
+    // 3. Remove from memory immediately & refresh UI
     storeCachedProducts = (storeCachedProducts || []).filter(p => p.id !== productId);
     renderProductsGrid(storeCachedProducts);
 
@@ -1828,7 +1735,6 @@ window.handleSuperAdminStoreUploadSubmit = handleSuperAdminStoreUploadSubmit;
 window.deleteStoreProductDirect = deleteStoreProductDirect;
 window.markStoreProductAsDeleted = markStoreProductAsDeleted;
 window.removeUploadedStoreProductLocal = removeUploadedStoreProductLocal;
-window.deleteStoreAssetIndexedDB = deleteStoreAssetIndexedDB;
 window.getDeletedStoreProductIds = getDeletedStoreProductIds;
 window.getUploadedStoreProductsLocal = getUploadedStoreProductsLocal;
 window.DEFAULT_KINGDOM_PRODUCTS = DEFAULT_KINGDOM_PRODUCTS;

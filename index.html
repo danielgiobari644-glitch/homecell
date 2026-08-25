@@ -466,16 +466,33 @@
             <!-- Video File Box -->
             <div id="attachment-video-box" class="hidden p-4 rounded-2xl bg-slate-50 dark:bg-zinc-850 border border-slate-200 dark:border-zinc-700 space-y-3">
               <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                <label class="px-4 py-2 bg-purple-600 text-white font-bold text-xs rounded-xl cursor-pointer hover:bg-purple-700 text-center transition-all">
-                  Choose Video File
+                <label class="px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-xl cursor-pointer text-center transition-all shadow-xs shrink-0">
+                  <i data-lucide="upload" class="w-3.5 h-3.5 inline mr-1"></i> Choose Video File
                   <input type="file" id="feed-video-file" accept="video/*" onchange="window.handleFileAttachment('video')" class="hidden" />
                 </label>
-                <span class="text-xs text-slate-400 text-center sm:text-left">or YouTube URL:</span>
-                <input type="url" id="feed-video-url" placeholder="https://youtube.com/watch?v=..." class="flex-1 text-xs bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-xl p-2.5" />
+                <span class="text-xs text-slate-500 dark:text-zinc-400 text-center sm:text-left font-medium">or Video Link:</span>
+                <input type="url" id="feed-video-url" placeholder="https://youtube.com/watch?v=... (Shorts, Live, Vimeo, MP4)" class="flex-1 text-xs bg-white dark:bg-zinc-900 border border-slate-300 dark:border-zinc-700 rounded-xl p-2.5 text-slate-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-purple-500" />
               </div>
-              <div id="attachment-video-preview" class="hidden relative max-w-xs rounded-xl overflow-hidden border border-slate-200">
-                <video id="video-preview-vid" class="w-full h-40 object-cover" controls></video>
-                <button type="button" onclick="window.clearAttachment('video')" class="absolute top-2 right-2 p-1 bg-red-600 text-white rounded-full text-xs">✕</button>
+
+              <!-- Quick Video Preset Links for instant testing -->
+              <div class="flex flex-wrap items-center gap-1.5 text-[11px]">
+                <span class="text-slate-500 dark:text-zinc-400 font-bold">Samples:</span>
+                <button type="button" onclick="window.setSampleVideoUrl('https://www.youtube.com/watch?v=nQWFzMvCfLE')" class="px-2.5 py-1 rounded-lg bg-slate-200 dark:bg-zinc-800 hover:bg-purple-100 dark:hover:bg-purple-950/40 text-slate-800 dark:text-zinc-200 text-[10px] font-bold transition-all cursor-pointer">
+                  🎵 Worship Praise
+                </button>
+                <button type="button" onclick="window.setSampleVideoUrl('https://www.youtube.com/watch?v=y81_f2y-l1E')" class="px-2.5 py-1 rounded-lg bg-slate-200 dark:bg-zinc-800 hover:bg-purple-100 dark:hover:bg-purple-950/40 text-slate-800 dark:text-zinc-200 text-[10px] font-bold transition-all cursor-pointer">
+                  📖 Sunday Message
+                </button>
+                <button type="button" onclick="window.setSampleVideoUrl('https://www.youtube.com/watch?v=3g3gJqR6g8s')" class="px-2.5 py-1 rounded-lg bg-slate-200 dark:bg-zinc-800 hover:bg-purple-100 dark:hover:bg-purple-950/40 text-slate-800 dark:text-zinc-200 text-[10px] font-bold transition-all cursor-pointer">
+                  🙏 Fellowship Testimony
+                </button>
+              </div>
+
+              <div id="attachment-video-preview" class="hidden relative max-w-sm rounded-2xl overflow-hidden border border-slate-200 dark:border-zinc-700 bg-black aspect-video">
+                <iframe id="video-preview-iframe" class="hidden absolute inset-0 w-full h-full" frameborder="0" allowfullscreen></iframe>
+                <video id="video-preview-vid" class="w-full h-full object-contain" controls playsinline></video>
+                <button type="button" onclick="window.clearAttachment('video')" class="absolute top-2 right-2 p-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-full text-xs shadow-md z-10 cursor-pointer" title="Remove Video">✕</button>
+                <div id="video-preview-status" class="absolute bottom-2 left-2 px-2.5 py-1 rounded-lg bg-black/75 backdrop-blur-xs text-[10px] font-bold text-white"></div>
               </div>
             </div>
           </div>
@@ -1319,59 +1336,59 @@
               <div class="space-y-1">
                 <div class="flex flex-wrap items-center justify-center sm:justify-start gap-2">
                   <h3 id="profile-user-name" class="text-xl sm:text-2xl font-black font-display text-slate-900 dark:text-zinc-50">Believer</h3>
-                  <span id="profile-user-role" class="px-2.5 py-0.5 rounded-full bg-blue-500/15 text-blue-600 dark:text-blue-400 font-mono text-[10px] font-black uppercase tracking-wider">Member</span>
+                  <span id="profile-user-role" class="px-2.5 py-0.5 rounded-full bg-blue-500/15 text-blue-700 dark:text-blue-300 font-mono text-[10px] font-black uppercase tracking-wider">Member</span>
                 </div>
-                <p id="profile-user-email" class="text-xs text-slate-500 dark:text-zinc-400 font-medium">user@example.com</p>
-                <p id="profile-user-joined" class="text-[11px] text-slate-400 font-mono">Believer in Christ</p>
+                <p id="profile-user-email" class="text-xs text-slate-700 dark:text-zinc-300 font-medium">user@example.com</p>
+                <p id="profile-user-joined" class="text-[11px] text-slate-600 dark:text-zinc-400 font-mono font-medium">Believer in Christ</p>
               </div>
             </div>
 
             <!-- Fellowship Referral Link Card -->
-            <div class="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-amber-500/10 via-yellow-500/10 to-amber-600/5 border border-amber-300/50 dark:border-amber-700/50 text-left space-y-2.5 max-w-md w-full sm:w-auto shrink-0 shadow-xs">
+            <div class="p-4 sm:p-5 rounded-2xl bg-amber-500/10 dark:bg-amber-950/20 border border-amber-400/50 dark:border-amber-700/60 text-left space-y-2.5 max-w-md w-full sm:w-auto shrink-0 shadow-xs">
               <div class="flex items-center justify-between gap-2">
-                <span class="text-[10px] font-black uppercase text-amber-700 dark:text-amber-300 tracking-wider flex items-center gap-1">
+                <span class="text-[11px] font-black uppercase text-amber-900 dark:text-amber-200 tracking-wider flex items-center gap-1">
                   👑 Fellowship Referral Link
                 </span>
-                <span class="text-[10px] font-black font-mono px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-800 dark:text-amber-300" id="profile-referral-code">HC-777</span>
+                <span class="text-[10px] font-black font-mono px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-950 dark:text-amber-200 border border-amber-400/40" id="profile-referral-code">HC-777</span>
               </div>
               
               <div class="flex items-center gap-1.5">
-                <input type="text" readonly id="profile-referral-link-input" value="https://homecell.app/?r=HC-777" class="w-full text-xs font-mono font-bold bg-white/90 dark:bg-zinc-900/90 border border-amber-200 dark:border-amber-800/60 rounded-xl px-3 py-2 text-slate-800 dark:text-zinc-200 select-all min-w-[190px]" />
-                <button onclick="window.copyReferralLink()" class="px-3 py-2 rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-950 text-xs font-bold transition-all cursor-pointer flex items-center gap-1 shrink-0 shadow-xs active:scale-95" title="Copy Full Referral Link">
+                <input type="text" readonly id="profile-referral-link-input" value="https://homecell.app/?r=HC-777" class="w-full text-xs font-mono font-bold bg-white dark:bg-zinc-900 border border-amber-300 dark:border-amber-700 rounded-xl px-3 py-2 text-slate-900 dark:text-zinc-100 select-all min-w-[190px]" />
+                <button onclick="window.copyReferralLink()" class="px-3 py-2 rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-950 text-xs font-black transition-all cursor-pointer flex items-center gap-1 shrink-0 shadow-xs active:scale-95" title="Copy Full Referral Link">
                   <i data-lucide="copy" class="w-3.5 h-3.5"></i>
                   <span class="hidden sm:inline">Copy</span>
                 </button>
-                <button onclick="window.shareReferralNative()" class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300 text-xs font-bold transition-all cursor-pointer shrink-0" title="Share Referral Link">
+                <button onclick="window.shareReferralNative()" class="p-2 rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-900 dark:text-zinc-100 text-xs font-bold transition-all cursor-pointer shrink-0" title="Share Referral Link">
                   <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
                 </button>
-                <button onclick="window.shareReferralWhatsApp()" class="p-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition-all cursor-pointer shrink-0" title="Share via WhatsApp">
+                <button onclick="window.shareReferralWhatsApp()" class="p-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all cursor-pointer shrink-0" title="Share via WhatsApp">
                   💬
                 </button>
               </div>
 
-              <div class="flex items-center justify-between text-[10px] text-slate-500 dark:text-zinc-400 pt-0.5">
-                <span>🎁 When opened: <strong class="text-emerald-600 dark:text-emerald-400">You & friend get +50 KC</strong></span>
-                <span>🤝 Friend joins: <strong class="text-amber-600 dark:text-amber-400">+100 KC</strong></span>
+              <div class="flex items-center justify-between text-[11px] font-medium text-slate-700 dark:text-zinc-300 pt-0.5">
+                <span>🎁 When opened: <strong class="text-emerald-700 dark:text-emerald-300 font-black">You & friend get +50 KC</strong></span>
+                <span>🤝 Friend joins: <strong class="text-amber-700 dark:text-amber-300 font-black">+100 KC</strong></span>
               </div>
             </div>
           </div>
 
           <!-- Spiritual Statistics Matrix -->
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 pt-4 border-t border-slate-200/60 dark:border-zinc-800/60">
-            <div class="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-850 text-center space-y-1">
-              <span class="text-[10px] uppercase font-black text-slate-400">Kingdom Coins</span>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 pt-4 border-t border-slate-200 dark:border-zinc-800">
+            <div class="p-4 rounded-2xl bg-slate-100 dark:bg-zinc-850 border border-slate-200/80 dark:border-zinc-800 text-center space-y-1">
+              <span class="text-[11px] uppercase font-black text-slate-700 dark:text-zinc-300">Kingdom Coins</span>
               <h4 id="profile-stat-kc" class="text-xl font-black font-mono text-amber-600 dark:text-amber-400">100 KC</h4>
             </div>
-            <div class="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-850 text-center space-y-1">
-              <span class="text-[10px] uppercase font-black text-slate-400">Devotion Streak</span>
-              <h4 id="profile-stat-streak" class="text-xl font-black font-mono text-orange-500">1 Day</h4>
+            <div class="p-4 rounded-2xl bg-slate-100 dark:bg-zinc-850 border border-slate-200/80 dark:border-zinc-800 text-center space-y-1">
+              <span class="text-[11px] uppercase font-black text-slate-700 dark:text-zinc-300">Devotion Streak</span>
+              <h4 id="profile-stat-streak" class="text-xl font-black font-mono text-orange-600 dark:text-orange-400">1 Day</h4>
             </div>
-            <div class="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-850 text-center space-y-1">
-              <span class="text-[10px] uppercase font-black text-slate-400">Quiz Wins</span>
+            <div class="p-4 rounded-2xl bg-slate-100 dark:bg-zinc-850 border border-slate-200/80 dark:border-zinc-800 text-center space-y-1">
+              <span class="text-[11px] uppercase font-black text-slate-700 dark:text-zinc-300">Quiz Wins</span>
               <h4 id="profile-stat-quiz-wins" class="text-xl font-black font-mono text-purple-600 dark:text-purple-400">0</h4>
             </div>
-            <div class="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-850 text-center space-y-1">
-              <span class="text-[10px] uppercase font-black text-slate-400">Believers Invited</span>
+            <div class="p-4 rounded-2xl bg-slate-100 dark:bg-zinc-850 border border-slate-200/80 dark:border-zinc-800 text-center space-y-1">
+              <span class="text-[11px] uppercase font-black text-slate-700 dark:text-zinc-300">Believers Invited</span>
               <h4 id="profile-stat-referrals" class="text-xl font-black font-mono text-blue-600 dark:text-blue-400">0</h4>
             </div>
           </div>
@@ -1386,9 +1403,9 @@
 
           <form onsubmit="window.saveProfileName(event)" class="space-y-4 max-w-lg">
             <div>
-              <label class="block text-xs font-bold text-slate-600 dark:text-zinc-400 mb-1.5">Display Name</label>
+              <label class="block text-xs font-bold text-slate-800 dark:text-zinc-200 mb-1.5">Display Name</label>
               <div class="flex items-center gap-2">
-                <input type="text" id="profile-edit-name-input" required placeholder="Your Full Name" class="flex-1 text-xs bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl p-3 text-slate-900 dark:text-zinc-100" />
+                <input type="text" id="profile-edit-name-input" required placeholder="Your Full Name" class="flex-1 text-xs bg-white dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl p-3 text-slate-900 dark:text-zinc-100" />
                 <button type="submit" class="px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow cursor-pointer transition-all">
                   Save
                 </button>
@@ -1398,8 +1415,8 @@
 
           <div class="pt-4 border-t border-slate-200/60 dark:border-zinc-800/60 flex flex-wrap items-center justify-between gap-4">
             <div class="space-y-1">
-              <span class="text-xs font-bold text-slate-700 dark:text-zinc-300">Push Notification Status</span>
-              <p id="settings-push-status" class="text-xs text-slate-400">Real push notifications are configured in the Notifications tab.</p>
+              <span class="text-xs font-bold text-slate-800 dark:text-zinc-200">Push Notification Status</span>
+              <p id="settings-push-status" class="text-xs text-slate-600 dark:text-zinc-400">Real push notifications are configured in the Notifications tab.</p>
             </div>
             <button onclick="handleSignOut()" class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-zinc-800 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-rose-600 dark:text-rose-400 font-bold text-xs transition-all cursor-pointer flex items-center gap-1.5 border border-slate-200 dark:border-zinc-700 active:scale-95 shadow-xs">
               <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
@@ -1416,9 +1433,9 @@
                 <i data-lucide="folder-down" class="w-5 h-5 text-emerald-600"></i>
                 <span>My Library & Unlocked Store Resources</span>
               </h4>
-              <p class="text-xs text-slate-400">All purchased Christian wallpapers, study guides, and worship tracks with direct downloads.</p>
+              <p class="text-xs text-slate-600 dark:text-zinc-300">All purchased Christian wallpapers, study guides, and worship tracks with direct downloads.</p>
             </div>
-            <span id="profile-stat-library-count" class="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-mono text-xs font-black">0 Items</span>
+            <span id="profile-stat-library-count" class="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-mono text-xs font-black">0 Items</span>
           </div>
 
           <div id="profile-library-container"></div>

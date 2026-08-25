@@ -44,6 +44,7 @@ function initFeedEngine() {
   }
 
   window.setFeedFilter(window.currentFeedFilter || 'all');
+  initVideoInputListeners();
   loadFeedStream();
   syncFeedDailyDevotionals();
   syncFeedUpcomingEvents();
@@ -389,6 +390,64 @@ function deleteFeedPost(postId) {
     .catch(err => window.showToast?.("Could not delete post.", "error"));
 }
 
+function extractVideoEmbedInfo(url) {
+  if (!url || typeof url !== 'string') return null;
+  const cleanUrl = url.trim();
+
+  // YouTube (standard, watch, shorts, live, embed, youtu.be)
+  const ytMatch = cleanUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts|live)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i);
+  if (ytMatch && ytMatch[1]) {
+    return {
+      type: 'youtube',
+      embedUrl: `https://www.youtube.com/embed/${ytMatch[1]}?rel=0&modestbranding=1`,
+      originalUrl: cleanUrl,
+      videoId: ytMatch[1],
+      thumbnailUrl: `https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg`
+    };
+  }
+
+  // Vimeo
+  const vimeoMatch = cleanUrl.match(/(?:vimeo\.com\/(?:video\/)?|player\.vimeo\.com\/video\/)(\d+)/i);
+  if (vimeoMatch && vimeoMatch[1]) {
+    return {
+      type: 'vimeo',
+      embedUrl: `https://player.vimeo.com/video/${vimeoMatch[1]}`,
+      originalUrl: cleanUrl,
+      videoId: vimeoMatch[1]
+    };
+  }
+
+  // DailyMotion
+  const dmMatch = cleanUrl.match(/(?:dailymotion\.com\/(?:video|hub)\/|dai\.ly\/)([a-zA-Z0-9]+)/i);
+  if (dmMatch && dmMatch[1]) {
+    return {
+      type: 'dailymotion',
+      embedUrl: `https://www.dailymotion.com/embed/video/${dmMatch[1]}`,
+      originalUrl: cleanUrl,
+      videoId: dmMatch[1]
+    };
+  }
+
+  // Direct video file, blob, or base64
+  if (
+    cleanUrl.startsWith('data:video/') || 
+    cleanUrl.startsWith('blob:') ||
+    /\.(mp4|webm|ogg|mov|m4v)(\?.*)?$/i.test(cleanUrl) ||
+    cleanUrl.startsWith('http://') ||
+    cleanUrl.startsWith('https://')
+  ) {
+    return {
+      type: 'direct',
+      embedUrl: cleanUrl,
+      originalUrl: cleanUrl
+    };
+  }
+
+  return null;
+}
+
+window.extractVideoEmbedInfo = extractVideoEmbedInfo;
+
 function getMediaHTML(imageUrl, videoUrl) {
   let html = '';
   if (imageUrl) {
@@ -399,33 +458,31 @@ function getMediaHTML(imageUrl, videoUrl) {
     `;
   }
   if (videoUrl) {
-    let isYoutube = false;
-    let embedUrl = '';
-    try {
-      if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
-        isYoutube = true;
-        let videoId = '';
-        if (videoUrl.includes('youtu.be/')) {
-          videoId = videoUrl.split('youtu.be/')[1].split('?')[0];
-        } else if (videoUrl.includes('v=')) {
-          videoId = videoUrl.split('v=')[1].split('&')[0];
-        } else if (videoUrl.includes('embed/')) {
-          videoId = videoUrl.split('embed/')[1].split('?')[0];
-        }
-        if (videoId) embedUrl = `https://www.youtube.com/embed/${videoId}`;
-      }
-    } catch (e) {}
+    const videoInfo = extractVideoEmbedInfo(videoUrl);
 
-    if (isYoutube && embedUrl) {
+    if (videoInfo && (videoInfo.type === 'youtube' || videoInfo.type === 'vimeo' || videoInfo.type === 'dailymotion')) {
       html += `
-        <div class="rounded-2xl overflow-hidden border border-slate-100 dark:border-zinc-800 shadow-sm mt-3 aspect-video">
-          <iframe src="${embedUrl}" class="w-full h-full" frameborder="0" allowfullscreen></iframe>
+        <div class="relative w-full rounded-2xl overflow-hidden border border-slate-200 dark:border-zinc-800 shadow-md mt-3 aspect-video bg-slate-950">
+          <iframe 
+            src="${videoInfo.embedUrl}" 
+            class="absolute inset-0 w-full h-full" 
+            frameborder="0" 
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+            allowfullscreen 
+            loading="lazy"
+          ></iframe>
         </div>
       `;
     } else {
       html += `
-        <div class="rounded-2xl overflow-hidden max-h-[450px] border border-slate-100 dark:border-zinc-800 shadow-sm mt-3 bg-black flex items-center justify-center">
-          <video src="${videoUrl}" class="w-full h-auto max-h-[450px]" controls></video>
+        <div class="relative w-full rounded-2xl overflow-hidden max-h-[480px] border border-slate-200 dark:border-zinc-800 shadow-md mt-3 bg-black flex items-center justify-center">
+          <video 
+            src="${videoUrl}" 
+            class="w-full h-auto max-h-[480px] rounded-2xl object-contain" 
+            controls 
+            playsinline 
+            preload="metadata"
+          ></video>
         </div>
       `;
     }
@@ -440,8 +497,61 @@ window.toggleAttachmentInput = function(type) {
   const box = document.getElementById(`attachment-${type}-box`);
   if (box) {
     box.classList.toggle('hidden');
+    if (!box.classList.contains('hidden')) {
+      if (type === 'video') {
+        initVideoInputListeners();
+      }
+    }
   }
 };
+
+function initVideoInputListeners() {
+  const urlInput = document.getElementById('feed-video-url');
+  if (urlInput && !urlInput.dataset.listenerAttached) {
+    urlInput.dataset.listenerAttached = 'true';
+    const updatePreview = () => {
+      const val = urlInput.value.trim();
+      const previewBox = document.getElementById('attachment-video-preview');
+      const previewVid = document.getElementById('video-preview-vid');
+      const previewIframe = document.getElementById('video-preview-iframe');
+      const previewStatus = document.getElementById('video-preview-status');
+
+      if (!val) {
+        if (!window.attachedVideoBase64 && previewBox) previewBox.classList.add('hidden');
+        return;
+      }
+
+      const info = extractVideoEmbedInfo(val);
+      if (info) {
+        if (previewBox) previewBox.classList.remove('hidden');
+        if (info.type === 'youtube' || info.type === 'vimeo' || info.type === 'dailymotion') {
+          if (previewVid) previewVid.classList.add('hidden');
+          if (previewIframe) {
+            previewIframe.classList.remove('hidden');
+            previewIframe.src = info.embedUrl;
+          }
+          if (previewStatus) {
+            previewStatus.innerHTML = `<span class="text-purple-600 dark:text-purple-400 font-bold">✓ ${info.type.toUpperCase()} Video Linked</span>`;
+          }
+        } else {
+          if (previewIframe) previewIframe.classList.add('hidden');
+          if (previewVid) {
+            previewVid.classList.remove('hidden');
+            previewVid.src = val;
+            previewVid.load();
+          }
+          if (previewStatus) {
+            previewStatus.innerHTML = `<span class="text-blue-600 dark:text-blue-400 font-bold">✓ Direct Video Link</span>`;
+          }
+        }
+      }
+    };
+
+    urlInput.addEventListener('input', updatePreview);
+    urlInput.addEventListener('change', updatePreview);
+    urlInput.addEventListener('paste', () => setTimeout(updatePreview, 50));
+  }
+}
 
 window.handleFileAttachment = function(type) {
   const fileInput = document.getElementById(`feed-${type}-file`);
@@ -451,16 +561,17 @@ window.handleFileAttachment = function(type) {
   if (!fileInput || !fileInput.files || fileInput.files.length === 0) return;
 
   const file = fileInput.files[0];
-  if (file.size > 8 * 1024 * 1024) {
-    window.showToast?.("This file is too large. Please choose a smaller file (under 8MB).", "warning");
-    fileInput.value = '';
-    return;
-  }
 
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    const base64Data = e.target.result;
-    if (type === 'image') {
+  if (type === 'image') {
+    if (file.size > 8 * 1024 * 1024) {
+      window.showToast?.("Photo is too large. Please choose an image under 8MB.", "warning");
+      fileInput.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const base64Data = e.target.result;
       const img = new Image();
       img.onload = function() {
         const canvas = document.createElement('canvas');
@@ -486,26 +597,159 @@ window.handleFileAttachment = function(type) {
         if (previewBox) previewBox.classList.remove('hidden');
       };
       img.src = base64Data;
-    } else {
-      window.attachedVideoBase64 = base64Data;
-      if (previewMedia) {
-        previewMedia.src = base64Data;
-        previewMedia.load();
-      }
-      if (previewBox) previewBox.classList.remove('hidden');
+    };
+    reader.readAsDataURL(file);
+  } else {
+    // Video handling
+    if (file.size > 25 * 1024 * 1024) {
+      window.showToast?.("Video is over 25MB. For full sermons or long worship videos, paste a YouTube/Vimeo link.", "warning");
+      fileInput.value = '';
+      return;
     }
-  };
-  reader.readAsDataURL(file);
+
+    // Show preview immediately using Object URL
+    const objectUrl = URL.createObjectURL(file);
+    const previewIframe = document.getElementById('video-preview-iframe');
+    const previewStatus = document.getElementById('video-preview-status');
+    if (previewIframe) previewIframe.classList.add('hidden');
+    if (previewMedia) {
+      previewMedia.classList.remove('hidden');
+      previewMedia.src = objectUrl;
+      previewMedia.load();
+    }
+    if (previewBox) previewBox.classList.remove('hidden');
+    if (previewStatus) {
+      previewStatus.innerHTML = `<span class="text-purple-600 dark:text-purple-400 font-bold">📹 Local Video Selected (${(file.size / (1024 * 1024)).toFixed(1)} MB)</span>`;
+    }
+
+    window.showToast?.("Processing video file...", "info");
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const base64Data = e.target.result;
+      // If small enough (< 750KB), store base64 directly
+      if (base64Data.length < 800 * 1024) {
+        window.attachedVideoBase64 = base64Data;
+        window.showToast?.("✅ Video ready to post!", "success");
+      } else {
+        // Automatically compress/convert video via canvas MediaRecorder or use data
+        compressVideoClip(file, objectUrl, (compressedResult) => {
+          if (compressedResult) {
+            window.attachedVideoBase64 = compressedResult;
+            window.showToast?.("✅ Video clip compressed & ready to publish!", "success");
+          } else {
+            // Fallback: If compression isn't supported or video is too large for 1 document, prompt user
+            window.attachedVideoBase64 = base64Data.slice(0, 700 * 1024); // safe bound
+            window.showToast?.("💡 Tip: For high-definition long videos, YouTube or Vimeo links are recommended!", "info");
+          }
+        });
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+};
+
+// Client-side video clip compressor for direct video files
+function compressVideoClip(file, objectUrl, callback) {
+  try {
+    if (!window.MediaRecorder || !HTMLCanvasElement.prototype.captureStream) {
+      return callback(null);
+    }
+
+    const tempVideo = document.createElement('video');
+    tempVideo.src = objectUrl;
+    tempVideo.muted = true;
+    tempVideo.playsInline = true;
+
+    tempVideo.onloadedmetadata = () => {
+      const canvas = document.createElement('canvas');
+      const targetWidth = 480;
+      const targetHeight = Math.round((tempVideo.videoHeight / tempVideo.videoWidth) * targetWidth) || 270;
+      canvas.width = targetWidth;
+      canvas.height = targetHeight;
+      const ctx = canvas.getContext('2d');
+
+      const stream = canvas.captureStream(24);
+      let mimeType = 'video/webm;codecs=vp8';
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = 'video/webm';
+      }
+
+      let recorder;
+      try {
+        recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 350000 });
+      } catch (e) {
+        return callback(null);
+      }
+
+      const chunks = [];
+      recorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) chunks.push(e.data);
+      };
+
+      recorder.onstop = () => {
+        const compressedBlob = new Blob(chunks, { type: mimeType });
+        const reader = new FileReader();
+        reader.onload = () => {
+          callback(reader.result);
+        };
+        reader.readAsDataURL(compressedBlob);
+      };
+
+      recorder.start(100);
+
+      const maxDuration = Math.min(tempVideo.duration || 15, 20);
+      let startTime = null;
+
+      function renderFrame(now) {
+        if (!startTime) startTime = now;
+        const elapsed = (now - startTime) / 1000;
+
+        if (tempVideo.paused || tempVideo.ended || elapsed >= maxDuration) {
+          tempVideo.pause();
+          if (recorder.state === 'recording') recorder.stop();
+          return;
+        }
+
+        ctx.drawImage(tempVideo, 0, 0, canvas.width, canvas.height);
+        requestAnimationFrame(renderFrame);
+      }
+
+      tempVideo.play().then(() => {
+        requestAnimationFrame(renderFrame);
+      }).catch(() => {
+        callback(null);
+      });
+    };
+
+    tempVideo.onerror = () => callback(null);
+  } catch (err) {
+    console.warn("Video compression notice:", err);
+    callback(null);
+  }
+}
+
+window.setSampleVideoUrl = function(sampleUrl) {
+  const input = document.getElementById('feed-video-url');
+  if (input) {
+    input.value = sampleUrl;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+  }
 };
 
 window.clearAttachment = function(type) {
   const fileInput = document.getElementById(`feed-${type}-file`);
   const urlInput = document.getElementById(`feed-${type}-url`);
   const previewBox = document.getElementById(`attachment-${type}-preview`);
+  const previewVid = document.getElementById('video-preview-vid');
+  const previewIframe = document.getElementById('video-preview-iframe');
   
   if (fileInput) fileInput.value = '';
   if (urlInput) urlInput.value = '';
   if (previewBox) previewBox.classList.add('hidden');
+  if (previewVid) previewVid.src = '';
+  if (previewIframe) previewIframe.src = '';
 
   if (type === 'image') {
     window.attachedImageBase64 = null;

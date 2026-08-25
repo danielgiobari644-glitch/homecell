@@ -41,11 +41,19 @@
       originalWarn.call(console, 'Firestore SDK internal assertion caught:', msg);
       return;
     }
+    if (msg.includes('Could not reach Cloud Firestore backend') || msg.includes("Backend didn't respond within 10 seconds") || msg.includes('operate in offline mode')) {
+      originalWarn.call(console, 'Firestore offline/connection note:', msg);
+      return;
+    }
     originalError.apply(console, args.map(sanitizeArg));
   };
   console.warn = function(...args) {
     const msg = args.map(a => String(a || '')).join(' ');
     if (msg.includes('enableIndexedDbPersistence() will be deprecated')) {
+      return;
+    }
+    if (msg.includes('Could not reach Cloud Firestore backend') || msg.includes("Backend didn't respond within 10 seconds")) {
+      originalWarn.call(console, 'Firestore connectivity status:', msg);
       return;
     }
     originalWarn.apply(console, args.map(sanitizeArg));
@@ -82,7 +90,7 @@ const db = (firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDataba
 
 try {
   db.settings({
-    experimentalAutoDetectLongPolling: true,
+    experimentalForceLongPolling: true,
     merge: true
   });
 } catch (e) {}
@@ -136,17 +144,14 @@ function handleFirestoreError(error, operationType, path) {
   throw new Error(safeStringify(errInfo));
 }
 
-// Test Connection
+// Test Connection lazily without hanging boot
 async function testConnection() {
   try {
-    await db.collection('test').doc('connection').get();
+    const doc = await db.collection('test').doc('connection').get({ source: 'default' });
   } catch (error) {
-    if (error && error.message && error.message.includes('offline')) {
-      console.log("Firestore operating in offline cached mode.");
-    }
+    // Offline or pending connection fallback
   }
 }
-testConnection();
 
 window.db = db;
 window.auth = auth;
