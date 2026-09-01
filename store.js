@@ -184,8 +184,13 @@ function markStoreProductAsDeleted(productId) {
       current.push(productId);
     }
     localStorage.setItem('homecell_deleted_store_products', JSON.stringify(current));
+    localStorage.setItem('homecell_store_initialized', 'true');
     removeUploadedStoreProductLocal(productId);
   } catch (e) {}
+}
+
+function hasInitializedStoreCatalog() {
+  return localStorage.getItem('homecell_store_initialized') === 'true' || globalFirestoreDeletedProductIds.size > 0;
 }
 
 function getUploadedStoreProductsLocal() {
@@ -217,6 +222,7 @@ window.markStoreProductAsDeleted = markStoreProductAsDeleted;
 window.getUploadedStoreProductsLocal = getUploadedStoreProductsLocal;
 window.saveUploadedStoreProductLocal = saveUploadedStoreProductLocal;
 window.removeUploadedStoreProductLocal = removeUploadedStoreProductLocal;
+window.hasInitializedStoreCatalog = hasInitializedStoreCatalog;
 
 function getTimestampMillis(ts) {
   if (!ts) return 0;
@@ -243,11 +249,13 @@ function syncStoreProducts() {
     const currentDeletedIds = getDeletedStoreProductIds();
     const currentLocalUploads = getUploadedStoreProductsLocal().filter(p => !currentDeletedIds.includes(p.id));
     let combined = [...currentLocalUploads];
-    DEFAULT_KINGDOM_PRODUCTS.forEach(dp => {
-      if (!currentDeletedIds.includes(dp.id) && !combined.some(c => c.id === dp.id)) {
-        combined.push(dp);
-      }
-    });
+    if (!hasInitializedStoreCatalog()) {
+      DEFAULT_KINGDOM_PRODUCTS.forEach(dp => {
+        if (!currentDeletedIds.includes(dp.id) && !combined.some(c => c.id === dp.id)) {
+          combined.push(dp);
+        }
+      });
+    }
     storeCachedProducts = combined;
     renderProductsGrid(combined);
     return;
@@ -266,7 +274,9 @@ function syncStoreProducts() {
               hasNew = true;
             }
           });
-          if (hasNew && storeCachedProducts.length > 0) {
+          if (hasNew) {
+            const currentDeleted = getDeletedStoreProductIds();
+            storeCachedProducts = (storeCachedProducts || []).filter(p => !currentDeleted.includes(p.id));
             renderProductsGrid(storeCachedProducts);
           }
         }
@@ -299,7 +309,8 @@ function syncStoreProducts() {
       }
     });
     
-    if (products.length === 0) {
+    // Only show default products on brand new uninitialized catalog if no deletions have occurred
+    if (products.length === 0 && !hasInitializedStoreCatalog() && currentDeletedIds.length === 0) {
       const filteredDefaults = DEFAULT_KINGDOM_PRODUCTS.filter(p => !currentDeletedIds.includes(p.id));
       products = filteredDefaults;
     }
@@ -318,11 +329,13 @@ function syncStoreProducts() {
     const currentDeletedIds = getDeletedStoreProductIds();
     const currentLocalUploads = getUploadedStoreProductsLocal().filter(p => !currentDeletedIds.includes(p.id));
     let combined = [...currentLocalUploads];
-    DEFAULT_KINGDOM_PRODUCTS.forEach(dp => {
-      if (!currentDeletedIds.includes(dp.id) && !combined.some(c => c.id === dp.id)) {
-        combined.push(dp);
-      }
-    });
+    if (!hasInitializedStoreCatalog() && currentDeletedIds.length === 0) {
+      DEFAULT_KINGDOM_PRODUCTS.forEach(dp => {
+        if (!currentDeletedIds.includes(dp.id) && !combined.some(c => c.id === dp.id)) {
+          combined.push(dp);
+        }
+      });
+    }
     storeCachedProducts = combined;
     renderProductsGrid(combined);
   });
@@ -590,7 +603,10 @@ async function executeProductPurchase(productId, costKC, title, fileUrl, categor
   }
 
   const db = window.db;
-  if (!db) return;
+  if (!db) {
+    window.showToast?.("Database connection not ready. Please try again.", "error");
+    return;
+  }
 
   isPurchasingItem = true;
   const buyBtn = document.getElementById(`btn-buy-prod-${productId}`);
@@ -611,62 +627,97 @@ async function executeProductPurchase(productId, costKC, title, fileUrl, categor
 
     let newKcBalance = 0;
 
-    await db.runTransaction(async (transaction) => {
-      const userDoc = await transaction.get(userRef);
-      if (!userDoc.exists) throw new Error("User profile not found. Please log in again.");
+    const rewardPayload = {
+      id: rewardDocId,
+      rewardId: rewardDocId,
+      userUid: user.uid,
+      itemId: productId,
+      title: title,
+      resourceTitle: title,
+      category: category,
+      kcCost: costKC,
+      fileUrl: fileUrl || '',
+      downloadUrl: fileUrl || '',
+      claimedAt: window.firebase?.firestore?.FieldValue ? window.firebase.firestore.FieldValue.serverTimestamp() : new Date(),
+      purchasedAt: window.firebase?.firestore?.FieldValue ? window.firebase.firestore.FieldValue.serverTimestamp() : new Date()
+    };
 
-      const userData = userDoc.data();
-      const currentKc = parseInt(userData.kingdomCoins !== undefined ? userData.kingdomCoins : 100);
+    try {
+      await db.runTransaction(async (transaction) => {
+        const userDoc = await transaction.get(userRef);
+        let currentKc = 100;
+        let userData = {};
 
+        if (userDoc.exists) {
+          userData = userDoc.data() || {};
+          currentKc = parseInt(userData.kingdomCoins !== undefined ? userData.kingdomCoins : (window.currentKcBalance || 100));
+        } else {
+          currentKc = parseInt(window.currentKcBalance !== undefined ? window.currentKcBalance : 100);
+        }
+
+        if (costKC > 0 && currentKc < costKC) {
+          throw new Error(`Insufficient Kingdom Coins. You have ${currentKc} KC, but this item requires ${costKC} KC.`);
+        }
+
+        newKcBalance = Math.max(0, currentKc - costKC);
+        const storePurchases = (userData.storePurchases || 0) + 1;
+
+        transaction.set(userRef, {
+          uid: user.uid,
+          email: user.email || '',
+          displayName: user.displayName || user.email?.split('@')[0] || 'Believer',
+          kingdomCoins: newKcBalance,
+          storePurchases: storePurchases,
+          updatedAt: window.firebase?.firestore?.FieldValue ? window.firebase.firestore.FieldValue.serverTimestamp() : new Date()
+        }, { merge: true });
+
+        transaction.set(rewardRef, rewardPayload);
+        transaction.set(userSubRewardRef, rewardPayload);
+        transaction.set(purchaseRef, rewardPayload);
+
+        if (costKC > 0) {
+          transaction.set(txnRef, {
+            id: txnRef.id,
+            userUid: user.uid,
+            type: "debit",
+            amount: costKC,
+            title: `Purchased "${title}"`,
+            description: `Kingdom Store resource unlock for ${costKC} KC`,
+            createdAt: window.firebase?.firestore?.FieldValue ? window.firebase.firestore.FieldValue.serverTimestamp() : new Date()
+          });
+        }
+      });
+    } catch (txnError) {
+      console.warn("Transaction note, attempting direct batch fallback:", txnError);
+      
+      // Check if error was insufficient KC - if so, throw immediately
+      if (txnError.message && txnError.message.includes("Insufficient Kingdom Coins")) {
+        throw txnError;
+      }
+
+      // Direct fallback
+      const userSnap = await userRef.get().catch(() => ({ exists: false, data: () => ({}) }));
+      const userData = userSnap.exists ? (userSnap.data() || {}) : {};
+      const currentKc = parseInt(userData.kingdomCoins !== undefined ? userData.kingdomCoins : (window.currentKcBalance || 100));
+      
       if (costKC > 0 && currentKc < costKC) {
-        throw new Error(`Insufficient KC. You have ${currentKc} KC, but this item requires ${costKC} KC.`);
+        throw new Error(`Insufficient Kingdom Coins. You have ${currentKc} KC, but this item requires ${costKC} KC.`);
       }
 
       newKcBalance = Math.max(0, currentKc - costKC);
-      const storePurchases = (userData.storePurchases || 0) + 1;
 
-      if (costKC > 0) {
-        transaction.update(userRef, {
-          kingdomCoins: newKcBalance,
-          storePurchases: storePurchases
-        });
-      } else {
-        transaction.update(userRef, {
-          storePurchases: storePurchases
-        });
-      }
+      await userRef.set({
+        uid: user.uid,
+        email: user.email || '',
+        displayName: user.displayName || user.email?.split('@')[0] || 'Believer',
+        kingdomCoins: newKcBalance,
+        storePurchases: (userData.storePurchases || 0) + 1
+      }, { merge: true });
 
-      const rewardPayload = {
-        id: rewardDocId,
-        rewardId: rewardDocId,
-        userUid: user.uid,
-        itemId: productId,
-        title: title,
-        resourceTitle: title,
-        category: category,
-        kcCost: costKC,
-        fileUrl: fileUrl || '',
-        downloadUrl: fileUrl || '',
-        claimedAt: window.firebase.firestore.FieldValue.serverTimestamp(),
-        purchasedAt: window.firebase.firestore.FieldValue.serverTimestamp()
-      };
-
-      transaction.set(rewardRef, rewardPayload);
-      transaction.set(userSubRewardRef, rewardPayload);
-      transaction.set(purchaseRef, rewardPayload);
-
-      if (costKC > 0) {
-        transaction.set(txnRef, {
-          id: txnRef.id,
-          userUid: user.uid,
-          type: "debit",
-          amount: costKC,
-          title: `Purchased "${title}"`,
-          description: `Kingdom Store resource unlock for ${costKC} KC`,
-          createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
-        });
-      }
-    });
+      await rewardRef.set(rewardPayload).catch(() => {});
+      await userSubRewardRef.set(rewardPayload).catch(() => {});
+      await purchaseRef.set(rewardPayload).catch(() => {});
+    }
 
     // Update Local and Global State
     if (!window.currentUserPurchasedItemIds) window.currentUserPurchasedItemIds = [];
@@ -674,11 +725,31 @@ async function executeProductPurchase(productId, costKC, title, fileUrl, categor
       window.currentUserPurchasedItemIds.push(productId);
     }
 
+    try {
+      const ownedKey = `homecell_owned_${user.uid}`;
+      const rawOwned = localStorage.getItem(ownedKey) || '[]';
+      const parsedOwned = JSON.parse(rawOwned);
+      if (!parsedOwned.includes(productId)) {
+        parsedOwned.push(productId);
+        localStorage.setItem(ownedKey, JSON.stringify(parsedOwned));
+      }
+    } catch (e) {}
+
     window.currentKcBalance = newKcBalance;
     if (window.currentUserProfile) window.currentUserProfile.kingdomCoins = newKcBalance;
     if (typeof currentChampionUserData !== 'undefined' && currentChampionUserData) {
       currentChampionUserData.kingdomCoins = newKcBalance;
     }
+
+    // Update all KC visual headers and counters
+    const kcStr = `${newKcBalance.toLocaleString()} KC`;
+    const hKc = document.getElementById('header-kc-count');
+    if (hKc) hKc.innerText = kcStr;
+    const sKc = document.getElementById('sidebar-kc-count');
+    if (sKc) sKc.innerText = kcStr;
+    const mKc = document.getElementById('more-sheet-kc-count');
+    if (mKc) mKc.innerText = kcStr;
+    document.querySelectorAll('.store-kc-balance-display').forEach(el => el.innerText = kcStr);
 
     // Sound and Visual Feedback
     window.soundEngine?.playCoins?.();
@@ -692,11 +763,16 @@ async function executeProductPurchase(productId, costKC, title, fileUrl, categor
 
     // Auto-prompt to switch to My Library or download
     setTimeout(() => {
-      const wantToDownload = confirm(`Resource "${title}" unlocked successfully!\n\nWould you like to view it in My Library and download to your device now?`);
+      let wantToDownload = false;
+      try {
+        wantToDownload = confirm(`Resource "${title}" unlocked successfully!\n\nWould you like to view it in My Library and download to your device now?`);
+      } catch (e) {
+        wantToDownload = true;
+      }
       if (wantToDownload) {
         switchStoreTab('my-library');
       }
-    }, 400);
+    }, 300);
 
   } catch (err) {
     console.error("Purchase failed:", err);

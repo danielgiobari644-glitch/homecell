@@ -2093,20 +2093,41 @@ function renderAdminInventoryPane(container) {
 
       <!-- Live Catalog Table -->
       <div class="glass-panel rounded-3xl p-6 sm:p-8 space-y-6">
-        <div class="flex items-center justify-between">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h3 class="text-lg font-black text-slate-900 dark:text-zinc-100">Live Kingdom Store Catalog</h3>
-            <p class="text-xs text-slate-400">Manage all listed products, pricing, and active listings.</p>
+            <p class="text-xs text-slate-400">Manage all listed products, bulk delete items, adjust listings, and seed resources.</p>
           </div>
-          <button onclick="syncAdminStoreProductsCatalog()" class="text-xs text-blue-600 dark:text-blue-400 font-bold hover:underline cursor-pointer">
-            Refresh Catalog
-          </button>
+          <div class="flex flex-wrap items-center gap-2">
+            <button type="button" onclick="deleteSelectedAdminStoreProducts()" id="btn-admin-bulk-delete" class="hidden px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl transition-all cursor-pointer shadow-sm flex items-center gap-1.5">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+              <span id="admin-bulk-delete-label">Delete Selected</span>
+            </button>
+
+            <button type="button" onclick="deleteAllAdminStoreProducts()" class="px-3.5 py-2 bg-rose-500/10 hover:bg-rose-600 text-rose-600 dark:text-rose-400 hover:text-white font-bold text-xs rounded-xl transition-all cursor-pointer border border-rose-500/30 flex items-center gap-1.5">
+              <i data-lucide="trash" class="w-3.5 h-3.5"></i>
+              <span>Clear All Items</span>
+            </button>
+
+            <button type="button" onclick="restoreDefaultAdminStoreProducts()" class="px-3.5 py-2 bg-amber-500/10 hover:bg-amber-600 text-amber-700 dark:text-amber-300 hover:text-white font-bold text-xs rounded-xl transition-all cursor-pointer border border-amber-500/30 flex items-center gap-1.5">
+              <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+              <span>Seed Sample Resources</span>
+            </button>
+
+            <button type="button" onclick="syncAdminStoreProductsCatalog()" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center gap-1.5">
+              <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+              <span>Refresh</span>
+            </button>
+          </div>
         </div>
 
         <div class="overflow-x-auto">
           <table class="w-full text-left">
             <thead>
               <tr class="border-b border-slate-200 dark:border-zinc-800 text-[10px] uppercase font-black text-slate-400">
+                <th class="py-3 px-3 w-10 text-center">
+                  <input type="checkbox" id="admin-catalog-select-all" onchange="toggleSelectAllAdminStoreProducts(event)" class="w-4 h-4 rounded text-purple-600 focus:ring-purple-400 cursor-pointer" />
+                </th>
                 <th class="py-3 px-4">Item</th>
                 <th class="py-3 px-4">Category</th>
                 <th class="py-3 px-4">Price</th>
@@ -2115,7 +2136,7 @@ function renderAdminInventoryPane(container) {
               </tr>
             </thead>
             <tbody id="admin-store-catalog-body">
-              <tr><td colspan="5" class="py-6 text-center text-xs text-slate-400">Loading catalog...</td></tr>
+              <tr><td colspan="6" class="py-6 text-center text-xs text-slate-400">Loading catalog...</td></tr>
             </tbody>
           </table>
         </div>
@@ -2292,6 +2313,249 @@ async function handleAdminStoreProductUploadSubmit(e) {
   }
 }
 
+let selectedAdminProductIds = new Set();
+let adminCurrentCatalogDocs = [];
+
+function toggleSelectAllAdminStoreProducts(event) {
+  const isChecked = event?.target?.checked;
+  selectedAdminProductIds.clear();
+  if (isChecked && adminCurrentCatalogDocs.length > 0) {
+    adminCurrentCatalogDocs.forEach(d => selectedAdminProductIds.add(d.id));
+  }
+
+  const checkboxes = document.querySelectorAll('.admin-prod-checkbox');
+  checkboxes.forEach(cb => {
+    cb.checked = isChecked;
+  });
+
+  updateAdminBulkDeleteButton();
+}
+
+function toggleSelectAdminStoreProduct(prodId) {
+  if (selectedAdminProductIds.has(prodId)) {
+    selectedAdminProductIds.delete(prodId);
+  } else {
+    selectedAdminProductIds.add(prodId);
+  }
+
+  const selectAllCb = document.getElementById('admin-catalog-select-all');
+  if (selectAllCb) {
+    selectAllCb.checked = adminCurrentCatalogDocs.length > 0 && selectedAdminProductIds.size === adminCurrentCatalogDocs.length;
+  }
+
+  updateAdminBulkDeleteButton();
+}
+
+function updateAdminBulkDeleteButton() {
+  const btn = document.getElementById('btn-admin-bulk-delete');
+  const label = document.getElementById('admin-bulk-delete-label');
+  if (!btn || !label) return;
+
+  if (selectedAdminProductIds.size > 0) {
+    btn.classList.remove('hidden');
+    label.innerText = `Delete Selected (${selectedAdminProductIds.size})`;
+  } else {
+    btn.classList.add('hidden');
+  }
+}
+
+async function deleteSelectedAdminStoreProducts() {
+  if (selectedAdminProductIds.size === 0) return;
+
+  const count = selectedAdminProductIds.size;
+  let isConfirmed = false;
+  if (window.showConfirmDialog) {
+    isConfirmed = await window.showConfirmDialog({
+      title: "Delete Selected Products?",
+      message: `Are you sure you want to permanently delete ${count} selected item(s) from the Kingdom Store catalog?`,
+      confirmText: `Delete ${count} Items`,
+      cancelText: "Cancel",
+      isDanger: true,
+      icon: "trash-2"
+    });
+  } else {
+    try {
+      isConfirmed = confirm(`Are you sure you want to permanently delete ${count} selected item(s) from the Kingdom Store catalog?`);
+    } catch (e) {
+      isConfirmed = true;
+    }
+  }
+
+  if (!isConfirmed) return;
+
+  const idsToDelete = Array.from(selectedAdminProductIds);
+  selectedAdminProductIds.clear();
+  updateAdminBulkDeleteButton();
+
+  window.showToast?.(`Deleting ${idsToDelete.length} item(s)...`, "info");
+
+  const db = window.db;
+  const FieldValue = window.firebase?.firestore?.FieldValue;
+
+  for (const id of idsToDelete) {
+    if (window.markStoreProductAsDeleted) window.markStoreProductAsDeleted(id);
+    if (window.removeUploadedStoreProductLocal) window.removeUploadedStoreProductLocal(id);
+    
+    if (db) {
+      if (FieldValue) {
+        db.collection('system_configs').doc('store_config').set({
+          deletedProductIds: FieldValue.arrayUnion(id),
+          hasInitialized: true,
+          lastUpdated: FieldValue.serverTimestamp()
+        }, { merge: true }).catch(() => {});
+      }
+
+      await db.collection('products').doc(id).set({
+        published: false,
+        isDeleted: true
+      }, { merge: true }).catch(() => {});
+
+      await db.collection('products').doc(id).delete().catch(() => {});
+      await db.collection('storeProducts').doc(id).delete().catch(() => {});
+    }
+  }
+
+  window.soundEngine?.playSuccess?.();
+  window.showToast?.(`✓ Successfully deleted ${idsToDelete.length} item(s) from Kingdom Store.`, "success");
+
+  syncAdminStoreProductsCatalog();
+  if (window.syncStoreProducts) window.syncStoreProducts();
+}
+
+async function deleteAllAdminStoreProducts() {
+  let isConfirmed = false;
+  if (window.showConfirmDialog) {
+    isConfirmed = await window.showConfirmDialog({
+      title: "Clear All Store Catalog Items?",
+      message: "Are you sure you want to permanently delete ALL products in the Kingdom Store? The store catalog will be completely empty until you upload or seed new resources.",
+      confirmText: "Clear All Items",
+      cancelText: "Cancel",
+      isDanger: true,
+      icon: "trash-2"
+    });
+  } else {
+    try {
+      isConfirmed = confirm("Are you sure you want to permanently delete ALL products from the Kingdom Store catalog?");
+    } catch (e) {
+      isConfirmed = true;
+    }
+  }
+
+  if (!isConfirmed) return;
+
+  window.showToast?.("Clearing entire store catalog...", "info");
+
+  const db = window.db;
+  const FieldValue = window.firebase?.firestore?.FieldValue;
+
+  // Gather all known IDs
+  const allIds = new Set();
+  if (adminCurrentCatalogDocs) adminCurrentCatalogDocs.forEach(d => allIds.add(d.id));
+  if (window.DEFAULT_KINGDOM_PRODUCTS) window.DEFAULT_KINGDOM_PRODUCTS.forEach(d => allIds.add(d.id));
+  if (window.getUploadedStoreProductsLocal) window.getUploadedStoreProductsLocal().forEach(d => allIds.add(d.id));
+
+  const allIdsArr = Array.from(allIds);
+
+  allIdsArr.forEach(id => {
+    if (window.markStoreProductAsDeleted) window.markStoreProductAsDeleted(id);
+    if (window.removeUploadedStoreProductLocal) window.removeUploadedStoreProductLocal(id);
+  });
+
+  if (db) {
+    try {
+      const snap = await db.collection('products').get();
+      const batch = db.batch();
+      snap.forEach(doc => {
+        batch.delete(doc.ref);
+      });
+      await batch.commit().catch(() => {});
+
+      if (FieldValue) {
+        await db.collection('system_configs').doc('store_config').set({
+          deletedProductIds: FieldValue.arrayUnion(...allIdsArr),
+          hasInitialized: true,
+          lastUpdated: FieldValue.serverTimestamp()
+        }, { merge: true }).catch(() => {});
+      }
+    } catch (e) {
+      console.warn("Clear all note:", e);
+    }
+  }
+
+  selectedAdminProductIds.clear();
+  updateAdminBulkDeleteButton();
+
+  window.soundEngine?.playSuccess?.();
+  window.showToast?.("✓ Kingdom Store catalog has been cleared.", "success");
+
+  syncAdminStoreProductsCatalog();
+  if (window.syncStoreProducts) window.syncStoreProducts();
+}
+
+async function restoreDefaultAdminStoreProducts() {
+  if (!window.DEFAULT_KINGDOM_PRODUCTS || window.DEFAULT_KINGDOM_PRODUCTS.length === 0) return;
+
+  const count = window.DEFAULT_KINGDOM_PRODUCTS.length;
+  let isConfirmed = false;
+  if (window.showConfirmDialog) {
+    isConfirmed = await window.showConfirmDialog({
+      title: "Seed Sample Resources?",
+      message: `Would you like to seed the ${count} curated Kingdom wallpapers, scriptures, and audio resources into the active catalog?`,
+      confirmText: "Seed Resources",
+      cancelText: "Cancel",
+      isDanger: false,
+      icon: "sparkles"
+    });
+  } else {
+    try {
+      isConfirmed = confirm(`Seed ${count} curated Kingdom resources into the active store catalog?`);
+    } catch (e) {
+      isConfirmed = true;
+    }
+  }
+
+  if (!isConfirmed) return;
+
+  window.showToast?.("Seeding curated Kingdom resources...", "info");
+
+  // Remove default IDs from deleted list
+  const defaultIds = window.DEFAULT_KINGDOM_PRODUCTS.map(p => p.id);
+  try {
+    const raw = localStorage.getItem('homecell_deleted_store_products');
+    let local = raw ? JSON.parse(raw) : [];
+    local = local.filter(id => !defaultIds.includes(id));
+    localStorage.setItem('homecell_deleted_store_products', JSON.stringify(local));
+  } catch (e) {}
+
+  const db = window.db;
+  if (db) {
+    for (const prod of window.DEFAULT_KINGDOM_PRODUCTS) {
+      const payload = {
+        ...prod,
+        published: true,
+        isDeleted: false,
+        createdAt: window.firebase?.firestore?.FieldValue ? window.firebase.firestore.FieldValue.serverTimestamp() : new Date()
+      };
+      await db.collection('products').doc(prod.id).set(payload, { merge: true }).catch(() => {});
+      await db.collection('storeProducts').doc(prod.id).set(payload, { merge: true }).catch(() => {});
+    }
+
+    if (window.firebase?.firestore?.FieldValue) {
+      await db.collection('system_configs').doc('store_config').set({
+        deletedProductIds: window.firebase.firestore.FieldValue.arrayRemove(...defaultIds),
+        hasInitialized: true,
+        lastUpdated: window.firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true }).catch(() => {});
+    }
+  }
+
+  window.soundEngine?.playSuccess?.();
+  window.showToast?.("✨ Curated Kingdom resources seeded successfully!", "success");
+
+  syncAdminStoreProductsCatalog();
+  if (window.syncStoreProducts) window.syncStoreProducts();
+}
+
 function syncAdminStoreProductsCatalog() {
   const tbody = document.getElementById('admin-store-catalog-body');
   if (!tbody) return;
@@ -2301,21 +2565,33 @@ function syncAdminStoreProductsCatalog() {
   const localUploads = window.getUploadedStoreProductsLocal ? window.getUploadedStoreProductsLocal().filter(p => !deletedIds.includes(p.id)) : [];
 
   const renderTableRows = (docs) => {
+    adminCurrentCatalogDocs = docs || [];
     tbody.innerHTML = '';
+
+    const selectAllCb = document.getElementById('admin-catalog-select-all');
+    if (selectAllCb) {
+      selectAllCb.checked = docs.length > 0 && selectedAdminProductIds.size === docs.length;
+    }
+    updateAdminBulkDeleteButton();
+
     if (!docs || docs.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-xs text-slate-400">No active products in catalog. Upload resources using the form above!</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="6" class="py-10 text-center text-xs text-slate-400">No active products in catalog. Upload new resources using the form above or click "Seed Sample Resources"!</td></tr>`;
       return;
     }
 
     docs.forEach(p => {
+      const isSelected = selectedAdminProductIds.has(p.id);
       const tr = document.createElement('tr');
       tr.id = `admin-store-row-${p.id}`;
-      tr.className = "border-b border-slate-100 dark:border-zinc-800 text-xs hover:bg-slate-50/50 dark:hover:bg-zinc-800/40";
+      tr.className = `border-b border-slate-100 dark:border-zinc-800 text-xs hover:bg-slate-50/50 dark:hover:bg-zinc-800/40 transition-colors ${isSelected ? 'bg-purple-500/5 dark:bg-purple-500/10' : ''}`;
       
       const itemPrice = p.priceKC !== undefined ? p.priceKC : (p.price !== undefined ? p.price : 50);
       const cover = p.coverUrl || p.imageUrl || 'https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=800&q=80';
 
       tr.innerHTML = `
+        <td class="py-3 px-3 w-10 text-center">
+          <input type="checkbox" onchange="toggleSelectAdminStoreProduct('${p.id}')" class="admin-prod-checkbox w-4 h-4 rounded text-purple-600 focus:ring-purple-400 cursor-pointer" ${isSelected ? 'checked' : ''} />
+        </td>
         <td class="py-3 px-4">
           <div class="flex items-center gap-3">
             <img src="${cover}" class="w-10 h-10 rounded-xl object-cover border border-slate-200 dark:border-zinc-700 shrink-0" onerror="this.src='https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=800&q=80'" />
@@ -2348,7 +2624,7 @@ function syncAdminStoreProductsCatalog() {
 
   if (!db) {
     let combined = [...localUploads];
-    if (window.DEFAULT_KINGDOM_PRODUCTS) {
+    if (window.DEFAULT_KINGDOM_PRODUCTS && !window.hasInitializedStoreCatalog?.()) {
       window.DEFAULT_KINGDOM_PRODUCTS.forEach(dp => {
         if (!deletedIds.includes(dp.id) && !combined.some(c => c.id === dp.id)) combined.push(dp);
       });
@@ -2383,7 +2659,7 @@ function syncAdminStoreProductsCatalog() {
       }
     });
 
-    if (docs.length === 0 && window.DEFAULT_KINGDOM_PRODUCTS) {
+    if (docs.length === 0 && window.DEFAULT_KINGDOM_PRODUCTS && !window.hasInitializedStoreCatalog?.() && currentDeletedIds.length === 0) {
       window.DEFAULT_KINGDOM_PRODUCTS.forEach(dp => {
         if (!currentDeletedIds.includes(dp.id)) docs.push(dp);
       });
@@ -2405,7 +2681,7 @@ function syncAdminStoreProductsCatalog() {
   }, err => {
     console.warn("Catalog sync note:", err);
     let combined = [...localUploads];
-    if (window.DEFAULT_KINGDOM_PRODUCTS) {
+    if (window.DEFAULT_KINGDOM_PRODUCTS && !window.hasInitializedStoreCatalog?.() && deletedIds.length === 0) {
       window.DEFAULT_KINGDOM_PRODUCTS.forEach(dp => {
         if (!deletedIds.includes(dp.id) && !combined.some(c => c.id === dp.id)) combined.push(dp);
       });
@@ -2453,6 +2729,7 @@ async function deleteAdminStoreProduct(prodId, encodedTitle) {
       if (FieldValue) {
         window.db.collection('system_configs').doc('store_config').set({
           deletedProductIds: FieldValue.arrayUnion(prodId),
+          hasInitialized: true,
           lastUpdated: FieldValue.serverTimestamp()
         }, { merge: true }).catch(() => {});
       }
@@ -2465,6 +2742,9 @@ async function deleteAdminStoreProduct(prodId, encodedTitle) {
       await window.db.collection('products').doc(prodId).delete().catch(() => {});
       await window.db.collection('storeProducts').doc(prodId).delete().catch(() => {});
     }
+
+    selectedAdminProductIds.delete(prodId);
+    updateAdminBulkDeleteButton();
 
     window.soundEngine?.playSuccess?.();
     window.showToast?.(`"${title}" permanently removed from Kingdom Store.`, "info");
@@ -2480,6 +2760,11 @@ async function deleteAdminStoreProduct(prodId, encodedTitle) {
 
 window.syncAdminStoreProductsCatalog = syncAdminStoreProductsCatalog;
 window.deleteAdminStoreProduct = deleteAdminStoreProduct;
+window.deleteSelectedAdminStoreProducts = deleteSelectedAdminStoreProducts;
+window.deleteAllAdminStoreProducts = deleteAllAdminStoreProducts;
+window.restoreDefaultAdminStoreProducts = restoreDefaultAdminStoreProducts;
+window.toggleSelectAllAdminStoreProducts = toggleSelectAllAdminStoreProducts;
+window.toggleSelectAdminStoreProduct = toggleSelectAdminStoreProduct;
 window.handleAdminStoreProductUploadSubmit = handleAdminStoreProductUploadSubmit;
 
 // KPI Stats Counter

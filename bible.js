@@ -418,9 +418,10 @@ async function loadVerses() {
   try {
     const query = `${encodeURIComponent(currentBibleBook + ' ' + currentBibleChapter)}?translation=${encodeURIComponent(currentBibleTranslation)}`;
     const res = await fetch(`https://bible-api.com/${query}`);
-    if (res.ok) {
-      const json = await res.json();
-      if (json.verses && json.verses.length > 0) {
+    const ct = res.headers.get('content-type') || '';
+    if (res.ok && ct.includes('json')) {
+      const json = await res.json().catch(() => null);
+      if (json && json.verses && json.verses.length > 0) {
         const verseMap = {};
         json.verses.forEach(v => {
           verseMap[v.verse] = v.text.trim();
@@ -438,9 +439,10 @@ async function loadVerses() {
       const bookObj = BIBLE_BOOKS_METADATA.find(b => b.name.toLowerCase() === currentBibleBook.toLowerCase());
       if (bookObj) {
         const bollsRes = await fetch(`https://bolls.life/get-chapter/KJV/${bookObj.num}/${currentBibleChapter}/`);
-        if (bollsRes.ok) {
-          const bollsJson = await bollsRes.json();
-          if (Array.isArray(bollsJson) && bollsJson.length > 0) {
+        const bollsCt = bollsRes.headers.get('content-type') || '';
+        if (bollsRes.ok && bollsCt.includes('json')) {
+          const bollsJson = await bollsRes.json().catch(() => null);
+          if (bollsJson && Array.isArray(bollsJson) && bollsJson.length > 0) {
             const verseMap = {};
             bollsJson.forEach(v => {
               // Strip HTML tags if any

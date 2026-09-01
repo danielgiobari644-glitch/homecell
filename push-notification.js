@@ -170,20 +170,32 @@ window.requestNotificationPermission = async function() {
     }
 
     let subscription = null;
+    const DEFAULT_VAPID_PUBLIC_KEY = "BGKOcabDBghxOrqaFIRoI3hnbNHN6qz-PzZKQGA-ug1wkH7bFRr70sC6zKzdEFlZtAITa8IeiC5rSigXTd3iTM8";
+
     if (registration && registration.pushManager) {
       try {
-        const keyRes = await fetch(VAPID_KEY_URL);
-        if (keyRes.ok) {
-          const { publicKey } = await keyRes.json();
-          if (publicKey) {
-            const applicationServerKey = urlBase64ToUint8Array(publicKey);
-            subscription = await registration.pushManager.getSubscription();
-            if (!subscription) {
-              subscription = await registration.pushManager.subscribe({
-                userVisibleOnly: true,
-                applicationServerKey: applicationServerKey
-              });
+        let pubKey = DEFAULT_VAPID_PUBLIC_KEY;
+        try {
+          const keyRes = await fetch(VAPID_KEY_URL);
+          const ct = keyRes.headers.get('content-type') || '';
+          if (keyRes.ok && ct.includes('json')) {
+            const data = await keyRes.json();
+            if (data && data.publicKey) {
+              pubKey = data.publicKey;
             }
+          }
+        } catch (fetchErr) {
+          console.warn("Could not fetch remote VAPID key, using default:", fetchErr);
+        }
+
+        if (pubKey) {
+          const applicationServerKey = urlBase64ToUint8Array(pubKey);
+          subscription = await registration.pushManager.getSubscription();
+          if (!subscription) {
+            subscription = await registration.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: applicationServerKey
+            });
           }
         }
       } catch (pushErr) {
