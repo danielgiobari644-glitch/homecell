@@ -418,7 +418,11 @@ function renderProductsGrid(products) {
     const itemPrice = parseInt(p.priceKC !== undefined ? p.priceKC : (p.price !== undefined ? p.price : 50)) || 50;
     const isOwned = purchasedItemIds.includes(p.id);
     const hasEnoughKc = currentKc >= itemPrice;
-    const coverImage = p.coverUrl || p.imageUrl || 'https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=800&q=80';
+    const isChunkedCover = p.coverChunkId || (p.coverUrl && p.coverUrl.startsWith('chunk:'));
+    const chunkCoverId = p.coverChunkId || (p.coverUrl && p.coverUrl.startsWith('chunk:') ? p.coverUrl.replace('chunk:', '') : '');
+    const coverImage = isChunkedCover 
+      ? `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='250' viewBox='0 0 400 250'><rect width='100%25' height='100%25' fill='%2318181b'/><text x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23f59e0b' font-family='sans-serif' font-weight='bold' font-size='14'>✨ Base64 Chunked Resource</text></svg>`
+      : (p.coverUrl || p.imageUrl || 'https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=800&q=80');
     const downloadLink = p.fileUrl || p.downloadUrl || coverImage;
 
     let buttonHtml = '';
@@ -454,7 +458,14 @@ function renderProductsGrid(products) {
 
         <div>
           <div class="relative h-48 sm:h-52 bg-slate-100 dark:bg-zinc-800 overflow-hidden">
-            <img src="${coverImage}" alt="${p.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
+            <img 
+              id="store-prod-img-${p.id}" 
+              src="${coverImage}" 
+              ${isChunkedCover ? `data-chunk-id="${chunkCoverId}" data-total-chunks="${p.coverTotalChunks || 1}"` : ''}
+              alt="${p.title}" 
+              class="store-lazy-chunk-img w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+              loading="lazy" 
+            />
             <div class="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/20 to-transparent"></div>
             
             <div class="absolute top-3 left-3 flex flex-wrap gap-1.5 z-10">
@@ -491,7 +502,32 @@ function renderProductsGrid(products) {
     `;
   }).join('');
 
+  hydrateStoreChunkImages();
   if (window.lucide) window.lucide.createIcons();
+}
+
+// Asynchronously hydrate store cover images from Base64 chunks
+async function hydrateStoreChunkImages() {
+  if (!window.loadBase64FromChunks) return;
+  const chunkImgEls = document.querySelectorAll('img.store-lazy-chunk-img[data-chunk-id]');
+  chunkImgEls.forEach(async (img) => {
+    const chunkId = img.getAttribute('data-chunk-id');
+    const totalChunks = parseInt(img.getAttribute('data-total-chunks')) || 1;
+    if (!chunkId) return;
+
+    try {
+      const base64Data = await window.loadBase64FromChunks({
+        fileId: chunkId,
+        totalChunks: totalChunks
+      });
+      if (base64Data && img) {
+        img.src = base64Data;
+        img.removeAttribute('data-chunk-id');
+      }
+    } catch (e) {
+      console.warn("Store chunk cover hydrate notice:", e);
+    }
+  });
 }
 
 function clearStoreFilters() {
@@ -910,6 +946,52 @@ async function downloadStoreProductDirect(productId, encodedUrl, encodedFileName
 
   window.showToast?.(`📥 Downloading "${fileName}"...`, "info");
 
+  // 0. Base64 Chunked Storage Retrieval (preserves 100% full file fidelity with zero truncation)
+  let chunkFileId = productDetails?.fileChunkId || (url && url.startsWith('chunk:') ? url.replace('chunk:', '') : null);
+  let chunkTotal = productDetails?.fileTotalChunks || 1;
+
+  if (!chunkFileId && window.db) {
+    try {
+      const doc = await window.db.collection('products').doc(cleanId).get();
+      if (doc.exists) {
+        const d = doc.data();
+        if (d.fileChunkId) {
+          chunkFileId = d.fileChunkId;
+          chunkTotal = d.fileTotalChunks || 1;
+        } else if (d.coverChunkId && (!d.fileUrl || d.fileUrl === d.coverUrl)) {
+          chunkFileId = d.coverChunkId;
+          chunkTotal = d.coverTotalChunks || 1;
+        }
+      }
+    } catch (e) {}
+  }
+
+  if (chunkFileId && window.loadBase64FromChunks) {
+    try {
+      window.showToast?.(`📥 Fetching "${fileName}" from Base64 chunks...`, "info");
+      const base64Data = await window.loadBase64FromChunks({
+        fileId: chunkFileId,
+        totalChunks: chunkTotal,
+        onProgress: (pct) => {
+          window.showToast?.(`📥 Assembling chunks: ${pct}%`, "info");
+        }
+      });
+      if (base64Data) {
+        const blob = window.chunkedDataUrlToBlob ? window.chunkedDataUrlToBlob(base64Data) : (dataUrlToBlob ? dataUrlToBlob(base64Data) : null);
+        if (blob) {
+          const success = triggerBlobFileDownload(blob, fileName);
+          if (success) {
+            window.soundEngine?.playSuccess?.();
+            window.showToast?.(`✅ Downloaded full "${fileName}" to your device!`, "success");
+            return;
+          }
+        }
+      }
+    } catch (chunkErr) {
+      console.warn("Chunk download attempt note:", chunkErr);
+    }
+  }
+
   // 1. If url is missing or placeholder, query Firestore
   if (!url && window.db) {
     try {
@@ -1293,7 +1375,6 @@ async function handleSuperAdminStoreUploadSubmit(e) {
   // Safety fallback cover image
   const defaultCover = 'https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=800&q=80';
   const finalCoverUrl = uploadedStoreCoverBase64 || urlCoverInput || defaultCover;
-  // If user uploaded a cover wallpaper and no separate file, finalFileUrl is the wallpaper itself!
   const finalFileUrl = uploadedStoreFileBase64 || urlFileInput || finalCoverUrl;
 
   if (!title || !description) {
@@ -1310,6 +1391,48 @@ async function handleSuperAdminStoreUploadSubmit(e) {
   try {
     const prodId = `prod_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     const tags = tagsStr.split(',').map(t => t.trim()).filter(Boolean);
+    const currentUid = window.auth?.currentUser?.uid || 'super_admin';
+
+    let fileChunkId = null;
+    let fileTotalChunks = 0;
+    let coverChunkId = null;
+    let coverTotalChunks = 0;
+    let isChunked = false;
+
+    // 1. Chunk resource file into Base64 chunks
+    if (uploadedStoreFileBase64 && window.saveBase64InChunks) {
+      if (submitBtn) submitBtn.innerHTML = `<span class="animate-spin inline-block mr-2">⏳</span> Storing file chunks...`;
+      const fId = `fc_store_file_${prodId}`;
+      const saveRes = await window.saveBase64InChunks({
+        fileId: fId,
+        base64Data: uploadedStoreFileBase64,
+        mimeType: uploadedStoreFileMime || 'application/octet-stream',
+        fileName: uploadedStoreFileName || `${title}.jpg`,
+        fileSize: uploadedStoreFileBlob?.size || 0,
+        uploaderUid: currentUid,
+        onProgress: (pct) => {
+          if (submitBtn) submitBtn.innerHTML = `⏳ Uploading file chunks (${pct}%)...`;
+          window.showToast?.(`Storing file chunks: ${pct}%`, "info");
+        }
+      });
+      fileChunkId = saveRes.fileId;
+      fileTotalChunks = saveRes.totalChunks;
+      isChunked = true;
+    }
+
+    // 2. Chunk cover image if provided as Base64
+    if (uploadedStoreCoverBase64 && window.saveBase64InChunks) {
+      const cId = `fc_store_cover_${prodId}`;
+      const coverRes = await window.saveBase64InChunks({
+        fileId: cId,
+        base64Data: uploadedStoreCoverBase64,
+        mimeType: 'image/jpeg',
+        fileName: 'cover.jpg',
+        uploaderUid: currentUid
+      });
+      coverChunkId = coverRes.fileId;
+      coverTotalChunks = coverRes.totalChunks;
+    }
 
     const payload = {
       id: prodId,
@@ -1320,11 +1443,18 @@ async function handleSuperAdminStoreUploadSubmit(e) {
       price: priceKC,
       description: description,
       author: author,
-      coverUrl: finalCoverUrl,
-      imageUrl: finalCoverUrl,
-      fileUrl: finalFileUrl,
-      downloadUrl: finalFileUrl,
+      coverUrl: coverChunkId ? `chunk:${coverChunkId}` : finalCoverUrl,
+      imageUrl: coverChunkId ? `chunk:${coverChunkId}` : finalCoverUrl,
+      fileUrl: fileChunkId ? `chunk:${fileChunkId}` : finalFileUrl,
+      downloadUrl: fileChunkId ? `chunk:${fileChunkId}` : finalFileUrl,
+      fileChunkId: fileChunkId,
+      fileTotalChunks: fileTotalChunks,
+      coverChunkId: coverChunkId,
+      coverTotalChunks: coverTotalChunks,
+      isChunked: isChunked,
       fileName: uploadedStoreFileName || `${title.replace(/[^a-zA-Z0-9_\-]/g, '_')}.jpg`,
+      fileMime: uploadedStoreFileMime || 'application/octet-stream',
+      fileSize: uploadedStoreFileBlob?.size || 0,
       tags: tags.length > 0 ? tags : [category, "Kingdom"],
       featured: isFeatured,
       published: true,
@@ -1352,7 +1482,7 @@ async function handleSuperAdminStoreUploadSubmit(e) {
     renderProductsGrid(storeCachedProducts);
 
     window.soundEngine?.playSuccess?.();
-    window.showToast?.(`🎉 "${title}" uploaded to Kingdom Store successfully!`, "success");
+    window.showToast?.(`🎉 "${title}" stored in Base64 chunks & published!`, "success");
 
     // Reset Form
     document.getElementById('store-upload-form')?.reset();
@@ -1414,6 +1544,17 @@ async function deleteStoreProductDirect(productId, encodedTitle) {
   if (!isConfirmed) return;
 
   try {
+    // 0. Clean up Base64 chunk documents from Firestore if present
+    const existingProd = (storeCachedProducts || []).find(p => p.id === productId);
+    if (existingProd && window.deleteBase64Chunks) {
+      if (existingProd.fileChunkId) {
+        await window.deleteBase64Chunks({ fileId: existingProd.fileChunkId, totalChunks: existingProd.fileTotalChunks }).catch(() => {});
+      }
+      if (existingProd.coverChunkId) {
+        await window.deleteBase64Chunks({ fileId: existingProd.coverChunkId, totalChunks: existingProd.coverTotalChunks }).catch(() => {});
+      }
+    }
+
     // 1. Instantly remove visual elements from DOM for zero latency feedback
     const cardEl = document.getElementById(`store-product-card-${productId}`);
     if (cardEl) {

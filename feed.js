@@ -197,7 +197,7 @@ function createFeedPostCard(post) {
 
     <div class="text-sm text-slate-700 dark:text-zinc-100 whitespace-pre-wrap leading-relaxed">${post.text}</div>
 
-    ${getMediaHTML(post.imageUrl, post.videoUrl)}
+    ${getMediaHTML(post)}
 
     <div class="flex items-center gap-6 pt-3 border-t border-slate-100 dark:border-zinc-800/60">
       <button onclick="toggleLikePost('${postId}')" class="flex items-center gap-2 text-xs font-bold transition-all hover:scale-105 active:scale-95 cursor-pointer ${
@@ -227,6 +227,9 @@ function createFeedPostCard(post) {
     </div>
   `;
 
+  // Asynchronously trigger lazy loading for any chunked media
+  setTimeout(() => triggerFeedMediaChunkLoader(post), 10);
+
   return postCard;
 }
 
@@ -253,11 +256,15 @@ async function publishToFeed() {
   const isAnnCheckbox = document.getElementById('feed-is-announcement');
   const isAnn = isAnnCheckbox ? isAnnCheckbox.checked : false;
 
-  const imageUrlVal = document.getElementById('feed-image-url')?.value?.trim() || window.attachedImageBase64;
-  const videoUrlVal = document.getElementById('feed-video-url')?.value?.trim() || window.attachedVideoBase64;
+  const imageUrlInput = document.getElementById('feed-image-url')?.value?.trim();
+  const videoUrlInput = document.getElementById('feed-video-url')?.value?.trim();
 
-  if (!textVal) {
-    window.showToast?.("Please enter a message before publishing.", "warning");
+  const attachedImg = window.attachedImageBase64;
+  const attachedVid = window.attachedVideoBase64;
+  const attachedDoc = window.attachedDocBase64;
+
+  if (!textVal && !attachedImg && !attachedVid && !attachedDoc && !imageUrlInput && !videoUrlInput) {
+    window.showToast?.("Please enter a message or attach media before publishing.", "warning");
     return;
   }
 
@@ -266,24 +273,117 @@ async function publishToFeed() {
   const newPostId = window.db.collection('community_feed').doc().id;
 
   isPublishingPost = true;
-  window.showToast?.("Publishing post...", "info");
+  const publishBtn = document.getElementById('btn-publish-feed-post');
+  if (publishBtn) {
+    publishBtn.disabled = true;
+    publishBtn.innerHTML = `<span class="animate-spin inline-block mr-2">⏳</span> Publishing...`;
+  }
+  window.showToast?.("Publishing post with media chunks...", "info");
 
   try {
-    await window.db.collection('community_feed').doc(newPostId).set({
+    let imageChunkId = null;
+    let imageTotalChunks = 0;
+    let videoChunkId = null;
+    let videoTotalChunks = 0;
+    let docChunkId = null;
+    let docTotalChunks = 0;
+    let docName = window.attachedDocName || null;
+    let docSize = window.attachedDocSize || null;
+    let docMime = window.attachedDocMime || null;
+
+    let finalImageUrl = imageUrlInput || null;
+    let finalVideoUrl = videoUrlInput || null;
+
+    // 1. Process & chunk image if attached locally
+    if (attachedImg) {
+      if (window.saveBase64InChunks) {
+        const fileId = `fc_feed_img_${newPostId}`;
+        const saveRes = await window.saveBase64InChunks({
+          fileId: fileId,
+          base64Data: attachedImg,
+          mimeType: 'image/jpeg',
+          fileName: 'post_image.jpg',
+          uploaderUid: user.uid,
+          onProgress: (pct) => {
+            window.showToast?.(`Uploading photo chunks: ${pct}%`, "info");
+          }
+        });
+        imageChunkId = saveRes.fileId;
+        imageTotalChunks = saveRes.totalChunks;
+        finalImageUrl = null; // Stored securely in chunks
+      } else {
+        finalImageUrl = attachedImg;
+      }
+    }
+
+    // 2. Process & chunk video if attached locally
+    if (attachedVid) {
+      if (window.saveBase64InChunks) {
+        const fileId = `fc_feed_vid_${newPostId}`;
+        const saveRes = await window.saveBase64InChunks({
+          fileId: fileId,
+          base64Data: attachedVid,
+          mimeType: 'video/mp4',
+          fileName: 'post_video.mp4',
+          uploaderUid: user.uid,
+          onProgress: (pct) => {
+            window.showToast?.(`Uploading video chunks: ${pct}%`, "info");
+          }
+        });
+        videoChunkId = saveRes.fileId;
+        videoTotalChunks = saveRes.totalChunks;
+        finalVideoUrl = null; // Stored securely in chunks
+      } else {
+        finalVideoUrl = attachedVid;
+      }
+    }
+
+    // 3. Process & chunk document / file if attached locally
+    if (attachedDoc) {
+      if (window.saveBase64InChunks) {
+        const fileId = `fc_feed_doc_${newPostId}`;
+        const saveRes = await window.saveBase64InChunks({
+          fileId: fileId,
+          base64Data: attachedDoc,
+          mimeType: docMime || 'application/octet-stream',
+          fileName: docName || 'document',
+          fileSize: docSize || 0,
+          uploaderUid: user.uid,
+          onProgress: (pct) => {
+            window.showToast?.(`Uploading file chunks: ${pct}%`, "info");
+          }
+        });
+        docChunkId = saveRes.fileId;
+        docTotalChunks = saveRes.totalChunks;
+      }
+    }
+
+    const postDoc = {
       id: newPostId,
-      text: textVal,
+      text: textVal || '',
       type: finalType,
       authorUid: user.uid,
       authorName: profile.displayName || user.displayName || user.email || 'Member',
       authorRole: window.currentUserRole || profile.role || 'Member',
       authorPhotoURL: profile.photoURL || null,
-      imageUrl: imageUrlVal || null,
-      videoUrl: videoUrlVal || null,
+      imageUrl: finalImageUrl,
+      videoUrl: finalVideoUrl,
+      imageChunkId: imageChunkId,
+      imageTotalChunks: imageTotalChunks,
+      videoChunkId: videoChunkId,
+      videoTotalChunks: videoTotalChunks,
+      docChunkId: docChunkId,
+      docTotalChunks: docTotalChunks,
+      docName: docName,
+      docSize: docSize,
+      docMime: docMime,
       likesCount: 0,
       likes: {},
       comments: [],
       createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
-    });
+    };
+
+    await window.db.collection('community_feed').doc(newPostId).set(postDoc);
 
     // Mark user activity for daily missions
     await window.db.collection('users').doc(user.uid).update({
@@ -291,15 +391,20 @@ async function publishToFeed() {
       hasSharedTestimony: true
     }).catch(() => {});
 
-    document.getElementById('feed-composer-text').value = '';
+    // Reset Composer inputs
+    const composerInput = document.getElementById('feed-composer-text');
+    if (composerInput) composerInput.value = '';
     if (isAnnCheckbox) isAnnCheckbox.checked = false;
 
     window.clearAttachment?.('image');
     window.clearAttachment?.('video');
+    window.clearAttachment?.('doc');
     document.getElementById('attachment-image-box')?.classList.add('hidden');
     document.getElementById('attachment-video-box')?.classList.add('hidden');
+    document.getElementById('attachment-doc-box')?.classList.add('hidden');
     window.toggleFeedComposer?.(false);
 
+    window.soundEngine?.playSuccess?.();
     window.showToast?.("🎉 Post published to community feed!", "success");
 
   } catch (err) {
@@ -307,6 +412,10 @@ async function publishToFeed() {
     window.showToast?.("We couldn't publish your post. Check your connection and try again.", "error");
   } finally {
     isPublishingPost = false;
+    if (publishBtn) {
+      publishBtn.disabled = false;
+      publishBtn.innerText = "Publish Post 🚀";
+    }
   }
 }
 
@@ -382,12 +491,43 @@ function submitPostComment(e, postId) {
   }).catch(err => console.warn("Comment error:", err));
 }
 
-function deleteFeedPost(postId) {
-  if (!confirm("Are you sure you want to delete this post?")) return;
+async function deleteFeedPost(postId) {
+  let isConfirmed = false;
+  if (window.showConfirmDialog) {
+    isConfirmed = await window.showConfirmDialog({
+      title: "Delete Feed Post?",
+      message: "Are you sure you want to permanently remove this post and all associated media chunks from the community feed?",
+      confirmText: "Delete Post",
+      cancelText: "Cancel",
+      isDanger: true,
+      icon: "trash-2"
+    });
+  } else {
+    isConfirmed = confirm("Are you sure you want to delete this post?");
+  }
+  if (!isConfirmed) return;
 
-  window.db.collection('community_feed').doc(postId).delete()
-    .then(() => window.showToast?.("Post deleted successfully."))
-    .catch(err => window.showToast?.("Could not delete post.", "error"));
+  try {
+    const post = (activeCommunityPosts || []).find(p => p.id === postId);
+    if (post && window.deleteBase64Chunks) {
+      if (post.imageChunkId) {
+        await window.deleteBase64Chunks({ fileId: post.imageChunkId, totalChunks: post.imageTotalChunks }).catch(() => {});
+      }
+      if (post.videoChunkId) {
+        await window.deleteBase64Chunks({ fileId: post.videoChunkId, totalChunks: post.videoTotalChunks }).catch(() => {});
+      }
+      if (post.docChunkId) {
+        await window.deleteBase64Chunks({ fileId: post.docChunkId, totalChunks: post.docTotalChunks }).catch(() => {});
+      }
+    }
+
+    await window.db.collection('community_feed').doc(postId).delete();
+    window.soundEngine?.playSuccess?.();
+    window.showToast?.("Post deleted successfully.");
+  } catch (err) {
+    console.error("Delete post error:", err);
+    window.showToast?.("Could not delete post.", "error");
+  }
 }
 
 function extractVideoEmbedInfo(url) {
@@ -448,16 +588,55 @@ function extractVideoEmbedInfo(url) {
 
 window.extractVideoEmbedInfo = extractVideoEmbedInfo;
 
-function getMediaHTML(imageUrl, videoUrl) {
+function getMediaHTML(post) {
+  if (!post) return '';
+  const imageUrl = typeof post === 'string' ? post : post.imageUrl;
+  const videoUrl = typeof post === 'object' ? post.videoUrl : null;
+  const imageChunkId = typeof post === 'object' ? post.imageChunkId : null;
+  const videoChunkId = typeof post === 'object' ? post.videoChunkId : null;
+  const docChunkId = typeof post === 'object' ? post.docChunkId : null;
+  const postId = typeof post === 'object' ? post.id : `p_${Date.now()}`;
+
   let html = '';
-  if (imageUrl) {
+
+  // 1. Chunked Image Presentation
+  if (imageChunkId) {
+    html += `
+      <div class="relative rounded-2xl overflow-hidden max-h-[480px] border border-slate-100 dark:border-zinc-800 shadow-sm mt-3 bg-slate-50 dark:bg-zinc-950 flex items-center justify-center min-h-[160px]">
+        <div id="feed-img-loader-${postId}" class="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-slate-100/90 dark:bg-zinc-900/90 backdrop-blur-xs z-10 transition-opacity duration-300">
+          <div class="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+          <span class="text-[10px] font-bold text-slate-500 dark:text-zinc-400">Loading full fidelity photo...</span>
+        </div>
+        <img id="feed-chunk-img-${postId}" src="" class="w-full h-auto max-h-[480px] object-contain opacity-0 transition-opacity duration-300" alt="Post picture" />
+      </div>
+    `;
+  } else if (imageUrl) {
     html += `
       <div class="rounded-2xl overflow-hidden max-h-[450px] border border-slate-100 dark:border-zinc-800 shadow-sm mt-3 bg-slate-50 dark:bg-zinc-950 flex items-center justify-center">
         <img src="${imageUrl}" class="w-full h-auto max-h-[450px] object-contain" alt="Post picture" referrerPolicy="no-referrer" />
       </div>
     `;
   }
-  if (videoUrl) {
+
+  // 2. Chunked Video Presentation
+  if (videoChunkId) {
+    html += `
+      <div class="relative w-full rounded-2xl overflow-hidden max-h-[480px] border border-slate-200 dark:border-zinc-800 shadow-md mt-3 bg-black flex items-center justify-center min-h-[220px]">
+        <div id="feed-vid-loader-${postId}" class="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-zinc-950/90 z-10 transition-opacity duration-300">
+          <div class="w-7 h-7 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+          <span class="text-[11px] font-bold text-purple-300">Reconstructing video chunks...</span>
+        </div>
+        <video 
+          id="feed-chunk-vid-${postId}" 
+          src="" 
+          class="w-full h-auto max-h-[480px] rounded-2xl object-contain hidden" 
+          controls 
+          playsinline 
+          preload="metadata"
+        ></video>
+      </div>
+    `;
+  } else if (videoUrl) {
     const videoInfo = extractVideoEmbedInfo(videoUrl);
 
     if (videoInfo && (videoInfo.type === 'youtube' || videoInfo.type === 'vimeo' || videoInfo.type === 'dailymotion')) {
@@ -487,11 +666,136 @@ function getMediaHTML(imageUrl, videoUrl) {
       `;
     }
   }
+
+  // 3. Chunked File / Resource Presentation
+  if (docChunkId) {
+    const docName = post.docName || 'Kingdom_Resource_Document';
+    const formattedSize = post.docSize ? window.formatFileSize ? window.formatFileSize(post.docSize) : `${Math.round(post.docSize / 1024)} KB` : 'Full Chunk File';
+    html += `
+      <div class="mt-3 p-4 rounded-2xl bg-slate-50 dark:bg-zinc-850 border border-slate-200 dark:border-zinc-800 flex items-center justify-between gap-3 shadow-2xs">
+        <div class="flex items-center gap-3 overflow-hidden">
+          <div class="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-300 flex items-center justify-center font-bold shrink-0 shadow-2xs">
+            <i data-lucide="file-text" class="w-5 h-5"></i>
+          </div>
+          <div class="overflow-hidden">
+            <div class="font-black text-xs text-slate-900 dark:text-zinc-100 truncate">${docName}</div>
+            <div class="text-[10px] text-slate-400 font-medium">${formattedSize} • Base64 Chunked Storage</div>
+          </div>
+        </div>
+        <button 
+          onclick="window.downloadFeedChunkDoc('${docChunkId}', ${post.docTotalChunks || 1}, '${encodeURIComponent(docName)}')" 
+          class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shrink-0 shadow-xs cursor-pointer active:scale-95 transition-all"
+        >
+          <i data-lucide="download" class="w-3.5 h-3.5"></i>
+          <span>Download</span>
+        </button>
+      </div>
+    `;
+  }
+
   return html;
 }
 
+// Asynchronously load chunked media in background and render without blocking feed UI
+async function triggerFeedMediaChunkLoader(post) {
+  if (!post || typeof post !== 'object') return;
+  const postId = post.id;
+
+  // 1. Chunked Image Loader
+  if (post.imageChunkId && window.loadBase64FromChunks) {
+    try {
+      const base64Data = await window.loadBase64FromChunks({
+        fileId: post.imageChunkId,
+        totalChunks: post.imageTotalChunks
+      });
+
+      const imgEl = document.getElementById(`feed-chunk-img-${postId}`);
+      const loaderEl = document.getElementById(`feed-img-loader-${postId}`);
+      if (imgEl && base64Data) {
+        imgEl.src = base64Data;
+        imgEl.classList.remove('opacity-0');
+        if (loaderEl) loaderEl.classList.add('hidden');
+      }
+    } catch (e) {
+      console.warn("Feed image chunk load note:", e);
+      const loaderEl = document.getElementById(`feed-img-loader-${postId}`);
+      if (loaderEl) loaderEl.innerHTML = `<span class="text-[10px] text-slate-400">Photo unavailable</span>`;
+    }
+  }
+
+  // 2. Chunked Video Loader
+  if (post.videoChunkId && window.loadBase64FromChunks) {
+    try {
+      const base64Data = await window.loadBase64FromChunks({
+        fileId: post.videoChunkId,
+        totalChunks: post.videoTotalChunks
+      });
+
+      const vidEl = document.getElementById(`feed-chunk-vid-${postId}`);
+      const loaderEl = document.getElementById(`feed-vid-loader-${postId}`);
+      if (vidEl && base64Data) {
+        const blob = window.chunkedDataUrlToBlob ? window.chunkedDataUrlToBlob(base64Data) : null;
+        if (blob) {
+          const blobUrl = URL.createObjectURL(blob);
+          vidEl.src = blobUrl;
+          vidEl.classList.remove('hidden');
+          if (loaderEl) loaderEl.classList.add('hidden');
+        } else {
+          vidEl.src = base64Data;
+          vidEl.classList.remove('hidden');
+          if (loaderEl) loaderEl.classList.add('hidden');
+        }
+      }
+    } catch (e) {
+      console.warn("Feed video chunk load note:", e);
+      const loaderEl = document.getElementById(`feed-vid-loader-${postId}`);
+      if (loaderEl) loaderEl.innerHTML = `<span class="text-[10px] text-slate-400">Video unavailable</span>`;
+    }
+  }
+}
+
+// Download chunked document/file to user's device
+window.downloadFeedChunkDoc = async function(fileId, totalChunks, encodedFileName) {
+  const fileName = decodeURIComponent(encodedFileName || 'Kingdom_Resource_Document');
+  window.showToast?.(`📥 Fetching "${fileName}" from Base64 chunks...`, "info");
+
+  try {
+    if (!window.loadBase64FromChunks) {
+      throw new Error("Chunk engine is unavailable.");
+    }
+
+    const base64Data = await window.loadBase64FromChunks({
+      fileId: fileId,
+      totalChunks: totalChunks,
+      onProgress: (pct) => {
+        window.showToast?.(`📥 Assembling file chunks: ${pct}%`, "info");
+      }
+    });
+
+    if (!base64Data) {
+      throw new Error("Could not assemble file chunks.");
+    }
+
+    const blob = window.chunkedDataUrlToBlob ? window.chunkedDataUrlToBlob(base64Data) : null;
+    if (blob) {
+      window.triggerBlobFileDownload?.(blob, fileName);
+      window.soundEngine?.playSuccess?.();
+      window.showToast?.(`✅ "${fileName}" downloaded successfully!`, "success");
+    } else {
+      window.showToast?.("Error converting chunks to file.", "error");
+    }
+  } catch (err) {
+    console.error("Feed doc download error:", err);
+    window.showToast?.("Error downloading file: " + err.message, "error");
+  }
+};
+
 window.attachedImageBase64 = null;
 window.attachedVideoBase64 = null;
+window.attachedDocBase64 = null;
+window.attachedDocName = null;
+window.attachedDocSize = null;
+window.attachedDocMime = null;
 
 window.toggleAttachmentInput = function(type) {
   const box = document.getElementById(`attachment-${type}-box`);
@@ -563,51 +867,19 @@ window.handleFileAttachment = function(type) {
   const file = fileInput.files[0];
 
   if (type === 'image') {
-    if (file.size > 8 * 1024 * 1024) {
-      window.showToast?.("Photo is too large. Please choose an image under 8MB.", "warning");
-      fileInput.value = '';
-      return;
-    }
-
+    window.showToast?.("Reading image file from device...", "info");
     const reader = new FileReader();
     reader.onload = function(e) {
       const base64Data = e.target.result;
-      const img = new Image();
-      img.onload = function() {
-        const canvas = document.createElement('canvas');
-        const maxDim = 800;
-        let width = img.width;
-        let height = img.height;
-        if (width > maxDim || height > maxDim) {
-          if (width > height) {
-            height = Math.round((height * maxDim) / width);
-            width = maxDim;
-          } else {
-            width = Math.round((width * maxDim) / height);
-            height = maxDim;
-          }
-        }
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-        const compressed = canvas.toDataURL('image/jpeg', 0.8);
-        window.attachedImageBase64 = compressed;
-        if (previewMedia) previewMedia.src = compressed;
-        if (previewBox) previewBox.classList.remove('hidden');
-      };
-      img.src = base64Data;
+      window.attachedImageBase64 = base64Data;
+      if (previewMedia) previewMedia.src = base64Data;
+      if (previewBox) previewBox.classList.remove('hidden');
+      window.soundEngine?.playSuccess?.();
+      window.showToast?.("✅ Photo attached! Will be stored in Base64 chunks.", "success");
     };
     reader.readAsDataURL(file);
-  } else {
-    // Video handling
-    if (file.size > 25 * 1024 * 1024) {
-      window.showToast?.("Video is over 25MB. For full sermons or long worship videos, paste a YouTube/Vimeo link.", "warning");
-      fileInput.value = '';
-      return;
-    }
-
-    // Show preview immediately using Object URL
+  } else if (type === 'video') {
+    // Video handling: Read full Base64 without any truncation or shortening
     const objectUrl = URL.createObjectURL(file);
     const previewIframe = document.getElementById('video-preview-iframe');
     const previewStatus = document.getElementById('video-preview-status');
@@ -619,115 +891,40 @@ window.handleFileAttachment = function(type) {
     }
     if (previewBox) previewBox.classList.remove('hidden');
     if (previewStatus) {
-      previewStatus.innerHTML = `<span class="text-purple-600 dark:text-purple-400 font-bold">📹 Local Video Selected (${(file.size / (1024 * 1024)).toFixed(1)} MB)</span>`;
+      const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+      previewStatus.innerHTML = `<span class="text-purple-600 dark:text-purple-400 font-bold">📹 Video Loaded (${sizeMb} MB) — Storing in Chunks</span>`;
     }
 
-    window.showToast?.("Processing video file...", "info");
+    window.showToast?.("Reading video file from device into Base64...", "info");
 
     const reader = new FileReader();
     reader.onload = function(e) {
-      const base64Data = e.target.result;
-      // If small enough (< 750KB), store base64 directly
-      if (base64Data.length < 800 * 1024) {
-        window.attachedVideoBase64 = base64Data;
-        window.showToast?.("✅ Video ready to post!", "success");
-      } else {
-        // Automatically compress/convert video via canvas MediaRecorder or use data
-        compressVideoClip(file, objectUrl, (compressedResult) => {
-          if (compressedResult) {
-            window.attachedVideoBase64 = compressedResult;
-            window.showToast?.("✅ Video clip compressed & ready to publish!", "success");
-          } else {
-            // Fallback: If compression isn't supported or video is too large for 1 document, prompt user
-            window.attachedVideoBase64 = base64Data.slice(0, 700 * 1024); // safe bound
-            window.showToast?.("💡 Tip: For high-definition long videos, YouTube or Vimeo links are recommended!", "info");
-          }
-        });
+      window.attachedVideoBase64 = e.target.result;
+      window.soundEngine?.playSuccess?.();
+      window.showToast?.("✅ Video ready! Will be stored in Base64 chunks.", "success");
+    };
+    reader.readAsDataURL(file);
+  } else if (type === 'doc') {
+    // Document / Resource handling: Read full Base64
+    window.attachedDocName = file.name;
+    window.attachedDocSize = file.size;
+    window.attachedDocMime = file.type || 'application/octet-stream';
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      window.attachedDocBase64 = e.target.result;
+      const statusBox = document.getElementById('attachment-doc-status');
+      const sizeStr = window.formatFileSize ? window.formatFileSize(file.size) : `${Math.round(file.size / 1024)} KB`;
+      if (statusBox) {
+        statusBox.innerHTML = `<span class="text-emerald-600 dark:text-emerald-400 font-bold">📄 Selected: ${file.name} (${sizeStr})</span>`;
       }
+      if (previewBox) previewBox.classList.remove('hidden');
+      window.soundEngine?.playSuccess?.();
+      window.showToast?.(`✅ "${file.name}" ready to post in chunks!`, "success");
     };
     reader.readAsDataURL(file);
   }
 };
-
-// Client-side video clip compressor for direct video files
-function compressVideoClip(file, objectUrl, callback) {
-  try {
-    if (!window.MediaRecorder || !HTMLCanvasElement.prototype.captureStream) {
-      return callback(null);
-    }
-
-    const tempVideo = document.createElement('video');
-    tempVideo.src = objectUrl;
-    tempVideo.muted = true;
-    tempVideo.playsInline = true;
-
-    tempVideo.onloadedmetadata = () => {
-      const canvas = document.createElement('canvas');
-      const targetWidth = 480;
-      const targetHeight = Math.round((tempVideo.videoHeight / tempVideo.videoWidth) * targetWidth) || 270;
-      canvas.width = targetWidth;
-      canvas.height = targetHeight;
-      const ctx = canvas.getContext('2d');
-
-      const stream = canvas.captureStream(24);
-      let mimeType = 'video/webm;codecs=vp8';
-      if (!MediaRecorder.isTypeSupported(mimeType)) {
-        mimeType = 'video/webm';
-      }
-
-      let recorder;
-      try {
-        recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 350000 });
-      } catch (e) {
-        return callback(null);
-      }
-
-      const chunks = [];
-      recorder.ondataavailable = (e) => {
-        if (e.data && e.data.size > 0) chunks.push(e.data);
-      };
-
-      recorder.onstop = () => {
-        const compressedBlob = new Blob(chunks, { type: mimeType });
-        const reader = new FileReader();
-        reader.onload = () => {
-          callback(reader.result);
-        };
-        reader.readAsDataURL(compressedBlob);
-      };
-
-      recorder.start(100);
-
-      const maxDuration = Math.min(tempVideo.duration || 15, 20);
-      let startTime = null;
-
-      function renderFrame(now) {
-        if (!startTime) startTime = now;
-        const elapsed = (now - startTime) / 1000;
-
-        if (tempVideo.paused || tempVideo.ended || elapsed >= maxDuration) {
-          tempVideo.pause();
-          if (recorder.state === 'recording') recorder.stop();
-          return;
-        }
-
-        ctx.drawImage(tempVideo, 0, 0, canvas.width, canvas.height);
-        requestAnimationFrame(renderFrame);
-      }
-
-      tempVideo.play().then(() => {
-        requestAnimationFrame(renderFrame);
-      }).catch(() => {
-        callback(null);
-      });
-    };
-
-    tempVideo.onerror = () => callback(null);
-  } catch (err) {
-    console.warn("Video compression notice:", err);
-    callback(null);
-  }
-}
 
 window.setSampleVideoUrl = function(sampleUrl) {
   const input = document.getElementById('feed-video-url');
@@ -753,8 +950,15 @@ window.clearAttachment = function(type) {
 
   if (type === 'image') {
     window.attachedImageBase64 = null;
-  } else {
+  } else if (type === 'video') {
     window.attachedVideoBase64 = null;
+  } else if (type === 'doc') {
+    window.attachedDocBase64 = null;
+    window.attachedDocName = null;
+    window.attachedDocSize = null;
+    window.attachedDocMime = null;
+    const statusBox = document.getElementById('attachment-doc-status');
+    if (statusBox) statusBox.innerHTML = '';
   }
 };
 

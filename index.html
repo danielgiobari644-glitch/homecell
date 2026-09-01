@@ -440,10 +440,27 @@
               <button type="button" onclick="window.toggleAttachmentInput('video')" class="px-3.5 py-2 rounded-xl border border-slate-200 dark:border-zinc-700 text-xs font-bold text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer flex items-center gap-1.5">
                 <i data-lucide="video" class="w-4 h-4 text-purple-500"></i> Add Video
               </button>
+              <button type="button" onclick="window.toggleAttachmentInput('doc')" class="px-3.5 py-2 rounded-xl border border-slate-200 dark:border-zinc-700 text-xs font-bold text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer flex items-center gap-1.5">
+                <i data-lucide="file-text" class="w-4 h-4 text-emerald-500"></i> Add File / Resource
+              </button>
               
               <div id="feed-announcement-toggle-box" class="hidden items-center gap-2 ml-auto">
                 <input type="checkbox" id="feed-is-announcement" class="rounded text-purple-600 cursor-pointer" />
                 <label for="feed-is-announcement" class="text-xs font-bold text-purple-600 dark:text-purple-400 cursor-pointer">Official Church Announcement</label>
+              </div>
+            </div>
+
+            <!-- File / Document Box -->
+            <div id="attachment-doc-box" class="hidden p-4 rounded-2xl bg-slate-50 dark:bg-zinc-850 border border-slate-200 dark:border-zinc-700 space-y-3">
+              <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                <label class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl cursor-pointer text-center transition-all shadow-xs shrink-0 flex items-center justify-center gap-1.5">
+                  <i data-lucide="paperclip" class="w-3.5 h-3.5 inline"></i> Choose File / Document
+                  <input type="file" id="feed-doc-file" onchange="window.handleFileAttachment('doc')" class="hidden" />
+                </label>
+                <div id="attachment-doc-status" class="hidden flex-1 p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 text-xs font-bold border border-emerald-300 dark:border-emerald-800 flex items-center justify-between">
+                  <span id="doc-status-text"></span>
+                  <button type="button" onclick="window.clearAttachment('doc')" class="text-rose-500 hover:text-rose-700 ml-2 font-bold">✕</button>
+                </div>
               </div>
             </div>
 
@@ -2500,6 +2517,7 @@
     <script src="./sound-engine.js"></script>
     <script src="./theme.js"></script>
     <script src="./firebase.js"></script>
+    <script src="./file-chunk-manager.js"></script>
     <script src="./push-notification.js"></script>
     <script src="./profile.js"></script>
     <script src="./champions.js"></script>

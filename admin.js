@@ -2248,6 +2248,48 @@ async function handleAdminStoreProductUploadSubmit(e) {
 
   try {
     const prodId = `prod_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const currentUid = window.auth?.currentUser?.uid || 'super_admin';
+
+    let fileChunkId = null;
+    let fileTotalChunks = 0;
+    let coverChunkId = null;
+    let coverTotalChunks = 0;
+    let isChunked = false;
+
+    // 1. Chunk resource file if provided as Base64
+    if (adminUploadedFileBase64 && window.saveBase64InChunks) {
+      if (btn) btn.innerHTML = `<span class="animate-spin inline-block mr-2">⏳</span> Storing file chunks...`;
+      const fId = `fc_store_file_${prodId}`;
+      const saveRes = await window.saveBase64InChunks({
+        fileId: fId,
+        base64Data: adminUploadedFileBase64,
+        mimeType: adminUploadedFileMime || 'application/octet-stream',
+        fileName: adminUploadedFileName || `${title}.jpg`,
+        fileSize: adminUploadedFileBlob?.size || 0,
+        uploaderUid: currentUid,
+        onProgress: (pct) => {
+          if (btn) btn.innerHTML = `⏳ Uploading file chunks (${pct}%)...`;
+          window.showToast?.(`Storing file chunks: ${pct}%`, "info");
+        }
+      });
+      fileChunkId = saveRes.fileId;
+      fileTotalChunks = saveRes.totalChunks;
+      isChunked = true;
+    }
+
+    // 2. Chunk cover image if provided as Base64
+    if (adminUploadedCoverBase64 && window.saveBase64InChunks) {
+      const cId = `fc_store_cover_${prodId}`;
+      const coverRes = await window.saveBase64InChunks({
+        fileId: cId,
+        base64Data: adminUploadedCoverBase64,
+        mimeType: 'image/jpeg',
+        fileName: 'cover.jpg',
+        uploaderUid: currentUid
+      });
+      coverChunkId = coverRes.fileId;
+      coverTotalChunks = coverRes.totalChunks;
+    }
 
     const productPayload = {
       id: prodId,
@@ -2258,11 +2300,18 @@ async function handleAdminStoreProductUploadSubmit(e) {
       price: price,
       description: desc,
       author: author,
-      coverUrl: coverUrl,
-      imageUrl: coverUrl,
-      fileUrl: fileUrl,
-      downloadUrl: fileUrl,
+      coverUrl: coverChunkId ? `chunk:${coverChunkId}` : coverUrl,
+      imageUrl: coverChunkId ? `chunk:${coverChunkId}` : coverUrl,
+      fileUrl: fileChunkId ? `chunk:${fileChunkId}` : fileUrl,
+      downloadUrl: fileChunkId ? `chunk:${fileChunkId}` : fileUrl,
+      fileChunkId: fileChunkId,
+      fileTotalChunks: fileTotalChunks,
+      coverChunkId: coverChunkId,
+      coverTotalChunks: coverTotalChunks,
+      isChunked: isChunked,
       fileName: adminUploadedFileName || `${title.replace(/[^a-zA-Z0-9_\-]/g, '_')}.jpg`,
+      fileMime: adminUploadedFileMime || 'application/octet-stream',
+      fileSize: adminUploadedFileBlob?.size || 0,
       featured: featured,
       published: true,
       downloadable: true,
@@ -2287,7 +2336,7 @@ async function handleAdminStoreProductUploadSubmit(e) {
     }
 
     window.soundEngine?.playSuccess?.();
-    window.showToast?.(`🛍️ "${title}" uploaded to Kingdom Store!`, "success");
+    window.showToast?.(`🛍️ "${title}" stored in Base64 chunks & published!`, "success");
 
     // Reset Form
     document.getElementById('admin-product-upload-form')?.reset();

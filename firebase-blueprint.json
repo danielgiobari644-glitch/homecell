@@ -108,12 +108,30 @@
         "authorPhotoURL": { "type": "string" },
         "imageUrl": { "type": "string" },
         "videoUrl": { "type": "string" },
+        "mediaFileId": { "type": "string" },
         "likesCount": { "type": "number" },
         "likes": { "type": "object" },
         "comments": { "type": "array" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "text", "authorUid", "authorName"]
+    },
+    "FileChunk": {
+      "title": "FileChunk",
+      "description": "Base64 chunk slice for feed media, videos, pics, and super admin store files.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "fileId": { "type": "string" },
+        "chunkIndex": { "type": "number" },
+        "totalChunks": { "type": "number" },
+        "data": { "type": "string" },
+        "mimeType": { "type": "string" },
+        "fileName": { "type": "string" },
+        "fileSize": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "fileId", "chunkIndex", "totalChunks", "data"]
     }
   },
   "firestore": {
@@ -140,6 +158,10 @@
     "community_feed/{postId}": {
       "schema": "CommunityPost",
       "description": "Community posts, testimonies, and announcements."
+    },
+    "file_chunks/{chunkId}": {
+      "schema": "FileChunk",
+      "description": "Base64 chunk slices for files, pics, videos, and store resources."
     },
     "cells/{cellId}": {
       "schema": "User",
