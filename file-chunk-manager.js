@@ -273,3 +273,60 @@ window.deleteBase64Chunks = deleteBase64Chunks;
 window.fileToBase64 = fileToBase64;
 window.chunkedDataUrlToBlob = chunkedDataUrlToBlob;
 window.CHUNK_SIZE_CHARS = CHUNK_SIZE_CHARS;
+
+/**
+ * Safely resolves a product's cover image url without ever producing an invalid `chunk:` URL scheme.
+ * Returns an object with safe `src`, `isChunked`, `chunkId`, and `totalChunks`.
+ * @param {Object} product
+ * @returns {{ src: string, isChunked: boolean, chunkId: string, totalChunks: number }}
+ */
+function getSafeProductCoverData(product) {
+  const DEFAULT_COVER = 'https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=800&q=80';
+  if (!product) {
+    return {
+      src: DEFAULT_COVER,
+      isChunked: false,
+      chunkId: '',
+      totalChunks: 1
+    };
+  }
+
+  const rawCover = product.coverUrl || '';
+  const rawImage = product.imageUrl || '';
+  const rawFile = product.fileUrl || product.downloadUrl || '';
+
+  let chunkId = product.coverChunkId || '';
+
+  if (!chunkId && typeof rawCover === 'string' && rawCover.startsWith('chunk:')) {
+    chunkId = rawCover.replace('chunk:', '');
+  }
+  if (!chunkId && typeof rawImage === 'string' && rawImage.startsWith('chunk:')) {
+    chunkId = rawImage.replace('chunk:', '');
+  }
+  if (!chunkId && product.fileChunkId && (!rawCover || rawCover.startsWith('chunk:') || rawCover === rawFile)) {
+    chunkId = product.fileChunkId;
+  }
+
+  const isChunked = Boolean(chunkId);
+  const totalChunks = parseInt(product.coverTotalChunks || product.fileTotalChunks || 1) || 1;
+
+  let safeSrc = DEFAULT_COVER;
+  if (isChunked) {
+    // Return an inline SVG placeholder so the browser NEVER queries an unknown protocol `chunk:`
+    safeSrc = `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='250' viewBox='0 0 400 250'><rect width='100%25' height='100%25' fill='%2318181b'/><text x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23f59e0b' font-family='sans-serif' font-weight='bold' font-size='14'>✨ Base64 Chunked Resource</text></svg>`;
+  } else if (rawCover && !rawCover.startsWith('chunk:')) {
+    safeSrc = rawCover;
+  } else if (rawImage && !rawImage.startsWith('chunk:')) {
+    safeSrc = rawImage;
+  }
+
+  return {
+    src: safeSrc,
+    isChunked: isChunked,
+    chunkId: chunkId,
+    totalChunks: totalChunks
+  };
+}
+
+window.getSafeProductCoverData = getSafeProductCoverData;
+

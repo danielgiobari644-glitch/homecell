@@ -590,12 +590,22 @@ window.extractVideoEmbedInfo = extractVideoEmbedInfo;
 
 function getMediaHTML(post) {
   if (!post) return '';
-  const imageUrl = typeof post === 'string' ? post : post.imageUrl;
-  const videoUrl = typeof post === 'object' ? post.videoUrl : null;
-  const imageChunkId = typeof post === 'object' ? post.imageChunkId : null;
-  const videoChunkId = typeof post === 'object' ? post.videoChunkId : null;
-  const docChunkId = typeof post === 'object' ? post.docChunkId : null;
-  const postId = typeof post === 'object' ? post.id : `p_${Date.now()}`;
+  let imageUrl = typeof post === 'string' ? post : (post.imageUrl || '');
+  let videoUrl = typeof post === 'object' ? (post.videoUrl || '') : null;
+  let imageChunkId = typeof post === 'object' ? (post.imageChunkId || '') : null;
+  let videoChunkId = typeof post === 'object' ? (post.videoChunkId || '') : null;
+  let docChunkId = typeof post === 'object' ? (post.docChunkId || '') : null;
+  const postId = typeof post === 'object' ? (post.id || `p_${Date.now()}`) : `p_${Date.now()}`;
+
+  // Automatically detect and extract chunk IDs if stored in url fields
+  if (!imageChunkId && typeof imageUrl === 'string' && imageUrl.startsWith('chunk:')) {
+    imageChunkId = imageUrl.replace('chunk:', '');
+    imageUrl = '';
+  }
+  if (!videoChunkId && typeof videoUrl === 'string' && videoUrl.startsWith('chunk:')) {
+    videoChunkId = videoUrl.replace('chunk:', '');
+    videoUrl = '';
+  }
 
   let html = '';
 
@@ -607,10 +617,10 @@ function getMediaHTML(post) {
           <div class="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
           <span class="text-[10px] font-bold text-slate-500 dark:text-zinc-400">Loading full fidelity photo...</span>
         </div>
-        <img id="feed-chunk-img-${postId}" src="" class="w-full h-auto max-h-[480px] object-contain opacity-0 transition-opacity duration-300" alt="Post picture" />
+        <img id="feed-chunk-img-${postId}" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='1' height='1'></svg>" class="w-full h-auto max-h-[480px] object-contain opacity-0 transition-opacity duration-300" alt="Post picture" />
       </div>
     `;
-  } else if (imageUrl) {
+  } else if (imageUrl && !imageUrl.startsWith('chunk:')) {
     html += `
       <div class="rounded-2xl overflow-hidden max-h-[450px] border border-slate-100 dark:border-zinc-800 shadow-sm mt-3 bg-slate-50 dark:bg-zinc-950 flex items-center justify-center">
         <img src="${imageUrl}" class="w-full h-auto max-h-[450px] object-contain" alt="Post picture" referrerPolicy="no-referrer" />
@@ -636,7 +646,7 @@ function getMediaHTML(post) {
         ></video>
       </div>
     `;
-  } else if (videoUrl) {
+  } else if (videoUrl && !videoUrl.startsWith('chunk:')) {
     const videoInfo = extractVideoEmbedInfo(videoUrl);
 
     if (videoInfo && (videoInfo.type === 'youtube' || videoInfo.type === 'vimeo' || videoInfo.type === 'dailymotion')) {
@@ -700,12 +710,14 @@ function getMediaHTML(post) {
 async function triggerFeedMediaChunkLoader(post) {
   if (!post || typeof post !== 'object') return;
   const postId = post.id;
+  const imgChunkId = post.imageChunkId || (post.imageUrl && post.imageUrl.startsWith('chunk:') ? post.imageUrl.replace('chunk:', '') : null);
+  const vidChunkId = post.videoChunkId || (post.videoUrl && post.videoUrl.startsWith('chunk:') ? post.videoUrl.replace('chunk:', '') : null);
 
   // 1. Chunked Image Loader
-  if (post.imageChunkId && window.loadBase64FromChunks) {
+  if (imgChunkId && window.loadBase64FromChunks) {
     try {
       const base64Data = await window.loadBase64FromChunks({
-        fileId: post.imageChunkId,
+        fileId: imgChunkId,
         totalChunks: post.imageTotalChunks
       });
 
@@ -724,10 +736,10 @@ async function triggerFeedMediaChunkLoader(post) {
   }
 
   // 2. Chunked Video Loader
-  if (post.videoChunkId && window.loadBase64FromChunks) {
+  if (vidChunkId && window.loadBase64FromChunks) {
     try {
       const base64Data = await window.loadBase64FromChunks({
-        fileId: post.videoChunkId,
+        fileId: vidChunkId,
         totalChunks: post.videoTotalChunks
       });
 

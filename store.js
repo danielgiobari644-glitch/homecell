@@ -418,11 +418,16 @@ function renderProductsGrid(products) {
     const itemPrice = parseInt(p.priceKC !== undefined ? p.priceKC : (p.price !== undefined ? p.price : 50)) || 50;
     const isOwned = purchasedItemIds.includes(p.id);
     const hasEnoughKc = currentKc >= itemPrice;
-    const isChunkedCover = p.coverChunkId || (p.coverUrl && p.coverUrl.startsWith('chunk:'));
-    const chunkCoverId = p.coverChunkId || (p.coverUrl && p.coverUrl.startsWith('chunk:') ? p.coverUrl.replace('chunk:', '') : '');
-    const coverImage = isChunkedCover 
-      ? `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='250' viewBox='0 0 400 250'><rect width='100%25' height='100%25' fill='%2318181b'/><text x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23f59e0b' font-family='sans-serif' font-weight='bold' font-size='14'>✨ Base64 Chunked Resource</text></svg>`
-      : (p.coverUrl || p.imageUrl || 'https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=800&q=80');
+    
+    const coverData = (window.getSafeProductCoverData ? window.getSafeProductCoverData(p) : {
+      src: 'https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=800&q=80',
+      isChunked: false,
+      chunkId: '',
+      totalChunks: 1
+    });
+    const coverImage = coverData.src;
+    const isChunkedCover = coverData.isChunked;
+    const chunkCoverId = coverData.chunkId;
     const downloadLink = p.fileUrl || p.downloadUrl || coverImage;
 
     let buttonHtml = '';

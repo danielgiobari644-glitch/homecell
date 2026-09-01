@@ -2635,7 +2635,15 @@ function syncAdminStoreProductsCatalog() {
       tr.className = `border-b border-slate-100 dark:border-zinc-800 text-xs hover:bg-slate-50/50 dark:hover:bg-zinc-800/40 transition-colors ${isSelected ? 'bg-purple-500/5 dark:bg-purple-500/10' : ''}`;
       
       const itemPrice = p.priceKC !== undefined ? p.priceKC : (p.price !== undefined ? p.price : 50);
-      const cover = p.coverUrl || p.imageUrl || 'https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=800&q=80';
+      const coverData = (window.getSafeProductCoverData ? window.getSafeProductCoverData(p) : {
+        src: 'https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=800&q=80',
+        isChunked: false,
+        chunkId: '',
+        totalChunks: 1
+      });
+      const cover = coverData.src;
+      const isChunkedCover = coverData.isChunked;
+      const chunkCoverId = coverData.chunkId;
 
       tr.innerHTML = `
         <td class="py-3 px-3 w-10 text-center">
@@ -2643,7 +2651,13 @@ function syncAdminStoreProductsCatalog() {
         </td>
         <td class="py-3 px-4">
           <div class="flex items-center gap-3">
-            <img src="${cover}" class="w-10 h-10 rounded-xl object-cover border border-slate-200 dark:border-zinc-700 shrink-0" onerror="this.src='https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=800&q=80'" />
+            <img 
+              id="admin-prod-img-${p.id}"
+              src="${cover}" 
+              ${isChunkedCover ? `data-chunk-id="${chunkCoverId}" data-total-chunks="${coverData.totalChunks || 1}"` : ''} 
+              class="admin-lazy-chunk-img w-10 h-10 rounded-xl object-cover border border-slate-200 dark:border-zinc-700 shrink-0" 
+              onerror="this.src='https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=800&q=80'" 
+            />
             <div>
               <span class="font-bold text-slate-900 dark:text-zinc-100 block">${p.title || 'Untitled Resource'}</span>
               <span class="text-[10px] text-slate-600 dark:text-zinc-400 line-clamp-1">${p.description || ''}</span>
@@ -2669,6 +2683,8 @@ function syncAdminStoreProductsCatalog() {
       `;
       tbody.appendChild(tr);
     });
+
+    hydrateAdminChunkImages();
   };
 
   if (!db) {
@@ -2736,6 +2752,29 @@ function syncAdminStoreProductsCatalog() {
       });
     }
     renderTableRows(combined);
+  });
+}
+
+function hydrateAdminChunkImages() {
+  if (!window.loadBase64FromChunks) return;
+  const chunkImgEls = document.querySelectorAll('img.admin-lazy-chunk-img[data-chunk-id]');
+  chunkImgEls.forEach(async (img) => {
+    const chunkId = img.getAttribute('data-chunk-id');
+    const totalChunks = parseInt(img.getAttribute('data-total-chunks')) || 1;
+    if (!chunkId) return;
+
+    try {
+      const base64Data = await window.loadBase64FromChunks({
+        fileId: chunkId,
+        totalChunks: totalChunks
+      });
+      if (base64Data && img) {
+        img.src = base64Data;
+        img.removeAttribute('data-chunk-id');
+      }
+    } catch (e) {
+      console.warn("Admin chunk cover hydrate notice:", e);
+    }
   });
 }
 
