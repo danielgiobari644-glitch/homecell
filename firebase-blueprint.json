@@ -2,7 +2,7 @@
   "entities": {
     "User": {
       "title": "User",
-      "description": "Registered user profile information.",
+      "description": "Global user profile information.",
       "type": "object",
       "properties": {
         "uid": { "type": "string" },
@@ -10,174 +10,234 @@
         "email": { "type": "string" },
         "photoURL": { "type": "string" },
         "bio": { "type": "string" },
-        "coordinates": { "type": "string" },
-        "role": { "type": "string", "enum": ["Member", "Cell Leader", "Cell Coordinator", "Pastor", "Super Admin"] },
-        "cellId": { "type": "string" },
-        "kingdomCoins": { "type": "number" },
-        "totalKcEarned": { "type": "number" },
+        "phone": { "type": "string" },
+        "role": { "type": "string", "enum": ["Member", "Super Admin"] },
         "streak": { "type": "number" },
-        "longestStreak": { "type": "number" },
-        "totalDevotions": { "type": "number" },
         "chaptersReadCount": { "type": "number" },
         "quizWinsCount": { "type": "number" },
-        "storePurchases": { "type": "number" },
-        "equippedTheme": { "type": "string" },
-        "onboarded": { "type": "boolean" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["uid", "displayName", "email", "role", "cellId"]
+      "required": ["uid", "displayName", "email"]
     },
-    "MissionCompletion": {
-      "title": "MissionCompletion",
-      "description": "Unique historical completion and reward record for a user mission.",
+    "Fellowship": {
+      "title": "Fellowship",
+      "description": "Individual Home Fellowship community.",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
-        "userUid": { "type": "string" },
-        "missionId": { "type": "string" },
-        "date": { "type": "string" },
-        "rewardKC": { "type": "number" },
+        "name": { "type": "string" },
+        "motto": { "type": "string" },
+        "address": { "type": "string" },
+        "city": { "type": "string" },
+        "day": { "type": "string" },
+        "time": { "type": "string" },
+        "phone": { "type": "string" },
+        "leaderId": { "type": "string" },
+        "leaderName": { "type": "string" },
+        "description": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "memberCount": { "type": "number" },
+        "additionalInfo": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "address", "leaderId", "leaderName"]
+    },
+    "Membership": {
+      "title": "Membership",
+      "description": "User association and role within a specific Home Fellowship.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "fellowshipId": { "type": "string" },
+        "fellowshipName": { "type": "string" },
+        "fellowshipMotto": { "type": "string" },
+        "userDisplayName": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "userPhotoURL": { "type": "string" },
+        "role": { "type": "string", "enum": ["leader", "moderator", "member"] },
+        "status": { "type": "string", "enum": ["active", "suspended"] },
+        "joinedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "fellowshipId", "role"]
+    },
+    "GlobalPost": {
+      "title": "GlobalPost",
+      "description": "Post shared on the Global Feed with author fellowship identity marker.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "authorId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "authorPhoto": { "type": "string" },
+        "fellowshipId": { "type": "string" },
+        "fellowshipName": { "type": "string" },
+        "content": { "type": "string" },
+        "mediaUrl": { "type": "string" },
+        "mediaType": { "type": "string" },
+        "type": { "type": "string", "enum": ["post", "testimony", "announcement"] },
+        "likesCount": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["authorId", "authorName", "content", "fellowshipId", "fellowshipName"]
+    },
+    "GlobalMessage": {
+      "title": "GlobalMessage",
+      "description": "Real-time message in the Global Home.cell Chat with fellowship marker.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "authorId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "authorPhoto": { "type": "string" },
+        "fellowshipId": { "type": "string" },
+        "fellowshipName": { "type": "string" },
+        "text": { "type": "string" },
+        "mediaUrl": { "type": "string" },
+        "mediaType": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["authorId", "authorName", "text", "fellowshipId", "fellowshipName"]
+    },
+    "FellowshipMessage": {
+      "title": "FellowshipMessage",
+      "description": "Private message inside a specific fellowship environment.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "fellowshipId": { "type": "string" },
+        "authorId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "authorPhoto": { "type": "string" },
+        "text": { "type": "string" },
+        "mediaUrl": { "type": "string" },
+        "mediaType": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["fellowshipId", "authorId", "authorName", "text"]
+    },
+    "Quiz": {
+      "title": "Quiz",
+      "description": "Fellowship-specific scripture and bible knowledge quiz challenge.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "fellowshipId": { "type": "string" },
+        "fellowshipName": { "type": "string" },
+        "createdBy": { "type": "string" },
+        "creatorName": { "type": "string" },
+        "questions": { "type": "array" },
+        "timeLimit": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "fellowshipId", "createdBy", "questions"]
+    },
+    "QuizAttempt": {
+      "title": "QuizAttempt",
+      "description": "Record of a user taking a fellowship quiz.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "quizId": { "type": "string" },
+        "quizTitle": { "type": "string" },
+        "fellowshipId": { "type": "string" },
+        "fellowshipName": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "score": { "type": "number" },
+        "totalQuestions": { "type": "number" },
         "completedAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["id", "userUid", "missionId", "rewardKC"]
+      "required": ["quizId", "userId", "score"]
     },
-    "KcTransaction": {
-      "title": "KcTransaction",
-      "description": "Audit record of Kingdom Coins earned or spent.",
+    "Event": {
+      "title": "Event",
+      "description": "Fellowship gathering, rally, or meeting.",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
-        "userUid": { "type": "string" },
-        "type": { "type": "string", "enum": ["credit", "debit"] },
-        "amount": { "type": "number" },
+        "fellowshipId": { "type": "string" },
+        "fellowshipName": { "type": "string" },
         "title": { "type": "string" },
         "description": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["id", "userUid", "type", "amount", "title"]
-    },
-    "Product": {
-      "title": "Product",
-      "description": "Kingdom Store digital products.",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "title": { "type": "string" },
-        "description": { "type": "string" },
-        "category": { "type": "string" },
-        "collectionName": { "type": "string" },
-        "coverUrl": { "type": "string" },
-        "fileUrl": { "type": "string" },
-        "priceKC": { "type": "number" },
-        "author": { "type": "string" },
-        "tags": { "type": "array" },
-        "featured": { "type": "boolean" },
-        "published": { "type": "boolean" },
-        "downloadable": { "type": "boolean" },
-        "createdAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["id", "title", "category", "priceKC", "published"]
-    },
-    "UserReward": {
-      "title": "UserReward",
-      "description": "Digital product or theme owned by the user.",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "userUid": { "type": "string" },
-        "itemId": { "type": "string" },
-        "title": { "type": "string" },
-        "category": { "type": "string" },
-        "kcCost": { "type": "number" },
-        "fileUrl": { "type": "string" },
-        "claimedAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["id", "userUid", "itemId", "title"]
-    },
-    "CommunityPost": {
-      "title": "CommunityPost",
-      "description": "Feed post, testimony, or announcement.",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "text": { "type": "string" },
-        "type": { "type": "string" },
-        "authorUid": { "type": "string" },
-        "authorName": { "type": "string" },
-        "authorRole": { "type": "string" },
-        "authorPhotoURL": { "type": "string" },
+        "date": { "type": "string" },
+        "time": { "type": "string" },
+        "location": { "type": "string" },
         "imageUrl": { "type": "string" },
-        "videoUrl": { "type": "string" },
-        "mediaFileId": { "type": "string" },
-        "likesCount": { "type": "number" },
-        "likes": { "type": "object" },
-        "comments": { "type": "array" },
+        "createdBy": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["id", "text", "authorUid", "authorName"]
+      "required": ["fellowshipId", "title", "date", "time"]
     },
-    "FileChunk": {
-      "title": "FileChunk",
-      "description": "Base64 chunk slice for feed media, videos, pics, and super admin store files.",
+    "MediaRecord": {
+      "title": "MediaRecord",
+      "description": "Cloudinary media record stored in Firestore.",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
-        "fileId": { "type": "string" },
-        "chunkIndex": { "type": "number" },
-        "totalChunks": { "type": "number" },
-        "data": { "type": "string" },
-        "mimeType": { "type": "string" },
-        "fileName": { "type": "string" },
-        "fileSize": { "type": "number" },
+        "url": { "type": "string" },
+        "publicId": { "type": "string" },
+        "type": { "type": "string" },
+        "bytes": { "type": "number" },
+        "format": { "type": "string" },
+        "uploadedBy": { "type": "string" },
+        "uploadedByName": { "type": "string" },
+        "purpose": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["id", "fileId", "chunkIndex", "totalChunks", "data"]
+      "required": ["url", "uploadedBy", "purpose"]
     }
   },
   "firestore": {
     "users/{userId}": {
       "schema": "User",
-      "description": "User profile store."
+      "description": "Global user accounts."
     },
-    "mission_completions/{completionId}": {
-      "schema": "MissionCompletion",
-      "description": "Unique mission completion and reward prevention audit records."
+    "fellowships/{fellowshipId}": {
+      "schema": "Fellowship",
+      "description": "Home fellowship communities."
     },
-    "kc_transactions/{transactionId}": {
-      "schema": "KcTransaction",
-      "description": "Kingdom coin transaction credit and debit logs."
+    "memberships/{membershipId}": {
+      "schema": "Membership",
+      "description": "User-fellowship memberships and roles."
     },
-    "products/{productId}": {
-      "schema": "Product",
-      "description": "Kingdom Store items for sale."
+    "global_posts/{postId}": {
+      "schema": "GlobalPost",
+      "description": "Global feed posts with fellowship identity."
     },
-    "user_rewards/{rewardId}": {
-      "schema": "UserReward",
-      "description": "Digital items and rewards unlocked by users."
+    "global_messages/{messageId}": {
+      "schema": "GlobalMessage",
+      "description": "Cross-fellowship global chat messages."
     },
-    "community_feed/{postId}": {
-      "schema": "CommunityPost",
-      "description": "Community posts, testimonies, and announcements."
+    "fellowship_messages/{messageId}": {
+      "schema": "FellowshipMessage",
+      "description": "Private fellowship chat messages."
     },
-    "file_chunks/{chunkId}": {
-      "schema": "FileChunk",
-      "description": "Base64 chunk slices for files, pics, videos, and store resources."
+    "quizzes/{quizId}": {
+      "schema": "Quiz",
+      "description": "Fellowship-specific quizzes."
     },
-    "cells/{cellId}": {
-      "schema": "User",
-      "description": "Fellowship cell registries."
+    "quiz_attempts/{attemptId}": {
+      "schema": "QuizAttempt",
+      "description": "Fellowship quiz attempt scoring records."
+    },
+    "events/{eventId}": {
+      "schema": "Event",
+      "description": "Fellowship gatherings and events."
+    },
+    "media/{mediaId}": {
+      "schema": "MediaRecord",
+      "description": "Cloudinary media audit records."
     },
     "prayer_petitions/{petitionId}": {
-      "schema": "User",
-      "description": "Intercession and prayer requests."
+      "schema": "GlobalPost",
+      "description": "Prayer petitions."
     },
-    "custom_requests/{requestId}": {
-      "schema": "User",
-      "description": "Custom creation requests submitted by users."
-    },
-    "feedback_items/{feedbackId}": {
-      "schema": "User",
-      "description": "User suggestions and feedback items."
+    "daily_devotionals/{devotionalId}": {
+      "schema": "GlobalPost",
+      "description": "Daily devotional scripture studies."
     }
   }
 }

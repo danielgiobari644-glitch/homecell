@@ -15,177 +15,126 @@ service cloud.firestore {
       return isSignedIn() && (
         (request.auth.token.email != null && request.auth.token.email.lower() == 'danielgiobari644@gmail.com')
         || (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Super Admin')
+        || (exists(/databases/$(database)/documents/admins/$(request.auth.uid)))
       );
     }
 
-    // --- User Profiles & Rewards ---
+    // --- Users Collection ---
     match /users/{userId} {
-      allow read: if true;
+      allow read: if isSignedIn();
       allow create: if isSignedIn() && request.auth.uid == userId;
       allow update: if isSignedIn() && (request.auth.uid == userId || isAdmin());
       allow delete: if isAdmin();
 
-      match /user_rewards/{rewardId} {
-        allow read: if true;
-        allow create, update: if isSignedIn() && (request.auth.uid == userId || isAdmin());
-        allow delete: if isAdmin();
-      }
-
       match /notes/{noteId} {
-        allow read: if true;
-        allow create, update, delete: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+        allow read, write: if isSignedIn() && (request.auth.uid == userId || isAdmin());
       }
     }
 
-    // --- Holy Scripture Study Notes & Reflections ---
-    match /user_notes/{noteId} {
-      allow read: if true;
-      allow create: if isSignedIn();
-      allow update, delete: if isSignedIn() && (resource.data.userUid == request.auth.uid || isAdmin());
+    match /admins/{adminId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
     }
 
-    // --- Mission Completions ---
-    match /mission_completions/{completionId} {
-      allow read: if true;
+    // --- Home Fellowships ---
+    match /fellowships/{fellowshipId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isAdmin();
+    }
+
+    // --- Fellowship Memberships (User <-> Fellowship with Role) ---
+    match /memberships/{membershipId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && (request.resource.data.userId == request.auth.uid || isAdmin());
+      allow update: if isSignedIn();
+      allow delete: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    // --- Global Feed Posts (with author fellowship identity) ---
+    match /global_posts/{postId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
+      allow update: if isSignedIn();
+      allow delete: if isSignedIn() && (resource.data.authorId == request.auth.uid || isAdmin());
+    }
+
+    // Legacy feed backward compatibility
+    match /community_feed/{postId} {
+      allow read: if isSignedIn();
       allow create, update: if isSignedIn();
-      allow delete: if isAdmin();
+      allow delete: if isSignedIn() && (resource.data.authorUid == request.auth.uid || isAdmin());
     }
 
-    // --- Kingdom Coin Transactions Audit Trail ---
-    match /kc_transactions/{transactionId} {
-      allow read: if true;
-      allow create: if isSignedIn();
-      allow update, delete: if isAdmin();
+    // --- Global Chat Messages (Cross-fellowship) ---
+    match /global_messages/{messageId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
+      allow update, delete: if isSignedIn() && (resource.data.authorId == request.auth.uid || isAdmin());
     }
 
-    // --- Cell Groups & Chat ---
-    match /cells/{cellId} {
-      allow read: if true;
-      allow create: if isSignedIn();
-      allow update: if isSignedIn() || isAdmin();
-      allow delete: if isAdmin();
-
-      match /messages/{messageId} {
-        allow read: if true;
-        allow create, update: if isSignedIn() || isAdmin();
-        allow delete: if isSignedIn() || isAdmin();
-      }
-
-      match /announcements/{announcementId} {
-        allow read: if true;
-        allow create, update, delete: if isSignedIn() || isAdmin();
-      }
-
-      match /events/{eventId} {
-        allow read: if true;
-        allow create, update, delete: if isSignedIn() || isAdmin();
-      }
+    // --- Private Fellowship Messages ---
+    match /fellowship_messages/{messageId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
+      allow update, delete: if isSignedIn() && (resource.data.authorId == request.auth.uid || isAdmin());
     }
 
-    // --- Prayer Petitions ---
-    match /prayer_petitions/{petitionId} {
-      allow read: if true;
-      allow create, update: if isSignedIn() || isAdmin();
-      allow delete: if isSignedIn() || isAdmin();
-    }
-
-    // --- Parish Events ---
-    match /parish_events/{eventId} {
-      allow read: if true;
-      allow create, update, delete: if isSignedIn() || isAdmin();
-    }
-
-    // --- Trivia Questions & Quizzes ---
-    match /trivia_questions/{questionId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
+    // --- Fellowship Quizzes ---
     match /quizzes/{quizId} {
-      allow read: if true;
-      allow write: if isAdmin();
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.createdBy == request.auth.uid;
+      allow update: if isSignedIn() && (resource.data.createdBy == request.auth.uid || isAdmin());
+      allow delete: if isSignedIn() && (resource.data.createdBy == request.auth.uid || isAdmin());
+    }
+
+    // Legacy quizzes
+    match /custom_quizzes/{quizId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() || isAdmin();
+
+      match /participants/{participantId} {
+        allow read, write: if isSignedIn();
+      }
+      match /chat/{chatId} {
+        allow read, write: if isSignedIn();
+      }
+    }
+
+    // --- Quiz Attempts & Scores ---
+    match /quiz_attempts/{attemptId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAdmin();
     }
 
     match /quiz_scores/{scoreId} {
-      allow read: if true;
-      allow create, update: if isSignedIn();
-      allow delete: if isAdmin();
-    }
-
-    match /quiz_reactions/{reactionId} {
-      allow read: if true;
-      allow create, update: if isSignedIn();
-      allow delete: if isSignedIn() || isAdmin();
-    }
-
-    // --- Download Bundles ---
-    match /download_bundles/{bundleId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
-    // --- System Configs & Loading Screen ---
-    match /system_configs/{configId} {
-      allow read: if true;
-      allow write: if isAdmin() || isSignedIn();
-    }
-
-    match /appSettings/{settingId} {
-      allow read: if true;
-      allow write: if isAdmin() || isSignedIn();
-    }
-
-    match /loading_screen_history/{historyId} {
-      allow read: if true;
-      allow write: if isAdmin() || isSignedIn();
-    }
-
-    // --- Community Feed ---
-    match /community_feed/{postId} {
-      allow read: if true;
-      allow create, update: if isSignedIn() || isAdmin();
-      allow delete: if isSignedIn() || isAdmin();
-    }
-
-    // --- File Chunks (Base64 Large Files, Pics, Videos, Store Resources) ---
-    match /file_chunks/{chunkId} {
-      allow read: if true;
-      allow create, update: if isSignedIn() || isAdmin();
-      allow delete: if isSignedIn() || isAdmin();
-    }
-
-    // --- User Reviews ---
-    match /user_reviews/{reviewId} {
-      allow read: if true;
-      allow create, update: if isSignedIn();
-      allow delete: if isSignedIn() || isAdmin();
-    }
-
-    // --- Featured Testimonies ---
-    match /featured_testimonies/{testimonyId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
-    // --- Direct Support Chats ---
-    match /support_chats/{msgId} {
-      allow read, create: if isSignedIn() || isAdmin();
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
       allow update, delete: if isAdmin();
     }
 
-    // --- Upcoming Events & Devotionals ---
-    match /upcoming_events/{eventId} {
-      allow read: if true;
-      allow create, delete: if isAdmin();
-      allow update: if isSignedIn() || isAdmin();
-    }
-
+    // --- Fellowship Events & Gatherings ---
     match /events/{eventId} {
-      allow read: if true;
-      allow create, delete: if isAdmin();
-      allow update: if isSignedIn() || isAdmin();
+      allow read: if isSignedIn();
+      allow create, update, delete: if isSignedIn() || isAdmin();
     }
 
+    // --- Prayer Petitions & Wall ---
+    match /prayer_petitions/{petitionId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isSignedIn() || isAdmin();
+    }
+
+    // --- Cloudinary Media Records ---
+    match /media/{mediaId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.uploadedBy == request.auth.uid;
+      allow update, delete: if isSignedIn() && (resource.data.uploadedBy == request.auth.uid || isAdmin());
+    }
+
+    // --- Devotionals & Scripture Study ---
     match /daily_devotionals/{devotionalId} {
       allow read: if true;
       allow write: if isAdmin();
@@ -196,77 +145,20 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // --- Referrals & Presence ---
-    match /referrals/{referralId} {
-      allow read, create, update: if true;
-      allow delete: if isAdmin();
+    match /user_notes/{noteId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isSignedIn() && (resource == null || resource.data.userUid == request.auth.uid || isAdmin());
     }
 
-    match /referral_clicks/{clickId} {
-      allow read, write: if true;
-    }
-
-    match /presence/{userId} {
-      allow read, write: if true;
-    }
-
-    // --- Kingdom Store Products, Purchases & User Rewards ---
-    match /products/{productId} {
-      allow read: if true;
-      allow write: if isAdmin() || isSignedIn();
-    }
-
-    match /storeProducts/{productId} {
-      allow read: if true;
-      allow write: if isAdmin() || isSignedIn();
-    }
-
-    match /purchases/{purchaseId} {
-      allow read: if true;
+    // Legacy cells compat
+    match /cells/{cellId} {
+      allow read: if isSignedIn();
       allow create, update: if isSignedIn();
       allow delete: if isAdmin();
-    }
 
-    match /user_rewards/{rewardId} {
-      allow read: if true;
-      allow create, update: if isSignedIn();
-      allow delete: if isAdmin();
-    }
-
-    // --- Custom Requests & Feedback ---
-    match /custom_requests/{requestId} {
-      allow read, create, update: if isSignedIn() || isAdmin();
-      allow delete: if isAdmin();
-    }
-
-    match /feedback_items/{feedbackId} {
-      allow read, create, update: if true;
-      allow delete: if isAdmin();
-    }
-
-    // --- Notifications ---
-    match /notifications/{notificationId} {
-      allow read, create, update: if true;
-      allow delete: if isAdmin();
-    }
-
-    // --- Custom Quizzes & Devotional Reads ---
-    match /custom_quizzes/{quizId} {
-      allow read: if true;
-      allow write: if isSignedIn() || isAdmin();
-
-      match /participants/{participantId} {
-        allow read, write: if isSignedIn() || isAdmin();
+      match /messages/{msgId} {
+        allow read, write: if isSignedIn();
       }
-
-      match /chat/{chatId} {
-        allow read, write: if isSignedIn() || isAdmin();
-      }
-    }
-
-    match /devotional_reads/{readId} {
-      allow read, create, update: if isSignedIn();
-      allow delete: if isAdmin();
     }
   }
 }

@@ -108,18 +108,19 @@ async function saveBase64InChunks({ fileId, base64Data, mimeType, fileName, file
  */
 async function loadBase64FromChunks({ fileId, totalChunks, onProgress }) {
   if (!fileId) return null;
+  const cleanFileId = fileId.startsWith('chunk:') ? fileId.replace('chunk:', '') : fileId;
 
   // 1. Check in-memory cache
-  if (chunkMemoryCache.has(fileId)) {
+  if (chunkMemoryCache.has(cleanFileId)) {
     if (onProgress) onProgress(100, totalChunks || 1, totalChunks || 1);
-    return chunkMemoryCache.get(fileId);
+    return chunkMemoryCache.get(cleanFileId);
   }
 
   // 2. Check session storage cache
   try {
-    const cached = sessionStorage.getItem(`cached_chunk_file_${fileId}`);
+    const cached = sessionStorage.getItem(`cached_chunk_file_${cleanFileId}`);
     if (cached) {
-      chunkMemoryCache.set(fileId, cached);
+      chunkMemoryCache.set(cleanFileId, cached);
       if (onProgress) onProgress(100, totalChunks || 1, totalChunks || 1);
       return cached;
     }
@@ -127,42 +128,56 @@ async function loadBase64FromChunks({ fileId, totalChunks, onProgress }) {
 
   const db = window.db;
   if (!db) {
-    console.warn("Firestore not available to load chunks for file:", fileId);
+    console.warn("Firestore not available to load chunks for file:", cleanFileId);
     return null;
   }
 
   try {
     let chunks = [];
 
-    // If totalChunks is known and small (< 50), fetch in parallel
-    if (totalChunks && totalChunks <= 50) {
-      const fetchPromises = [];
-      for (let i = 0; i < totalChunks; i++) {
-        fetchPromises.push(
-          db.collection('file_chunks').doc(`${fileId}_chunk_${i}`).get()
-        );
-      }
+    // Step A: Fetch chunk_0 first to discover exact totalChunks & metadata from source doc
+    const chunk0Doc = await db.collection('file_chunks').doc(`${cleanFileId}_chunk_0`).get().catch(() => null);
 
-      const snapshots = await Promise.all(fetchPromises);
-      snapshots.forEach((snap, idx) => {
-        if (snap.exists) {
-          chunks.push({ index: idx, data: snap.data().data });
+    if (chunk0Doc && chunk0Doc.exists) {
+      const d0 = chunk0Doc.data() || {};
+      const detectedTotal = parseInt(d0.totalChunks) || totalChunks || 1;
+      chunks.push({ index: 0, data: d0.data || '' });
+
+      if (detectedTotal > 1) {
+        const fetchPromises = [];
+        for (let i = 1; i < detectedTotal; i++) {
+          fetchPromises.push(
+            db.collection('file_chunks').doc(`${cleanFileId}_chunk_${i}`).get().then(s => ({
+              index: i,
+              exists: s.exists,
+              data: s.exists ? (s.data().data || '') : ''
+            })).catch(() => ({ index: i, exists: false, data: '' }))
+          );
         }
-      });
-    } else {
-      // Otherwise query by fileId
+
+        const remainingSnapshots = await Promise.all(fetchPromises);
+        remainingSnapshots.forEach(res => {
+          if (res.exists && res.data) {
+            chunks.push({ index: res.index, data: res.data });
+          }
+        });
+      }
+    }
+
+    // Step B: If chunk_0 direct doc lookup yielded empty or partial result, fallback to fileId query
+    if (chunks.length === 0) {
       const snap = await db.collection('file_chunks')
-        .where('fileId', '==', fileId)
+        .where('fileId', '==', cleanFileId)
         .get();
 
       snap.forEach(doc => {
         const d = doc.data();
-        chunks.push({ index: d.chunkIndex !== undefined ? d.chunkIndex : 0, data: d.data });
+        chunks.push({ index: d.chunkIndex !== undefined ? d.chunkIndex : 0, data: d.data || '' });
       });
     }
 
     if (chunks.length === 0) {
-      console.warn("No chunks found in Firestore for fileId:", fileId);
+      console.warn("No chunks found in Firestore for fileId:", cleanFileId);
       return null;
     }
 
@@ -172,19 +187,19 @@ async function loadBase64FromChunks({ fileId, totalChunks, onProgress }) {
     const fullBase64 = chunks.map(c => c.data).join('');
 
     // Cache in memory for fast subsequent access
-    chunkMemoryCache.set(fileId, fullBase64);
+    chunkMemoryCache.set(cleanFileId, fullBase64);
 
     try {
       if (fullBase64.length < 4 * 1024 * 1024) {
-        sessionStorage.setItem(`cached_chunk_file_${fileId}`, fullBase64);
+        sessionStorage.setItem(`cached_chunk_file_${cleanFileId}`, fullBase64);
       }
     } catch (e) {}
 
-    if (onProgress) onProgress(100, chunks.length, totalChunks || chunks.length);
+    if (onProgress) onProgress(100, chunks.length, chunks.length);
 
     return fullBase64;
   } catch (err) {
-    console.error("Error reassembling chunks for file:", fileId, err);
+    console.error("Error reassembling chunks for file:", cleanFileId, err);
     return null;
   }
 }
@@ -246,14 +261,33 @@ function fileToBase64(file) {
  * @param {string} dataUrl
  * @returns {Blob|null}
  */
-function chunkedDataUrlToBlob(dataUrl) {
+function chunkedDataUrlToBlob(dataUrl, fallbackMime = 'application/octet-stream') {
   if (!dataUrl || typeof dataUrl !== 'string') return null;
   try {
-    const parts = dataUrl.split(',');
-    if (parts.length !== 2) return null;
-    const mimeMatch = parts[0].match(/:(.*?);/);
-    const mime = mimeMatch ? mimeMatch[1] : 'application/octet-stream';
-    const binary = atob(parts[1]);
+    let mime = fallbackMime;
+    let base64 = dataUrl;
+
+    if (dataUrl.includes(';base64,')) {
+      const parts = dataUrl.split(';base64,');
+      const mimeMatch = parts[0].match(/data:(.*?)$/);
+      if (mimeMatch) mime = mimeMatch[1];
+      base64 = parts[1] || '';
+    } else if (dataUrl.includes(',')) {
+      const parts = dataUrl.split(',');
+      const mimeMatch = parts[0].match(/:(.*?);/);
+      if (mimeMatch) mime = mimeMatch[1];
+      base64 = parts[1] || '';
+    }
+
+    // Clean whitespace and linebreaks
+    base64 = base64.replace(/[\r\n\s]/g, '');
+
+    // Pad base64 if needed
+    while (base64.length % 4 !== 0) {
+      base64 += '=';
+    }
+
+    const binary = atob(base64);
     const len = binary.length;
     const buffer = new Uint8Array(len);
     for (let i = 0; i < len; i++) {

@@ -1,7 +1,7 @@
 // quiz.js
-// Bible Trivia & Kingdom Champions Live Quiz Engine with Real-Time Participants & Live Chat
+// Home.cell - Fellowship-Specific Scripture Quizzes with Role-Based Permissions & Live Scoring
 
-const DEFAULT_TRIVIA_QUESTIONS = [
+const DEFAULT_TRIVIA_BANK = [
   {
     question: "Who led the Israelites across the Red Sea on dry ground?",
     options: ["Joshua", "Moses", "Aaron", "Gideon"],
@@ -33,607 +33,382 @@ const DEFAULT_TRIVIA_QUESTIONS = [
     scriptureReference: "Genesis 2:8"
   },
   {
-    question: "Who was the mother of Jesus?",
-    options: ["Mary Magdalene", "Martha", "Mary", "Elizabeth"],
-    answerIndex: 2,
-    scriptureReference: "Luke 1:30-31"
-  },
-  {
     question: "What did David use to defeat the giant Goliath?",
     options: ["A sword and spear", "A sling and five smooth stones", "A chariot of fire", "A golden bow"],
     answerIndex: 1,
     scriptureReference: "1 Samuel 17:40, 49"
   },
   {
-    question: "On which day of Creation did God create light?",
-    options: ["First Day", "Third Day", "Fourth Day", "Sixth Day"],
-    answerIndex: 0,
-    scriptureReference: "Genesis 1:3-5"
-  },
-  {
-    question: "Which apostle was known for doubting Jesus' resurrection until he saw Him?",
-    options: ["Peter", "Thomas", "John", "James"],
-    answerIndex: 1,
-    scriptureReference: "John 20:24-28"
-  },
-  {
-    question: "What is the Fruit of the Spirit mentioned first in Galatians 5:22?",
+    question: "What is the first Fruit of the Spirit mentioned in Galatians 5:22?",
     options: ["Joy", "Peace", "Love", "Patience"],
     answerIndex: 2,
     scriptureReference: "Galatians 5:22"
+  },
+  {
+    question: "In what city was Jesus born?",
+    options: ["Nazareth", "Jerusalem", "Bethlehem", "Capernaum"],
+    answerIndex: 2,
+    scriptureReference: "Luke 2:4-7"
   }
 ];
 
-let activeQuizId = 'daily-quick';
-let activeQuizTitle = 'Daily Quick Quiz';
-let activeQuizRewardPerQ = 5;
-let activeQuizQuestionIndex = 0;
-let activeQuizScore = 0;
-let activeQuizQuestions = [];
-let isQuizActive = false;
-
-let quizzesListListener = null;
-let quizParticipantsListener = null;
-let quizChatListener = null;
+let fellowshipQuizzesListener = null;
+let currentActiveQuiz = null;
+let currentQuestionIndex = 0;
+let userQuizScore = 0;
+let quizTimerInterval = null;
+let quizTimeRemaining = 20;
 
 function initQuizModule() {
-  syncAdminAndLiveQuizzes();
-  resetQuizState();
+  syncFellowshipQuizzes();
 }
 
-function resetQuizState() {
-  activeQuizId = 'daily-quick';
-  activeQuizTitle = 'Daily Quick Quiz';
-  activeQuizRewardPerQ = 5;
-  activeQuizQuestionIndex = 0;
-  activeQuizScore = 0;
-  activeQuizQuestions = [...DEFAULT_TRIVIA_QUESTIONS].sort(() => Math.random() - 0.5).slice(0, 5);
-  isQuizActive = false;
+// -------------------------------------------------------------
+// SYNC FELLOWSHIP QUIZZES
+// -------------------------------------------------------------
 
-  if (quizParticipantsListener) {
-    quizParticipantsListener();
-    quizParticipantsListener = null;
-  }
-  if (quizChatListener) {
-    quizChatListener();
-    quizChatListener = null;
-  }
-
-  const lobbyCard = document.getElementById('quiz-lobby-card');
-  const playCard = document.getElementById('quiz-play-card');
-  const resultsCard = document.getElementById('quiz-results-card');
-
-  if (lobbyCard) lobbyCard.classList.remove('hidden');
-  if (playCard) playCard.classList.add('hidden');
-  if (resultsCard) resultsCard.classList.add('hidden');
-}
-
-// 1. Sync Live Quizzes created by Super Admin & Community
-function syncAdminAndLiveQuizzes() {
-  const container = document.getElementById('live-admin-quizzes-grid');
+window.syncFellowshipQuizzes = function() {
+  const fId = window.activeFellowshipId;
+  const container = document.getElementById('fellowship-quizzes-grid');
   if (!container) return;
 
-  const db = window.db;
-  if (!db) return;
+  if (fellowshipQuizzesListener) fellowshipQuizzesListener();
 
-  if (quizzesListListener) quizzesListListener();
-
-  quizzesListListener = db.collection('custom_quizzes').orderBy('createdAt', 'desc').onSnapshot(snap => {
-    container.innerHTML = '';
-    
-    // Always show Default Quick Quiz Card
-    const dailyCard = document.createElement('div');
-    dailyCard.className = "glass-panel rounded-3xl p-6 space-y-4 hover:border-blue-500/50 transition-all flex flex-col justify-between";
-    dailyCard.innerHTML = `
-      <div class="space-y-2">
-        <div class="flex items-center justify-between">
-          <span class="px-2.5 py-1 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300 text-[10px] font-black uppercase font-mono">
-            ⚡ Daily Bread
-          </span>
-          <span class="text-xs font-mono font-bold text-amber-500">🪙 +25 KC Max</span>
-        </div>
-        <h4 class="font-black text-lg text-slate-900 dark:text-zinc-100 font-display">Daily Scripture Sprint</h4>
-        <p class="text-xs text-slate-400">5 fast questions from the Old & New Testaments to sharpen your sword.</p>
-      </div>
-
-      <div class="pt-4 border-t border-slate-100 dark:border-zinc-800 space-y-3">
-        <div class="flex items-center justify-between text-xs text-slate-500">
-          <span class="flex items-center gap-1.5 font-bold"><span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span> Live Worldwide</span>
-          <span class="font-mono">5 Questions</span>
-        </div>
-        <button onclick="startDailyQuickQuiz()" class="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-md cursor-pointer transition-all">
-          Play Daily Quiz 🎯
-        </button>
+  if (!fId) {
+    container.innerHTML = `
+      <div class="col-span-full py-12 text-center text-slate-400 text-xs">
+        Select a fellowship to view its scripture trivia challenges.
       </div>
     `;
-    container.appendChild(dailyCard);
+    return;
+  }
 
-    if (snap.empty) {
-      return;
-    }
+  fellowshipQuizzesListener = window.db.collection('quizzes')
+    .where('fellowshipId', '==', fId)
+    .orderBy('createdAt', 'desc')
+    .onSnapshot(snap => {
+      container.innerHTML = '';
+      if (snap.empty) {
+        container.innerHTML = `
+          <div class="col-span-full py-12 text-center space-y-3 glass-panel rounded-3xl p-8 max-w-md mx-auto">
+            <div class="w-12 h-12 rounded-2xl bg-purple-50 dark:bg-purple-950/40 text-purple-600 flex items-center justify-center mx-auto text-xl">
+              <i data-lucide="help-circle" class="w-6 h-6"></i>
+            </div>
+            <h4 class="font-extrabold text-sm text-slate-800 dark:text-zinc-200">No Fellowship Quizzes Yet</h4>
+            <p class="text-xs text-slate-500 dark:text-zinc-400">
+              Create a custom scripture trivia challenge for your fellow members!
+            </p>
+            <button onclick="window.openCreateQuizModal('${fId}')" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-xl transition-all cursor-pointer shadow-xs inline-flex items-center gap-1.5">
+              <i data-lucide="plus" class="w-4 h-4"></i> Create First Quiz
+            </button>
+          </div>
+        `;
+        if (window.lucide) window.lucide.createIcons();
+        return;
+      }
 
-    snap.forEach(doc => {
-      const q = doc.data();
-      const card = document.createElement('div');
-      const isLive = q.status !== 'ended';
-      const coverUrl = q.coverUrl || q.imageUrl || '';
-      const isSuperAdmin = (typeof window.isSuperAdmin === 'function') ? window.isSuperAdmin() : (window.auth?.currentUser?.email === 'danielgiobari644@gmail.com');
+      const currentUser = window.auth?.currentUser;
+      const isSuperAdmin = window.checkIsSuperAdmin();
+      const isFellowshipLeader = window.activeFellowshipRole === 'leader';
 
-      card.className = `glass-panel rounded-3xl p-5 sm:p-6 space-y-4 border ${isLive ? 'border-purple-500/30' : 'border-slate-200 dark:border-zinc-800'} hover:border-purple-500 transition-all flex flex-col justify-between relative overflow-hidden`;
-      
-      const qCount = q.questions ? q.questions.length : 5;
-      const rewardPer = q.rewardPerCorrect || 10;
-      const maxReward = qCount * rewardPer + (q.bonusReward || 0);
+      snap.forEach(doc => {
+        const q = doc.data();
+        const quizId = doc.id;
+        const isCreator = currentUser && q.createdBy === currentUser.uid;
+        // Delete permissions: Creator, Fellowship Leader, or Super Admin
+        const canDelete = isCreator || isFellowshipLeader || isSuperAdmin;
+        const qCount = q.questions?.length || 0;
 
-      card.innerHTML = `
-        <div class="space-y-3">
-          ${coverUrl ? `
-            <div class="relative h-32 -mx-5 -mt-5 sm:-mx-6 sm:-mt-6 mb-3 overflow-hidden bg-slate-900 border-b border-slate-200 dark:border-zinc-800">
-              <img src="${coverUrl}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="${q.title || 'Quiz Banner'}" />
-              <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-black/20"></div>
-              <div class="absolute top-3 left-3">
-                <span class="px-2.5 py-1 rounded-full ${isLive ? 'bg-purple-600/90 text-white' : 'bg-slate-800/90 text-slate-300'} text-[10px] font-black uppercase font-mono backdrop-blur-md flex items-center gap-1 shadow-sm">
-                  ${isLive ? '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> SUPER ADMIN LIVE' : 'ENDED'}
+        const card = document.createElement('div');
+        card.className = "glass-panel rounded-3xl p-6 flex flex-col justify-between border border-slate-200 dark:border-zinc-800 hover:border-purple-400/50 transition-all space-y-4 shadow-xs";
+
+        card.innerHTML = `
+          <div class="space-y-2">
+            <div class="flex items-start justify-between gap-2">
+              <div>
+                <span class="text-[10px] font-black uppercase tracking-wider text-purple-600 dark:text-purple-400 flex items-center gap-1">
+                  <i data-lucide="book" class="w-3 h-3"></i> ${q.fellowshipName || 'Fellowship Quiz'}
                 </span>
+                <h4 class="font-display font-black text-lg text-slate-900 dark:text-zinc-100 mt-0.5">${q.title}</h4>
               </div>
-              <div class="absolute bottom-2 right-3">
-                <span class="text-xs font-mono font-black text-amber-400 drop-shadow-md">🪙 +${maxReward} KC</span>
-              </div>
+              ${canDelete ? `
+                <button onclick="window.deleteFellowshipQuiz('${quizId}')" class="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-lg transition-all cursor-pointer" title="Delete Quiz">
+                  <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
+              ` : ''}
             </div>
-          ` : `
-            <div class="flex items-center justify-between">
-              <span class="px-2.5 py-1 rounded-full ${isLive ? 'bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300' : 'bg-slate-100 text-slate-600'} text-[10px] font-black uppercase font-mono flex items-center gap-1">
-                ${isLive ? '<span class="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse"></span> SUPER ADMIN LIVE' : 'ENDED'}
-              </span>
-              <span class="text-xs font-mono font-bold text-amber-500">🪙 +${maxReward} KC</span>
+
+            ${q.description ? `<p class="text-xs text-slate-500 dark:text-zinc-400 leading-relaxed line-clamp-2">${q.description}</p>` : ''}
+
+            <div class="pt-2 flex items-center gap-3 text-[11px] text-slate-500 dark:text-zinc-400">
+              <span class="flex items-center gap-1"><i data-lucide="layers" class="w-3.5 h-3.5 text-blue-500"></i> ${qCount} Questions</span>
+              <span class="flex items-center gap-1"><i data-lucide="user" class="w-3.5 h-3.5 text-indigo-500"></i> By ${q.creatorName || 'Member'}</span>
             </div>
-          `}
-
-          <h4 class="font-black text-lg text-slate-900 dark:text-zinc-100 font-display">${q.title || 'Kingdom Champions Quiz'}</h4>
-          <p class="text-xs text-slate-400 line-clamp-2">${q.description || `Created by ${q.createdByName || 'Super Admin'} • Category: ${q.category || 'General'}`}</p>
-        </div>
-
-        <div class="pt-4 border-t border-slate-100 dark:border-zinc-800 space-y-3">
-          <!-- Real-Time Participant Counter Badge -->
-          <div class="flex items-center justify-between text-xs font-bold text-slate-600 dark:text-zinc-300">
-            <span class="flex items-center gap-1.5 text-purple-600 dark:text-purple-400">
-              <i data-lucide="users" class="w-4 h-4"></i>
-              <span id="quiz-card-count-${doc.id}">${q.participantsCount || 0} Believers Participating</span>
-            </span>
-            <span class="font-mono text-slate-400">${qCount} Questions</span>
           </div>
 
-          <button onclick="joinSuperAdminQuiz('${doc.id}')" class="w-full py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-purple-500/25 cursor-pointer transition-all">
-            Join Live Challenge 🚀
-          </button>
+          <div class="pt-3 border-t border-slate-100 dark:border-zinc-800">
+            <button onclick="window.startQuizGameplay('${quizId}')" class="w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-black uppercase tracking-wider transition-all cursor-pointer shadow-xs flex items-center justify-center gap-2">
+              Start Quiz <i data-lucide="play" class="w-4 h-4"></i>
+            </button>
+          </div>
+        `;
 
-          ${isSuperAdmin ? `
-            <div class="grid grid-cols-3 gap-1.5 pt-2 border-t border-slate-100 dark:border-zinc-800/80">
-              <button onclick="window.openEditQuizModal?.('${doc.id}')" class="py-1.5 px-2 bg-purple-50 dark:bg-purple-950/40 hover:bg-purple-100 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 text-[10px] font-bold rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer">
-                <i data-lucide="edit-3" class="w-3 h-3"></i>
-                <span>Edit</span>
-              </button>
-              <button onclick="window.openChangeCoverModal?.('quiz', '${doc.id}')" class="py-1.5 px-2 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 text-slate-700 dark:text-zinc-300 text-[10px] font-bold rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer">
-                <i data-lucide="camera" class="w-3 h-3 text-purple-500"></i>
-                <span>Cover</span>
-              </button>
-              <button onclick="window.exportQuizToJson?.('${doc.id}')" class="py-1.5 px-2 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 text-slate-700 dark:text-zinc-300 text-[10px] font-bold rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer">
-                <i data-lucide="download" class="w-3 h-3 text-emerald-500"></i>
-                <span>JSON</span>
-              </button>
-            </div>
-          ` : ''}
-        </div>
-      `;
-      container.appendChild(card);
-    });
+        container.appendChild(card);
+      });
 
-    if (window.lucide) window.lucide.createIcons();
-  }, err => console.warn("Live quizzes error:", err));
-}
+      if (window.lucide) window.lucide.createIcons();
+    }, err => console.warn("Quiz list error:", err));
+};
 
-// 2. Start Daily Quick Quiz
-function startDailyQuickQuiz() {
+// -------------------------------------------------------------
+// CREATE QUIZ MODAL
+// -------------------------------------------------------------
+
+window.openCreateQuizModal = function(targetFellowshipId) {
+  const modal = document.getElementById('create-quiz-modal');
+  const select = document.getElementById('create-quiz-fellowship-select');
+  if (!modal) return;
+
+  // Populate fellowship select with user's joined fellowships
+  if (select) {
+    select.innerHTML = (window.userMemberships || []).map(m => {
+      const isSelected = (targetFellowshipId || window.activeFellowshipId) === m.fellowshipId;
+      return `<option value="${m.fellowshipId}" ${isSelected ? 'selected' : ''}>${m.fellowshipName}</option>`;
+    }).join('');
+  }
+
+  modal.classList.remove('hidden');
+  if (window.lucide) window.lucide.createIcons();
+};
+
+window.closeCreateQuizModal = function() {
+  document.getElementById('create-quiz-modal')?.classList.add('hidden');
+};
+
+window.submitCreateQuizForm = async function(e) {
+  if (e) e.preventDefault();
   const user = window.auth?.currentUser;
-  if (!user) {
-    window.showToast?.("Please sign in to participate and earn KC!", "warning");
+  if (!user) return;
+
+  const fSelect = document.getElementById('create-quiz-fellowship-select');
+  const titleInput = document.getElementById('create-quiz-title');
+  const descInput = document.getElementById('create-quiz-desc');
+
+  const fId = fSelect ? fSelect.value : window.activeFellowshipId;
+  const title = titleInput ? titleInput.value.trim() : '';
+  const desc = descInput ? descInput.value.trim() : '';
+
+  if (!fId || !title) {
+    window.showToast?.("Please choose a fellowship and provide a title.", "error");
     return;
   }
 
-  activeQuizId = 'daily-quick';
-  activeQuizTitle = 'Daily Scripture Sprint';
-  activeQuizRewardPerQ = 5;
-  activeQuizQuestions = [...DEFAULT_TRIVIA_QUESTIONS].sort(() => Math.random() - 0.5).slice(0, 5);
-  activeQuizQuestionIndex = 0;
-  activeQuizScore = 0;
-  isQuizActive = true;
+  // Shuffle 5 questions from trivia bank or use custom
+  const selectedQuestions = [...DEFAULT_TRIVIA_BANK].sort(() => Math.random() - 0.5).slice(0, 5);
 
-  launchQuizRoomUI();
-}
-
-// 3. Join Super Admin Custom Live Quiz
-async function joinSuperAdminQuiz(quizId) {
-  const user = window.auth?.currentUser;
-  if (!user) {
-    window.showToast?.("Please sign in to participate in the live quiz!", "warning");
-    return;
-  }
+  const f = (window.allFellowships || []).find(x => x.id === fId);
 
   try {
-    const doc = await window.db.collection('custom_quizzes').doc(quizId).get();
+    await window.db.collection('quizzes').add({
+      fellowshipId: fId,
+      fellowshipName: f?.name || 'Home Fellowship',
+      title: title,
+      description: desc,
+      createdBy: user.uid,
+      creatorName: window.currentUserProfile?.displayName || user.displayName || 'Believer',
+      questions: selectedQuestions,
+      timeLimit: 20,
+      createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    window.closeCreateQuizModal();
+    document.getElementById('create-quiz-form')?.reset();
+    window.showToast?.(`Quiz "${title}" created for ${f?.name || 'Fellowship'}!`, "success");
+  } catch (err) {
+    console.error("Create quiz error:", err);
+    window.showToast?.("Failed to create quiz: " + err.message, "error");
+  }
+};
+
+window.deleteFellowshipQuiz = async function(quizId) {
+  if (!confirm("Are you sure you want to delete this quiz?")) return;
+  try {
+    await window.db.collection('quizzes').doc(quizId).delete();
+    window.showToast?.("Quiz removed.", "info");
+  } catch (err) {
+    console.error("Delete quiz error:", err);
+    window.showToast?.("Failed to delete quiz: " + err.message, "error");
+  }
+};
+
+// -------------------------------------------------------------
+// LIVE QUIZ GAMEPLAY
+// -------------------------------------------------------------
+
+window.startQuizGameplay = async function(quizId) {
+  try {
+    const doc = await window.db.collection('quizzes').doc(quizId).get();
     if (!doc.exists) {
       window.showToast?.("Quiz not found.", "error");
       return;
     }
 
-    const qData = doc.data();
-    activeQuizId = quizId;
-    activeQuizTitle = qData.title || 'Super Admin Live Quiz';
-    activeQuizRewardPerQ = qData.rewardPerCorrect || 10;
-    activeQuizQuestions = qData.questions && qData.questions.length > 0 ? qData.questions : DEFAULT_TRIVIA_QUESTIONS.slice(0, 5);
-    activeQuizQuestionIndex = 0;
-    activeQuizScore = 0;
-    isQuizActive = true;
+    currentActiveQuiz = { id: doc.id, ...doc.data() };
+    currentQuestionIndex = 0;
+    userQuizScore = 0;
 
-    // Register participant in Firestore
-    const participantRef = window.db.collection('custom_quizzes').doc(quizId).collection('participants').doc(user.uid);
-    await participantRef.set({
-      userId: user.uid,
-      userName: user.displayName || user.email.split('@')[0],
-      userPhoto: user.photoURL || null,
-      score: 0,
-      status: 'playing',
-      joinedAt: window.firebase.firestore.FieldValue.serverTimestamp()
-    }, { merge: true });
+    const modal = document.getElementById('quiz-play-modal');
+    if (modal) modal.classList.remove('hidden');
 
-    // Increment participants counter
-    await window.db.collection('custom_quizzes').doc(quizId).update({
-      participantsCount: window.firebase.firestore.FieldValue.increment(1)
-    }).catch(() => {});
-
-    launchQuizRoomUI();
+    renderActiveQuestion();
   } catch (err) {
-    console.error("Error joining live quiz:", err);
-    window.showToast?.("Error joining quiz: " + err.message, "error");
+    console.error("Start quiz error:", err);
+    window.showToast?.("Could not load quiz: " + err.message, "error");
   }
-}
+};
 
-function launchQuizRoomUI() {
-  const lobbyCard = document.getElementById('quiz-lobby-card');
-  const playCard = document.getElementById('quiz-play-card');
-  const resultsCard = document.getElementById('quiz-results-card');
+function renderActiveQuestion() {
+  if (!currentActiveQuiz || !currentActiveQuiz.questions) return;
 
-  if (lobbyCard) lobbyCard.classList.add('hidden');
-  if (resultsCard) resultsCard.classList.add('hidden');
-  if (playCard) playCard.classList.remove('hidden');
-
-  const titleEl = document.getElementById('active-quiz-room-title');
-  if (titleEl) titleEl.innerText = activeQuizTitle;
-
-  renderCurrentTriviaQuestion();
-  listenToQuizParticipants(activeQuizId);
-  listenToQuizLiveChat(activeQuizId);
-}
-
-// 4. Render Current Trivia Question
-function renderCurrentTriviaQuestion() {
-  const q = activeQuizQuestions[activeQuizQuestionIndex];
-  if (!q) {
-    finishTriviaQuiz();
+  const questions = currentActiveQuiz.questions;
+  if (currentQuestionIndex >= questions.length) {
+    finishQuizGameplay();
     return;
   }
 
-  const progressEl = document.getElementById('quiz-progress-text');
-  const questionEl = document.getElementById('quiz-question-text');
-  const optionsGrid = document.getElementById('quiz-options-grid');
-  const feedbackBox = document.getElementById('quiz-feedback-box');
+  const q = questions[currentQuestionIndex];
+  const titleEl = document.getElementById('quiz-play-title');
+  const badgeEl = document.getElementById('quiz-play-fellowship-badge');
+  const progressEl = document.getElementById('quiz-play-progress');
+  const timerEl = document.getElementById('quiz-play-timer');
+  const questionTextEl = document.getElementById('quiz-play-question-text');
+  const scriptureRefEl = document.getElementById('quiz-play-scripture-ref');
+  const optionsGrid = document.getElementById('quiz-play-options');
 
-  if (progressEl) progressEl.innerText = `Question ${activeQuizQuestionIndex + 1} of ${activeQuizQuestions.length}`;
-  if (questionEl) questionEl.innerText = q.question;
-  if (feedbackBox) feedbackBox.classList.add('hidden');
+  if (titleEl) titleEl.innerText = currentActiveQuiz.title;
+  if (badgeEl) badgeEl.innerText = currentActiveQuiz.fellowshipName || 'Home Fellowship';
+  if (progressEl) progressEl.innerText = `Question ${currentQuestionIndex + 1} of ${questions.length}`;
+  if (questionTextEl) questionTextEl.innerText = q.question;
+  if (scriptureRefEl) scriptureRefEl.innerText = q.scriptureReference ? `Scripture: ${q.scriptureReference}` : '';
+
+  // Reset timer
+  clearInterval(quizTimerInterval);
+  quizTimeRemaining = currentActiveQuiz.timeLimit || 20;
+  if (timerEl) timerEl.innerText = `${quizTimeRemaining}s`;
+
+  quizTimerInterval = setInterval(() => {
+    quizTimeRemaining--;
+    if (timerEl) timerEl.innerText = `${quizTimeRemaining}s`;
+    if (quizTimeRemaining <= 0) {
+      clearInterval(quizTimerInterval);
+      window.selectQuizAnswer(-1); // Time expired
+    }
+  }, 1000);
 
   if (optionsGrid) {
-    optionsGrid.innerHTML = q.options.map((opt, idx) => `
-      <button onclick="submitQuizAnswer(${idx})" class="quiz-option-btn p-4 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-purple-500 hover:bg-purple-50/50 dark:hover:bg-zinc-800 text-left font-bold text-xs sm:text-sm text-slate-800 dark:text-zinc-200 transition-all cursor-pointer shadow-xs flex items-center justify-between group">
-        <span class="group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">${opt}</span>
-        <span class="w-7 h-7 rounded-xl bg-slate-100 dark:bg-zinc-800 text-slate-400 text-xs font-mono font-bold flex items-center justify-center">${String.fromCharCode(65 + idx)}</span>
-      </button>
-    `).join('');
+    optionsGrid.innerHTML = q.options.map((opt, idx) => {
+      return `
+        <button onclick="window.selectQuizAnswer(${idx})" id="quiz-opt-btn-${idx}" class="p-4 rounded-2xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-800 dark:text-zinc-100 font-bold text-xs sm:text-sm hover:border-purple-500 hover:bg-purple-50/50 dark:hover:bg-purple-950/20 text-left transition-all cursor-pointer flex items-center justify-between gap-2 shadow-xs">
+          <span>${opt}</span>
+          <span class="w-6 h-6 rounded-full border border-slate-300 dark:border-zinc-600 text-[10px] font-mono flex items-center justify-center">${String.fromCharCode(65 + idx)}</span>
+        </button>
+      `;
+    }).join('');
   }
+
+  if (window.lucide) window.lucide.createIcons();
 }
 
-// 5. Submit Quiz Answer
-function submitQuizAnswer(selectedIndex) {
-  const q = activeQuizQuestions[activeQuizQuestionIndex];
-  if (!q) return;
+window.selectQuizAnswer = function(chosenIdx) {
+  clearInterval(quizTimerInterval);
 
-  const buttons = document.querySelectorAll('.quiz-option-btn');
-  buttons.forEach(b => b.disabled = true);
-
-  const isCorrect = selectedIndex === q.answerIndex;
-  const feedbackBox = document.getElementById('quiz-feedback-box');
+  const q = currentActiveQuiz.questions[currentQuestionIndex];
+  const isCorrect = chosenIdx === q.answerIndex;
 
   if (isCorrect) {
-    activeQuizScore++;
+    userQuizScore++;
     window.soundEngine?.playSuccess?.();
-    if (buttons[selectedIndex]) {
-      buttons[selectedIndex].className = "quiz-option-btn p-4 rounded-2xl border-2 border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 text-left font-bold text-xs sm:text-sm transition-all";
-    }
-    if (feedbackBox) {
-      feedbackBox.className = "p-4 rounded-2xl bg-emerald-100 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200 text-xs space-y-1";
-      feedbackBox.innerHTML = `<span class="font-black">✅ Correct!</span> <span class="font-mono opacity-80 block">${q.scriptureReference || q.explanation || 'Amen!'}</span>`;
-      feedbackBox.classList.remove('hidden');
-    }
   } else {
-    window.soundEngine?.playError?.();
-    if (buttons[selectedIndex]) {
-      buttons[selectedIndex].className = "quiz-option-btn p-4 rounded-2xl border-2 border-rose-500 bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300 text-left font-bold text-xs sm:text-sm transition-all";
-    }
-    if (buttons[q.answerIndex]) {
-      buttons[q.answerIndex].className = "quiz-option-btn p-4 rounded-2xl border-2 border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 text-left font-bold text-xs sm:text-sm transition-all";
-    }
-    if (feedbackBox) {
-      feedbackBox.className = "p-4 rounded-2xl bg-rose-100 dark:bg-rose-950/60 border border-rose-300 dark:border-rose-800 text-rose-900 dark:text-rose-200 text-xs space-y-1";
-      feedbackBox.innerHTML = `<span class="font-black">❌ Incorrect.</span> The correct answer was: <strong class="underline">${q.options[q.answerIndex]}</strong> <span class="font-mono opacity-80 block">${q.scriptureReference || ''}</span>`;
-      feedbackBox.classList.remove('hidden');
-    }
+    window.soundEngine?.playIncorrect?.();
   }
 
-  // Update participant real-time score
-  const user = window.auth?.currentUser;
-  if (user && activeQuizId !== 'daily-quick' && window.db) {
-    window.db.collection('custom_quizzes').doc(activeQuizId).collection('participants').doc(user.uid).update({
-      score: activeQuizScore
-    }).catch(() => {});
-  }
+  // Highlight choices
+  q.options.forEach((_, idx) => {
+    const btn = document.getElementById(`quiz-opt-btn-${idx}`);
+    if (btn) {
+      btn.disabled = true;
+      if (idx === q.answerIndex) {
+        btn.className = "p-4 rounded-2xl border border-emerald-500 bg-emerald-50 text-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200 font-bold text-xs sm:text-sm text-left flex items-center justify-between";
+      } else if (idx === chosenIdx) {
+        btn.className = "p-4 rounded-2xl border border-rose-500 bg-rose-50 text-rose-900 dark:bg-rose-950/40 dark:text-rose-200 font-bold text-xs sm:text-sm text-left flex items-center justify-between";
+      }
+    }
+  });
 
   setTimeout(() => {
-    activeQuizQuestionIndex++;
-    if (activeQuizQuestionIndex < activeQuizQuestions.length) {
-      renderCurrentTriviaQuestion();
-    } else {
-      finishTriviaQuiz();
-    }
-  }, 1600);
-}
+    currentQuestionIndex++;
+    renderActiveQuestion();
+  }, 1200);
+};
 
-// 6. Finish Quiz & Award Kingdom Coins
-async function finishTriviaQuiz() {
-  const playCard = document.getElementById('quiz-play-card');
-  const resultsCard = document.getElementById('quiz-results-card');
-
-  if (playCard) playCard.classList.add('hidden');
-  if (resultsCard) resultsCard.classList.remove('hidden');
-
-  const total = activeQuizQuestions.length;
-  const earnedKc = activeQuizScore * activeQuizRewardPerQ;
-
-  const scoreText = document.getElementById('quiz-final-score-text');
-  const kcText = document.getElementById('quiz-earned-kc-text');
-
-  if (scoreText) scoreText.innerText = `${activeQuizScore} / ${total} Correct`;
-  if (kcText) kcText.innerText = `+${earnedKc} Kingdom Coins`;
-
+async function finishQuizGameplay() {
+  clearInterval(quizTimerInterval);
+  const total = currentActiveQuiz.questions.length;
   const user = window.auth?.currentUser;
-  const db = window.db;
 
-  if (user && db) {
+  // Persist attempt
+  if (user) {
     try {
-      const todayStr = new Date().toISOString().split('T')[0];
-      await db.collection('quiz_scores').add({
-        userUid: user.uid,
-        userName: user.displayName || user.email.split('@')[0],
-        userPhoto: user.photoURL || null,
-        quizId: activeQuizId,
-        quizTitle: activeQuizTitle,
-        score: activeQuizScore,
+      await window.db.collection('quiz_attempts').add({
+        quizId: currentActiveQuiz.id,
+        quizTitle: currentActiveQuiz.title,
+        fellowshipId: currentActiveQuiz.fellowshipId,
+        fellowshipName: currentActiveQuiz.fellowshipName,
+        userId: user.uid,
+        userName: window.currentUserProfile?.displayName || user.displayName || 'Believer',
+        score: userQuizScore,
         totalQuestions: total,
-        earnedKc: earnedKc,
-        date: todayStr,
-        createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
+        completedAt: window.firebase.firestore.FieldValue.serverTimestamp()
       });
 
-      if (activeQuizId !== 'daily-quick') {
-        await db.collection('custom_quizzes').doc(activeQuizId).collection('participants').doc(user.uid).update({
-          score: activeQuizScore,
-          status: 'completed',
-          completedAt: window.firebase.firestore.FieldValue.serverTimestamp()
+      // Increment user total quiz wins if score > 70%
+      if (userQuizScore / total >= 0.7) {
+        await window.db.collection('users').doc(user.uid).update({
+          quizWinsCount: window.firebase.firestore.FieldValue.increment(1)
         });
       }
-
-      if (earnedKc > 0) {
-        const userRef = db.collection('users').doc(user.uid);
-        const userDoc = await userRef.get();
-        if (userDoc.exists) {
-          const uData = userDoc.data();
-          const curKc = uData.kingdomCoins || 0;
-          const wins = (uData.quizWinsCount || 0) + (activeQuizScore >= Math.floor(total * 0.7) ? 1 : 0);
-
-          await userRef.update({
-            kingdomCoins: curKc + earnedKc,
-            totalKcEarned: (uData.totalKcEarned || curKc) + earnedKc,
-            quizWinsCount: wins
-          });
-
-          window.recordKcTransaction?.('credit', earnedKc, 'Bible Trivia Challenge', `Scored ${activeQuizScore}/${total} on ${activeQuizTitle}`);
-        }
-      }
     } catch (e) {
-      console.warn("Quiz finish error:", e);
+      console.warn("Save score error:", e);
     }
   }
 
-  if (activeQuizScore >= Math.floor(total * 0.7)) {
-    window.soundEngine?.playLevelUp?.();
-    window.triggerConfetti?.();
-    window.showToast?.(`🏆 Excellent! You earned +${earnedKc} Kingdom Coins!`, "success");
-  } else {
-    window.soundEngine?.playCoins?.();
-    window.showToast?.(`You scored ${activeQuizScore}/${total}. Keep digging into Scripture!`, "info");
-  }
-}
-
-// 7. Live Participants Listener & Real-Time Counter
-function listenToQuizParticipants(quizId) {
-  const container = document.getElementById('quiz-live-participants-avatars');
-  const countEl = document.getElementById('quiz-room-participants-count');
-
-  if (quizParticipantsListener) quizParticipantsListener();
-
-  const db = window.db;
-  if (!db) return;
-
-  if (quizId === 'daily-quick') {
-    const todayStr = new Date().toISOString().split('T')[0];
-    quizParticipantsListener = db.collection('quiz_scores')
-      .where('date', '==', todayStr)
-      .limit(20)
-      .onSnapshot(snap => {
-        const total = snap.size;
-        if (countEl) countEl.innerText = total > 0 ? `${total} Believer${total === 1 ? '' : 's'} Completed Today` : "Be the first to finish today's sprint!";
-        
-        if (container) {
-          container.innerHTML = '';
-          if (total === 0) {
-            container.innerHTML = `<span class="text-[10px] text-slate-400 font-mono">⚡ Open to all</span>`;
-            return;
-          }
-
-          const avatarRow = document.createElement('div');
-          avatarRow.className = "flex items-center -space-x-2";
-          let count = 0;
-          snap.forEach(doc => {
-            if (count < 6) {
-              const p = doc.data();
-              const av = document.createElement('div');
-              av.className = "w-7 h-7 rounded-full overflow-hidden border-2 border-white dark:border-zinc-900 bg-blue-600 text-[10px] text-white flex items-center justify-center font-bold shadow-xs";
-              av.title = `${p.userName || 'Believer'} (${p.score || 0} pts)`;
-              av.innerText = (p.userName || 'B')[0].toUpperCase();
-              avatarRow.appendChild(av);
-              count++;
-            }
-          });
-          container.appendChild(avatarRow);
-        }
-      }, err => {
-        if (countEl) countEl.innerText = "Daily Scripture Sprint Live";
-      });
-    return;
-  }
-
-  quizParticipantsListener = db.collection('custom_quizzes').doc(quizId).collection('participants').onSnapshot(snap => {
-    const total = snap.size;
-    if (countEl) countEl.innerText = `${total} Believers Participating`;
-
-    if (container) {
-      container.innerHTML = '';
-      const avatarRow = document.createElement('div');
-      avatarRow.className = "flex items-center -space-x-2";
-
-      let count = 0;
-      snap.forEach(doc => {
-        if (count < 6) {
-          const p = doc.data();
-          const av = document.createElement('div');
-          av.className = "w-7 h-7 rounded-full overflow-hidden border-2 border-white dark:border-zinc-900 bg-slate-800 text-[10px] text-white flex items-center justify-center font-bold shadow-xs";
-          av.title = `${p.userName} (Score: ${p.score || 0})`;
-          av.innerHTML = p.userPhoto ? `<img src="${p.userPhoto}" class="w-full h-full object-cover" />` : (p.userName ? p.userName[0].toUpperCase() : '✝');
-          avatarRow.appendChild(av);
-          count++;
-        }
-      });
-
-      if (total > 6) {
-        const more = document.createElement('div');
-        more.className = "w-7 h-7 rounded-full bg-purple-600 text-white font-bold text-[10px] flex items-center justify-center border-2 border-white dark:border-zinc-900";
-        more.innerText = `+${total - 6}`;
-        avatarRow.appendChild(more);
-      }
-
-      container.appendChild(avatarRow);
-    }
-  }, err => console.warn("Quiz participants error:", err));
-}
-
-// 8. Live Chat During Quiz
-function listenToQuizLiveChat(quizId) {
-  const messagesBox = document.getElementById('quiz-live-chat-messages');
-  if (!messagesBox) return;
-
-  if (quizChatListener) quizChatListener();
-
-  const db = window.db;
-  if (!db) return;
-
-  quizChatListener = db.collection('custom_quizzes').doc(quizId).collection('chat').orderBy('createdAt', 'asc').limit(50).onSnapshot(snap => {
-    messagesBox.innerHTML = '';
-    if (snap.empty) {
-      messagesBox.innerHTML = `<div class="text-center py-8 text-xs text-slate-400">Welcome to the Live Quiz Lounge! Say hello or praise God below 🙌</div>`;
-      return;
-    }
-
-    snap.forEach(doc => {
-      const msg = doc.data();
-      const isMe = msg.senderId === window.auth?.currentUser?.uid;
-      const div = document.createElement('div');
-      div.className = `flex flex-col ${isMe ? 'items-end' : 'items-start'} space-y-1`;
-
-      div.innerHTML = `
-        <div class="flex items-center gap-1.5 text-[10px]">
-          <span class="font-black ${msg.senderRole === 'Super Admin' ? 'text-purple-600 dark:text-purple-400' : 'text-slate-500'}">${msg.senderName || 'Believer'}</span>
-          ${msg.senderRole === 'Super Admin' ? '<span class="px-1 py-0.2 rounded-sm bg-purple-100 dark:bg-purple-950 text-purple-700 text-[8px] font-black">ADMIN</span>' : ''}
+  const container = document.getElementById('quiz-play-modal-content');
+  if (container) {
+    const percent = Math.round((userQuizScore / total) * 100);
+    container.innerHTML = `
+      <div class="text-center py-8 space-y-4">
+        <div class="w-16 h-16 rounded-full bg-purple-100 dark:bg-purple-950/50 text-purple-600 flex items-center justify-center mx-auto text-3xl shadow-md">
+          🏆
         </div>
-        <div class="p-3 rounded-2xl text-xs max-w-[85%] ${isMe ? 'bg-purple-600 text-white rounded-tr-none' : 'bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 rounded-tl-none'} shadow-xs">
-          ${msg.message}
+        <h3 class="font-display font-black text-2xl text-slate-900 dark:text-zinc-100">Quiz Completed!</h3>
+        <p class="text-xs text-slate-500 dark:text-zinc-400">
+          You scored <strong class="text-purple-600 dark:text-purple-400 font-mono text-base">${userQuizScore} / ${total}</strong> (${percent}%)
+        </p>
+
+        <div class="pt-4 flex justify-center gap-3">
+          <button onclick="window.closeQuizGameplay()" class="px-6 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-sm">
+            Close Challenge
+          </button>
         </div>
-      `;
-      messagesBox.appendChild(div);
-    });
-
-    messagesBox.scrollTop = messagesBox.scrollHeight;
-  }, err => console.warn("Quiz chat error:", err));
-}
-
-async function sendQuizChatMessage(e) {
-  if (e) e.preventDefault();
-  const input = document.getElementById('quiz-chat-input');
-  const text = input?.value?.trim();
-  if (!text) return;
-
-  const user = window.auth?.currentUser;
-  if (!user) {
-    window.showToast?.("Please sign in to chat.", "warning");
-    return;
-  }
-
-  try {
-    await window.db.collection('custom_quizzes').doc(activeQuizId).collection('chat').add({
-      senderId: user.uid,
-      senderName: user.displayName || user.email.split('@')[0],
-      senderAvatar: user.photoURL || null,
-      senderRole: window.currentUserRole || 'Member',
-      message: text,
-      createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
-    });
-
-    if (input) input.value = '';
-  } catch (err) {
-    console.error("Error sending quiz chat:", err);
+      </div>
+    `;
   }
 }
 
-function insertQuizQuickPraise(text) {
-  const input = document.getElementById('quiz-chat-input');
-  if (input) {
-    input.value = text;
-    sendQuizChatMessage();
-  }
-}
+window.closeQuizGameplay = function() {
+  clearInterval(quizTimerInterval);
+  const modal = document.getElementById('quiz-play-modal');
+  if (modal) modal.classList.add('hidden');
+};
 
 window.initQuizModule = initQuizModule;
-window.startDailyQuickQuiz = startDailyQuickQuiz;
-window.joinSuperAdminQuiz = joinSuperAdminQuiz;
-window.submitQuizAnswer = submitQuizAnswer;
-window.resetQuizState = resetQuizState;
-window.sendQuizChatMessage = sendQuizChatMessage;
-window.insertQuizQuickPraise = insertQuizQuickPraise;
