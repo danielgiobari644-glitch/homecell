@@ -82,6 +82,58 @@
             <input type="text" id="auth-name" placeholder="Sister Mary / Brother John" class="w-full px-4 py-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-white text-xs focus:ring-2 focus:ring-blue-500 outline-none transition-all" />
           </div>
 
+          <!-- Sign-up: Profile Picture Upload from Device -->
+          <div id="auth-signup-avatar-container" class="space-y-1.5 hidden">
+            <label class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Profile Picture (Upload from Device)</label>
+            <div class="flex items-center gap-3 p-2.5 rounded-xl bg-slate-800/60 border border-slate-700">
+              <div id="auth-signup-avatar-preview" class="w-12 h-12 rounded-full bg-slate-700 text-slate-300 flex items-center justify-center font-bold text-sm overflow-hidden shrink-0 border border-slate-600">
+                ✝
+              </div>
+              <div class="flex-1 min-w-0 space-y-1">
+                <label class="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold cursor-pointer inline-flex items-center gap-1.5 transition-all">
+                  <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+                  <span>Choose Photo</span>
+                  <input type="file" id="auth-signup-avatar-file" accept="image/*" class="hidden" onchange="window.handleSignupAvatarFile(event)" />
+                </label>
+                <div id="auth-signup-avatar-filename" class="text-[10px] text-slate-400 truncate">PNG, JPG or WEBP from device</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sign-up: Choose Theme Palette -->
+          <div id="auth-signup-theme-container" class="space-y-1.5 hidden">
+            <div class="flex items-center justify-between">
+              <label class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Choose Initial Theme</label>
+              <span id="auth-selected-theme-label" class="text-blue-400 font-bold text-[10px]">Midnight Cathedral</span>
+            </div>
+            <div class="grid grid-cols-3 gap-2">
+              <button type="button" onclick="window.selectSignupTheme('light')" class="signup-theme-opt p-2 rounded-xl border border-slate-700 bg-white text-slate-900 text-left cursor-pointer transition-all hover:border-blue-500" data-theme-id="light">
+                <div class="text-[11px] font-black leading-tight">Daybreak</div>
+                <div class="text-[9px] text-slate-500">Light</div>
+              </button>
+              <button type="button" onclick="window.selectSignupTheme('dark')" class="signup-theme-opt p-2 rounded-xl border-2 border-blue-500 bg-zinc-900 text-white text-left cursor-pointer transition-all" data-theme-id="dark">
+                <div class="text-[11px] font-black leading-tight">Cathedral</div>
+                <div class="text-[9px] text-zinc-400">Dark</div>
+              </button>
+              <button type="button" onclick="window.selectSignupTheme('sanctuary')" class="signup-theme-opt p-2 rounded-xl border border-slate-700 bg-[#080912] text-indigo-100 text-left cursor-pointer transition-all hover:border-blue-500" data-theme-id="sanctuary">
+                <div class="text-[11px] font-black leading-tight">Celestial</div>
+                <div class="text-[9px] text-indigo-300">Sanctuary</div>
+              </button>
+              <button type="button" onclick="window.selectSignupTheme('parchment')" class="signup-theme-opt p-2 rounded-xl border border-slate-700 bg-[#f7f2ea] text-[#422006] text-left cursor-pointer transition-all hover:border-blue-500" data-theme-id="parchment">
+                <div class="text-[11px] font-black leading-tight">Scrolls</div>
+                <div class="text-[9px] text-amber-800">Papyrus</div>
+              </button>
+              <button type="button" onclick="window.selectSignupTheme('olive')" class="signup-theme-opt p-2 rounded-xl border border-slate-700 bg-[#0b140f] text-[#dcfce7] text-left cursor-pointer transition-all hover:border-blue-500" data-theme-id="olive">
+                <div class="text-[11px] font-black leading-tight">Olives</div>
+                <div class="text-[9px] text-emerald-400">Forest</div>
+              </button>
+              <button type="button" onclick="window.selectSignupTheme('covenant')" class="signup-theme-opt p-2 rounded-xl border border-slate-700 bg-[#12091f] text-[#f5d0fe] text-left cursor-pointer transition-all hover:border-blue-500" data-theme-id="covenant">
+                <div class="text-[11px] font-black leading-tight">Covenant</div>
+                <div class="text-[9px] text-purple-300">Royal</div>
+              </button>
+            </div>
+          </div>
+
           <div class="space-y-1.5">
             <label class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Email Address</label>
             <input type="email" id="auth-email" required placeholder="you@example.com" class="w-full px-4 py-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-white text-xs focus:ring-2 focus:ring-blue-500 outline-none transition-all" />
@@ -140,7 +192,10 @@
             </div>
           </div>
 
-          <div class="flex items-center gap-3">
+          <div class="flex items-center gap-2 sm:gap-3">
+            <button onclick="window.toggleLightDark()" id="discovery-quick-theme-toggle" class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 transition-all cursor-pointer" title="Toggle Light/Dark Theme">
+              <i data-lucide="moon" class="w-4 h-4"></i>
+            </button>
             <div class="text-right hidden sm:block">
               <div class="user-display-name text-xs font-bold text-slate-800 dark:text-zinc-200">Believer</div>
               <div class="text-[10px] text-slate-400">Finding your spiritual home</div>
@@ -292,6 +347,65 @@
             </nav>
 
             <div class="flex items-center gap-2 border-l border-slate-200 dark:border-zinc-800 pl-3">
+              <!-- Quick Theme Light/Dark Button -->
+              <button onclick="window.toggleLightDark()" id="btn-quick-theme-toggle" class="p-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 transition-all cursor-pointer" title="Toggle Light/Dark Theme">
+                <i data-lucide="moon" class="w-4 h-4"></i>
+              </button>
+
+              <!-- Themes Palette Menu Trigger -->
+              <div class="relative">
+                <button onclick="window.toggleThemePaletteMenu(event)" id="header-theme-palette-btn" class="p-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 transition-all cursor-pointer" title="Choose from 6 Liturgical Themes">
+                  <i data-lucide="palette" class="w-4 h-4"></i>
+                </button>
+
+                <!-- Floating Theme Selection Menu -->
+                <div id="header-theme-palette-menu" class="hidden absolute right-0 top-full mt-2 w-64 rounded-2xl glass-panel shadow-2xl border border-slate-200 dark:border-zinc-800 p-2 z-50 bg-white dark:bg-zinc-900 space-y-1">
+                  <div class="px-3 py-1.5 text-[10px] font-black uppercase text-slate-400 tracking-wider">Themes & Ambience</div>
+                  <button type="button" onclick="window.applyTheme('light'); window.toggleThemePaletteMenu(event)" class="w-full px-3 py-2 rounded-xl text-xs font-bold text-left flex items-center gap-2 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer">
+                    <span class="w-3.5 h-3.5 rounded-full bg-amber-400 border border-amber-500 shrink-0"></span>
+                    <div class="flex-1 min-w-0">
+                      <div class="text-slate-900 dark:text-zinc-100 text-[11px] font-black">Daybreak Grace</div>
+                      <div class="text-[9px] text-slate-500">Luminous Light Mode</div>
+                    </div>
+                  </button>
+                  <button type="button" onclick="window.applyTheme('dark'); window.toggleThemePaletteMenu(event)" class="w-full px-3 py-2 rounded-xl text-xs font-bold text-left flex items-center gap-2 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer">
+                    <span class="w-3.5 h-3.5 rounded-full bg-zinc-900 border border-zinc-700 shrink-0"></span>
+                    <div class="flex-1 min-w-0">
+                      <div class="text-slate-900 dark:text-zinc-100 text-[11px] font-black">Midnight Cathedral</div>
+                      <div class="text-[9px] text-slate-500">Obsidian Dark Mode</div>
+                    </div>
+                  </button>
+                  <button type="button" onclick="window.applyTheme('sanctuary'); window.toggleThemePaletteMenu(event)" class="w-full px-3 py-2 rounded-xl text-xs font-bold text-left flex items-center gap-2 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer">
+                    <span class="w-3.5 h-3.5 rounded-full bg-indigo-900 border border-indigo-500 shrink-0"></span>
+                    <div class="flex-1 min-w-0">
+                      <div class="text-slate-900 dark:text-zinc-100 text-[11px] font-black">Celestial Sanctuary</div>
+                      <div class="text-[9px] text-slate-500">Midnight Indigo & Stars</div>
+                    </div>
+                  </button>
+                  <button type="button" onclick="window.applyTheme('parchment'); window.toggleThemePaletteMenu(event)" class="w-full px-3 py-2 rounded-xl text-xs font-bold text-left flex items-center gap-2 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer">
+                    <span class="w-3.5 h-3.5 rounded-full bg-[#ebd5b3] border border-[#c8aa7a] shrink-0"></span>
+                    <div class="flex-1 min-w-0">
+                      <div class="text-slate-900 dark:text-zinc-100 text-[11px] font-black">Ancient Scrolls</div>
+                      <div class="text-[9px] text-slate-500">Papyrus & Warm Sepia</div>
+                    </div>
+                  </button>
+                  <button type="button" onclick="window.applyTheme('olive'); window.toggleThemePaletteMenu(event)" class="w-full px-3 py-2 rounded-xl text-xs font-bold text-left flex items-center gap-2 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer">
+                    <span class="w-3.5 h-3.5 rounded-full bg-emerald-950 border border-emerald-600 shrink-0"></span>
+                    <div class="flex-1 min-w-0">
+                      <div class="text-slate-900 dark:text-zinc-100 text-[11px] font-black">Mount of Olives</div>
+                      <div class="text-[9px] text-slate-500">Forest Green Serenity</div>
+                    </div>
+                  </button>
+                  <button type="button" onclick="window.applyTheme('covenant'); window.toggleThemePaletteMenu(event)" class="w-full px-3 py-2 rounded-xl text-xs font-bold text-left flex items-center gap-2 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer">
+                    <span class="w-3.5 h-3.5 rounded-full bg-purple-950 border border-purple-600 shrink-0"></span>
+                    <div class="flex-1 min-w-0">
+                      <div class="text-slate-900 dark:text-zinc-100 text-[11px] font-black">Royal Covenant</div>
+                      <div class="text-[9px] text-slate-500">Imperial Violet & Gold</div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
               <div onclick="switchTab('profile')" class="w-8 h-8 rounded-full overflow-hidden border border-slate-200 dark:border-zinc-700 bg-blue-600 text-white flex items-center justify-center font-bold text-xs cursor-pointer user-avatar-img">
                 ✝
               </div>
@@ -312,52 +426,85 @@
           <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <!-- Left Stream Column (Feed) -->
             <div class="lg:col-span-2 space-y-6">
-              <!-- Post Composer Card -->
-              <div class="glass-panel rounded-3xl p-6 border border-slate-200 dark:border-zinc-800 space-y-4 shadow-sm">
-                <div class="flex items-center justify-between gap-3">
-                  <div class="flex items-center gap-3">
-                    <div id="feed-user-avatar" class="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm overflow-hidden user-avatar-img">
+              <!-- Post Creation Dropdown Container (Moderately Noticeable) -->
+              <div class="glass-panel rounded-2xl border border-slate-200 dark:border-zinc-800 overflow-hidden shadow-xs">
+                <!-- Dropdown Bar Trigger -->
+                <button 
+                  type="button" 
+                  onclick="window.toggleFeedComposerDropdown()" 
+                  id="feed-composer-trigger-btn"
+                  class="w-full px-4 py-3 bg-white/80 dark:bg-zinc-900/80 hover:bg-slate-50 dark:hover:bg-zinc-850 flex items-center justify-between gap-3 text-left cursor-pointer transition-all"
+                >
+                  <div class="flex items-center gap-2.5 min-w-0">
+                    <div id="feed-user-avatar-mini" class="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs shrink-0 overflow-hidden user-avatar-img">
                       ✝
                     </div>
-                    <div>
-                      <div class="user-display-name text-xs font-black text-slate-900 dark:text-zinc-100">Believer</div>
-                      <div id="feed-composer-fellowship-badge" class="text-[10px] text-blue-600 dark:text-blue-400 font-bold">Posting to Global Home.cell</div>
+                    <span class="text-xs text-slate-500 dark:text-zinc-400 truncate">
+                      Share an encouragement, testimony, or prayer with the fellowship...
+                    </span>
+                  </div>
+                  <div class="flex items-center gap-1.5 text-[11px] font-bold text-blue-600 dark:text-blue-400 shrink-0">
+                    <span>Create Post</span>
+                    <i id="feed-composer-chevron" data-lucide="chevron-down" class="w-4 h-4 transition-transform duration-200"></i>
+                  </div>
+                </button>
+
+                <!-- Collapsible Composer Form (Hidden until clicked) -->
+                <div id="feed-composer-dropdown-body" class="hidden p-5 border-t border-slate-100 dark:border-zinc-800 space-y-4 bg-white dark:bg-zinc-900">
+                  <div class="flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-3">
+                      <div id="feed-user-avatar" class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs overflow-hidden user-avatar-img">
+                        ✝
+                      </div>
+                      <div>
+                        <div class="user-display-name text-xs font-black text-slate-900 dark:text-zinc-100">Believer</div>
+                        <div id="feed-composer-fellowship-badge" class="text-[10px] text-blue-600 dark:text-blue-400 font-bold">Posting to Global Home.cell</div>
+                      </div>
+                    </div>
+                    <select id="feed-post-type" class="text-xs font-bold px-3 py-1.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 cursor-pointer">
+                      <option value="post">General Thought</option>
+                      <option value="testimony">Praise & Testimony 🙏</option>
+                      <option value="announcement">Announcement 📢</option>
+                    </select>
+                  </div>
+
+                  <textarea
+                    id="feed-composer-text"
+                    rows="3"
+                    placeholder="Share a thought, prayer, scripture or testimony with all Home.cell fellowships..."
+                    class="w-full p-4 rounded-2xl bg-slate-50 dark:bg-zinc-850 border border-slate-200 dark:border-zinc-800 text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all resize-none"
+                  ></textarea>
+
+                  <!-- Media Preview -->
+                  <div id="feed-media-preview-container" class="hidden p-2 rounded-xl bg-slate-100 dark:bg-zinc-800 text-xs flex items-center justify-between">
+                    <span id="feed-media-preview-name" class="truncate font-mono text-[11px] text-slate-600 dark:text-zinc-300">File selected</span>
+                    <button type="button" onclick="document.getElementById('feed-composer-file').value = ''; document.getElementById('feed-media-preview-container').classList.add('hidden');" class="text-rose-500 font-bold text-xs">Remove</button>
+                  </div>
+
+                  <div class="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-zinc-800">
+                    <label class="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer flex items-center gap-1.5">
+                      <i data-lucide="image" class="w-4 h-4 text-blue-500"></i>
+                      <span>Photo / Video</span>
+                      <input type="file" id="feed-composer-file" accept="image/*,video/*" class="hidden" onchange="if(this.files[0]) { document.getElementById('feed-media-preview-container').classList.remove('hidden'); document.getElementById('feed-media-preview-name').innerText = this.files[0].name; }" />
+                    </label>
+
+                    <div class="flex items-center gap-2">
+                      <button 
+                        type="button" 
+                        onclick="window.toggleFeedComposerDropdown()"
+                        class="px-3 py-1.5 text-xs text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 cursor-pointer font-bold"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        id="feed-publish-btn"
+                        onclick="window.publishGlobalPost(event)"
+                        class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-xs flex items-center gap-1.5"
+                      >
+                        Share <i data-lucide="send" class="w-3.5 h-3.5"></i>
+                      </button>
                     </div>
                   </div>
-                  <select id="feed-post-type" class="text-xs font-bold px-3 py-1.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 cursor-pointer">
-                    <option value="post">General Thought</option>
-                    <option value="testimony">Praise & Testimony 🙏</option>
-                    <option value="announcement">Announcement 📢</option>
-                  </select>
-                </div>
-
-                <textarea
-                  id="feed-composer-text"
-                  rows="3"
-                  placeholder="Share a thought, prayer, scripture or testimony with all Home.cell fellowships..."
-                  class="w-full p-4 rounded-2xl bg-slate-50 dark:bg-zinc-850 border border-slate-200 dark:border-zinc-800 text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all resize-none"
-                ></textarea>
-
-                <!-- Media Preview -->
-                <div id="feed-media-preview-container" class="hidden p-2 rounded-xl bg-slate-100 dark:bg-zinc-800 text-xs flex items-center justify-between">
-                  <span id="feed-media-preview-name" class="truncate font-mono text-[11px] text-slate-600 dark:text-zinc-300">File selected</span>
-                  <button type="button" onclick="document.getElementById('feed-composer-file').value = ''; document.getElementById('feed-media-preview-container').classList.add('hidden');" class="text-rose-500 font-bold text-xs">Remove</button>
-                </div>
-
-                <div class="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-zinc-800">
-                  <label class="px-3.5 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer flex items-center gap-1.5">
-                    <i data-lucide="image" class="w-4 h-4 text-blue-500"></i>
-                    <span>Photo / Video</span>
-                    <input type="file" id="feed-composer-file" accept="image/*,video/*" class="hidden" onchange="if(this.files[0]) { document.getElementById('feed-media-preview-container').classList.remove('hidden'); document.getElementById('feed-media-preview-name').innerText = this.files[0].name; }" />
-                  </label>
-
-                  <button
-                    id="feed-publish-btn"
-                    onclick="window.publishGlobalPost(event)"
-                    class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-sm flex items-center gap-1.5"
-                  >
-                    Share <i data-lucide="send" class="w-3.5 h-3.5"></i>
-                  </button>
                 </div>
               </div>
 
@@ -564,40 +711,178 @@
         <!-- VIEW 4: THE WORD (#tab-theword)            -->
         <!-- ========================================== -->
         <section id="tab-theword" class="space-y-6 hidden">
-          <div class="glass-panel rounded-3xl p-6 sm:p-8 space-y-6 border border-slate-200 dark:border-zinc-800">
-            <div class="space-y-2">
-              <span class="text-[10px] font-black uppercase tracking-wider text-blue-600 block">The Holy Scriptures</span>
-              <h3 class="font-display font-black text-2xl sm:text-3xl text-slate-900 dark:text-zinc-100">Bible Study & Scripture Meditation</h3>
-              <p class="text-xs sm:text-sm text-slate-600 dark:text-zinc-400 max-w-xl">
-                "Thy word is a lamp unto my feet, and a light unto my path." — Psalm 119:105
-              </p>
+          <!-- Daily Devotional & Verse of the Day Banner -->
+          <div class="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-blue-950 via-indigo-950 to-slate-950 text-white space-y-4 shadow-xl border border-blue-500/20 relative overflow-hidden">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div class="space-y-1">
+                <span class="px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 font-black text-[10px] uppercase tracking-wider inline-block border border-amber-400/30">
+                  ☀️ Daily Divine Inspiration
+                </span>
+                <h3 class="font-display font-black text-2xl sm:text-3xl text-white">The Holy Scriptures</h3>
+                <p class="text-xs text-slate-300 font-serif italic max-w-xl">
+                  "Thy word is a lamp unto my feet, and a light unto my path." — Psalm 119:105
+                </p>
+              </div>
+
+              <!-- Super Admin Publish Devotional Button -->
+              <div class="super-admin-only hidden shrink-0">
+                <button onclick="window.openAdminDevotionalModal()" class="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-black transition-all cursor-pointer shadow-md inline-flex items-center gap-1.5">
+                  <i data-lucide="plus-circle" class="w-4 h-4"></i> New Devotional
+                </button>
+              </div>
             </div>
 
-            <!-- Verse of the Day -->
-            <div class="p-6 rounded-3xl bg-gradient-to-r from-blue-900 via-indigo-950 to-slate-950 text-white space-y-3 shadow-md">
-              <span class="text-[10px] font-black uppercase tracking-widest text-amber-400 block">Verse of the Day</span>
-              <p class="font-display font-bold text-lg sm:text-xl italic leading-relaxed text-slate-100">
+            <!-- Active Daily Devotional Card (rendered dynamically) -->
+            <div id="bible-active-devotional-card" class="mt-4 p-5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/10 text-white space-y-2">
+              <div class="flex items-center justify-between">
+                <span id="bible-devotional-date" class="text-[10px] font-mono uppercase text-amber-300 font-bold">Today's Devotional</span>
+                <span id="bible-devotional-ref" class="text-xs font-bold text-blue-200">Proverbs 3:5-6</span>
+              </div>
+              <h4 id="bible-devotional-title" class="font-display font-black text-lg text-white">Trusting God in Every Season</h4>
+              <p id="bible-devotional-text" class="text-xs sm:text-sm text-slate-200 leading-relaxed italic font-serif">
                 "Trust in the LORD with all thine heart; and lean not unto thine own understanding. In all thy ways acknowledge him, and he shall direct thy paths."
               </p>
-              <span class="text-xs font-mono font-bold text-blue-300 block">— Proverbs 3:5-6</span>
+              <div id="bible-devotional-prayer" class="text-xs text-blue-200 pt-1 font-sans">
+                <strong>Prayer:</strong> Lord Jesus, grant us humility of spirit and wisdom of heart to walk with You faithfully today.
+              </div>
+            </div>
+          </div>
+
+          <!-- Holy Bible Sub-Tabs: Reader vs Study Journal -->
+          <div class="flex items-center gap-2 overflow-x-auto no-scrollbar border-b border-slate-200 dark:border-zinc-800 pb-2">
+            <button id="bible-subtab-read" onclick="window.switchBibleSubTab('read')" class="px-4 py-2 rounded-xl text-xs font-black bg-blue-600 text-white cursor-pointer shadow-xs transition-all shrink-0 flex items-center gap-1.5">
+              <i data-lucide="book-open" class="w-4 h-4"></i> Read Holy Scripture
+            </button>
+            <button id="bible-subtab-journal" onclick="window.switchBibleSubTab('journal')" class="px-4 py-2 rounded-xl text-xs font-black text-slate-500 hover:text-slate-800 dark:hover:text-zinc-200 cursor-pointer transition-all shrink-0 flex items-center gap-1.5">
+              <i data-lucide="edit-3" class="w-4 h-4"></i> Spiritual Notes & Journal (<span id="bible-notes-count-badge">0</span>)
+            </button>
+          </div>
+
+          <!-- 1. BIBLE READER VIEW -->
+          <div id="bible-view-read" class="space-y-4">
+            <!-- Reader Navigation Control Bar -->
+            <div class="glass-panel rounded-2xl p-4 border border-slate-200 dark:border-zinc-800 flex flex-wrap items-center justify-between gap-3 shadow-xs">
+              <!-- Book & Chapter Selection -->
+              <div class="flex flex-wrap items-center gap-2 sm:gap-3 flex-1 min-w-[280px]">
+                <div class="flex items-center gap-1.5">
+                  <span class="text-[10px] font-black uppercase text-slate-400">Book:</span>
+                  <select id="bible-book-select" onchange="window.handleBibleBookChange(this.value)" class="text-xs font-bold px-3 py-2 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-800 dark:text-zinc-200 cursor-pointer outline-none focus:ring-2 focus:ring-blue-500 max-w-[150px] sm:max-w-[190px]">
+                    <!-- Populated dynamically with all 66 books -->
+                  </select>
+                </div>
+
+                <div class="flex items-center gap-1.5">
+                  <span class="text-[10px] font-black uppercase text-slate-400">Chapter:</span>
+                  <select id="bible-chapter-select" onchange="window.handleBibleChapterChange(this.value)" class="text-xs font-bold px-3 py-2 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-800 dark:text-zinc-200 cursor-pointer outline-none focus:ring-2 focus:ring-blue-500">
+                    <!-- Populated dynamically based on book -->
+                  </select>
+                </div>
+
+                <div class="flex items-center gap-1.5">
+                  <span class="text-[10px] font-black uppercase text-slate-400">Version:</span>
+                  <select id="bible-translation-select" onchange="window.handleBibleTranslationChange(this.value)" class="text-xs font-bold px-2.5 py-2 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-800 dark:text-zinc-200 cursor-pointer outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="kjv">KJV (King James)</option>
+                    <option value="web">WEB (World English)</option>
+                    <option value="bbe">BBE (Basic English)</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Reader Actions: Font Size, Audio, Quick Nav -->
+              <div class="flex items-center gap-2">
+                <!-- Text Zoom Controls -->
+                <div class="flex items-center rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 overflow-hidden">
+                  <button type="button" onclick="window.changeBibleFontSize(-2)" class="px-2.5 py-1.5 text-xs font-bold text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-700 cursor-pointer" title="Smaller Font">
+                    A-
+                  </button>
+                  <button type="button" onclick="window.changeBibleFontSize(2)" class="px-2.5 py-1.5 text-xs font-bold text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-700 cursor-pointer border-l border-slate-200 dark:border-zinc-700" title="Larger Font">
+                    A+
+                  </button>
+                </div>
+
+                <!-- Text-to-Speech Audio Narration -->
+                <button id="bible-audio-toggle-btn" onclick="window.toggleBibleAudioNarration()" class="p-2 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 transition-all cursor-pointer flex items-center gap-1 text-xs font-bold" title="Listen to Scripture Narration">
+                  <i data-lucide="volume-2" class="w-4 h-4"></i>
+                  <span class="hidden sm:inline">Audio</span>
+                </button>
+
+                <!-- Prev Chapter -->
+                <button onclick="window.navigateBibleChapter(-1)" class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 transition-all cursor-pointer" title="Previous Chapter">
+                  <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                </button>
+
+                <!-- Next Chapter -->
+                <button onclick="window.navigateBibleChapter(1)" class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 transition-all cursor-pointer" title="Next Chapter">
+                  <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                </button>
+              </div>
             </div>
 
-            <!-- Scripture Study Tools -->
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
-              <div class="p-5 rounded-2xl bg-slate-50 dark:bg-zinc-850 border border-slate-200 dark:border-zinc-800 space-y-2">
-                <i data-lucide="book-open" class="w-5 h-5 text-blue-600"></i>
-                <h5 class="font-black text-sm text-slate-900 dark:text-zinc-100">Daily Chapter Tracker</h5>
-                <p class="text-xs text-slate-500">Read the Scriptures daily and build your spiritual discipline.</p>
+            <!-- Bible Verses Container -->
+            <div class="glass-panel rounded-3xl p-6 sm:p-10 border border-slate-200 dark:border-zinc-800 min-h-[500px] shadow-sm relative">
+              <!-- Scripture Title Header -->
+              <div class="border-b border-slate-100 dark:border-zinc-800 pb-4 mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <span id="bible-reader-testament-badge" class="text-[10px] font-black uppercase text-blue-600 dark:text-blue-400 font-mono tracking-wider">Old Testament</span>
+                  <h3 id="bible-reader-heading" class="font-display font-black text-2xl sm:text-3xl text-slate-900 dark:text-zinc-100">Genesis 1</h3>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span id="bible-reader-translation-tag" class="px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-300">King James Version</span>
+                  <button onclick="window.openBibleNoteModal()" class="px-3 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1">
+                    <i data-lucide="edit" class="w-3.5 h-3.5 text-amber-500"></i> Note on this Chapter
+                  </button>
+                </div>
               </div>
-              <div class="p-5 rounded-2xl bg-slate-50 dark:bg-zinc-850 border border-slate-200 dark:border-zinc-800 space-y-2">
-                <i data-lucide="heart" class="w-5 h-5 text-rose-500"></i>
-                <h5 class="font-black text-sm text-slate-900 dark:text-zinc-100">Daily Devotional</h5>
-                <p class="text-xs text-slate-500">Meditate on morning and evening reflections in Christ.</p>
+
+              <!-- Verses Rendering Box -->
+              <div id="bible-verses-box" class="space-y-3 font-serif text-slate-800 dark:text-zinc-200 leading-relaxed text-base sm:text-lg">
+                <div class="py-16 text-center text-slate-400 font-sans text-xs">
+                  <span class="animate-spin inline-block mr-2">⌛</span> Opening the Holy Scriptures...
+                </div>
               </div>
-              <div class="p-5 rounded-2xl bg-slate-50 dark:bg-zinc-850 border border-slate-200 dark:border-zinc-800 space-y-2">
-                <i data-lucide="edit-3" class="w-5 h-5 text-amber-500"></i>
-                <h5 class="font-black text-sm text-slate-900 dark:text-zinc-100">Personal Notes</h5>
-                <p class="text-xs text-slate-500">Write down what the Holy Spirit speaks to your heart.</p>
+
+              <!-- Bottom Chapter Nav Controls -->
+              <div class="mt-10 pt-6 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-between">
+                <button onclick="window.navigateBibleChapter(-1)" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1.5">
+                  <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Previous Chapter
+                </button>
+                <button onclick="window.markChapterAsRead()" id="bible-mark-read-btn" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black uppercase tracking-wider transition-all cursor-pointer shadow-xs inline-flex items-center gap-1.5">
+                  <i data-lucide="check-circle" class="w-4 h-4"></i> Mark Chapter Read
+                </button>
+                <button onclick="window.navigateBibleChapter(1)" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1.5">
+                  Next Chapter <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. STUDY JOURNAL VIEW -->
+          <div id="bible-view-journal" class="space-y-6 hidden">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <h4 class="font-display font-black text-xl text-slate-900 dark:text-zinc-100">Spiritual Study Journal & Meditations</h4>
+                <p class="text-xs text-slate-500">Record what the Holy Spirit reveals during personal devotional time.</p>
+              </div>
+              <button onclick="window.openBibleNoteModal()" class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-xs inline-flex items-center gap-1.5">
+                <i data-lucide="plus" class="w-4 h-4"></i> New Study Note
+              </button>
+            </div>
+
+            <!-- Notes Filter & Search -->
+            <div class="flex items-center gap-3">
+              <input 
+                type="text" 
+                id="bible-notes-search-input" 
+                placeholder="Search notes, scriptures, or tags..." 
+                oninput="window.filterBibleNotes(this.value)"
+                class="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-850 text-xs outline-none focus:ring-2 focus:ring-blue-500" 
+              />
+            </div>
+
+            <!-- Saved Notes Grid -->
+            <div id="bible-notes-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div class="col-span-full py-12 text-center text-slate-400 text-xs">
+                No study notes recorded yet. Click "New Study Note" to begin your journal!
               </div>
             </div>
           </div>
@@ -725,27 +1010,35 @@
         </section>
       </main>
 
-      <!-- Mobile Bottom Navigation Bar -->
-      <nav class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border-t border-slate-200 dark:border-zinc-800 px-2 py-2 flex justify-around items-center">
-        <button onclick="switchTab('feed')" id="mobile-nav-feed" class="flex flex-col items-center gap-1 p-2 text-blue-600 text-[10px] font-bold">
-          <i data-lucide="newspaper" class="w-5 h-5"></i>
-          <span>Feed</span>
+      <!-- Mobile Bottom Navigation Bar (Responsive on all mobile screens) -->
+      <nav class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border-t border-slate-200 dark:border-zinc-800 px-1 py-1.5 flex justify-around items-center">
+        <button onclick="switchTab('feed')" id="mobile-nav-feed" class="flex flex-col items-center justify-center p-1.5 min-w-[50px] min-h-[44px] text-blue-600 text-[9px] sm:text-[10px] font-bold transition-all cursor-pointer">
+          <i data-lucide="newspaper" class="w-4 h-4 sm:w-5 sm:h-5"></i>
+          <span class="mt-0.5">Feed</span>
         </button>
-        <button onclick="switchTab('global-chat')" id="mobile-nav-global-chat" class="flex flex-col items-center gap-1 p-2 text-slate-400 text-[10px] font-bold">
-          <i data-lucide="message-circle" class="w-5 h-5"></i>
-          <span>Global Chat</span>
+        <button onclick="switchTab('fellowship')" id="mobile-nav-fellowship" class="flex flex-col items-center justify-center p-1.5 min-w-[50px] min-h-[44px] text-slate-400 text-[9px] sm:text-[10px] font-bold transition-all cursor-pointer">
+          <i data-lucide="home" class="w-4 h-4 sm:w-5 sm:h-5"></i>
+          <span class="mt-0.5">Cell</span>
         </button>
-        <button onclick="switchTab('fellowship')" id="mobile-nav-fellowship" class="flex flex-col items-center gap-1 p-2 text-slate-400 text-[10px] font-bold">
-          <i data-lucide="home" class="w-5 h-5"></i>
-          <span>Fellowship</span>
+        <button onclick="switchTab('theword')" id="mobile-nav-theword" class="flex flex-col items-center justify-center p-1.5 min-w-[50px] min-h-[44px] text-slate-400 text-[9px] sm:text-[10px] font-bold transition-all cursor-pointer">
+          <i data-lucide="book-open" class="w-4 h-4 sm:w-5 sm:h-5"></i>
+          <span class="mt-0.5">The Word</span>
         </button>
-        <button onclick="switchTab('halloffame')" id="mobile-nav-halloffame" class="flex flex-col items-center gap-1 p-2 text-slate-400 text-[10px] font-bold">
-          <i data-lucide="award" class="w-5 h-5"></i>
-          <span>Rankings</span>
+        <button onclick="switchTab('global-chat')" id="mobile-nav-global-chat" class="flex flex-col items-center justify-center p-1.5 min-w-[50px] min-h-[44px] text-slate-400 text-[9px] sm:text-[10px] font-bold transition-all cursor-pointer">
+          <i data-lucide="message-circle" class="w-4 h-4 sm:w-5 sm:h-5"></i>
+          <span class="mt-0.5">Chat</span>
         </button>
-        <button onclick="switchTab('profile')" id="mobile-nav-profile" class="flex flex-col items-center gap-1 p-2 text-slate-400 text-[10px] font-bold">
-          <i data-lucide="user" class="w-5 h-5"></i>
-          <span>Profile</span>
+        <button onclick="switchTab('halloffame')" id="mobile-nav-halloffame" class="flex flex-col items-center justify-center p-1.5 min-w-[50px] min-h-[44px] text-slate-400 text-[9px] sm:text-[10px] font-bold transition-all cursor-pointer">
+          <i data-lucide="award" class="w-4 h-4 sm:w-5 sm:h-5"></i>
+          <span class="mt-0.5">Rankings</span>
+        </button>
+        <button onclick="switchTab('profile')" id="mobile-nav-profile" class="flex flex-col items-center justify-center p-1.5 min-w-[50px] min-h-[44px] text-slate-400 text-[9px] sm:text-[10px] font-bold transition-all cursor-pointer">
+          <i data-lucide="user" class="w-4 h-4 sm:w-5 sm:h-5"></i>
+          <span class="mt-0.5">Profile</span>
+        </button>
+        <button onclick="switchTab('admin')" id="mobile-nav-admin" class="super-admin-only hidden flex flex-col items-center justify-center p-1.5 min-w-[50px] min-h-[44px] text-amber-500 text-[9px] sm:text-[10px] font-bold transition-all cursor-pointer">
+          <i data-lucide="shield" class="w-4 h-4 sm:w-5 sm:h-5"></i>
+          <span class="mt-0.5">Admin</span>
         </button>
       </nav>
     </div>
@@ -834,33 +1127,94 @@
       </div>
     </div>
 
-    <!-- Modal: CREATE QUIZ -->
+    <!-- Modal: CREATE QUIZ (With Question Builder, Thumbnail from Device, & JSON Templates) -->
     <div id="create-quiz-modal" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto hidden">
-      <div class="glass-panel w-full max-w-lg rounded-3xl p-6 sm:p-8 space-y-5 shadow-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 my-auto">
-        <div class="flex items-center justify-between">
-          <h3 class="font-display font-black text-xl text-slate-900 dark:text-zinc-100">Create Fellowship Quiz</h3>
+      <div class="glass-panel w-full max-w-2xl rounded-3xl p-6 sm:p-8 space-y-5 shadow-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 my-auto text-left max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800 pb-3">
+          <div>
+            <h3 class="font-display font-black text-xl text-slate-900 dark:text-zinc-100">Create Fellowship Quiz</h3>
+            <p class="text-xs text-slate-500">Attach a custom thumbnail, build questions, or import/export JSON templates.</p>
+          </div>
           <button onclick="window.closeCreateQuizModal()" class="p-2 text-slate-400 hover:text-slate-700 rounded-xl cursor-pointer">
             <i data-lucide="x" class="w-5 h-5"></i>
           </button>
         </div>
 
-        <form id="create-quiz-form" onsubmit="window.submitCreateQuizForm(event)" class="space-y-4 text-left">
-          <div class="space-y-1">
-            <label class="text-[10px] font-black uppercase text-slate-500">Target Fellowship *</label>
-            <select id="create-quiz-fellowship-select" class="w-full p-3 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-xs focus:ring-2 focus:ring-purple-500 outline-none"></select>
+        <form id="create-quiz-form" onsubmit="window.submitCreateQuizForm(event)" class="space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="space-y-1">
+              <label class="text-[10px] font-black uppercase text-slate-500">Target Fellowship *</label>
+              <select id="create-quiz-fellowship-select" class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-xs focus:ring-2 focus:ring-purple-500 outline-none"></select>
+            </div>
+            <div class="space-y-1">
+              <label class="text-[10px] font-black uppercase text-slate-500">Quiz Title *</label>
+              <input type="text" id="create-quiz-title" required placeholder="e.g. Epistles of Grace Challenge" class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-xs focus:ring-2 focus:ring-purple-500 outline-none" />
+            </div>
           </div>
+
           <div class="space-y-1">
-            <label class="text-[10px] font-black uppercase text-slate-500">Quiz Title *</label>
-            <input type="text" id="create-quiz-title" required placeholder="e.g. The Epistles of Paul Challenge" class="w-full p-3 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-xs focus:ring-2 focus:ring-purple-500 outline-none" />
+            <label class="text-[10px] font-black uppercase text-slate-500">Description / Instructions</label>
+            <textarea id="create-quiz-desc" rows="2" placeholder="Tell participants the scope, rewards, and spiritual focus..." class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-xs resize-none"></textarea>
           </div>
-          <div class="space-y-1">
-            <label class="text-[10px] font-black uppercase text-slate-500">Description</label>
-            <textarea id="create-quiz-desc" rows="2" placeholder="Brief instruction for participants..." class="w-full p-3 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-xs focus:ring-2 focus:ring-purple-500 outline-none resize-none"></textarea>
+
+          <!-- Thumbnail from Device -->
+          <div class="space-y-1.5 p-3 rounded-2xl bg-purple-50/50 dark:bg-purple-950/20 border border-purple-200/60 dark:border-purple-900/40">
+            <label class="text-[10px] font-black uppercase text-purple-700 dark:text-purple-300 flex items-center gap-1.5">
+              <i data-lucide="image" class="w-3.5 h-3.5"></i> Quiz Thumbnail Flyer (From Device)
+            </label>
+            <input type="file" id="create-quiz-thumbnail-file" accept="image/*" onchange="window.handleQuizThumbnailSelected(event)" class="w-full p-1 text-xs text-slate-500 file:mr-3 file:py-1 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-purple-100 file:text-purple-800 dark:file:bg-purple-950 dark:file:text-purple-300 cursor-pointer" />
+            <div id="create-quiz-thumbnail-preview" class="hidden mt-2 relative w-full h-28 rounded-xl overflow-hidden bg-slate-100 border border-purple-200 dark:border-purple-800">
+              <img id="create-quiz-thumbnail-img" src="" alt="Thumbnail preview" class="w-full h-full object-cover" />
+              <button type="button" onclick="window.removeQuizThumbnail()" class="absolute top-2 right-2 px-2 py-1 bg-black/70 hover:bg-rose-600 text-white text-[10px] font-bold rounded-lg cursor-pointer">Remove</button>
+            </div>
           </div>
-          <p class="text-[11px] text-slate-500">5 scripture questions will be populated from the verified Bible trivia bank.</p>
-          <button type="submit" class="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-md">
-            Publish Fellowship Quiz
-          </button>
+
+          <!-- JSON Template Import / Export Bar -->
+          <div class="p-3 rounded-2xl bg-slate-50 dark:bg-zinc-850 border border-slate-200 dark:border-zinc-800 flex flex-wrap items-center justify-between gap-2">
+            <div class="space-y-0.5">
+              <span class="text-[11px] font-black text-slate-900 dark:text-zinc-100">JSON Template Integration</span>
+              <p class="text-[10px] text-slate-500">Bulk create questions using standard JSON format.</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button type="button" onclick="window.downloadQuizJsonTemplate()" class="px-3 py-1.5 rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-zinc-700 text-slate-800 dark:text-zinc-200 text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1">
+                <i data-lucide="download" class="w-3.5 h-3.5"></i> Download Template
+              </button>
+              <label class="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1">
+                <i data-lucide="upload" class="w-3.5 h-3.5"></i> Upload JSON
+                <input type="file" id="create-quiz-json-file" accept=".json,application/json" class="hidden" onchange="window.handleQuizJsonUpload(event)" />
+              </label>
+            </div>
+          </div>
+
+          <!-- Interactive Question Builder -->
+          <div class="space-y-3 pt-2 border-t border-slate-100 dark:border-zinc-800">
+            <div class="flex items-center justify-between">
+              <div>
+                <h5 class="text-xs font-black text-slate-900 dark:text-zinc-100">Quiz Questions Bank (<span id="quiz-builder-count">0</span>)</h5>
+                <p class="text-[10px] text-slate-400">Set questions manually or auto-load standard trivia.</p>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <button type="button" onclick="window.autoLoadPresetQuizQuestions()" class="px-2.5 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 text-[10px] font-bold cursor-pointer">
+                  ✨ Auto-fill 5 Trivia
+                </button>
+                <button type="button" onclick="window.addBlankQuestionToBuilder()" class="px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 text-[10px] font-bold cursor-pointer">
+                  + Add Question
+                </button>
+              </div>
+            </div>
+
+            <!-- List of Built Questions -->
+            <div id="quiz-builder-questions-list" class="space-y-3 max-h-60 overflow-y-auto pr-1">
+              <!-- Dynamically populated by builder -->
+            </div>
+          </div>
+
+          <div class="pt-3 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-end gap-2">
+            <button type="button" onclick="window.closeCreateQuizModal()" class="px-4 py-2.5 text-xs font-bold text-slate-400 hover:text-slate-600 cursor-pointer">Cancel</button>
+            <button type="submit" id="create-quiz-submit-btn" class="px-6 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-md">
+              Publish Fellowship Quiz
+            </button>
+          </div>
         </form>
       </div>
     </div>
@@ -893,9 +1247,9 @@
       </div>
     </div>
 
-    <!-- Modal: CREATE EVENT -->
+    <!-- Modal: CREATE EVENT / GATHERING (With Thumbnail from Device) -->
     <div id="create-event-modal" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto hidden">
-      <div class="glass-panel w-full max-w-md rounded-3xl p-6 sm:p-8 space-y-5 shadow-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 my-auto">
+      <div class="glass-panel w-full max-w-lg rounded-3xl p-6 sm:p-8 space-y-5 shadow-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 my-auto text-left">
         <div class="flex items-center justify-between">
           <h3 class="font-display font-black text-xl text-slate-900 dark:text-zinc-100">Schedule Gathering</h3>
           <button onclick="window.closeCreateEventModal()" class="p-2 text-slate-400 hover:text-slate-700 rounded-xl cursor-pointer">
@@ -903,32 +1257,236 @@
           </button>
         </div>
 
-        <form id="create-event-form" onsubmit="window.submitCreateEventForm(event)" class="space-y-4 text-left">
+        <form id="create-event-form" onsubmit="window.submitCreateEventForm(event)" class="space-y-4">
           <div class="space-y-1">
             <label class="text-[10px] font-black uppercase text-slate-500">Event Title *</label>
-            <input type="text" id="create-event-title" required placeholder="e.g. Wednesday Midweek Fellowship" class="w-full p-3 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-xs focus:ring-2 focus:ring-blue-500 outline-none" />
+            <input type="text" id="create-event-title" required placeholder="e.g. Wednesday Midweek Fellowship Rally" class="w-full p-3 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-xs focus:ring-2 focus:ring-amber-500 outline-none" />
           </div>
+
           <div class="grid grid-cols-2 gap-3">
             <div class="space-y-1">
               <label class="text-[10px] font-black uppercase text-slate-500">Date *</label>
-              <input type="date" id="create-event-date" required class="w-full p-3 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-xs focus:ring-2 focus:ring-blue-500 outline-none" />
+              <input type="date" id="create-event-date" required class="w-full p-3 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-xs focus:ring-2 focus:ring-amber-500 outline-none" />
             </div>
             <div class="space-y-1">
               <label class="text-[10px] font-black uppercase text-slate-500">Time</label>
-              <input type="text" id="create-event-time" value="6:00 PM" class="w-full p-3 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-xs focus:ring-2 focus:ring-blue-500 outline-none" />
+              <input type="text" id="create-event-time" value="6:00 PM" class="w-full p-3 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-xs focus:ring-2 focus:ring-amber-500 outline-none" />
             </div>
           </div>
+
           <div class="space-y-1">
-            <label class="text-[10px] font-black uppercase text-slate-500">Location</label>
-            <input type="text" id="create-event-location" placeholder="Venue or living room address" class="w-full p-3 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-xs focus:ring-2 focus:ring-blue-500 outline-none" />
+            <label class="text-[10px] font-black uppercase text-slate-500">Location / Venue</label>
+            <input type="text" id="create-event-location" placeholder="Venue or living room address" class="w-full p-3 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-xs focus:ring-2 focus:ring-amber-500 outline-none" />
           </div>
+
           <div class="space-y-1">
-            <label class="text-[10px] font-black uppercase text-slate-500">Description</label>
-            <textarea id="create-event-desc" rows="2" placeholder="Agenda or prayer focus..." class="w-full p-3 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-xs focus:ring-2 focus:ring-blue-500 outline-none resize-none"></textarea>
+            <label class="text-[10px] font-black uppercase text-slate-500">Description / Focus</label>
+            <textarea id="create-event-desc" rows="2" placeholder="Agenda, communion, or prayer focus..." class="w-full p-3 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-xs focus:ring-2 focus:ring-amber-500 outline-none resize-none"></textarea>
           </div>
-          <button type="submit" class="w-full py-3 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-md">
+
+          <!-- Gathering Thumbnail from Device -->
+          <div class="space-y-1.5 p-3 rounded-2xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40">
+            <label class="text-[10px] font-black uppercase text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
+              <i data-lucide="image" class="w-3.5 h-3.5"></i> Gathering Flyer / Thumbnail (From Device)
+            </label>
+            <input type="file" id="create-event-thumbnail-file" accept="image/*" onchange="window.handleEventThumbnailSelected(event)" class="w-full p-1 text-xs text-slate-500 file:mr-3 file:py-1 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-amber-100 file:text-amber-900 dark:file:bg-amber-950 dark:file:text-amber-300 cursor-pointer" />
+            <div id="create-event-thumbnail-preview" class="hidden mt-2 relative w-full h-28 rounded-xl overflow-hidden bg-slate-100 border border-amber-200 dark:border-amber-800">
+              <img id="create-event-thumbnail-img" src="" alt="Thumbnail preview" class="w-full h-full object-cover" />
+              <button type="button" onclick="window.removeEventThumbnail()" class="absolute top-2 right-2 px-2 py-1 bg-black/70 hover:bg-rose-600 text-white text-[10px] font-bold rounded-lg cursor-pointer">Remove</button>
+            </div>
+          </div>
+
+          <button type="submit" id="create-event-submit-btn" class="w-full py-3 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-md">
             Publish Gathering
           </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal: BIBLE STUDY NOTE MODAL -->
+    <div id="bible-note-modal" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto hidden">
+      <div class="glass-panel w-full max-w-lg rounded-3xl p-6 sm:p-8 space-y-5 shadow-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 my-auto text-left">
+        <div class="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800 pb-3">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center font-bold">
+              <i data-lucide="edit-3" class="w-4 h-4"></i>
+            </div>
+            <h3 class="font-display font-black text-lg text-slate-900 dark:text-zinc-100">Spiritual Study Note</h3>
+          </div>
+          <button onclick="window.closeBibleNoteModal()" class="p-2 text-slate-400 hover:text-slate-700 rounded-xl cursor-pointer">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+
+        <form id="bible-note-form" onsubmit="window.saveBibleNoteForm(event)" class="space-y-4">
+          <input type="hidden" id="bible-note-id" />
+          <div class="space-y-1">
+            <label class="text-[10px] font-black uppercase text-slate-500">Note Title *</label>
+            <input type="text" id="bible-note-title" required placeholder="e.g. Revelation on Faith & Grace" class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-xs focus:ring-2 focus:ring-blue-500 outline-none" />
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div class="space-y-1">
+              <label class="text-[10px] font-black uppercase text-slate-500">Scripture Reference</label>
+              <input type="text" id="bible-note-scripture" placeholder="e.g. Romans 8:28" class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-xs focus:ring-2 focus:ring-blue-500 outline-none" />
+            </div>
+            <div class="space-y-1">
+              <label class="text-[10px] font-black uppercase text-slate-500">Category</label>
+              <select id="bible-note-category" class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-xs focus:ring-2 focus:ring-blue-500 outline-none">
+                <option value="Devotional">Devotional</option>
+                <option value="Study">Scripture Study</option>
+                <option value="Prayer">Prayer & Intercession</option>
+                <option value="Testimony">Testimony</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-[10px] font-black uppercase text-slate-500">Reflections & Holy Spirit Insight *</label>
+            <textarea id="bible-note-content" required rows="5" placeholder="Write what the Holy Spirit reveals to your spirit..." class="w-full p-3 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-xs focus:ring-2 focus:ring-blue-500 outline-none leading-relaxed resize-none"></textarea>
+          </div>
+
+          <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-zinc-800">
+            <button type="button" onclick="window.closeBibleNoteModal()" class="px-4 py-2 text-xs font-bold text-slate-400 hover:text-slate-600 cursor-pointer">Cancel</button>
+            <button type="submit" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-xs">
+              Save Study Note
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal: SUPER ADMIN ADD MEMBER TO CELL -->
+    <div id="admin-add-member-modal" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto hidden">
+      <div class="glass-panel w-full max-w-md rounded-3xl p-6 sm:p-8 space-y-5 shadow-2xl border border-amber-500/40 bg-white dark:bg-zinc-900 my-auto text-left">
+        <div class="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800 pb-3">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center font-bold">
+              <i data-lucide="user-plus" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <h3 class="font-display font-black text-base text-slate-900 dark:text-zinc-100">Add Member to Cell</h3>
+              <p class="text-[10px] text-slate-500">Assign any registered believer directly into this fellowship.</p>
+            </div>
+          </div>
+          <button onclick="window.closeAdminAddMemberModal()" class="p-2 text-slate-400 hover:text-slate-700 rounded-xl cursor-pointer">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+
+        <form id="admin-add-member-form" onsubmit="window.submitAdminAddMember(event)" class="space-y-4">
+          <input type="hidden" id="admin-add-member-cell-id" />
+          <div class="space-y-1">
+            <label class="text-[10px] font-black uppercase text-slate-500">Target Cell Fellowship</label>
+            <input type="text" id="admin-add-member-cell-name" readonly class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-100 dark:bg-zinc-800 text-xs font-bold text-slate-600 dark:text-zinc-300" />
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-[10px] font-black uppercase text-slate-500">Select Believer *</label>
+            <select id="admin-add-member-user-select" class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-xs focus:ring-2 focus:ring-amber-500 outline-none">
+              <!-- Populated dynamically with users -->
+            </select>
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-[10px] font-black uppercase text-slate-500">Or Believer Email</label>
+            <input type="email" id="admin-add-member-email-input" placeholder="believer@example.com (if not in dropdown)" class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-xs focus:ring-2 focus:ring-amber-500 outline-none" />
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-[10px] font-black uppercase text-slate-500">Role in Cell</label>
+            <select id="admin-add-member-role-select" class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-xs focus:ring-2 focus:ring-amber-500 outline-none">
+              <option value="member">Fellowship Member</option>
+              <option value="moderator">Assistant Leader / Moderator</option>
+              <option value="leader">Cell Leader & Admin</option>
+            </select>
+          </div>
+
+          <div class="flex items-center justify-end gap-2 pt-2">
+            <button type="button" onclick="window.closeAdminAddMemberModal()" class="px-4 py-2 text-xs font-bold text-slate-400 cursor-pointer">Cancel</button>
+            <button type="submit" id="admin-add-member-submit-btn" class="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-xs">
+              Confirm & Add
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal: SUPER ADMIN CELL ROSTER MANAGEMENT -->
+    <div id="admin-cell-roster-modal" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto hidden">
+      <div class="glass-panel w-full max-w-2xl rounded-3xl p-6 sm:p-8 space-y-5 shadow-2xl border border-amber-500/40 bg-white dark:bg-zinc-900 my-auto text-left max-h-[85vh] overflow-y-auto">
+        <div class="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800 pb-3">
+          <div>
+            <span id="admin-roster-cell-badge" class="text-[10px] font-black uppercase text-amber-500">Super Admin Governance</span>
+            <h3 id="admin-roster-cell-title" class="font-display font-black text-xl text-slate-900 dark:text-zinc-100">Cell Members Roster</h3>
+          </div>
+          <button onclick="window.closeAdminCellRosterModal()" class="p-2 text-slate-400 hover:text-slate-700 rounded-xl cursor-pointer">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+
+        <div class="flex items-center justify-between">
+          <span id="admin-roster-count-text" class="text-xs font-mono text-slate-500">0 Believers Registered</span>
+          <button onclick="window.openAdminAddMemberFromRoster()" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold rounded-xl transition-all cursor-pointer inline-flex items-center gap-1.5">
+            <i data-lucide="user-plus" class="w-3.5 h-3.5"></i> Add Member to Cell
+          </button>
+        </div>
+
+        <div id="admin-roster-members-list" class="space-y-2 max-h-80 overflow-y-auto pr-1">
+          <div class="py-12 text-center text-slate-400 text-xs">Loading cell membership list...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: SUPER ADMIN PUBLISH DEVOTIONAL -->
+    <div id="admin-devotional-modal" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto hidden">
+      <div class="glass-panel w-full max-w-lg rounded-3xl p-6 sm:p-8 space-y-5 shadow-2xl border border-amber-500/40 bg-white dark:bg-zinc-900 my-auto text-left max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800 pb-3">
+          <h3 class="font-display font-black text-xl text-slate-900 dark:text-zinc-100">Publish Daily Devotional</h3>
+          <button onclick="window.closeAdminDevotionalModal()" class="p-2 text-slate-400 hover:text-slate-700 rounded-xl cursor-pointer">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+
+        <form id="admin-devotional-form" onsubmit="window.submitAdminDevotional(event)" class="space-y-4">
+          <div class="space-y-1">
+            <label class="text-[10px] font-black uppercase text-slate-500">Devotional Title *</label>
+            <input type="text" id="admin-devotional-title-input" required placeholder="e.g. Walking by Faith, Not by Sight" class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-xs focus:ring-2 focus:ring-amber-500 outline-none" />
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div class="space-y-1">
+              <label class="text-[10px] font-black uppercase text-slate-500">Scripture Ref *</label>
+              <input type="text" id="admin-devotional-ref-input" required placeholder="e.g. 2 Corinthians 5:7" class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-xs focus:ring-2 focus:ring-amber-500 outline-none" />
+            </div>
+            <div class="space-y-1">
+              <label class="text-[10px] font-black uppercase text-slate-500">Date *</label>
+              <input type="date" id="admin-devotional-date-input" required class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-xs focus:ring-2 focus:ring-amber-500 outline-none" />
+            </div>
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-[10px] font-black uppercase text-slate-500">Devotional Reflection *</label>
+            <textarea id="admin-devotional-content-input" required rows="4" placeholder="Scriptural teaching and inspiration for believers today..." class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-xs resize-none leading-relaxed"></textarea>
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-[10px] font-black uppercase text-slate-500">Daily Prayer</label>
+            <input type="text" id="admin-devotional-prayer-input" placeholder="e.g. Father, anchor our hearts in Your eternal promises today..." class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-xs focus:ring-2 focus:ring-amber-500 outline-none" />
+          </div>
+
+          <!-- Devotional Image from Device -->
+          <div class="space-y-1">
+            <label class="text-[10px] font-black uppercase text-slate-500">Devotional Art / Photo (Optional, From Device)</label>
+            <input type="file" id="admin-devotional-file-input" accept="image/*" class="w-full p-1 text-xs text-slate-500 file:mr-3 file:py-1 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-amber-100 file:text-amber-900 cursor-pointer" />
+          </div>
+
+          <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-zinc-800">
+            <button type="button" onclick="window.closeAdminDevotionalModal()" class="px-4 py-2 text-xs font-bold text-slate-400 cursor-pointer">Cancel</button>
+            <button type="submit" id="admin-devotional-submit-btn" class="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-xs">
+              Publish to All Believers
+            </button>
+          </div>
         </form>
       </div>
     </div>
@@ -1042,10 +1600,60 @@
     <script>
       let authMode = 'signin'; // 'signin' | 'signup'
       window.currentAppTab = 'feed';
+      let selectedSignupTheme = 'dark';
+      let signupAvatarBase64 = null;
+
+      window.handleSignupAvatarFile = function(e) {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const filenameEl = document.getElementById('auth-signup-avatar-filename');
+        const previewEl = document.getElementById('auth-signup-avatar-preview');
+        if (filenameEl) filenameEl.innerText = file.name;
+
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          signupAvatarBase64 = evt.target.result;
+          if (previewEl) {
+            previewEl.innerHTML = `<img src="${signupAvatarBase64}" class="w-full h-full object-cover" />`;
+          }
+        };
+        reader.readAsDataURL(file);
+      };
+
+      window.selectSignupTheme = function(themeId) {
+        selectedSignupTheme = themeId;
+        const names = {
+          'light': 'Daybreak Grace',
+          'dark': 'Midnight Cathedral',
+          'sanctuary': 'Celestial Sanctuary',
+          'parchment': 'Ancient Scrolls',
+          'olive': 'Mount of Olives',
+          'covenant': 'Royal Covenant'
+        };
+        const labelEl = document.getElementById('auth-selected-theme-label');
+        if (labelEl) labelEl.innerText = names[themeId] || themeId;
+
+        document.querySelectorAll('.signup-theme-opt').forEach(btn => {
+          if (btn.getAttribute('data-theme-id') === themeId) {
+            btn.classList.add('border-2', 'border-blue-500', 'ring-2', 'ring-blue-500/30');
+            btn.classList.remove('border-slate-700');
+          } else {
+            btn.classList.remove('border-2', 'border-blue-500', 'ring-2', 'ring-blue-500/30');
+            btn.classList.add('border-slate-700');
+          }
+        });
+
+        // Apply theme immediately so the user experiences it live
+        if (window.setTheme) {
+          window.setTheme(themeId);
+        }
+      };
 
       function switchAuthMode(mode) {
         authMode = mode;
         const nameContainer = document.getElementById('auth-name-container');
+        const avatarContainer = document.getElementById('auth-signup-avatar-container');
+        const themeContainer = document.getElementById('auth-signup-theme-container');
         const submitBtn = document.getElementById('auth-submit-btn');
         const tabIn = document.getElementById('auth-tab-signin');
         const tabUp = document.getElementById('auth-tab-signup');
@@ -1054,11 +1662,15 @@
 
         if (mode === 'signup') {
           nameContainer?.classList.remove('hidden');
+          avatarContainer?.classList.remove('hidden');
+          themeContainer?.classList.remove('hidden');
           submitBtn.innerText = "Register Believer Account";
           tabUp.className = "flex-1 py-2 rounded-lg bg-blue-600 text-white transition-all cursor-pointer";
           tabIn.className = "flex-1 py-2 rounded-lg text-slate-400 hover:text-white transition-all cursor-pointer";
         } else {
           nameContainer?.classList.add('hidden');
+          avatarContainer?.classList.add('hidden');
+          themeContainer?.classList.add('hidden');
           submitBtn.innerText = "Sign In to Fellowship";
           tabIn.className = "flex-1 py-2 rounded-lg bg-blue-600 text-white transition-all cursor-pointer";
           tabUp.className = "flex-1 py-2 rounded-lg text-slate-400 hover:text-white transition-all cursor-pointer";
@@ -1082,9 +1694,45 @@
           sessionStorage.setItem('homecell_just_authenticated', 'true');
           if (authMode === 'signup') {
             const cred = await window.auth.createUserWithEmailAndPassword(email, password);
-            if (name) {
-              await cred.user.updateProfile({ displayName: name });
+            let photoURL = null;
+
+            if (signupAvatarBase64) {
+              if (window.uploadImageBase64) {
+                try {
+                  photoURL = await window.uploadImageBase64(signupAvatarBase64);
+                } catch (upErr) {
+                  console.warn("Avatar upload failed, using dataURL:", upErr);
+                  photoURL = signupAvatarBase64;
+                }
+              } else {
+                photoURL = signupAvatarBase64;
+              }
             }
+
+            const profileUpdates = {};
+            if (name) profileUpdates.displayName = name;
+            if (photoURL) profileUpdates.photoURL = photoURL;
+            if (Object.keys(profileUpdates).length > 0) {
+              await cred.user.updateProfile(profileUpdates);
+            }
+
+            // Save user profile doc in Firestore
+            try {
+              await window.db.collection('users').doc(cred.user.uid).set({
+                displayName: name || 'Believer',
+                email: email,
+                photoURL: photoURL || null,
+                theme: selectedSignupTheme,
+                createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
+              }, { merge: true });
+            } catch (fsErr) {
+              console.warn("Could not save initial user doc:", fsErr);
+            }
+
+            if (window.setTheme) {
+              window.setTheme(selectedSignupTheme);
+            }
+
             window.showToast?.("Account created! Welcome to Home.cell.", "success");
           } else {
             await window.auth.signInWithEmailAndPassword(email, password);
@@ -1170,6 +1818,7 @@
           window.syncFellowshipDashboard?.();
           if (window.currentFellowshipSubTab) window.switchFellowshipSubTab(window.currentFellowshipSubTab);
         }
+        else if (tabName === 'theword') window.initBibleEngine?.();
         else if (tabName === 'halloffame') window.initHallOfFameModule?.();
         else if (tabName === 'profile') window.initProfileModule?.();
         else if (tabName === 'admin') window.initAdminModule?.();

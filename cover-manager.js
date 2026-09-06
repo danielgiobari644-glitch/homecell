@@ -85,14 +85,24 @@ function openChangeCoverModal(targetOrType, itemId, itemTitle, itemImageUrl) {
     return;
   }
 
-  // Check admin status
+  // Check admin status or cell leader status
   const isSuperAdmin = window.checkIsSuperAdmin ? window.checkIsSuperAdmin() : (
     window.currentUserRole === 'Super Admin' ||
     window.auth?.currentUser?.email?.toLowerCase() === 'danielgiobari644@gmail.com'
   );
 
-  if (!isSuperAdmin) {
-    window.showToast?.("Super Admin access required to update cover photos.", "warning");
+  const isCellLeader = (window.userMemberships || []).some(m => 
+    m.fellowshipId === target.id && (m.role === 'leader' || m.role === 'moderator' || m.role === 'admin')
+  );
+
+  // For fellowship cover/logo, cell leaders or super admins are permitted
+  if (target.type === 'fellowship_cover' || target.type === 'fellowship_logo') {
+    if (!isSuperAdmin && !isCellLeader && window.activeFellowshipRole !== 'leader') {
+      window.showToast?.("Cell Leader or Super Admin access required to update fellowship branding.", "warning");
+      return;
+    }
+  } else if (!isSuperAdmin && !isCellLeader) {
+    window.showToast?.("Leadership access required to update cover photos.", "warning");
     return;
   }
 
@@ -107,13 +117,19 @@ function openChangeCoverModal(targetOrType, itemId, itemTitle, itemImageUrl) {
 
   if (titleEl) {
     titleEl.innerText = target.title || (
+      target.type === 'fellowship_cover' ? 'Fellowship Cover Image' :
+      target.type === 'fellowship_logo' ? 'Fellowship Logo / Emblem' :
       target.type === 'event' ? 'Church Gathering Cover' :
       target.type === 'quiz' ? 'Bible Trivia Quiz Cover' : 'Daily Devotional Cover'
     );
   }
   
   if (typeBadge) {
-    if (target.type === 'event') {
+    if (target.type === 'fellowship_cover') {
+      typeBadge.innerHTML = `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase font-mono bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300">🏛️ Fellowship Cover Image</span>`;
+    } else if (target.type === 'fellowship_logo') {
+      typeBadge.innerHTML = `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase font-mono bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">🛡️ Fellowship Logo / Emblem</span>`;
+    } else if (target.type === 'event') {
       typeBadge.innerHTML = `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase font-mono bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300">📅 Church Gathering Cover</span>`;
     } else if (target.type === 'quiz') {
       typeBadge.innerHTML = `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase font-mono bg-indigo-100 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300">🏆 Live Trivia Quiz Cover</span>`;
@@ -325,6 +341,35 @@ async function saveSelectedCoverPhoto() {
 
       window.soundEngine?.playSuccess?.();
       window.showToast?.("🏆 Quiz cover photo updated successfully!", "success");
+    } else if (targetType === 'fellowship_cover') {
+      const updateData = {
+        imageUrl: finalImageUrl,
+        updatedAt: window.firebase.firestore.FieldValue.serverTimestamp()
+      };
+
+      await db.collection('fellowships').doc(targetId).update(updateData);
+      // Update local memory and UI
+      const f = (window.allFellowships || []).find(x => x.id === targetId);
+      if (f) f.imageUrl = finalImageUrl;
+      if (window.activeFellowshipId === targetId) {
+        window.renderFellowshipDashboard?.();
+      }
+      window.soundEngine?.playSuccess?.();
+      window.showToast?.("🏛️ Fellowship cover image updated!", "success");
+    } else if (targetType === 'fellowship_logo') {
+      const updateData = {
+        logoUrl: finalImageUrl,
+        updatedAt: window.firebase.firestore.FieldValue.serverTimestamp()
+      };
+
+      await db.collection('fellowships').doc(targetId).update(updateData);
+      const f = (window.allFellowships || []).find(x => x.id === targetId);
+      if (f) f.logoUrl = finalImageUrl;
+      if (window.activeFellowshipId === targetId) {
+        window.renderFellowshipDashboard?.();
+      }
+      window.soundEngine?.playSuccess?.();
+      window.showToast?.("🛡️ Fellowship logo updated successfully!", "success");
     }
 
     closeChangeCoverModal();

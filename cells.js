@@ -286,19 +286,46 @@ window.syncFellowshipDashboard = function() {
   container.innerHTML = `
     <!-- Fellowship Banner Hero -->
     <div class="relative overflow-hidden rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm">
-      <div class="h-44 sm:h-56 w-full bg-cover bg-center relative" style="background-image: url('${f.imageUrl || 'https://images.unsplash.com/photo-1543269865-cbf427effbad?auto=format&fit=crop&w=1200&q=80'}');">
-        <div class="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/40 to-transparent"></div>
-        <div class="absolute bottom-6 left-6 right-6 text-white space-y-1.5">
-          <div class="flex items-center gap-2">
-            <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-600/90 text-white backdrop-blur-xs">
-              📍 ${f.city || 'Home Cell'}
-            </span>
-            <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/90 text-slate-950 backdrop-blur-xs">
-              Your Role: ${roleText}
-            </span>
+      <div class="h-48 sm:h-60 w-full bg-cover bg-center relative" style="background-image: url('${f.imageUrl || 'https://images.unsplash.com/photo-1543269865-cbf427effbad?auto=format&fit=crop&w=1200&q=80'}');">
+        <div class="absolute inset-0 bg-gradient-to-t from-slate-950/95 via-slate-950/50 to-transparent"></div>
+        
+        ${isLeaderOrAdmin ? `
+          <div class="absolute top-4 right-4 flex items-center gap-2 z-10">
+            <button onclick="window.openChangeCoverModal('fellowship_cover', '${f.id}', '${f.name.replace(/'/g, "\\'")}', '${f.imageUrl || ''}')" class="px-3 py-1.5 rounded-xl bg-slate-950/80 hover:bg-slate-950 text-white text-[10px] font-black uppercase tracking-wider backdrop-blur-md shadow-md flex items-center gap-1.5 border border-white/20 cursor-pointer transition-all hover:scale-105">
+              <i data-lucide="camera" class="w-3.5 h-3.5 text-amber-400"></i>
+              <span>Change Cover</span>
+            </button>
+            <button onclick="window.openChangeCoverModal('fellowship_logo', '${f.id}', '${f.name.replace(/'/g, "\\'")}', '${f.logoUrl || ''}')" class="px-3 py-1.5 rounded-xl bg-slate-950/80 hover:bg-slate-950 text-white text-[10px] font-black uppercase tracking-wider backdrop-blur-md shadow-md flex items-center gap-1.5 border border-white/20 cursor-pointer transition-all hover:scale-105">
+              <i data-lucide="shield" class="w-3.5 h-3.5 text-blue-400"></i>
+              <span>Change Logo</span>
+            </button>
           </div>
-          <h2 class="font-display font-black text-2xl sm:text-4xl text-white drop-shadow-sm">${f.name}</h2>
-          ${f.motto ? `<p class="text-xs sm:text-sm font-serif italic text-slate-200 font-medium max-w-2xl">"${f.motto}"</p>` : ''}
+        ` : ''}
+
+        <div class="absolute bottom-6 left-6 right-6 text-white flex items-end gap-4">
+          <!-- Fellowship Logo / Emblem -->
+          <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white/10 dark:bg-zinc-900/80 border-2 border-white/30 backdrop-blur-md flex items-center justify-center shrink-0 overflow-hidden shadow-lg">
+            ${f.logoUrl ? `
+              <img src="${f.logoUrl}" alt="${f.name} Logo" class="w-full h-full object-cover" />
+            ` : `
+              <div class="text-2xl sm:text-3xl font-black text-amber-400 select-none">
+                ${f.name ? f.name.charAt(0).toUpperCase() : '⛪'}
+              </div>
+            `}
+          </div>
+
+          <div class="space-y-1 min-w-0 flex-1">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-600/90 text-white backdrop-blur-xs">
+                📍 ${f.city || 'Home Cell'}
+              </span>
+              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/90 text-slate-950 backdrop-blur-xs">
+                Your Role: ${roleText}
+              </span>
+            </div>
+            <h2 class="font-display font-black text-2xl sm:text-4xl text-white drop-shadow-sm truncate">${f.name}</h2>
+            ${f.motto ? `<p class="text-xs sm:text-sm font-serif italic text-slate-200 font-medium max-w-2xl line-clamp-1">"${f.motto}"</p>` : ''}
+          </div>
         </div>
       </div>
 

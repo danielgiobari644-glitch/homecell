@@ -386,7 +386,7 @@ async function loadVerses() {
             <span>${currentBibleBook} ${currentBibleChapter}</span>
             <span class="text-xs font-mono font-bold text-blue-600 dark:text-blue-400 uppercase bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 rounded-full border border-blue-200 dark:border-blue-800/40">${currentBibleTranslation.toUpperCase()}</span>
           </h2>
-          <p class="text-xs text-slate-400 mt-0.5">Study the Holy Scriptures, highlight insights, or listen with Audio Narration (+5 KC reward).</p>
+          <p class="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">Study the Holy Scriptures, highlight insights, take personal notes, or listen with Audio Narration.</p>
         </div>
       </div>
     `;
