@@ -4,6 +4,7 @@
 let feedListener = null;
 let globalChatListener = null;
 window.currentFeedFilter = 'all';
+const activeCommentsListeners = {}; // { postId: unsubscribeFn }
 
 function initFeedEngine() {
   const user = window.auth?.currentUser;
@@ -28,11 +29,36 @@ function initFeedEngine() {
   syncDailyDevotionalSnippet();
 }
 
+window.toggleFeedComposerDropdown = function() {
+  const body = document.getElementById('feed-composer-dropdown-body');
+  const chevron = document.getElementById('feed-composer-chevron');
+  if (!body) return;
+
+  const isHidden = body.classList.contains('hidden');
+  if (isHidden) {
+    body.classList.remove('hidden');
+    chevron?.classList.add('rotate-180');
+    document.getElementById('feed-composer-text')?.focus();
+  } else {
+    body.classList.add('hidden');
+    chevron?.classList.remove('rotate-180');
+  }
+};
+
 // -------------------------------------------------------------
 // GLOBAL FEED
 // -------------------------------------------------------------
 
 let activeFeedPosts = [];
+
+const REACTION_CONFIGS = [
+  { type: 'amen', label: 'Amen', icon: '🙏' },
+  { type: 'love', label: 'Love', icon: '❤️' },
+  { type: 'fire', label: 'Fire', icon: '🔥' },
+  { type: 'praise', label: 'Praise', icon: '🙌' },
+  { type: 'praying', label: 'Praying', icon: '✝️' },
+  { type: 'insight', label: 'Insight', icon: '💡' }
+];
 
 function loadGlobalFeedStream() {
   const container = document.getElementById('community-posts-stream');
@@ -109,26 +135,39 @@ function renderGlobalFeed() {
     const canDelete = isAuthor || isSuperAdmin;
     const timeStr = post.createdAt?.toDate ? post.createdAt.toDate().toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Recently';
 
+    // Reactions calculations
+    const reactions = post.reactions || {};
+    const userReactions = post.userReactions || {};
+    const myReaction = currentUser ? userReactions[currentUser.uid] : null;
+    let totalReactionsCount = post.likesCount || 0;
+    Object.values(reactions).forEach(count => {
+      if (typeof count === 'number') totalReactionsCount += count;
+    });
+
+    const optimizedMediaUrl = window.getOptimizedMediaUrl ? window.getOptimizedMediaUrl(post.mediaUrl, post.mediaType, 850) : post.mediaUrl;
+
     const card = document.createElement('div');
-    card.className = "glass-panel rounded-3xl p-6 space-y-4 border border-slate-200 dark:border-zinc-800 shadow-xs";
+    card.className = "glass-panel rounded-3xl p-5 sm:p-6 space-y-4 border border-slate-200 dark:border-zinc-800 shadow-xs";
+    card.id = `global-post-card-${post.id}`;
 
     card.innerHTML = `
-      <!-- Post Header with Author & Prominent Fellowship Identity -->
+      <!-- Post Header with Author & Moderately Noticeable Fellowship Identity Marker -->
       <div class="flex items-start justify-between gap-3">
         <div class="flex items-center gap-3">
-          <div class="w-11 h-11 rounded-full bg-blue-600 text-white flex items-center justify-center font-black text-sm shrink-0 overflow-hidden shadow-xs">
-            ${post.authorPhoto ? `<img src="${post.authorPhoto}" class="w-full h-full object-cover" />` : (post.authorName || 'B').charAt(0).toUpperCase()}
+          <div class="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-black text-sm shrink-0 overflow-hidden shadow-xs">
+            ${post.authorPhoto ? `<img src="${post.authorPhoto}" class="w-full h-full object-cover" loading="lazy" />` : (post.authorName || 'B').charAt(0).toUpperCase()}
           </div>
           <div>
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 flex-wrap">
               <h4 class="font-black text-sm text-slate-900 dark:text-zinc-100">${post.authorName}</h4>
               ${post.type === 'testimony' ? '<span class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">Testimony 🙏</span>' : ''}
               ${post.type === 'announcement' ? '<span class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300">Announcement 📢</span>' : ''}
-            </div>
-            <!-- Fellowship Identity Marker -->
-            <div class="text-[11px] font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1">
-              <i data-lucide="home" class="w-3 h-3"></i>
-              <span>${post.fellowshipName || 'Home.cell Fellowship'}</span>
+              
+              <!-- Moderately Noticeable Fellowship Identity Badge -->
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 text-[10px] font-bold border border-slate-200/60 dark:border-zinc-700/60">
+                <i data-lucide="home" class="w-3 h-3 text-blue-500"></i>
+                <span class="truncate max-w-[160px]">${post.fellowshipName || 'Home Fellowship'}</span>
+              </span>
             </div>
             <div class="text-[10px] text-slate-400 font-mono mt-0.5">${timeStr}</div>
           </div>
@@ -146,23 +185,76 @@ function renderGlobalFeed() {
         ${post.content || ''}
       </div>
 
-      <!-- Media Attachment (Image or Video) -->
+      <!-- High-Performance Optimized Media Attachment (Image or Video) -->
       ${post.mediaUrl ? `
         <div class="rounded-2xl overflow-hidden border border-slate-100 dark:border-zinc-800 bg-black/5 dark:bg-black/30">
           ${post.mediaType === 'video'
-            ? `<video src="${post.mediaUrl}" controls class="w-full max-h-[450px] object-contain bg-black"></video>`
-            : `<img src="${post.mediaUrl}" class="w-full max-h-[480px] object-cover" loading="lazy" />`
+            ? `<video src="${optimizedMediaUrl}" preload="metadata" playsinline controls class="w-full max-h-[450px] object-contain bg-black rounded-xl"></video>`
+            : `<img src="${optimizedMediaUrl}" class="w-full max-h-[480px] object-cover rounded-xl" loading="lazy" decoding="async" />`
           }
         </div>
       ` : ''}
 
-      <!-- Footer Interactions -->
-      <div class="pt-3 border-t border-slate-100 dark:border-zinc-800/80 flex items-center justify-between text-xs text-slate-500">
-        <button onclick="window.likeGlobalPost('${post.id}')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all text-slate-600 dark:text-zinc-300 font-bold cursor-pointer">
-          <i data-lucide="heart" class="w-4 h-4 text-rose-500"></i>
-          <span>${post.likesCount || 0} Amen</span>
-        </button>
-        <span class="text-[10px] font-mono text-slate-400">Home.cell Worldwide</span>
+      <!-- Multi-Reactions Bar & Comments Trigger -->
+      <div class="pt-3 border-t border-slate-100 dark:border-zinc-800/80 space-y-3">
+        <div class="flex items-center justify-between flex-wrap gap-2 text-xs">
+          <!-- Quick Reaction Buttons -->
+          <div class="flex items-center gap-1 sm:gap-1.5 flex-wrap">
+            ${REACTION_CONFIGS.map(r => {
+              const count = reactions[r.type] || 0;
+              const isSelected = myReaction === r.type;
+              return `
+                <button 
+                  onclick="window.reactToGlobalPost('${post.id}', '${r.type}')" 
+                  class="flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                    isSelected
+                      ? 'bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700 scale-105 shadow-2xs'
+                      : 'bg-slate-50 hover:bg-slate-100 dark:bg-zinc-800/60 dark:hover:bg-zinc-800 text-slate-600 dark:text-zinc-400 border-transparent'
+                  }"
+                  title="${r.label}"
+                >
+                  <span class="text-sm">${r.icon}</span>
+                  ${count > 0 ? `<span class="text-[11px] font-mono">${count}</span>` : ''}
+                </button>
+              `;
+            }).join('')}
+          </div>
+
+          <!-- Comments Drawer Toggle Button -->
+          <button 
+            onclick="window.togglePostComments('${post.id}')" 
+            class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all text-slate-600 dark:text-zinc-300 font-bold cursor-pointer ml-auto"
+          >
+            <i data-lucide="message-square" class="w-4 h-4 text-blue-500"></i>
+            <span id="post-comments-count-badge-${post.id}">${post.commentsCount || 0} Comments</span>
+          </button>
+        </div>
+
+        <!-- Collapsible Comments Section -->
+        <div id="post-comments-drawer-${post.id}" class="hidden pt-3 border-t border-slate-100 dark:border-zinc-800/60 space-y-3">
+          <!-- Comments List Container -->
+          <div id="post-comments-list-${post.id}" class="space-y-2.5 max-h-60 overflow-y-auto pr-1">
+            <div class="py-4 text-center text-[11px] text-slate-400">Loading comments...</div>
+          </div>
+
+          <!-- Add Comment Input Box -->
+          <form onsubmit="window.submitPostComment('${post.id}', event)" class="flex items-center gap-2 pt-1">
+            <input 
+              type="text" 
+              id="post-comment-input-${post.id}" 
+              placeholder="Write a comment or prayer response..." 
+              required
+              class="flex-1 px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-zinc-800/80 border border-slate-200 dark:border-zinc-700 text-xs focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 dark:text-zinc-100"
+            />
+            <button 
+              type="submit" 
+              id="post-comment-btn-${post.id}"
+              class="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl transition-all cursor-pointer shrink-0 shadow-2xs"
+            >
+              Send
+            </button>
+          </form>
+        </div>
       </div>
     `;
 
@@ -171,6 +263,167 @@ function renderGlobalFeed() {
 
   if (window.lucide) window.lucide.createIcons();
 }
+
+window.reactToGlobalPost = async function(postId, reactionType) {
+  const user = window.auth?.currentUser;
+  if (!user) {
+    window.showToast?.("Please sign in to react to posts.", "warning");
+    return;
+  }
+
+  const post = activeFeedPosts.find(p => p.id === postId);
+  if (!post) return;
+
+  const currentReactions = post.reactions || {};
+  const currentUserReactions = post.userReactions || {};
+  const currentMyReaction = currentUserReactions[user.uid];
+
+  const newReactions = { ...currentReactions };
+  const newUserReactions = { ...currentUserReactions };
+
+  if (currentMyReaction === reactionType) {
+    // Toggle off
+    delete newUserReactions[user.uid];
+    newReactions[reactionType] = Math.max(0, (newReactions[reactionType] || 1) - 1);
+  } else {
+    // If was reacting to something else, remove prior
+    if (currentMyReaction && newReactions[currentMyReaction]) {
+      newReactions[currentMyReaction] = Math.max(0, newReactions[currentMyReaction] - 1);
+    }
+    newUserReactions[user.uid] = reactionType;
+    newReactions[reactionType] = (newReactions[reactionType] || 0) + 1;
+  }
+
+  // Optimistic UI update
+  post.reactions = newReactions;
+  post.userReactions = newUserReactions;
+  renderGlobalFeed();
+  window.soundEngine?.playClick?.();
+
+  try {
+    await window.db.collection('global_posts').doc(postId).update({
+      reactions: newReactions,
+      userReactions: newUserReactions,
+      likesCount: Object.values(newReactions).reduce((a, b) => a + b, 0)
+    });
+  } catch (err) {
+    console.warn("React error:", err);
+  }
+};
+
+window.togglePostComments = function(postId) {
+  const drawer = document.getElementById(`post-comments-drawer-${postId}`);
+  if (!drawer) return;
+
+  const isHidden = drawer.classList.contains('hidden');
+  if (isHidden) {
+    drawer.classList.remove('hidden');
+    loadPostComments(postId);
+    document.getElementById(`post-comment-input-${postId}`)?.focus();
+  } else {
+    drawer.classList.add('hidden');
+    if (activeCommentsListeners[postId]) {
+      activeCommentsListeners[postId]();
+      delete activeCommentsListeners[postId];
+    }
+  }
+  if (window.lucide) window.lucide.createIcons();
+};
+
+function loadPostComments(postId) {
+  const listEl = document.getElementById(`post-comments-list-${postId}`);
+  if (!listEl) return;
+
+  if (activeCommentsListeners[postId]) {
+    activeCommentsListeners[postId]();
+  }
+
+  activeCommentsListeners[postId] = window.db.collection('global_posts')
+    .doc(postId)
+    .collection('comments')
+    .orderBy('createdAt', 'asc')
+    .limit(50)
+    .onSnapshot(snap => {
+      listEl.innerHTML = '';
+      if (snap.empty) {
+        listEl.innerHTML = `
+          <div class="py-3 text-center text-[11px] text-slate-400">
+            No comments yet. Share an uplifting thought or prayer!
+          </div>
+        `;
+        return;
+      }
+
+      snap.forEach(doc => {
+        const c = doc.data();
+        const timeStr = c.createdAt?.toDate ? c.createdAt.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now';
+        const commentDiv = document.createElement('div');
+        commentDiv.className = "flex items-start gap-2.5 p-2 rounded-xl bg-slate-50/80 dark:bg-zinc-800/40 text-xs";
+        commentDiv.innerHTML = `
+          <div class="w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold text-[10px] shrink-0 overflow-hidden mt-0.5">
+            ${c.authorPhoto ? `<img src="${c.authorPhoto}" class="w-full h-full object-cover" />` : (c.authorName || 'B').charAt(0).toUpperCase()}
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between gap-1">
+              <span class="font-black text-[11px] text-slate-800 dark:text-zinc-200">${c.authorName || 'Believer'}</span>
+              <span class="text-[9px] font-mono text-slate-400">${timeStr}</span>
+            </div>
+            <p class="text-xs text-slate-700 dark:text-zinc-300 leading-relaxed mt-0.5 whitespace-pre-wrap">${c.text || ''}</p>
+          </div>
+        `;
+        listEl.appendChild(commentDiv);
+      });
+      listEl.scrollTop = listEl.scrollHeight;
+    }, err => console.warn("Comments error:", err));
+}
+
+window.submitPostComment = async function(postId, e) {
+  if (e) e.preventDefault();
+  const user = window.auth?.currentUser;
+  if (!user) {
+    window.showToast?.("Please sign in to comment.", "warning");
+    return;
+  }
+
+  const input = document.getElementById(`post-comment-input-${postId}`);
+  const btn = document.getElementById(`post-comment-btn-${postId}`);
+  const text = input ? input.value.trim() : '';
+  if (!text) return;
+
+  if (btn) btn.disabled = true;
+
+  try {
+    const authorName = window.currentUserProfile?.displayName || user.displayName || user.email.split('@')[0];
+    const authorPhoto = window.currentUserProfile?.photoURL || user.photoURL || '';
+
+    await window.db.collection('global_posts').doc(postId).collection('comments').add({
+      authorId: user.uid,
+      authorName: authorName,
+      authorPhoto: authorPhoto,
+      text: text,
+      createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    await window.db.collection('global_posts').doc(postId).update({
+      commentsCount: window.firebase.firestore.FieldValue.increment(1)
+    });
+
+    if (input) input.value = '';
+    window.soundEngine?.playSuccess?.();
+    window.showToast?.("Comment added.", "info");
+
+    const badge = document.getElementById(`post-comments-count-badge-${postId}`);
+    if (badge) {
+      const current = parseInt(badge.innerText, 10) || 0;
+      badge.innerText = `${current + 1} Comments`;
+    }
+  } catch (err) {
+    console.error("Comment submit error:", err);
+    window.showToast?.("Could not post comment: " + err.message, "error");
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+};
 
 window.publishGlobalPost = async function(e) {
   if (e) e.preventDefault();
@@ -223,12 +476,18 @@ window.publishGlobalPost = async function(e) {
       mediaType: mediaType,
       type: postType,
       likesCount: 0,
+      commentsCount: 0,
+      reactions: { amen: 0, love: 0, fire: 0, praise: 0, praying: 0, insight: 0 },
+      userReactions: {},
       createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
     });
 
     if (textInput) textInput.value = '';
     if (fileInput) fileInput.value = '';
     document.getElementById('feed-media-preview-container')?.classList.add('hidden');
+
+    // Automatically collapse the dropdown composer after posting
+    window.toggleFeedComposerDropdown();
 
     window.soundEngine?.playSuccess?.();
     window.showToast?.("Encouragement shared to Global Feed!", "success");
@@ -255,14 +514,7 @@ window.deleteGlobalPost = async function(postId) {
 };
 
 window.likeGlobalPost = async function(postId) {
-  try {
-    await window.db.collection('global_posts').doc(postId).update({
-      likesCount: window.firebase.firestore.FieldValue.increment(1)
-    });
-    window.soundEngine?.playClick?.();
-  } catch (e) {
-    console.warn("Like error:", e);
-  }
+  window.reactToGlobalPost(postId, 'amen');
 };
 
 // -------------------------------------------------------------

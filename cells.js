@@ -688,12 +688,25 @@ window.removeMemberFromFellowship = async function(membershipDocId, fellowshipId
 // 5. FELLOWSHIP EVENTS
 // -------------------------------------------------------------
 
+let selectedCreateEventThumbnailFile = null;
+let selectedEditEventThumbnailFile = null;
+let editEventExistingImageUrl = null;
+
 window.syncFellowshipEvents = function() {
   const fId = window.activeFellowshipId;
   const container = document.getElementById('fellowship-events-container');
   if (!container || !fId) return;
 
   if (activeFellowshipEventsListener) activeFellowshipEventsListener();
+
+  const user = window.auth?.currentUser;
+  const isSuperAdmin = window.checkIsSuperAdmin ? window.checkIsSuperAdmin() : (
+    window.currentUserRole === 'Super Admin' ||
+    user?.email?.toLowerCase() === 'danielgiobari644@gmail.com'
+  );
+  const isCellLeader = (window.userMemberships || []).some(m => 
+    m.fellowshipId === fId && (m.role === 'leader' || m.role === 'moderator' || m.role === 'admin')
+  ) || window.activeFellowshipRole === 'leader';
 
   activeFellowshipEventsListener = window.db.collection('events')
     .where('fellowshipId', '==', fId)
@@ -704,7 +717,7 @@ window.syncFellowshipEvents = function() {
         container.innerHTML = `
           <div class="col-span-full py-12 text-center text-slate-400 text-xs">
             <i data-lucide="calendar" class="w-10 h-10 mx-auto opacity-40 mb-2"></i>
-            <p class="font-bold">No upcoming events scheduled yet.</p>
+            <p class="font-bold">No upcoming gatherings scheduled yet.</p>
           </div>
         `;
         if (window.lucide) window.lucide.createIcons();
@@ -712,23 +725,82 @@ window.syncFellowshipEvents = function() {
       }
 
       snap.forEach(doc => {
-        const ev = doc.data();
+        const ev = { id: doc.id, ...doc.data() };
+        const canManage = isSuperAdmin || isCellLeader || (user && ev.createdBy === user.uid);
         const card = document.createElement('div');
-        card.className = "p-5 rounded-2xl glass-panel space-y-3 border border-slate-200 dark:border-zinc-800";
+        card.className = "rounded-3xl glass-panel overflow-hidden border border-slate-200 dark:border-zinc-800 shadow-xs hover:shadow-md transition-all flex flex-col justify-between group";
+
+        const optimizedImageUrl = ev.imageUrl ? (window.getOptimizedMediaUrl ? window.getOptimizedMediaUrl(ev.imageUrl, 'image', 700) : ev.imageUrl) : null;
+
         card.innerHTML = `
-          <div class="flex items-start justify-between gap-2">
-            <div>
-              <span class="text-[10px] font-black uppercase text-amber-500 tracking-wider">${ev.date || 'Upcoming'}</span>
-              <h4 class="font-black text-sm text-slate-900 dark:text-zinc-100 mt-0.5">${ev.title}</h4>
+          <div>
+            ${optimizedImageUrl ? `
+              <div class="relative h-44 bg-slate-100 dark:bg-zinc-800 overflow-hidden">
+                <img src="${optimizedImageUrl}" alt="${ev.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
+                <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+                ${canManage ? `
+                  <div class="absolute top-3 right-3 flex items-center gap-1.5 z-10">
+                    <button onclick="event.stopPropagation(); window.openEditEventModal('${ev.id}')" class="p-2 rounded-xl bg-slate-900/80 hover:bg-slate-950 text-white backdrop-blur-md shadow-sm cursor-pointer transition-all hover:scale-105" title="Edit Gathering">
+                      <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
+                    </button>
+                    <button onclick="event.stopPropagation(); window.deleteEvent('${ev.id}')" class="p-2 rounded-xl bg-rose-600/80 hover:bg-rose-700 text-white backdrop-blur-md shadow-sm cursor-pointer transition-all hover:scale-105" title="Delete Gathering">
+                      <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                    </button>
+                  </div>
+                ` : ''}
+              </div>
+            ` : `
+              <div class="relative h-24 bg-gradient-to-br from-amber-500/10 via-blue-500/5 to-transparent flex items-center justify-between p-5 border-b border-slate-100 dark:border-zinc-800">
+                <div class="flex items-center gap-2 text-amber-500">
+                  <i data-lucide="calendar" class="w-6 h-6"></i>
+                  <span class="text-xs font-black uppercase tracking-wider">Church Gathering</span>
+                </div>
+                ${canManage ? `
+                  <div class="flex items-center gap-1.5">
+                    <button onclick="event.stopPropagation(); window.openEditEventModal('${ev.id}')" class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300 shadow-2xs cursor-pointer" title="Edit Gathering">
+                      <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
+                    </button>
+                    <button onclick="event.stopPropagation(); window.deleteEvent('${ev.id}')" class="p-2 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 shadow-2xs cursor-pointer" title="Delete Gathering">
+                      <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                    </button>
+                  </div>
+                ` : ''}
+              </div>
+            `}
+
+            <div class="p-5 space-y-3">
+              <div class="flex items-center justify-between gap-2 flex-wrap">
+                <span class="text-[10px] font-black uppercase text-amber-500 tracking-wider px-2.5 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/40 border border-amber-200/50 dark:border-amber-900/40">
+                  ${ev.date || 'Upcoming'}
+                </span>
+                <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 font-bold">${ev.time || '6:00 PM'}</span>
+              </div>
+              <div>
+                <h4 class="font-black text-sm text-slate-900 dark:text-zinc-100">${ev.title}</h4>
+                <p class="text-xs text-slate-500 dark:text-zinc-400 leading-relaxed mt-1 line-clamp-3">${ev.description || ''}</p>
+              </div>
+              ${ev.location ? `
+                <div class="text-[11px] text-slate-600 dark:text-zinc-400 flex items-center gap-1.5 pt-1">
+                  <i data-lucide="map-pin" class="w-3.5 h-3.5 text-blue-500 shrink-0"></i> 
+                  <span class="truncate">${ev.location}</span>
+                </div>
+              ` : ''}
             </div>
-            <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 font-bold">${ev.time || ''}</span>
           </div>
-          <p class="text-xs text-slate-500 dark:text-zinc-400 leading-relaxed">${ev.description || ''}</p>
-          ${ev.location ? `
-            <div class="text-[11px] text-slate-600 dark:text-zinc-400 flex items-center gap-1.5 pt-1">
-              <i data-lucide="map-pin" class="w-3.5 h-3.5 text-blue-500"></i> ${ev.location}
+
+          <div class="p-4 pt-0 border-t border-slate-100 dark:border-zinc-800/60 mt-2 pt-3 flex items-center justify-between gap-2">
+            <span class="text-[11px] font-bold text-slate-400">${ev.attendeesCount || 0} Attending</span>
+            <div class="flex items-center gap-1.5">
+              ${canManage ? `
+                <button onclick="window.openChangeCoverModal('event', '${ev.id}', '${ev.title.replace(/'/g, "\\'")}', '${ev.imageUrl || ''}')" class="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300 text-[10px] font-bold transition-all cursor-pointer">
+                  Flyer
+                </button>
+              ` : ''}
+              <button onclick="window.toggleRsvpEvent ? window.toggleRsvpEvent('${ev.id}') : null" class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold uppercase transition-all cursor-pointer shadow-2xs">
+                RSVP
+              </button>
             </div>
-          ` : ''}
+          </div>
         `;
         container.appendChild(card);
       });
@@ -738,12 +810,39 @@ window.syncFellowshipEvents = function() {
 };
 
 window.openCreateEventModal = function(fId) {
+  selectedCreateEventThumbnailFile = null;
+  document.getElementById('create-event-form')?.reset();
+  document.getElementById('create-event-thumbnail-preview')?.classList.add('hidden');
   document.getElementById('create-event-modal')?.classList.remove('hidden');
   if (window.lucide) window.lucide.createIcons();
 };
 
 window.closeCreateEventModal = function() {
+  selectedCreateEventThumbnailFile = null;
   document.getElementById('create-event-modal')?.classList.add('hidden');
+};
+
+window.handleEventThumbnailSelected = function(e) {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  selectedCreateEventThumbnailFile = file;
+  const previewDiv = document.getElementById('create-event-thumbnail-preview');
+  const previewImg = document.getElementById('create-event-thumbnail-img');
+  if (previewDiv && previewImg) {
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      previewImg.src = evt.target.result;
+      previewDiv.classList.remove('hidden');
+    };
+    reader.readAsDataURL(file);
+  }
+};
+
+window.removeEventThumbnail = function() {
+  selectedCreateEventThumbnailFile = null;
+  const fileInput = document.getElementById('create-event-thumbnail-file');
+  if (fileInput) fileInput.value = '';
+  document.getElementById('create-event-thumbnail-preview')?.classList.add('hidden');
 };
 
 window.submitCreateEventForm = async function(e) {
@@ -757,32 +856,227 @@ window.submitCreateEventForm = async function(e) {
   const time = document.getElementById('create-event-time')?.value;
   const location = document.getElementById('create-event-location')?.value;
   const desc = document.getElementById('create-event-desc')?.value;
+  const submitBtn = document.getElementById('create-event-submit-btn');
 
   if (!title || !date) {
     window.showToast?.("Title and Date are required.", "error");
     return;
   }
 
+  const originalText = submitBtn ? submitBtn.innerText : 'Publish Gathering';
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.innerText = "Scheduling Gathering...";
+  }
+
   try {
+    let imageUrl = null;
+    if (selectedCreateEventThumbnailFile) {
+      if (window.uploadToCloudinary) {
+        try {
+          const upRes = await window.uploadToCloudinary(selectedCreateEventThumbnailFile, 'homecell/events');
+          imageUrl = upRes.url;
+        } catch (uploadErr) {
+          console.warn("Cloudinary upload fallback:", uploadErr);
+        }
+      }
+    }
+
     const f = (window.allFellowships || []).find(x => x.id === fId);
-    await window.db.collection('events').add({
+    const eventPayload = {
       fellowshipId: fId,
       fellowshipName: f?.name || 'Home Fellowship',
       title: title.trim(),
       date: date,
+      eventDate: date + 'T' + (time ? time.replace(/\s+/g, '') : '18:00'),
       time: time || '6:00 PM',
       location: location ? location.trim() : (f?.address || ''),
       description: desc ? desc.trim() : '',
+      imageUrl: imageUrl || '',
+      attendees: {},
+      attendeesCount: 0,
       createdBy: user.uid,
       createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
-    });
+    };
+
+    const docRef = await window.db.collection('events').add(eventPayload);
+    // Also mirror to upcoming_events for global visibility
+    await window.db.collection('upcoming_events').doc(docRef.id).set(eventPayload).catch(() => {});
 
     window.closeCreateEventModal();
     document.getElementById('create-event-form')?.reset();
-    window.showToast?.("Event scheduled successfully!", "success");
+    selectedCreateEventThumbnailFile = null;
+
+    window.soundEngine?.playSuccess?.();
+    window.showToast?.("🎉 Gathering scheduled successfully!", "success");
   } catch (err) {
     console.error("Create event error:", err);
     window.showToast?.("Failed to schedule event: " + err.message, "error");
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.innerText = originalText;
+    }
+  }
+};
+
+// -------------------------------------------------------------
+// GATHERING EDIT & DELETE CAPABILITIES
+// -------------------------------------------------------------
+
+window.openEditEventModal = async function(eventId) {
+  const modal = document.getElementById('edit-event-modal');
+  if (!modal) return;
+
+  try {
+    let eventData = null;
+    const docSnap = await window.db.collection('events').doc(eventId).get();
+    if (docSnap.exists) {
+      eventData = docSnap.data();
+    } else {
+      const upSnap = await window.db.collection('upcoming_events').doc(eventId).get();
+      if (upSnap.exists) eventData = upSnap.data();
+    }
+
+    if (!eventData) {
+      window.showToast?.("Event details could not be found.", "error");
+      return;
+    }
+
+    document.getElementById('edit-event-id').value = eventId;
+    document.getElementById('edit-event-title').value = eventData.title || '';
+    document.getElementById('edit-event-date').value = eventData.date || (eventData.eventDate ? eventData.eventDate.split('T')[0] : '');
+    document.getElementById('edit-event-time').value = eventData.time || '6:00 PM';
+    document.getElementById('edit-event-location').value = eventData.location || '';
+    document.getElementById('edit-event-desc').value = eventData.description || '';
+
+    selectedEditEventThumbnailFile = null;
+    editEventExistingImageUrl = eventData.imageUrl || null;
+
+    const previewDiv = document.getElementById('edit-event-thumbnail-preview');
+    const previewImg = document.getElementById('edit-event-thumbnail-img');
+    const fileInput = document.getElementById('edit-event-thumbnail-file');
+    if (fileInput) fileInput.value = '';
+
+    if (editEventExistingImageUrl && previewDiv && previewImg) {
+      previewImg.src = editEventExistingImageUrl;
+      previewDiv.classList.remove('hidden');
+    } else if (previewDiv) {
+      previewDiv.classList.add('hidden');
+    }
+
+    modal.classList.remove('hidden');
+    if (window.lucide) window.lucide.createIcons();
+  } catch (err) {
+    console.error("Open edit event modal error:", err);
+    window.showToast?.("Could not load gathering: " + err.message, "error");
+  }
+};
+
+window.closeEditEventModal = function() {
+  selectedEditEventThumbnailFile = null;
+  editEventExistingImageUrl = null;
+  document.getElementById('edit-event-modal')?.classList.add('hidden');
+};
+
+window.handleEditEventThumbnailSelected = function(e) {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  selectedEditEventThumbnailFile = file;
+  const previewDiv = document.getElementById('edit-event-thumbnail-preview');
+  const previewImg = document.getElementById('edit-event-thumbnail-img');
+  if (previewDiv && previewImg) {
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      previewImg.src = evt.target.result;
+      previewDiv.classList.remove('hidden');
+    };
+    reader.readAsDataURL(file);
+  }
+};
+
+window.removeEditEventThumbnail = function() {
+  selectedEditEventThumbnailFile = null;
+  editEventExistingImageUrl = '';
+  const fileInput = document.getElementById('edit-event-thumbnail-file');
+  if (fileInput) fileInput.value = '';
+  document.getElementById('edit-event-thumbnail-preview')?.classList.add('hidden');
+};
+
+window.submitEditEventForm = async function(e) {
+  if (e) e.preventDefault();
+  const eventId = document.getElementById('edit-event-id')?.value;
+  if (!eventId) return;
+
+  const title = document.getElementById('edit-event-title')?.value;
+  const date = document.getElementById('edit-event-date')?.value;
+  const time = document.getElementById('edit-event-time')?.value;
+  const location = document.getElementById('edit-event-location')?.value;
+  const desc = document.getElementById('edit-event-desc')?.value;
+  const submitBtn = document.getElementById('edit-event-submit-btn');
+
+  if (!title || !date) {
+    window.showToast?.("Title and Date are required.", "error");
+    return;
+  }
+
+  const originalText = submitBtn ? submitBtn.innerText : 'Save Changes';
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.innerText = "Updating Gathering...";
+  }
+
+  try {
+    let finalImageUrl = editEventExistingImageUrl;
+    if (selectedEditEventThumbnailFile) {
+      if (window.uploadToCloudinary) {
+        try {
+          const upRes = await window.uploadToCloudinary(selectedEditEventThumbnailFile, 'homecell/events');
+          finalImageUrl = upRes.url;
+        } catch (uploadErr) {
+          console.warn("Cloudinary upload fallback:", uploadErr);
+        }
+      }
+    }
+
+    const updates = {
+      title: title.trim(),
+      date: date,
+      eventDate: date + 'T' + (time ? time.replace(/\s+/g, '') : '18:00'),
+      time: time || '6:00 PM',
+      location: location ? location.trim() : '',
+      description: desc ? desc.trim() : '',
+      imageUrl: finalImageUrl || '',
+      updatedAt: window.firebase.firestore.FieldValue.serverTimestamp()
+    };
+
+    await window.db.collection('events').doc(eventId).update(updates).catch(() => {});
+    await window.db.collection('upcoming_events').doc(eventId).update(updates).catch(() => {});
+
+    window.closeEditEventModal();
+    window.soundEngine?.playSuccess?.();
+    window.showToast?.("Gathering updated successfully!", "success");
+  } catch (err) {
+    console.error("Save edit event error:", err);
+    window.showToast?.("Failed to update gathering: " + err.message, "error");
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.innerText = originalText;
+    }
+  }
+};
+
+window.deleteEvent = async function(eventId) {
+  if (!confirm("Are you sure you want to delete this gathering?")) return;
+  try {
+    await window.db.collection('events').doc(eventId).delete().catch(() => {});
+    await window.db.collection('upcoming_events').doc(eventId).delete().catch(() => {});
+    window.soundEngine?.playSuccess?.();
+    window.showToast?.("Gathering deleted successfully.", "info");
+  } catch (err) {
+    console.error("Delete event error:", err);
+    window.showToast?.("Could not delete gathering: " + err.message, "error");
   }
 };
 

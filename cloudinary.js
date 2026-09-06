@@ -1,11 +1,85 @@
 // cloudinary.js
-// Home.cell - Real Unsigned Cloudinary Media Storage & Delivery
+// Home.cell - Real Unsigned Cloudinary Media Storage & Delivery with Auto-Optimization
 // Cloud Name: dhi61h6ea
 // Unsigned Upload Preset: homecell_uploads
 
 const CLOUDINARY_CLOUD_NAME = 'dhi61h6ea';
 const CLOUDINARY_UPLOAD_PRESET = 'homecell_uploads';
 const CLOUDINARY_API_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/auto/upload`;
+
+/**
+ * Transforms Cloudinary URLs for ultra-fast CDN delivery:
+ * - Images: auto-format (WebP/AVIF), auto-quality, capped responsive width
+ * - Videos: auto-codec, adaptive quality, capped resolution
+ */
+function getOptimizedMediaUrl(url, type = 'image', width = 850) {
+  if (!url || typeof url !== 'string') return url || '';
+  if (url.includes('res.cloudinary.com') && url.includes('/upload/')) {
+    if (type === 'video') {
+      return url.replace('/upload/', `/upload/q_auto,vc_auto,w_${Math.min(width, 1080)}/`);
+    } else {
+      return url.replace('/upload/', `/upload/f_auto,q_auto,w_${width},c_limit/`);
+    }
+  }
+  return url;
+}
+
+/**
+ * Fast client-side image compression before uploading to Cloudinary
+ * Cuts multi-megabyte camera photos down to crisp ~250KB in milliseconds
+ */
+async function compressImageFile(file, maxWidth = 1400, quality = 0.85) {
+  if (!file || !file.type.startsWith('image/') || file.type === 'image/gif') {
+    return file; // Do not compress GIFs or non-images
+  }
+
+  // If already small (< 400KB), return as-is
+  if (file.size <= 400 * 1024) {
+    return file;
+  }
+
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob(
+          (blob) => {
+            if (blob && blob.size < file.size) {
+              const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, ".jpg"), {
+                type: 'image/jpeg',
+                lastModified: Date.now()
+              });
+              resolve(compressedFile);
+            } else {
+              resolve(file);
+            }
+          },
+          'image/jpeg',
+          quality
+        );
+      };
+      img.onerror = () => resolve(file);
+      img.src = e.target.result;
+    };
+    reader.onerror = () => resolve(file);
+    reader.readAsDataURL(file);
+  });
+}
 
 /**
  * Upload a media file (image or video) directly to Cloudinary using unsigned preset.
@@ -37,8 +111,18 @@ async function uploadToCloudinary(file, folder = 'homecell/feed', onProgress = n
     throw new Error(`Video is too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum allowed is 100MB.`);
   }
 
+  // Fast pre-compression for images to speed up uploads 10x
+  let uploadableFile = file;
+  if (isImage) {
+    try {
+      uploadableFile = await compressImageFile(file);
+    } catch (_) {
+      uploadableFile = file;
+    }
+  }
+
   const formData = new FormData();
-  formData.append('file', file);
+  formData.append('file', uploadableFile);
   formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
   if (folder) {
     formData.append('folder', folder);
@@ -73,7 +157,7 @@ async function uploadToCloudinary(file, folder = 'homecell/feed', onProgress = n
                 url: secureUrl,
                 publicId: publicId || '',
                 type: resourceType,
-                bytes: data.bytes || file.size || 0,
+                bytes: data.bytes || uploadableFile.size || 0,
                 format: data.format || '',
                 uploadedBy: user.uid,
                 uploadedByName: window.currentUserProfile?.displayName || user.displayName || 'Believer',
@@ -115,5 +199,7 @@ async function uploadToCloudinary(file, folder = 'homecell/feed', onProgress = n
 }
 
 window.uploadToCloudinary = uploadToCloudinary;
+window.compressImageFile = compressImageFile;
+window.getOptimizedMediaUrl = getOptimizedMediaUrl;
 window.CLOUDINARY_CLOUD_NAME = CLOUDINARY_CLOUD_NAME;
 window.CLOUDINARY_UPLOAD_PRESET = CLOUDINARY_UPLOAD_PRESET;

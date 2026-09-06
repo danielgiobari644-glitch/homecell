@@ -66,13 +66,16 @@ function renderEventsGrid(events) {
     const isAttending = user && ev.attendees && ev.attendees[user.uid] === true;
     const attendeesCount = ev.attendeesCount || 0;
     const formattedDate = formatEventDatesDisplay(ev);
+    const canManage = isSuperAdmin || (user && ev.createdBy === user.uid);
+    const optimizedImage = ev.imageUrl ? (window.getOptimizedMediaUrl ? window.getOptimizedMediaUrl(ev.imageUrl, 'image', 700) : ev.imageUrl) : null;
 
     return `
       <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between group relative">
         <div>
-          <div class="relative h-44 bg-slate-100 dark:bg-zinc-800 overflow-hidden">
-            ${ev.imageUrl ? `
-              <img src="${ev.imageUrl}" alt="${ev.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+          <div class="relative h-48 bg-slate-100 dark:bg-zinc-800 overflow-hidden">
+            ${optimizedImage ? `
+              <img src="${optimizedImage}" alt="${ev.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
+              <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
             ` : `
               <div class="w-full h-full flex flex-col items-center justify-center text-slate-400 p-4 text-center">
                 <i data-lucide="calendar" class="w-10 h-10 mb-1 opacity-40"></i>
@@ -80,11 +83,19 @@ function renderEventsGrid(events) {
               </div>
             `}
             
-            ${isSuperAdmin ? `
-              <button onclick="event.stopPropagation(); window.openChangeCoverModal('event', '${ev.id}')" class="absolute top-3 right-3 px-2.5 py-1.5 rounded-xl bg-slate-950/80 hover:bg-slate-950 text-white text-[10px] font-black uppercase tracking-wider backdrop-blur-md shadow-md flex items-center gap-1.5 border border-white/20 z-10 cursor-pointer transition-all hover:scale-105">
-                <i data-lucide="camera" class="w-3.5 h-3.5 text-amber-400"></i>
-                <span>Change Cover</span>
-              </button>
+            ${canManage ? `
+              <div class="absolute top-3 right-3 flex items-center gap-1.5 z-10">
+                <button onclick="event.stopPropagation(); window.openEditEventModal('${ev.id}')" class="px-2.5 py-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-950 text-white text-[10px] font-bold backdrop-blur-md shadow-md flex items-center gap-1 border border-white/10 cursor-pointer transition-all hover:scale-105" title="Edit Gathering">
+                  <i data-lucide="edit-2" class="w-3.5 h-3.5 text-amber-400"></i>
+                  <span>Edit</span>
+                </button>
+                <button onclick="event.stopPropagation(); window.deleteEvent('${ev.id}')" class="p-1.5 rounded-xl bg-rose-600/80 hover:bg-rose-700 text-white backdrop-blur-md shadow-md border border-white/10 cursor-pointer transition-all hover:scale-105" title="Delete Gathering">
+                  <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                </button>
+                <button onclick="event.stopPropagation(); window.openChangeCoverModal('event', '${ev.id}', '${(ev.title || '').replace(/'/g, "\\'")}', '${ev.imageUrl || ''}')" class="p-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-950 text-white text-[10px] backdrop-blur-md shadow-md border border-white/10 cursor-pointer transition-all hover:scale-105" title="Change Flyer">
+                  <i data-lucide="camera" class="w-3.5 h-3.5 text-blue-400"></i>
+                </button>
+              </div>
             ` : ''}
           </div>
 

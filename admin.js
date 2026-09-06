@@ -293,15 +293,245 @@ window.adminDeleteFellowship = async function(fellowshipId) {
   }
 };
 
+let adminActiveRosterFellowshipId = null;
+let adminRosterListener = null;
+
 window.adminViewFellowshipMembers = function(fellowshipId) {
-  window.db.collection('memberships').where('fellowshipId', '==', fellowshipId).get().then(snap => {
-    let msg = `Members (${snap.size}):\n\n`;
-    snap.forEach(d => {
-      const m = d.data();
-      msg += `• ${m.userDisplayName || 'Believer'} (${m.userEmail}) — Role: ${m.role}\n`;
+  adminActiveRosterFellowshipId = fellowshipId;
+  const f = (window.allFellowships || []).find(x => x.id === fellowshipId);
+  const modal = document.getElementById('admin-cell-roster-modal');
+  if (!modal) return;
+
+  const titleEl = document.getElementById('admin-roster-cell-title');
+  const badgeEl = document.getElementById('admin-roster-cell-badge');
+  if (titleEl) titleEl.innerText = `${f?.name || 'Fellowship'} Roster`;
+  if (badgeEl) badgeEl.innerText = `Super Admin Governance • ${f?.city || 'Local'}`;
+
+  modal.classList.remove('hidden');
+  loadAdminCellRoster(fellowshipId);
+  if (window.lucide) window.lucide.createIcons();
+};
+
+window.closeAdminCellRosterModal = function() {
+  if (adminRosterListener) {
+    adminRosterListener();
+    adminRosterListener = null;
+  }
+  document.getElementById('admin-cell-roster-modal')?.classList.add('hidden');
+};
+
+function loadAdminCellRoster(fellowshipId) {
+  const listEl = document.getElementById('admin-roster-members-list');
+  const countEl = document.getElementById('admin-roster-count-text');
+  if (!listEl) return;
+
+  if (adminRosterListener) adminRosterListener();
+
+  adminRosterListener = window.db.collection('memberships')
+    .where('fellowshipId', '==', fellowshipId)
+    .onSnapshot(snap => {
+      if (countEl) countEl.innerText = `${snap.size} Believers Registered in Cell`;
+
+      if (snap.empty) {
+        listEl.innerHTML = `
+          <div class="py-10 text-center text-slate-400 text-xs">
+            <i data-lucide="users" class="w-8 h-8 mx-auto opacity-40 mb-2"></i>
+            <p class="font-bold">No members in this cell yet.</p>
+            <p class="text-[11px] mt-1">Click "+ Add Member to Cell" above to assign believers.</p>
+          </div>
+        `;
+        if (window.lucide) window.lucide.createIcons();
+        return;
+      }
+
+      listEl.innerHTML = snap.docs.map(doc => {
+        const m = doc.data();
+        const role = m.role || 'member';
+        const joinedStr = m.joinedAt?.toDate ? m.joinedAt.toDate().toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recently';
+
+        return `
+          <div class="flex items-center justify-between gap-3 p-3 rounded-2xl bg-slate-50 dark:bg-zinc-800/60 border border-slate-100 dark:border-zinc-800 text-xs">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs shrink-0 overflow-hidden">
+                ${(m.userDisplayName || 'B').charAt(0).toUpperCase()}
+              </div>
+              <div class="min-w-0">
+                <div class="font-bold text-slate-900 dark:text-zinc-100 truncate">${m.userDisplayName || 'Believer'}</div>
+                <div class="text-[10px] text-slate-400 truncate">${m.userEmail || ''} • Joined ${joinedStr}</div>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2 shrink-0">
+              <select onchange="window.adminUpdateMemberRole('${doc.id}', this.value)" class="px-2 py-1 rounded-lg bg-white dark:bg-zinc-700 border border-slate-200 dark:border-zinc-600 text-[11px] font-bold text-slate-700 dark:text-zinc-200 outline-none cursor-pointer">
+                <option value="member" ${role === 'member' ? 'selected' : ''}>Member</option>
+                <option value="moderator" ${role === 'moderator' ? 'selected' : ''}>Moderator</option>
+                <option value="leader" ${role === 'leader' ? 'selected' : ''}>Cell Leader</option>
+              </select>
+
+              <button onclick="window.adminRemoveMemberFromCell('${doc.id}', '${fellowshipId}')" class="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg cursor-pointer transition-all" title="Remove Member">
+                <i data-lucide="user-minus" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      if (window.lucide) window.lucide.createIcons();
+    }, err => {
+      console.warn("Roster error:", err);
+      if (listEl) listEl.innerHTML = `<div class="py-6 text-center text-rose-500 text-xs">Failed to load roster: ${err.message}</div>`;
     });
-    alert(msg);
-  }).catch(e => alert(e.message));
+}
+
+window.openAdminAddMemberFromRoster = function() {
+  if (adminActiveRosterFellowshipId) {
+    window.openAdminAddMemberModal(adminActiveRosterFellowshipId);
+  }
+};
+
+window.openAdminAddMemberModal = async function(fellowshipId, prefillUserId = null) {
+  adminActiveRosterFellowshipId = fellowshipId;
+  const f = (window.allFellowships || []).find(x => x.id === fellowshipId);
+  const modal = document.getElementById('admin-add-member-modal');
+  if (!modal) return;
+
+  document.getElementById('admin-add-member-cell-id').value = fellowshipId;
+  document.getElementById('admin-add-member-cell-name').value = f?.name || 'Cell Fellowship';
+
+  const userSelect = document.getElementById('admin-add-member-user-select');
+  if (userSelect) {
+    userSelect.innerHTML = `<option value="">-- Choose from registered believers --</option>`;
+    try {
+      const snap = await window.db.collection('users').limit(100).get();
+      snap.forEach(doc => {
+        const u = doc.data();
+        const opt = document.createElement('option');
+        opt.value = doc.id;
+        opt.text = `${u.displayName || 'Believer'} (${u.email || 'No email'})`;
+        opt.setAttribute('data-name', u.displayName || 'Believer');
+        opt.setAttribute('data-email', u.email || '');
+        if (prefillUserId && doc.id === prefillUserId) opt.selected = true;
+        userSelect.appendChild(opt);
+      });
+    } catch (e) {
+      console.warn("Users load error:", e);
+    }
+  }
+
+  document.getElementById('admin-add-member-email-input').value = '';
+  modal.classList.remove('hidden');
+  if (window.lucide) window.lucide.createIcons();
+};
+
+window.closeAdminAddMemberModal = function() {
+  document.getElementById('admin-add-member-modal')?.classList.add('hidden');
+};
+
+window.submitAdminAddMember = async function(e) {
+  if (e) e.preventDefault();
+  const fId = document.getElementById('admin-add-member-cell-id')?.value;
+  const userSelect = document.getElementById('admin-add-member-user-select');
+  const emailInput = document.getElementById('admin-add-member-email-input');
+  const roleSelect = document.getElementById('admin-add-member-role-select');
+  const submitBtn = document.getElementById('admin-add-member-submit-btn');
+
+  const selectedUid = userSelect?.value;
+  const typedEmail = emailInput?.value.trim();
+  const role = roleSelect?.value || 'member';
+
+  if (!fId) {
+    window.showToast?.("No target fellowship selected.", "error");
+    return;
+  }
+  if (!selectedUid && !typedEmail) {
+    window.showToast?.("Please select a believer or provide an email.", "error");
+    return;
+  }
+
+  const origText = submitBtn ? submitBtn.innerText : 'Confirm & Add';
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.innerText = "Adding Believer...";
+  }
+
+  try {
+    let targetUid = selectedUid;
+    let targetName = 'Believer';
+    let targetEmail = typedEmail;
+
+    if (selectedUid) {
+      const opt = userSelect.options[userSelect.selectedIndex];
+      targetName = opt?.getAttribute('data-name') || 'Believer';
+      targetEmail = opt?.getAttribute('data-email') || '';
+    } else if (typedEmail) {
+      // Find user by email
+      const userSnap = await window.db.collection('users').where('email', '==', typedEmail).limit(1).get();
+      if (!userSnap.empty) {
+        targetUid = userSnap.docs[0].id;
+        targetName = userSnap.docs[0].data().displayName || 'Believer';
+      } else {
+        targetUid = 'user_' + Date.now();
+      }
+    }
+
+    const f = (window.allFellowships || []).find(x => x.id === fId);
+    const membershipDocId = `${fId}_${targetUid}`;
+
+    await window.db.collection('memberships').doc(membershipDocId).set({
+      fellowshipId: fId,
+      fellowshipName: f?.name || 'Home Fellowship',
+      userId: targetUid,
+      userDisplayName: targetName,
+      userEmail: targetEmail,
+      role: role,
+      joinedAt: window.firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+
+    // Increment fellowship member count
+    await window.db.collection('fellowships').doc(fId).update({
+      memberCount: window.firebase.firestore.FieldValue.increment(1)
+    }).catch(() => {});
+
+    window.closeAdminAddMemberModal();
+    window.soundEngine?.playSuccess?.();
+    window.showToast?.(`Added ${targetName} to ${f?.name || 'fellowship'} as ${role}.`, "success");
+  } catch (err) {
+    console.error("Add member error:", err);
+    window.showToast?.("Failed to add member: " + err.message, "error");
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.innerText = origText;
+    }
+  }
+};
+
+window.adminUpdateMemberRole = async function(membershipDocId, newRole) {
+  try {
+    await window.db.collection('memberships').doc(membershipDocId).update({
+      role: newRole
+    });
+    window.soundEngine?.playSuccess?.();
+    window.showToast?.(`Member role updated to ${newRole}.`, "success");
+  } catch (err) {
+    console.error("Update role error:", err);
+    window.showToast?.("Failed to update role: " + err.message, "error");
+  }
+};
+
+window.adminRemoveMemberFromCell = async function(membershipDocId, fellowshipId) {
+  if (!confirm("Are you sure you want to remove this believer from the cell roster?")) return;
+  try {
+    await window.db.collection('memberships').doc(membershipDocId).delete();
+    await window.db.collection('fellowships').doc(fellowshipId).update({
+      memberCount: window.firebase.firestore.FieldValue.increment(-1)
+    }).catch(() => {});
+    window.soundEngine?.playSuccess?.();
+    window.showToast?.("Believer removed from fellowship.", "info");
+  } catch (err) {
+    console.error("Remove member error:", err);
+    window.showToast?.("Could not remove believer: " + err.message, "error");
+  }
 };
 
 // -------------------------------------------------------------
@@ -314,9 +544,14 @@ function renderAdminUsersView() {
 
   container.innerHTML = `
     <div class="space-y-4">
-      <div>
-        <h3 class="font-display font-black text-xl text-slate-900 dark:text-zinc-100">Registered Believers</h3>
-        <p class="text-xs text-slate-500">Promote administrators or manage user privileges.</p>
+      <div class="flex items-center justify-between flex-wrap gap-2">
+        <div>
+          <h3 class="font-display font-black text-xl text-slate-900 dark:text-zinc-100">Registered Believers</h3>
+          <p class="text-xs text-slate-500">Assign members directly into cells, promote administrators, or review accounts.</p>
+        </div>
+        <button onclick="window.openAdminDevotionalModal()" class="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer inline-flex items-center gap-1.5 shadow-2xs">
+          <i data-lucide="book-open" class="w-4 h-4"></i> Publish Devotional
+        </button>
       </div>
 
       <div class="glass-panel rounded-3xl p-4 overflow-x-auto border border-slate-200 dark:border-zinc-800">
@@ -368,17 +603,77 @@ function renderAdminUsersView() {
           </td>
           <td class="py-3 px-3 font-mono text-slate-600 dark:text-zinc-300">${u.streak || 1}d</td>
           <td class="py-3 px-3 text-right">
-            ${!isDaniel ? `
-              <button onclick="window.adminToggleUserAdmin('${doc.id}', ${!isSuperAdmin})" class="text-[11px] font-bold text-blue-600 hover:underline cursor-pointer">
-                ${isSuperAdmin ? 'Demote to Member' : 'Promote to Super Admin'}
+            <div class="flex items-center justify-end gap-2">
+              <button onclick="window.adminPromptAddUserToCell('${doc.id}', '${(u.displayName || '').replace(/'/g, "\\'")}', '${u.email || ''}')" class="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 font-bold text-[11px] rounded-lg cursor-pointer">
+                + Add to Cell
               </button>
-            ` : '<span class="text-[10px] font-mono text-slate-400">Root Owner</span>'}
+              ${!isDaniel ? `
+                <button onclick="window.adminToggleUserAdmin('${doc.id}', ${!isSuperAdmin})" class="text-[11px] font-bold text-blue-600 hover:underline cursor-pointer">
+                  ${isSuperAdmin ? 'Demote' : 'Promote Admin'}
+                </button>
+              ` : '<span class="text-[10px] font-mono text-slate-400">Root</span>'}
+            </div>
           </td>
         </tr>
       `;
     }).join('');
+
+    if (window.lucide) window.lucide.createIcons();
   });
 }
+
+window.adminPromptAddUserToCell = function(userId, displayName, email) {
+  const fellowships = window.allFellowships || [];
+  if (fellowships.length === 0) {
+    window.showToast?.("No fellowships exist to assign this user to.", "warning");
+    return;
+  }
+  window.openAdminAddMemberModal(fellowships[0].id, userId);
+};
+
+window.openAdminDevotionalModal = function() {
+  document.getElementById('admin-devotional-modal')?.classList.remove('hidden');
+  const dateInput = document.getElementById('admin-devotional-date-input');
+  if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
+  if (window.lucide) window.lucide.createIcons();
+};
+
+window.closeAdminDevotionalModal = function() {
+  document.getElementById('admin-devotional-modal')?.classList.add('hidden');
+};
+
+window.submitAdminDevotional = async function(e) {
+  if (e) e.preventDefault();
+  const title = document.getElementById('admin-devotional-title-input')?.value.trim();
+  const ref = document.getElementById('admin-devotional-ref-input')?.value.trim();
+  const date = document.getElementById('admin-devotional-date-input')?.value;
+  const content = document.getElementById('admin-devotional-content-input')?.value.trim();
+  const user = window.auth?.currentUser;
+
+  if (!title || !ref || !content) {
+    window.showToast?.("Please complete all devotional fields.", "error");
+    return;
+  }
+
+  try {
+    await window.db.collection('daily_devotionals').add({
+      title,
+      reference: ref,
+      date,
+      content,
+      authorName: window.currentUserProfile?.displayName || user?.displayName || 'Super Admin',
+      createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    window.closeAdminDevotionalModal();
+    document.getElementById('admin-devotional-form')?.reset();
+    window.soundEngine?.playSuccess?.();
+    window.showToast?.("Daily Devotional published across all fellowships!", "success");
+  } catch (err) {
+    console.error("Publish devotional error:", err);
+    window.showToast?.("Failed to publish devotional: " + err.message, "error");
+  }
+};
 
 window.adminToggleUserAdmin = async function(uid, makeAdmin) {
   try {

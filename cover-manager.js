@@ -398,3 +398,9 @@ window.saveSelectedCoverPhoto = saveSelectedCoverPhoto;
 window.saveCoverPhoto = saveSelectedCoverPhoto;
 window.compressImageToDataUrl = compressImageToDataUrl;
 window.COVER_PRESETS = COVER_PRESETS;
+
+if (window.__pendingCoverCall && Array.isArray(window.__pendingCoverCall)) {
+  const call = window.__pendingCoverCall;
+  window.__pendingCoverCall = null;
+  openChangeCoverModal(call[0], call[1], call[2], call[3]);
+}
