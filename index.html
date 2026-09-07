@@ -357,9 +357,9 @@
             </div>
           </div>
 
-          <!-- Right: Desktop Navigation Tabs & Profile -->
+          <!-- Right: Desktop Navigation Tabs & Profile (Desktop only >= 1024px; mobile and tabs use bottom nav) -->
           <div class="flex items-center gap-1 sm:gap-2">
-            <nav class="hidden md:flex items-center gap-1">
+            <nav class="hidden lg:flex items-center gap-1">
               <button id="nav-btn-feed" onclick="switchTab('feed')" class="px-3.5 py-1.5 rounded-xl text-xs font-black transition-all bg-blue-600 text-white cursor-pointer shadow-xs">
                 Global Feed
               </button>
@@ -378,7 +378,7 @@
               <button id="nav-btn-profile" onclick="switchTab('profile')" class="px-3.5 py-1.5 rounded-xl text-xs font-black text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer">
                 Profile
               </button>
-              <button id="nav-btn-admin" onclick="switchTab('admin')" class="super-admin-only hidden px-3.5 py-1.5 rounded-xl text-xs font-black bg-amber-500 text-slate-950 transition-all cursor-pointer shadow-xs">
+              <button id="nav-btn-admin" onclick="switchTab('admin')" style="display: none;" class="super-admin-only hidden px-3.5 py-1.5 rounded-xl text-xs font-black bg-amber-500 text-slate-950 transition-all cursor-pointer shadow-xs">
                 Admin
               </button>
             </nav>
@@ -455,7 +455,7 @@
       </header>
 
       <!-- Main Application Content Views -->
-      <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 pb-24 md:pb-8">
+      <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 pb-28 lg:pb-8">
         <!-- ========================================== -->
         <!-- VIEW 1: GLOBAL FEED (#tab-feed)            -->
         <!-- ========================================== -->
@@ -1047,36 +1047,38 @@
         </section>
       </main>
 
-      <!-- Mobile Bottom Navigation Bar (Responsive on all mobile screens) -->
-      <nav class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border-t border-slate-200 dark:border-zinc-800 px-1 py-1.5 flex justify-around items-center">
-        <button onclick="switchTab('feed')" id="mobile-nav-feed" class="flex flex-col items-center justify-center p-1.5 min-w-[50px] min-h-[44px] text-blue-600 text-[9px] sm:text-[10px] font-bold transition-all cursor-pointer">
-          <i data-lucide="newspaper" class="w-4 h-4 sm:w-5 sm:h-5"></i>
-          <span class="mt-0.5">Feed</span>
-        </button>
-        <button onclick="switchTab('fellowship')" id="mobile-nav-fellowship" class="flex flex-col items-center justify-center p-1.5 min-w-[50px] min-h-[44px] text-slate-400 text-[9px] sm:text-[10px] font-bold transition-all cursor-pointer">
-          <i data-lucide="home" class="w-4 h-4 sm:w-5 sm:h-5"></i>
-          <span class="mt-0.5">Cell</span>
-        </button>
-        <button onclick="switchTab('theword')" id="mobile-nav-theword" class="flex flex-col items-center justify-center p-1.5 min-w-[50px] min-h-[44px] text-slate-400 text-[9px] sm:text-[10px] font-bold transition-all cursor-pointer">
-          <i data-lucide="book-open" class="w-4 h-4 sm:w-5 sm:h-5"></i>
-          <span class="mt-0.5">The Word</span>
-        </button>
-        <button onclick="switchTab('global-chat')" id="mobile-nav-global-chat" class="flex flex-col items-center justify-center p-1.5 min-w-[50px] min-h-[44px] text-slate-400 text-[9px] sm:text-[10px] font-bold transition-all cursor-pointer">
-          <i data-lucide="message-circle" class="w-4 h-4 sm:w-5 sm:h-5"></i>
-          <span class="mt-0.5">Chat</span>
-        </button>
-        <button onclick="switchTab('halloffame')" id="mobile-nav-halloffame" class="flex flex-col items-center justify-center p-1.5 min-w-[50px] min-h-[44px] text-slate-400 text-[9px] sm:text-[10px] font-bold transition-all cursor-pointer">
-          <i data-lucide="award" class="w-4 h-4 sm:w-5 sm:h-5"></i>
-          <span class="mt-0.5">Rankings</span>
-        </button>
-        <button onclick="switchTab('profile')" id="mobile-nav-profile" class="flex flex-col items-center justify-center p-1.5 min-w-[50px] min-h-[44px] text-slate-400 text-[9px] sm:text-[10px] font-bold transition-all cursor-pointer">
-          <i data-lucide="user" class="w-4 h-4 sm:w-5 sm:h-5"></i>
-          <span class="mt-0.5">Profile</span>
-        </button>
-        <button onclick="switchTab('admin')" id="mobile-nav-admin" class="super-admin-only hidden flex flex-col items-center justify-center p-1.5 min-w-[50px] min-h-[44px] text-amber-500 text-[9px] sm:text-[10px] font-bold transition-all cursor-pointer">
-          <i data-lucide="shield" class="w-4 h-4 sm:w-5 sm:h-5"></i>
-          <span class="mt-0.5">Admin</span>
-        </button>
+      <!-- Mobile & Tablet Bottom Navigation Bar (Active on mobile and tablets; hidden on desktop >= 1024px) -->
+      <nav class="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border-t border-slate-200 dark:border-zinc-800 px-2 sm:px-6 py-1.5 shadow-lg">
+        <div class="max-w-2xl mx-auto flex justify-around items-center w-full">
+          <button onclick="switchTab('feed')" id="mobile-nav-feed" class="flex flex-col items-center justify-center p-1.5 min-w-[50px] min-h-[44px] text-blue-600 text-[9px] sm:text-[10px] font-bold transition-all cursor-pointer">
+            <i data-lucide="newspaper" class="w-4 h-4 sm:w-5 sm:h-5"></i>
+            <span class="mt-0.5">Feed</span>
+          </button>
+          <button onclick="switchTab('fellowship')" id="mobile-nav-fellowship" class="flex flex-col items-center justify-center p-1.5 min-w-[50px] min-h-[44px] text-slate-400 text-[9px] sm:text-[10px] font-bold transition-all cursor-pointer">
+            <i data-lucide="home" class="w-4 h-4 sm:w-5 sm:h-5"></i>
+            <span class="mt-0.5">Cell</span>
+          </button>
+          <button onclick="switchTab('theword')" id="mobile-nav-theword" class="flex flex-col items-center justify-center p-1.5 min-w-[50px] min-h-[44px] text-slate-400 text-[9px] sm:text-[10px] font-bold transition-all cursor-pointer">
+            <i data-lucide="book-open" class="w-4 h-4 sm:w-5 sm:h-5"></i>
+            <span class="mt-0.5">The Word</span>
+          </button>
+          <button onclick="switchTab('global-chat')" id="mobile-nav-global-chat" class="flex flex-col items-center justify-center p-1.5 min-w-[50px] min-h-[44px] text-slate-400 text-[9px] sm:text-[10px] font-bold transition-all cursor-pointer">
+            <i data-lucide="message-circle" class="w-4 h-4 sm:w-5 sm:h-5"></i>
+            <span class="mt-0.5">Chat</span>
+          </button>
+          <button onclick="switchTab('halloffame')" id="mobile-nav-halloffame" class="flex flex-col items-center justify-center p-1.5 min-w-[50px] min-h-[44px] text-slate-400 text-[9px] sm:text-[10px] font-bold transition-all cursor-pointer">
+            <i data-lucide="award" class="w-4 h-4 sm:w-5 sm:h-5"></i>
+            <span class="mt-0.5">Rankings</span>
+          </button>
+          <button onclick="switchTab('profile')" id="mobile-nav-profile" class="flex flex-col items-center justify-center p-1.5 min-w-[50px] min-h-[44px] text-slate-400 text-[9px] sm:text-[10px] font-bold transition-all cursor-pointer">
+            <i data-lucide="user" class="w-4 h-4 sm:w-5 sm:h-5"></i>
+            <span class="mt-0.5">Profile</span>
+          </button>
+          <button onclick="switchTab('admin')" id="mobile-nav-admin" style="display: none;" class="super-admin-only hidden flex flex-col items-center justify-center p-1.5 min-w-[50px] min-h-[44px] text-amber-500 text-[9px] sm:text-[10px] font-bold transition-all cursor-pointer">
+            <i data-lucide="shield" class="w-4 h-4 sm:w-5 sm:h-5"></i>
+            <span class="mt-0.5">Admin</span>
+          </button>
+        </div>
       </nav>
     </div>
 
@@ -1967,6 +1969,23 @@
 
       // App Tab Navigation
       window.switchTab = function(tabName) {
+        const isSuperAdmin = typeof window.checkIsSuperAdmin === 'function' ? window.checkIsSuperAdmin() : false;
+
+        // Security check: non-super-admins cannot navigate to admin
+        if (tabName === 'admin' && !isSuperAdmin) {
+          tabName = 'feed';
+          if (typeof window.showToast === 'function') {
+            window.showToast("Admin Command Center is restricted to Super Admin.", "warning");
+          }
+        }
+
+        // Keep body class in sync
+        if (isSuperAdmin) {
+          document.body.classList.add('is-super-admin');
+        } else {
+          document.body.classList.remove('is-super-admin');
+        }
+
         window.currentAppTab = tabName;
         const tabs = ['feed', 'global-chat', 'fellowship', 'theword', 'halloffame', 'profile', 'admin'];
 
@@ -1975,19 +1994,60 @@
           const mobileBtn = document.getElementById(`mobile-nav-${t}`);
           const section = document.getElementById(`tab-${t}`);
 
-          if (btn) {
-            if (t === tabName) {
-              btn.className = "px-3.5 py-1.5 rounded-xl text-xs font-black transition-all bg-blue-600 text-white cursor-pointer shadow-xs";
+          // Strict Super Admin protection:
+          if (t === 'admin') {
+            if (!isSuperAdmin) {
+              if (btn) {
+                btn.className = "super-admin-only hidden px-3.5 py-1.5 rounded-xl text-xs font-black bg-amber-500 text-slate-950 transition-all cursor-pointer shadow-xs";
+                btn.style.display = 'none';
+              }
+              if (mobileBtn) {
+                mobileBtn.className = "super-admin-only hidden flex flex-col items-center justify-center p-1.5 min-w-[50px] min-h-[44px] text-amber-500 text-[9px] sm:text-[10px] font-bold transition-all cursor-pointer";
+                mobileBtn.style.display = 'none';
+              }
+              if (section) section.classList.add('hidden');
+              return;
             } else {
-              btn.className = "px-3.5 py-1.5 rounded-xl text-xs font-black text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer";
+              if (btn) {
+                btn.style.display = '';
+                btn.classList.remove('hidden');
+              }
+              if (mobileBtn) {
+                mobileBtn.style.display = '';
+                mobileBtn.classList.remove('hidden');
+              }
+            }
+          }
+
+          if (btn) {
+            if (t === 'admin') {
+              if (t === tabName) {
+                btn.className = "super-admin-only px-3.5 py-1.5 rounded-xl text-xs font-black bg-amber-500 text-slate-950 transition-all cursor-pointer shadow-xs";
+              } else {
+                btn.className = "super-admin-only px-3.5 py-1.5 rounded-xl text-xs font-black text-amber-600 hover:bg-amber-500/10 dark:text-amber-400 transition-all cursor-pointer";
+              }
+            } else {
+              if (t === tabName) {
+                btn.className = "px-3.5 py-1.5 rounded-xl text-xs font-black transition-all bg-blue-600 text-white cursor-pointer shadow-xs";
+              } else {
+                btn.className = "px-3.5 py-1.5 rounded-xl text-xs font-black text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer";
+              }
             }
           }
 
           if (mobileBtn) {
-            if (t === tabName) {
-              mobileBtn.className = "flex flex-col items-center gap-1 p-2 text-blue-600 text-[10px] font-bold";
+            if (t === 'admin') {
+              if (t === tabName) {
+                mobileBtn.className = "super-admin-only flex flex-col items-center justify-center p-1.5 min-w-[50px] min-h-[44px] text-amber-500 text-[9px] sm:text-[10px] font-black transition-all cursor-pointer";
+              } else {
+                mobileBtn.className = "super-admin-only flex flex-col items-center justify-center p-1.5 min-w-[50px] min-h-[44px] text-amber-600/70 dark:text-amber-400/70 text-[9px] sm:text-[10px] font-bold transition-all cursor-pointer";
+              }
             } else {
-              mobileBtn.className = "flex flex-col items-center gap-1 p-2 text-slate-400 text-[10px] font-bold";
+              if (t === tabName) {
+                mobileBtn.className = "flex flex-col items-center justify-center p-1.5 min-w-[50px] min-h-[44px] text-blue-600 text-[9px] sm:text-[10px] font-bold transition-all cursor-pointer";
+              } else {
+                mobileBtn.className = "flex flex-col items-center justify-center p-1.5 min-w-[50px] min-h-[44px] text-slate-400 text-[9px] sm:text-[10px] font-bold transition-all cursor-pointer";
+              }
             }
           }
 

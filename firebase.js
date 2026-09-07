@@ -164,12 +164,12 @@ let userProfileListener = null;
 let userMembershipsListener = null;
 let allFellowshipsListener = null;
 
-// Super Admin Check
+// Super Admin Check - Strictly Daniel Giobari or Firestore documented 'Super Admin' role
 window.checkIsSuperAdmin = function() {
   const user = window.auth?.currentUser;
   if (!user) return false;
-  if (user.email && user.email.toLowerCase() === 'danielgiobari644@gmail.com') return true;
-  if (window.currentUserRole === 'Super Admin') return true;
+  const email = (user.email || '').trim().toLowerCase();
+  if (email === 'danielgiobari644@gmail.com') return true;
   if (window.currentUserProfile && window.currentUserProfile.role === 'Super Admin') return true;
   return false;
 };
@@ -302,6 +302,12 @@ auth.onAuthStateChanged(async (user) => {
     window.activeFellowship = null;
     window.activeFellowshipRole = null;
 
+    document.body.classList.remove('is-super-admin');
+    document.getElementById('nav-btn-admin')?.classList.add('hidden');
+    document.getElementById('mobile-nav-admin')?.classList.add('hidden');
+    document.getElementById('tab-admin')?.classList.add('hidden');
+    document.querySelectorAll('.super-admin-only').forEach(el => el.classList.add('hidden'));
+
     showAuthScreen();
   }
 });
@@ -323,8 +329,14 @@ function syncUIWithUserProfile() {
     el.innerHTML = `<img src="${photo}" alt="${dName}" class="w-full h-full object-cover rounded-full" />`;
   });
 
-  // Admin buttons visibility
+  // Admin buttons visibility - Strictly reserved for Super Admin
   const isSuperAdmin = window.checkIsSuperAdmin();
+  if (isSuperAdmin) {
+    document.body.classList.add('is-super-admin');
+  } else {
+    document.body.classList.remove('is-super-admin');
+  }
+
   document.querySelectorAll('.super-admin-only').forEach(el => {
     if (isSuperAdmin) {
       el.classList.remove('hidden');
@@ -332,6 +344,22 @@ function syncUIWithUserProfile() {
       el.classList.add('hidden');
     }
   });
+
+  const adminDesktopBtn = document.getElementById('nav-btn-admin');
+  const adminMobileBtn = document.getElementById('mobile-nav-admin');
+  const adminTab = document.getElementById('tab-admin');
+
+  if (isSuperAdmin) {
+    adminDesktopBtn?.classList.remove('hidden');
+    adminMobileBtn?.classList.remove('hidden');
+  } else {
+    adminDesktopBtn?.classList.add('hidden');
+    adminMobileBtn?.classList.add('hidden');
+    adminTab?.classList.add('hidden');
+    if (window.currentAppTab === 'admin') {
+      window.switchTab('feed');
+    }
+  }
 
   if (window.syncProfileData) window.syncProfileData();
 }
