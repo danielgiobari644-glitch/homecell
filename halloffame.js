@@ -1,8 +1,12 @@
 // halloffame.js
-// Home.cell - Global Hall of Fame with Prominent Fellowship Identity Markers
+// Home.cell - Global Hall of Fame with Verified Real Fellowship Identity Markers
 
-let hofLeaderboardUnsubscribe = null;
+let hofUsersUnsubscribe = null;
+let hofMembershipsUnsubscribe = null;
+let hofFellowshipsUnsubscribe = null;
 let activeHofCategory = 'streak'; // 'streak' | 'chaptersRead' | 'quizWins'
+let rawHofUsers = [];
+let userFellowshipMap = {}; // { [userId]: { fellowshipId, fellowshipName, role, city } }
 
 function initHallOfFameModule() {
   syncGlobalHofLeaderboard();
@@ -22,24 +26,137 @@ window.setHofCategory = function(cat) {
     }
   });
 
-  syncGlobalHofLeaderboard();
+  renderGlobalHofView(rawHofUsers);
 };
 
 function syncGlobalHofLeaderboard() {
-  if (hofLeaderboardUnsubscribe) hofLeaderboardUnsubscribe();
-
   const db = window.db;
   if (!db) return;
 
-  hofLeaderboardUnsubscribe = db.collection('users').onSnapshot(snap => {
-    let users = [];
+  // Clean up any existing listeners
+  if (hofUsersUnsubscribe) hofUsersUnsubscribe();
+  if (hofMembershipsUnsubscribe) hofMembershipsUnsubscribe();
+  if (hofFellowshipsUnsubscribe) hofFellowshipsUnsubscribe();
+
+  // 1. Listen to all memberships to map members to their real home fellowship
+  hofMembershipsUnsubscribe = db.collection('memberships').onSnapshot(snap => {
+    userFellowshipMap = {};
+    snap.forEach(doc => {
+      const m = doc.data();
+      if (m.userId && m.fellowshipName) {
+        // Prefer leader role if user has multiple memberships
+        if (!userFellowshipMap[m.userId] || m.role === 'leader') {
+          userFellowshipMap[m.userId] = {
+            fellowshipId: m.fellowshipId,
+            fellowshipName: m.fellowshipName,
+            role: m.role || 'member'
+          };
+        }
+      }
+    });
+
+    // Also enrich with fellowships list (e.g. city, leaderId)
+    enrichFellowshipMapWithCells();
+
+    if (rawHofUsers.length > 0) {
+      renderGlobalHofView(rawHofUsers);
+    }
+  }, err => console.warn("Leaderboard memberships sync error:", err));
+
+  // 2. Listen to fellowships to map cell leaders and details
+  hofFellowshipsUnsubscribe = db.collection('fellowships').onSnapshot(snap => {
+    const list = [];
+    snap.forEach(doc => {
+      list.push({ id: doc.id, ...doc.data() });
+    });
+    window.allFellowships = list;
+    enrichFellowshipMapWithCells();
+    if (rawHofUsers.length > 0) {
+      renderGlobalHofView(rawHofUsers);
+    }
+  }, err => console.warn("Leaderboard fellowships sync error:", err));
+
+  // 3. Listen to users for rankings
+  hofUsersUnsubscribe = db.collection('users').onSnapshot(snap => {
+    const users = [];
     snap.forEach(doc => {
       const u = doc.data();
       users.push({ uid: doc.id, ...u });
     });
 
-    renderGlobalHofView(users);
+    rawHofUsers = users;
+    renderGlobalHofView(rawHofUsers);
   }, err => console.warn("Global HOF error:", err));
+}
+
+function enrichFellowshipMapWithCells() {
+  const cells = window.allFellowships || [];
+  cells.forEach(f => {
+    if (f.leaderId) {
+      userFellowshipMap[f.leaderId] = {
+        fellowshipId: f.id,
+        fellowshipName: f.name,
+        role: 'leader',
+        city: f.city || ''
+      };
+    }
+    // Enrich existing memberships with city if matching
+    Object.keys(userFellowshipMap).forEach(uid => {
+      if (userFellowshipMap[uid].fellowshipId === f.id) {
+        userFellowshipMap[uid].fellowshipName = f.name;
+        if (f.city) userFellowshipMap[uid].city = f.city;
+      }
+    });
+  });
+}
+
+function resolveUserFellowship(u) {
+  // 1. Direct membership lookup (highest fidelity)
+  const mem = userFellowshipMap[u.uid];
+  if (mem && mem.fellowshipName) {
+    return {
+      name: mem.fellowshipName,
+      role: mem.role || 'member',
+      city: mem.city || ''
+    };
+  }
+
+  // 2. Check if user is leader in window.allFellowships
+  const cells = window.allFellowships || [];
+  const ledCell = cells.find(f => f.leaderId === u.uid);
+  if (ledCell) {
+    return {
+      name: ledCell.name,
+      role: 'leader',
+      city: ledCell.city || ''
+    };
+  }
+
+  // 3. Check active fellowship stored on user profile
+  if (u.activeFellowshipName) {
+    const fObj = cells.find(f => f.id === u.activeFellowshipId);
+    return {
+      name: u.activeFellowshipName,
+      role: u.activeFellowshipRole || 'member',
+      city: fObj?.city || ''
+    };
+  }
+
+  // 4. Check if user is in window.userMemberships if current user
+  if (window.auth?.currentUser?.uid === u.uid && window.activeFellowship) {
+    return {
+      name: window.activeFellowship.name,
+      role: window.activeFellowshipRole || 'member',
+      city: window.activeFellowship.city || ''
+    };
+  }
+
+  // 5. Fallback for new believers
+  return {
+    name: 'Home Fellowship Believer',
+    role: 'member',
+    city: ''
+  };
 }
 
 function renderGlobalHofView(users) {
@@ -58,17 +175,21 @@ function renderGlobalHofView(users) {
     unitLabel = 'Wins';
   }
 
-  // Sort descending by selected category
-  users.sort((a, b) => (b[sortField] || 0) - (a[sortField] || 0));
+  // Copy and sort descending by selected category
+  const sorted = [...users].sort((a, b) => (b[sortField] || 0) - (a[sortField] || 0));
 
   // Render Podium (Top 3)
   if (podiumContainer) {
-    const top3 = users.slice(0, 3);
+    const top3 = sorted.slice(0, 3);
     podiumContainer.innerHTML = top3.map((u, idx) => {
       const rank = idx + 1;
       const score = u[sortField] || 0;
       const rankBadge = rank === 1 ? '🥇 1st' : (rank === 2 ? '🥈 2nd' : '🥉 3rd');
       const badgeColor = rank === 1 ? 'border-amber-400 bg-amber-500/10 text-amber-500' : (rank === 2 ? 'border-slate-300 bg-slate-500/10 text-slate-400' : 'border-amber-700 bg-amber-700/10 text-amber-700');
+
+      const fellowshipInfo = resolveUserFellowship(u);
+      const isLeader = fellowshipInfo.role === 'leader';
+      const cityBadge = fellowshipInfo.city ? ` • ${fellowshipInfo.city}` : '';
 
       return `
         <div class="glass-panel rounded-3xl p-6 text-center space-y-3 border ${rank === 1 ? 'border-amber-400 ring-2 ring-amber-400/20' : 'border-slate-200 dark:border-zinc-800'} shadow-md flex flex-col justify-between">
@@ -80,10 +201,12 @@ function renderGlobalHofView(users) {
               ${u.photoURL ? `<img src="${u.photoURL}" class="w-full h-full object-cover" />` : (u.displayName || 'B').charAt(0).toUpperCase()}
             </div>
             <h4 class="font-black text-sm text-slate-900 dark:text-zinc-100">${u.displayName || 'Believer'}</h4>
-            <!-- Prominent Fellowship Identity -->
-            <div class="text-[11px] font-bold text-blue-600 dark:text-blue-400 flex items-center justify-center gap-1">
-              <i data-lucide="home" class="w-3 h-3"></i>
-              <span class="truncate">${u.activeFellowshipName || 'Home.cell Fellowship'}</span>
+            
+            <!-- Real Verified Home Fellowship Identity -->
+            <div class="text-[11px] font-bold text-blue-600 dark:text-blue-400 flex items-center justify-center gap-1.5 flex-wrap">
+              <i data-lucide="home" class="w-3.5 h-3.5 text-blue-500 shrink-0"></i>
+              <span class="truncate max-w-[170px]" title="${fellowshipInfo.name}${cityBadge}">${fellowshipInfo.name}${cityBadge}</span>
+              ${isLeader ? '<span class="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">Leader</span>' : ''}
             </div>
           </div>
 
@@ -97,10 +220,13 @@ function renderGlobalHofView(users) {
   }
 
   // Render Full Ranking List
-  container.innerHTML = users.map((u, idx) => {
+  container.innerHTML = sorted.map((u, idx) => {
     const rank = idx + 1;
     const score = u[sortField] || 0;
     const isCurrentUser = window.auth?.currentUser?.uid === u.uid;
+    const fellowshipInfo = resolveUserFellowship(u);
+    const isLeader = fellowshipInfo.role === 'leader';
+    const cityBadge = fellowshipInfo.city ? ` • ${fellowshipInfo.city}` : '';
 
     return `
       <div class="p-4 rounded-2xl glass-panel flex items-center justify-between gap-4 border ${
@@ -118,10 +244,11 @@ function renderGlobalHofView(users) {
               <h5 class="font-black text-xs sm:text-sm text-slate-900 dark:text-zinc-100 truncate">${u.displayName || 'Believer'}</h5>
               ${isCurrentUser ? '<span class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-blue-600 text-white">You</span>' : ''}
             </div>
-            <!-- Fellowship Identity Marker -->
-            <div class="text-[11px] font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1 truncate">
-              <i data-lucide="home" class="w-3 h-3 shrink-0"></i>
-              <span class="truncate">${u.activeFellowshipName || 'Home.cell Fellowship'}</span>
+            <!-- Real Verified Home Fellowship Identity Marker -->
+            <div class="text-[11px] font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1.5 truncate">
+              <i data-lucide="home" class="w-3 h-3 text-blue-500 shrink-0"></i>
+              <span class="truncate max-w-[220px]" title="${fellowshipInfo.name}${cityBadge}">${fellowshipInfo.name}${cityBadge}</span>
+              ${isLeader ? '<span class="text-[8px] font-black uppercase px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 shrink-0">Leader</span>' : ''}
             </div>
           </div>
         </div>
@@ -138,3 +265,4 @@ function renderGlobalHofView(users) {
 }
 
 window.initHallOfFameModule = initHallOfFameModule;
+

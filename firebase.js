@@ -90,7 +90,7 @@ const db = (firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDataba
 
 try {
   db.settings({
-    experimentalForceLongPolling: true,
+    experimentalAutoDetectLongPolling: true,
     merge: true
   });
 } catch (e) {}
@@ -260,6 +260,13 @@ auth.onAuthStateChanged(async (user) => {
           window.activeFellowshipRole = activeMem?.role || 'member';
           if (window.allFellowships?.length) {
             window.activeFellowship = window.allFellowships.find(f => f.id === window.activeFellowshipId) || null;
+          }
+          // Sync real fellowship identity to user doc for global leaderboards
+          if (user && activeMem && activeMem.fellowshipName) {
+            db.collection('users').doc(user.uid).update({
+              activeFellowshipId: activeMem.fellowshipId,
+              activeFellowshipName: activeMem.fellowshipName
+            }).catch(() => {});
           }
         } else {
           window.activeFellowshipId = null;
@@ -439,6 +446,14 @@ window.switchActiveFellowship = function(fellowshipId) {
     window.activeFellowship = window.allFellowships.find(f => f.id === fellowshipId) || null;
   }
 
+  const user = window.auth?.currentUser;
+  if (user && window.activeFellowship?.name) {
+    window.db.collection('users').doc(user.uid).update({
+      activeFellowshipId: fellowshipId,
+      activeFellowshipName: window.activeFellowship.name
+    }).catch(() => {});
+  }
+
   syncFellowshipSwitcherUI();
   closeFellowshipSwitcher();
 
@@ -481,6 +496,12 @@ window.joinFellowship = async function(fellowshipId) {
     // Update count in fellowship
     await window.db.collection('fellowships').doc(fellowshipId).update({
       memberCount: window.firebase.firestore.FieldValue.increment(1)
+    }).catch(() => {});
+
+    // Sync real fellowship identity to user profile
+    await window.db.collection('users').doc(user.uid).update({
+      activeFellowshipId: fellowshipId,
+      activeFellowshipName: fellowship?.name || 'Home Fellowship'
     }).catch(() => {});
 
     window.activeFellowshipId = fellowshipId;
@@ -580,6 +601,12 @@ window.createHomeFellowship = async function(data) {
   window.activeFellowshipId = newFellowshipRef.id;
   localStorage.setItem('homecell_active_fellowship_id', newFellowshipRef.id);
 
+  // Sync real fellowship identity to user profile
+  await window.db.collection('users').doc(user.uid).update({
+    activeFellowshipId: newFellowshipRef.id,
+    activeFellowshipName: fellowshipPayload.name
+  }).catch(() => {});
+
   window.soundEngine?.playLevelUp?.();
   window.showToast?.(`Home Fellowship "${fellowshipPayload.name}" created successfully!`, 'success');
 
@@ -609,6 +636,8 @@ window.showMainAppView = function() {
   document.getElementById('app-discovery-screen')?.classList.add('hidden');
   document.getElementById('app-main-platform')?.classList.remove('hidden');
 
+  // Trigger feed stream immediately so user never waits
+  window.initFeedEngine?.();
   if (window.lucide) window.lucide.createIcons();
 };
 

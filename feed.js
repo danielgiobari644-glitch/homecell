@@ -60,44 +60,108 @@ const REACTION_CONFIGS = [
   { type: 'insight', label: 'Insight', icon: '💡' }
 ];
 
+window.setFeedFilter = function(filterType) {
+  window.currentFeedFilter = filterType || 'all';
+
+  const filterBtns = document.querySelectorAll('#feed-filter-pills button, [onclick*="setFeedFilter"]');
+  filterBtns.forEach(btn => {
+    const isTarget = btn.getAttribute('onclick')?.includes(`'${window.currentFeedFilter}'`);
+    if (isTarget) {
+      btn.className = "px-4 py-1.5 rounded-xl text-xs font-black bg-blue-600 text-white shadow-xs cursor-pointer transition-all";
+    } else {
+      btn.className = "px-4 py-1.5 rounded-xl text-xs font-black text-slate-500 hover:bg-slate-100 dark:hover:bg-zinc-800 cursor-pointer transition-all";
+    }
+  });
+
+  renderGlobalFeed();
+};
+
+function renderFeedSkeleton() {
+  const container = document.getElementById('community-posts-stream');
+  if (!container || activeFeedPosts.length > 0) return;
+
+  container.innerHTML = `
+    <div id="feed-skeleton-loader" class="space-y-4">
+      ${[1, 2, 3].map(() => `
+        <div class="glass-panel rounded-3xl p-5 sm:p-6 space-y-4 border border-slate-200 dark:border-zinc-800 animate-pulse">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-slate-200 dark:bg-zinc-800"></div>
+            <div class="space-y-1.5 flex-1">
+              <div class="h-3.5 bg-slate-200 dark:bg-zinc-800 rounded w-1/4"></div>
+              <div class="h-2.5 bg-slate-200 dark:bg-zinc-800 rounded w-1/3"></div>
+            </div>
+          </div>
+          <div class="space-y-2">
+            <div class="h-3 bg-slate-200 dark:bg-zinc-800 rounded w-full"></div>
+            <div class="h-3 bg-slate-200 dark:bg-zinc-800 rounded w-4/5"></div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
 function loadGlobalFeedStream() {
   const container = document.getElementById('community-posts-stream');
   if (!container) return;
 
+  // 1. Instant Cache Render: If cached posts exist in local storage, render in <5ms!
+  if (activeFeedPosts.length === 0) {
+    try {
+      const cached = localStorage.getItem('homecell_cached_feed');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          activeFeedPosts = parsed;
+          renderGlobalFeed();
+        }
+      }
+    } catch (e) {}
+  }
+
+  // 2. If still empty, display pulse skeleton
+  if (activeFeedPosts.length === 0) {
+    renderFeedSkeleton();
+  }
+
   if (feedListener) feedListener();
 
-  feedListener = window.db.collection('global_posts')
+  const db = window.db;
+  if (!db) return;
+
+  feedListener = db.collection('global_posts')
     .orderBy('createdAt', 'desc')
-    .limit(50)
+    .limit(30)
     .onSnapshot(snap => {
       activeFeedPosts = [];
       snap.forEach(doc => {
         activeFeedPosts.push({ id: doc.id, ...doc.data() });
       });
+
+      // Update cache for next instantaneous page load
+      try {
+        const serializable = activeFeedPosts.slice(0, 20).map(p => ({
+          ...p,
+          createdAt: p.createdAt?.seconds ? { seconds: p.createdAt.seconds } : null
+        }));
+        localStorage.setItem('homecell_cached_feed', JSON.stringify(serializable));
+      } catch (e) {}
+
       renderGlobalFeed();
     }, err => {
       console.warn("Global feed error, checking fallback:", err);
-      // Fallback for transition
-      window.db.collection('community_feed')
-        .orderBy('createdAt', 'desc')
+      // Fallback query without composite ordering if index is synchronizing
+      db.collection('global_posts')
         .limit(30)
         .onSnapshot(fallbackSnap => {
           activeFeedPosts = [];
           fallbackSnap.forEach(d => {
-            const data = d.data();
-            activeFeedPosts.push({
-              id: d.id,
-              authorId: data.authorUid || data.authorId,
-              authorName: data.authorName || 'Believer',
-              authorPhoto: data.authorPhotoURL || data.authorPhoto,
-              fellowshipName: data.fellowshipName || 'Home Fellowship',
-              content: data.text || data.content,
-              mediaUrl: data.imageUrl || data.videoUrl || data.mediaUrl,
-              mediaType: data.videoUrl ? 'video' : 'image',
-              type: data.type || 'post',
-              likesCount: data.likesCount || 0,
-              createdAt: data.createdAt
-            });
+            activeFeedPosts.push({ id: d.id, ...d.data() });
+          });
+          activeFeedPosts.sort((a, b) => {
+            const tA = a.createdAt?.toMillis ? a.createdAt.toMillis() : (a.createdAt?.seconds ? a.createdAt.seconds * 1000 : 0);
+            const tB = b.createdAt?.toMillis ? b.createdAt.toMillis() : (b.createdAt?.seconds ? b.createdAt.seconds * 1000 : 0);
+            return tB - tA;
           });
           renderGlobalFeed();
         }, () => {});
@@ -662,3 +726,10 @@ function syncDailyDevotionalSnippet() {
 }
 
 window.initFeedEngine = initFeedEngine;
+window.loadGlobalFeedStream = loadGlobalFeedStream;
+window.renderGlobalFeed = renderGlobalFeed;
+
+// Auto-initialize feed stream if database is already ready
+if (window.db) {
+  loadGlobalFeedStream();
+}

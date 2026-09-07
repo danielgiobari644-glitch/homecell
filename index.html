@@ -73,6 +73,15 @@
       window.closeCreateEventModal = window.closeCreateEventModal || function() {
         document.getElementById('create-event-modal')?.classList.add('hidden');
       };
+      window.setFeedFilter = window.setFeedFilter || function(type) {
+        window.currentFeedFilter = type;
+        if (typeof window.renderGlobalFeed === 'function') window.renderGlobalFeed();
+      };
+      window.toggleBibleAudioNarration = window.toggleBibleAudioNarration || function() {
+        if (typeof window.toggleChapterAudio === 'function') {
+          window.toggleChapterAudio();
+        }
+      };
     </script>
   </head>
   <body class="bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 min-h-screen flex flex-col antialiased selection:bg-amber-400 selection:text-slate-950">
@@ -537,10 +546,10 @@
               </div>
 
               <!-- Filter Pills -->
-              <div class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
-                <button onclick="window.setFeedFilter('all')" class="px-4 py-1.5 rounded-xl text-xs font-black bg-blue-600 text-white shadow-xs">All Encouragements</button>
-                <button onclick="window.setFeedFilter('testimony')" class="px-4 py-1.5 rounded-xl text-xs font-black text-slate-500 hover:bg-slate-100 dark:hover:bg-zinc-800">Testimonies 🙏</button>
-                <button onclick="window.setFeedFilter('announcement')" class="px-4 py-1.5 rounded-xl text-xs font-black text-slate-500 hover:bg-slate-100 dark:hover:bg-zinc-800">Announcements 📢</button>
+              <div id="feed-filter-pills" class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+                <button onclick="window.setFeedFilter('all')" class="px-4 py-1.5 rounded-xl text-xs font-black bg-blue-600 text-white shadow-xs cursor-pointer transition-all">All Encouragements</button>
+                <button onclick="window.setFeedFilter('testimony')" class="px-4 py-1.5 rounded-xl text-xs font-black text-slate-500 hover:bg-slate-100 dark:hover:bg-zinc-800 cursor-pointer transition-all">Testimonies 🙏</button>
+                <button onclick="window.setFeedFilter('announcement')" class="px-4 py-1.5 rounded-xl text-xs font-black text-slate-500 hover:bg-slate-100 dark:hover:bg-zinc-800 cursor-pointer transition-all">Announcements 📢</button>
               </div>
 
               <!-- Global Posts Stream -->
@@ -2007,6 +2016,11 @@
 
       document.addEventListener('DOMContentLoaded', () => {
         if (window.lucide) window.lucide.createIcons();
+        // Immediately start loading feed if feed tab is visible
+        const feedTab = document.getElementById('tab-feed');
+        if (feedTab && !feedTab.classList.contains('hidden')) {
+          window.initFeedEngine?.();
+        }
       });
     </script>
   </body>

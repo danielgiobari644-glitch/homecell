@@ -492,6 +492,14 @@ window.submitAdminAddMember = async function(e) {
       memberCount: window.firebase.firestore.FieldValue.increment(1)
     }).catch(() => {});
 
+    // Sync real fellowship identity to user profile if user exists
+    if (targetUid && !targetUid.startsWith('user_')) {
+      await window.db.collection('users').doc(targetUid).update({
+        activeFellowshipId: fId,
+        activeFellowshipName: f?.name || 'Home Fellowship'
+      }).catch(() => {});
+    }
+
     window.closeAdminAddMemberModal();
     window.soundEngine?.playSuccess?.();
     window.showToast?.(`Added ${targetName} to ${f?.name || 'fellowship'} as ${role}.`, "success");

@@ -1244,6 +1244,7 @@ window.prevBibleChapter = prevBibleChapter;
 window.nextBibleChapter = nextBibleChapter;
 window.zoomBibleFont = zoomBibleFont;
 window.toggleChapterAudio = toggleChapterAudio;
+window.toggleBibleAudioNarration = toggleChapterAudio;
 window.speakFullChapter = speakFullChapter;
 window.speakIndividualVerse = speakIndividualVerse;
 window.toggleAudioPlayPause = toggleAudioPlayPause;
