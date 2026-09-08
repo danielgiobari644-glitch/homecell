@@ -139,8 +139,10 @@ window.handleProfileAvatarUpload = async function(e) {
       photoURL: newPhotoUrl
     });
 
-    // Also update auth user profile if supported
-    await user.updateProfile({ photoURL: newPhotoUrl }).catch(() => {});
+    // Also update auth user profile if supported and within URL limits
+    if (newPhotoUrl && (newPhotoUrl.startsWith('http://') || newPhotoUrl.startsWith('https://')) && newPhotoUrl.length <= 2048) {
+      await user.updateProfile({ photoURL: newPhotoUrl }).catch(() => {});
+    }
 
     if (window.currentUserProfile) {
       window.currentUserProfile.photoURL = newPhotoUrl;

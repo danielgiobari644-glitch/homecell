@@ -203,3 +203,24 @@ window.compressImageFile = compressImageFile;
 window.getOptimizedMediaUrl = getOptimizedMediaUrl;
 window.CLOUDINARY_CLOUD_NAME = CLOUDINARY_CLOUD_NAME;
 window.CLOUDINARY_UPLOAD_PRESET = CLOUDINARY_UPLOAD_PRESET;
+
+/**
+ * Upload a Base64 data URL string directly to Cloudinary
+ */
+window.uploadImageBase64 = async function(base64Str, folder = 'homecell/profiles') {
+  if (!base64Str) return null;
+  if (base64Str.startsWith('http://') || base64Str.startsWith('https://')) {
+    return base64Str;
+  }
+  try {
+    const res = await fetch(base64Str);
+    const blob = await res.blob();
+    const file = new File([blob], `avatar-${Date.now()}.jpg`, { type: blob.type || 'image/jpeg' });
+    const result = await uploadToCloudinary(file, folder);
+    return result?.url || null;
+  } catch (err) {
+    console.warn("uploadImageBase64 failed:", err);
+    return null;
+  }
+};
+

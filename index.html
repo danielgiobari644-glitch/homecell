@@ -16,7 +16,18 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,900;1,600&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,600&display=swap" rel="stylesheet" />
 
-    <!-- Tailwind CSS (Vanilla CDN runner) -->
+    <!-- Tailwind CDN Notice Filter & Styling -->
+    <script>
+      (function() {
+        const origWarn = console.warn;
+        console.warn = function(...args) {
+          if (typeof args[0] === 'string' && (args[0].includes('cdn.tailwindcss.com should not be used in production') || args[0].includes('Tailwind CSS in production'))) {
+            return;
+          }
+          origWarn.apply(console, args);
+        };
+      })();
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
@@ -81,6 +92,58 @@
         if (typeof window.toggleChapterAudio === 'function') {
           window.toggleChapterAudio();
         }
+      };
+      window.downloadQuizJsonTemplate = function() {
+        const sampleTemplate = {
+          title: "Gospel of John & Discipleship Trivia",
+          description: "A quick scripture trivia quiz covering the foundational teachings in the Gospel of John.",
+          timeLimit: 120,
+          coverUrl: "https://images.unsplash.com/photo-1507692049790-de58290a4334?auto=format&fit=crop&w=1200&q=80",
+          questions: [
+            {
+              id: "q1",
+              question: "In the beginning was the Word, and the Word was with God, and the Word was...?",
+              options: ["A Prophet", "An Angel", "God", "The Light"],
+              correctIndex: 2,
+              explanation: "John 1:1 - 'In the beginning was the Word, and the Word was with God, and the Word was God.'"
+            },
+            {
+              id: "q2",
+              question: "How many days had Lazarus been in the tomb before Jesus raised him?",
+              options: ["2 Days", "3 Days", "4 Days", "7 Days"],
+              correctIndex: 2,
+              explanation: "John 11:17 - 'On his arrival, Jesus found that Lazarus had already been in the tomb for four days.'"
+            },
+            {
+              id: "q3",
+              question: "What was Jesus' first recorded miraculous sign in Cana of Galilee?",
+              options: ["Walking on water", "Turning water into wine", "Healing a blind man", "Feeding the 5000"],
+              correctIndex: 1,
+              explanation: "John 2:1-11 records Jesus turning water into wine at the wedding in Cana."
+            }
+          ]
+        };
+
+        try {
+          const jsonString = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(sampleTemplate, null, 2));
+          const downloadAnchor = document.createElement('a');
+          downloadAnchor.setAttribute("href", jsonString);
+          downloadAnchor.setAttribute("download", "homecell-quiz-template.json");
+          document.body.appendChild(downloadAnchor);
+          downloadAnchor.click();
+          downloadAnchor.remove();
+          if (typeof window.showToast === 'function') {
+            window.showToast("Sample Quiz JSON Template downloaded!", "success");
+          }
+        } catch (err) {
+          console.error("Template download error:", err);
+        }
+      };
+      window.openCreateQuizModal = window.openCreateQuizModal || function(id) {
+        document.getElementById('create-quiz-modal')?.classList.remove('hidden');
+      };
+      window.closeCreateQuizModal = window.closeCreateQuizModal || function() {
+        document.getElementById('create-quiz-modal')?.classList.add('hidden');
       };
     </script>
   </head>
@@ -1792,10 +1855,12 @@
       window.currentAppTab = 'feed';
       let selectedSignupTheme = 'dark';
       let signupAvatarBase64 = null;
+      let signupAvatarFile = null;
 
       window.handleSignupAvatarFile = function(e) {
         const file = e.target.files?.[0];
         if (!file) return;
+        signupAvatarFile = file;
         const filenameEl = document.getElementById('auth-signup-avatar-filename');
         const previewEl = document.getElementById('auth-signup-avatar-preview');
         if (filenameEl) filenameEl.innerText = file.name;
@@ -1886,24 +1951,33 @@
             const cred = await window.auth.createUserWithEmailAndPassword(email, password);
             let photoURL = null;
 
-            if (signupAvatarBase64) {
-              if (window.uploadImageBase64) {
-                try {
-                  photoURL = await window.uploadImageBase64(signupAvatarBase64);
-                } catch (upErr) {
-                  console.warn("Avatar upload failed, using dataURL:", upErr);
-                  photoURL = signupAvatarBase64;
-                }
-              } else {
-                photoURL = signupAvatarBase64;
+            if (signupAvatarFile && typeof window.uploadToCloudinary === 'function') {
+              try {
+                const upRes = await window.uploadToCloudinary(signupAvatarFile, 'homecell/profiles');
+                photoURL = upRes?.url || null;
+              } catch (upErr) {
+                console.warn("Avatar Cloudinary upload failed:", upErr);
+              }
+            } else if (signupAvatarBase64 && typeof window.uploadImageBase64 === 'function') {
+              try {
+                photoURL = await window.uploadImageBase64(signupAvatarBase64, 'homecell/profiles');
+              } catch (upErr) {
+                console.warn("Avatar uploadImageBase64 failed:", upErr);
               }
             }
 
             const profileUpdates = {};
             if (name) profileUpdates.displayName = name;
-            if (photoURL) profileUpdates.photoURL = photoURL;
+            // CRITICAL: Firebase Auth updateProfile strictly requires photoURL to be a web URL (http/https) and <= 2048 characters.
+            // NEVER pass a raw data: URL or string > 2048 chars to cred.user.updateProfile!
+            if (photoURL && (photoURL.startsWith('http://') || photoURL.startsWith('https://')) && photoURL.length <= 2048) {
+              profileUpdates.photoURL = photoURL;
+            }
+
             if (Object.keys(profileUpdates).length > 0) {
-              await cred.user.updateProfile(profileUpdates);
+              await cred.user.updateProfile(profileUpdates).catch(err => {
+                console.warn("Optional user auth profile update warning (safe to ignore):", err);
+              });
             }
 
             // Save user profile doc in Firestore
@@ -1911,7 +1985,7 @@
               await window.db.collection('users').doc(cred.user.uid).set({
                 displayName: name || 'Believer',
                 email: email,
-                photoURL: photoURL || null,
+                photoURL: photoURL || signupAvatarBase64 || null,
                 theme: selectedSignupTheme,
                 createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
               }, { merge: true });

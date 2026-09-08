@@ -227,6 +227,10 @@
       "schema": "Event",
       "description": "Fellowship gatherings and events."
     },
+    "upcoming_events/{eventId}": {
+      "schema": "Event",
+      "description": "Upcoming fellowship gatherings and schedule."
+    },
     "media/{mediaId}": {
       "schema": "MediaRecord",
       "description": "Cloudinary media audit records."
