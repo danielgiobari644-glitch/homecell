@@ -392,12 +392,7 @@ async function loadVerses() {
     `;
   }
 
-  versesBox.innerHTML = `
-    <div class="text-center py-16 text-slate-400 font-medium flex flex-col items-center gap-3">
-      <div class="w-9 h-9 rounded-full border-4 border-slate-200 dark:border-zinc-700 border-t-blue-600 animate-spin"></div>
-      <p class="text-xs font-bold text-slate-500">Retrieving ${currentBibleBook} Chapter ${currentBibleChapter}...</p>
-    </div>
-  `;
+  versesBox.innerHTML = window.renderHomecellLoader('md', `Retrieving ${currentBibleBook} Chapter ${currentBibleChapter}...`);
 
   // 1. Check local session/localStorage cache
   const cacheKey = `bible_cache_${currentBibleTranslation}_${currentBibleBook}_${currentBibleChapter}`;
@@ -645,20 +640,16 @@ function trackBibleChapterRead(book, chapter) {
 
       doc.ref.update({
         chaptersReadCount: totalChapters,
-        chaptersReadToday: todayChapters,
-        kingdomCoins: curKc + 5,
-        totalKcEarned: (uData.totalKcEarned || curKc) + 5
+        chaptersReadToday: todayChapters
       });
 
       if (window.currentUserProfile) {
         window.currentUserProfile.chaptersReadCount = totalChapters;
         window.currentUserProfile.chaptersReadToday = todayChapters;
-        window.currentUserProfile.kingdomCoins = curKc + 5;
       }
 
-      window.recordKcTransaction?.('credit', 5, 'Bible Study Reward', `Studied ${book} Chapter ${chapter}`);
-      window.soundEngine?.playCoins?.();
-      window.showToast?.(`📖 Read ${book} ${chapter}! +5 Kingdom Coins earned!`, "success");
+      window.soundEngine?.playSuccess?.();
+      window.showToast?.(`📖 Read ${book} ${chapter}! Reading streak & milestones updated.`, "success");
     }
   }).catch(() => {});
 }
@@ -1192,21 +1183,9 @@ async function handleStudyNoteSubmit(e) {
     }
   }
 
-  // 3. Reward Kingdom Coins for first daily note
   if (!existingId && user) {
-    const todayStr = new Date().toISOString().split('T')[0];
-    const rewardKey = `note_reward_${user.uid}_${todayStr}`;
-    if (!sessionStorage.getItem(rewardKey)) {
-      sessionStorage.setItem(rewardKey, 'true');
-      if (window.recordKcTransaction) {
-        window.recordKcTransaction('credit', 5, 'Study Note Journaling Reward', `Recorded note on ${scriptureRef || title}`);
-      }
-      window.soundEngine?.playCoins?.();
-      window.showToast?.("🎉 Study note saved! +5 Kingdom Coins earned!", "success");
-    } else {
-      window.soundEngine?.playSuccess?.();
-      window.showToast?.("Study note saved successfully!", "success");
-    }
+    window.soundEngine?.playSuccess?.();
+    window.showToast?.("Study note saved successfully!", "success");
   } else {
     window.soundEngine?.playSuccess?.();
     window.showToast?.("Study note updated successfully!", "success");

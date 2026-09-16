@@ -493,9 +493,10 @@ window.submitCreateQuizForm = async function(e) {
     return;
   }
 
-  if (submitBtn) {
+  if (submitBtn && window.setButtonLoading) {
+    window.setButtonLoading(submitBtn, true, 'Publishing Quiz...');
+  } else if (submitBtn) {
     submitBtn.disabled = true;
-    submitBtn.innerHTML = `<span class="inline-block animate-spin mr-1">⏳</span> Publishing...`;
   }
 
   const f = (window.allFellowships || []).find(x => x.id === fId);
@@ -541,8 +542,12 @@ window.submitCreateQuizForm = async function(e) {
     window.showToast?.("Failed to create quiz: " + err.message, "error");
   } finally {
     if (submitBtn) {
-      submitBtn.disabled = false;
-      submitBtn.innerHTML = "Publish Fellowship Quiz";
+      if (window.setButtonLoading) {
+        window.setButtonLoading(submitBtn, false);
+      } else {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = "Publish Fellowship Quiz";
+      }
     }
   }
 };

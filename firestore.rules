@@ -175,13 +175,7 @@ service cloud.firestore {
       allow update, delete: if isSignedIn() && (resource.data.userUid == request.auth.uid || isAdmin());
     }
 
-    // --- Kingdom Coins & Missions ---
-    match /kc_transactions/{txId} {
-      allow read: if isSignedIn();
-      allow create: if isSignedIn();
-      allow update, delete: if isAdmin();
-    }
-
+    // --- Spiritual Milestones & Missions ---
     match /mission_completions/{missionId} {
       allow read: if isSignedIn();
       allow create: if isSignedIn();

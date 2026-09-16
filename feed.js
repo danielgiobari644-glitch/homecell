@@ -508,10 +508,11 @@ window.publishGlobalPost = async function(e) {
     return;
   }
 
-  const originalText = btn ? btn.innerHTML : 'Publish';
-  if (btn) {
+  const originalText = btn ? (btn.getAttribute('data-original-text') || btn.innerHTML) : 'Publish';
+  if (btn && window.setButtonLoading) {
+    window.setButtonLoading(btn, true, 'Publishing...');
+  } else if (btn) {
     btn.disabled = true;
-    btn.innerHTML = `<span class="animate-spin inline-block mr-1">⌛</span> Uploading...`;
   }
 
   try {
@@ -560,8 +561,12 @@ window.publishGlobalPost = async function(e) {
     window.showToast?.(err.message || "Failed to publish post.", "error");
   } finally {
     if (btn) {
-      btn.disabled = false;
-      btn.innerHTML = originalText;
+      if (window.setButtonLoading) {
+        window.setButtonLoading(btn, false);
+      } else {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+      }
     }
   }
 };

@@ -212,19 +212,16 @@ async function markDevotionalCompleted(devotionalId) {
       await userRef.update({
         readDevotionalToday: true,
         totalDevotions: devotions,
-        kingdomCoins: curKc + 10,
-        totalKcEarned: (u.totalKcEarned || curKc) + 10
+        lastDevotionalDate: todayStr
       });
 
       if (window.currentUserProfile) {
         window.currentUserProfile.readDevotionalToday = true;
         window.currentUserProfile.totalDevotions = devotions;
-        window.currentUserProfile.kingdomCoins = curKc + 10;
       }
 
-      window.recordKcTransaction?.('credit', 10, 'Daily Devotional Reward', 'Completed morning devotional study');
-      window.soundEngine?.playCoins?.();
-      window.showToast?.("☀️ Devotional completed! +10 Kingdom Coins earned!", "success");
+      window.soundEngine?.playSuccess?.();
+      window.showToast?.("☀️ Daily devotional completed! Devotion milestone updated.", "success");
     }
   } catch (e) {}
 }

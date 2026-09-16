@@ -28,8 +28,8 @@ window.showInAppNotification = function(data) {
     announcement: { icon: 'megaphone', color: 'bg-purple-600 text-white', label: 'Announcement' },
     devotional: { icon: 'book-open', color: 'bg-amber-500 text-white', label: 'Devotional' },
     quiz: { icon: 'award', color: 'bg-indigo-600 text-white', label: 'Bible Quiz' },
-    kc: { icon: 'coins', color: 'bg-amber-500 text-white', label: 'Kingdom Coins' },
-    store: { icon: 'shopping-bag', color: 'bg-emerald-600 text-white', label: 'Kingdom Store' },
+    milestone: { icon: 'sparkles', color: 'bg-purple-600 text-white', label: 'Spiritual Milestone' },
+    fellowship: { icon: 'users', color: 'bg-indigo-500 text-white', label: 'Home Fellowship' },
     system: { icon: 'bell', color: 'bg-blue-600 text-white', label: 'System Alert' },
     general: { icon: 'bell', color: 'bg-slate-700 text-white', label: 'Home.cell Alert' }
   };
@@ -38,11 +38,7 @@ window.showInAppNotification = function(data) {
   const targetUrl = data.url || './#view-notifications';
 
   // Sound alert
-  if (data.type === 'kc' || (data.title && data.title.includes('KC'))) {
-    window.soundEngine?.playCoins?.();
-  } else {
-    window.soundEngine?.playSuccess?.();
-  }
+  window.soundEngine?.playSuccess?.();
 
   const banner = document.createElement('div');
   banner.className = 'pointer-events-auto bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl border border-slate-200/80 dark:border-zinc-700/80 shadow-2xl rounded-2xl p-4 transition-all duration-300 transform -translate-y-4 opacity-0 flex flex-col gap-2.5 relative overflow-hidden group cursor-pointer hover:border-blue-500/60 dark:hover:border-blue-400/60';

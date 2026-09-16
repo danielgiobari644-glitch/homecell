@@ -180,10 +180,11 @@ window.submitCreateFellowshipForm = async function(e) {
   }
 
   const btn = document.getElementById('create-fellowship-submit-btn');
-  const originalText = btn ? btn.innerHTML : 'Create Fellowship';
-  if (btn) {
+  const originalText = btn ? (btn.getAttribute('data-original-text') || btn.innerHTML) : 'Create Fellowship';
+  if (btn && window.setButtonLoading) {
+    window.setButtonLoading(btn, true, 'Planting Fellowship...');
+  } else if (btn) {
     btn.disabled = true;
-    btn.innerHTML = `<span class="animate-spin inline-block mr-1">⌛</span> Planting Fellowship...`;
   }
 
   try {
@@ -217,8 +218,12 @@ window.submitCreateFellowshipForm = async function(e) {
     window.showToast?.(err.message || "Failed to create fellowship.", "error");
   } finally {
     if (btn) {
-      btn.disabled = false;
-      btn.innerHTML = originalText;
+      if (window.setButtonLoading) {
+        window.setButtonLoading(btn, false);
+      } else {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+      }
     }
   }
 };

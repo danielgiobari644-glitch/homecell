@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" class="light">
+<html lang="en" class="dark navy">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
@@ -420,15 +420,18 @@
     <div id="app-auth-screen" class="fixed inset-0 z-[9999] bg-slate-950/80 backdrop-blur-xl flex items-center justify-center p-4 overflow-y-auto hidden">
       <div class="glass-panel w-full max-w-md rounded-3xl p-8 space-y-6 shadow-2xl border border-slate-700/60 bg-slate-900/95 text-white my-auto">
         <!-- Brand Header -->
-        <div class="text-center space-y-2">
-          <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center mx-auto shadow-lg shadow-blue-500/30">
-            <svg class="w-7 h-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 2v20M6 8h12" />
-              <circle cx="12" cy="8" r="1.5" fill="currentColor" opacity="0.4" />
+        <div class="text-center space-y-3">
+          <div class="w-16 h-16 rounded-2xl bg-[#090d1f] border border-purple-500/30 flex items-center justify-center mx-auto shadow-xl shadow-purple-950/40">
+            <svg class="w-10 h-10" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M50 16L85 45V84H15V45L50 16Z" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="40" cy="58" r="7" fill="#a855f7"/>
+              <circle cx="60" cy="58" r="7" fill="#d946ef"/>
             </svg>
           </div>
-          <h2 class="text-2xl font-black font-display text-white tracking-tight">Home<span class="text-blue-500">.cell</span></h2>
-          <p class="text-xs text-slate-400 max-w-xs mx-auto">Christian Digital Fellowship, Local Home Cells & Discipleship</p>
+          <div>
+            <h2 class="text-2xl font-black font-display text-white tracking-wider">HOME<span class="text-purple-400">.CELL</span></h2>
+            <p class="text-xs text-slate-400 max-w-xs mx-auto mt-1">Christian Digital Fellowship, Local Home Cells & Discipleship</p>
+          </div>
         </div>
 
         <!-- Auth Tabs (Sign In / Sign Up) -->
@@ -546,13 +549,15 @@
       <header class="border-b border-slate-200 dark:border-zinc-800 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md sticky top-0 z-30 px-6 py-4">
         <div class="max-w-6xl mx-auto flex items-center justify-between">
           <div class="flex items-center gap-3">
-            <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-xs">
-              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 2v20M6 8h12" />
+            <div class="w-9 h-9 rounded-xl bg-[#090d1f] border border-purple-500/30 flex items-center justify-center text-white shadow-xs">
+              <svg class="w-5 h-5" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M50 16L85 45V84H15V45L50 16Z" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="40" cy="58" r="7" fill="#a855f7"/>
+                <circle cx="60" cy="58" r="7" fill="#d946ef"/>
               </svg>
             </div>
             <div>
-              <span class="font-display font-black text-lg text-slate-900 dark:text-zinc-50 tracking-tight">Home<span class="text-blue-600">.cell</span></span>
+              <span class="font-display font-black text-lg text-slate-900 dark:text-zinc-50 tracking-wider">HOME<span class="text-purple-400">.CELL</span></span>
               <span class="hidden sm:inline text-xs text-slate-400 font-medium ml-2">Fellowship Onboarding</span>
             </div>
           </div>
@@ -610,8 +615,15 @@
 
         <!-- Responsive Fellowships Cards Grid -->
         <div id="discovery-fellowships-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div class="col-span-full py-16 text-center text-slate-400 text-xs">
-            <span class="animate-spin inline-block mr-2">⌛</span> Discovering fellowships in Firebase...
+          <div class="col-span-full py-12 flex justify-center">
+            <div class="homecell-loader-wrap md">
+              <svg class="homecell-loader-svg" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path class="homecell-loader-house" d="M50 15L85 45V85H15V45L50 15Z" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle class="homecell-loader-dot dot-1" cx="40" cy="58" r="5" fill="#a855f7"/>
+                <circle class="homecell-loader-dot dot-2" cx="60" cy="58" r="5" fill="#d946ef"/>
+              </svg>
+              <div class="homecell-loader-label">Discovering fellowships...</div>
+            </div>
           </div>
         </div>
 
@@ -641,13 +653,15 @@
         <div class="max-w-7xl mx-auto flex items-center justify-between gap-4">
           <!-- Left: Brand Logo -->
           <div class="flex items-center gap-3 cursor-pointer select-none" onclick="switchTab('feed')">
-            <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-xs">
-              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 2v20M6 8h12" />
+            <div class="w-9 h-9 rounded-xl bg-[#090d1f] border border-purple-500/30 flex items-center justify-center text-white shadow-xs">
+              <svg class="w-5 h-5" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M50 16L85 45V84H15V45L50 16Z" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="40" cy="58" r="7" fill="#a855f7"/>
+                <circle cx="60" cy="58" r="7" fill="#d946ef"/>
               </svg>
             </div>
             <div>
-              <span class="font-display font-black text-lg text-slate-900 dark:text-zinc-50 tracking-tight">Home<span class="text-blue-600">.cell</span></span>
+              <span class="font-display font-black text-lg text-slate-900 dark:text-zinc-50 tracking-wider">HOME<span class="text-purple-400">.CELL</span></span>
             </div>
           </div>
 
@@ -882,8 +896,15 @@
 
               <!-- Global Posts Stream -->
               <div id="community-posts-stream" class="space-y-4">
-                <div class="py-12 text-center text-slate-400 text-xs">
-                  <span class="animate-spin inline-block mr-2">⌛</span> Connecting to Global Home.cell Feed...
+                <div class="py-12 flex justify-center">
+                  <div class="homecell-loader-wrap md">
+                    <svg class="homecell-loader-svg" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path class="homecell-loader-house" d="M50 15L85 45V85H15V45L50 15Z" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                      <circle class="homecell-loader-dot dot-1" cx="40" cy="58" r="5" fill="#a855f7"/>
+                      <circle class="homecell-loader-dot dot-2" cx="60" cy="58" r="5" fill="#d946ef"/>
+                    </svg>
+                    <div class="homecell-loader-label">Connecting to fellowship feed...</div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1201,8 +1222,15 @@
 
               <!-- Verses Rendering Box -->
               <div id="bible-verses-box" class="space-y-3 font-serif text-slate-800 dark:text-zinc-200 leading-relaxed text-base sm:text-lg">
-                <div class="py-16 text-center text-slate-400 font-sans text-xs">
-                  <span class="animate-spin inline-block mr-2">⌛</span> Opening the Holy Scriptures...
+                <div class="py-16 flex justify-center">
+                  <div class="homecell-loader-wrap md">
+                    <svg class="homecell-loader-svg" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path class="homecell-loader-house" d="M50 15L85 45V85H15V45L50 15Z" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                      <circle class="homecell-loader-dot dot-1" cx="40" cy="58" r="5" fill="#a855f7"/>
+                      <circle class="homecell-loader-dot dot-2" cx="60" cy="58" r="5" fill="#d946ef"/>
+                    </svg>
+                    <div class="homecell-loader-label">Opening Holy Scripture...</div>
+                  </div>
                 </div>
               </div>
 
@@ -1283,7 +1311,16 @@
 
           <!-- Full Ranking Rows -->
           <div class="max-w-3xl mx-auto space-y-2" id="hof-ranking-rows">
-            <div class="py-12 text-center text-slate-400 text-xs">Loading global champions...</div>
+            <div class="py-12 flex justify-center">
+              <div class="homecell-loader-wrap md">
+                <svg class="homecell-loader-svg" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path class="homecell-loader-house" d="M50 15L85 45V85H15V45L50 15Z" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                  <circle class="homecell-loader-dot dot-1" cx="40" cy="58" r="5" fill="#a855f7"/>
+                  <circle class="homecell-loader-dot dot-2" cx="60" cy="58" r="5" fill="#d946ef"/>
+                </svg>
+                <div class="homecell-loader-label">Honoring fellowship champions...</div>
+              </div>
+            </div>
           </div>
         </section>
 

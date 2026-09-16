@@ -289,9 +289,10 @@ async function saveSelectedCoverPhoto() {
   const targetId = activeCoverTarget.id;
 
   const saveBtn = document.getElementById('cover-modal-save-btn') || document.getElementById('btn-save-cover-photo');
-  if (saveBtn) {
+  if (saveBtn && window.setButtonLoading) {
+    window.setButtonLoading(saveBtn, true, 'Updating Cover...');
+  } else if (saveBtn) {
     saveBtn.disabled = true;
-    saveBtn.innerHTML = `<span class="animate-spin inline-block mr-1">⏳</span> Updating Cover...`;
   }
 
   try {
@@ -378,8 +379,12 @@ async function saveSelectedCoverPhoto() {
     window.showToast?.("Failed to update cover photo: " + err.message, "error");
   } finally {
     if (saveBtn) {
-      saveBtn.disabled = false;
-      saveBtn.innerHTML = `<i data-lucide="check" class="w-4 h-4"></i><span>Save & Apply Cover</span>`;
+      if (window.setButtonLoading) {
+        window.setButtonLoading(saveBtn, false);
+      } else {
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = `<i data-lucide="check" class="w-4 h-4"></i><span>Save & Apply Cover</span>`;
+      }
       if (window.lucide) window.lucide.createIcons();
     }
   }

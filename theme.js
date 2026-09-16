@@ -10,16 +10,16 @@
   const THEME_KEY = 'homecell_theme_v3';
 
   const AVAILABLE_THEMES = [
-    { id: 'light', name: 'Daybreak Grace', icon: 'sun', desc: 'Clean, luminous high-contrast light mode', isDark: false, bgHex: '#f8fafd' },
-    { id: 'dark', name: 'Midnight Cathedral', icon: 'moon', desc: 'Deep obsidian starry night mode', isDark: true, bgHex: '#09090b' },
+    { id: 'navy', name: 'Deep Navy (Official)', icon: 'shield', desc: 'Home.cell signature dark navy & violet ambiance', isDark: true, bgHex: '#080c1a' },
+    { id: 'dark', name: 'Midnight Cathedral', icon: 'moon', desc: 'Deep obsidian starry night mode', isDark: true, bgHex: '#080c1a' },
     { id: 'sanctuary', name: 'Celestial Sanctuary', icon: 'sparkles', desc: 'Midnight indigo with golden accents', isDark: true, bgHex: '#080912' },
-    { id: 'parchment', name: 'Ancient Scrolls', icon: 'scroll', desc: 'Warm biblical papyrus and sepia gold', isDark: false, bgHex: '#f7f2ea' },
-    { id: 'olive', name: 'Mount of Olives', icon: 'leaf', desc: 'Sacred deep forest green & emerald peace', isDark: true, bgHex: '#0b140f' },
     { id: 'covenant', name: 'Royal Covenant', icon: 'crown', desc: 'Regal imperial violet & majestic gold', isDark: true, bgHex: '#12091f' },
+    { id: 'olive', name: 'Mount of Olives', icon: 'leaf', desc: 'Sacred deep forest green & emerald peace', isDark: true, bgHex: '#0b140f' },
+    { id: 'light', name: 'Daybreak Grace', icon: 'sun', desc: 'Luminous light mode', isDark: false, bgHex: '#f8fafd' },
   ];
 
   function initThemeSystem() {
-    const savedTheme = localStorage.getItem(THEME_KEY) || 'light';
+    const savedTheme = localStorage.getItem(THEME_KEY) || 'navy';
     applyTheme(savedTheme, false);
 
     // Listen for system theme changes if set to system
@@ -42,17 +42,17 @@
   function applyTheme(themeName, showToastFeedback = true) {
     const root = document.documentElement;
     // Remove all previous theme classes
-    root.classList.remove('dark', 'sanctuary', 'parchment', 'olive', 'covenant', 'sepia-theme');
+    root.classList.remove('dark', 'navy', 'sanctuary', 'parchment', 'olive', 'covenant', 'sepia-theme');
 
     const themeMeta = AVAILABLE_THEMES.find(t => t.id === themeName) || AVAILABLE_THEMES[0];
 
     if (themeName === 'system') {
       const isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-      if (isDark) root.classList.add('dark');
+      if (isDark) root.classList.add('dark', 'navy');
     } else if (themeName === 'light') {
-      // default light
-    } else if (themeName === 'dark') {
-      root.classList.add('dark');
+      // light mode
+    } else if (themeName === 'navy' || themeName === 'dark') {
+      root.classList.add('dark', 'navy');
     } else if (themeName === 'sanctuary') {
       root.classList.add('dark', 'sanctuary');
     } else if (themeName === 'parchment') {
@@ -61,6 +61,8 @@
       root.classList.add('dark', 'olive');
     } else if (themeName === 'covenant') {
       root.classList.add('dark', 'covenant');
+    } else {
+      root.classList.add('dark', 'navy');
     }
 
     localStorage.setItem(THEME_KEY, themeName);
@@ -122,6 +124,77 @@
       }
     }
   });
+
+  // Universal Home.cell Loading API
+  window.renderHomecellLoader = function(size = 'md', label = '', extraClass = '') {
+    if (size === 'btn' || size === 'inline') {
+      return `
+        <span class="homecell-loader-inline ${extraClass}">
+          <svg class="homecell-loader-svg" width="18" height="18" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M50 14 L86 44 L86 86 L14 86 L14 44 Z" stroke="currentColor" stroke-width="8" stroke-linejoin="miter" />
+            <circle class="homecell-loader-dot-1" cx="37" cy="56" r="8" />
+            <circle class="homecell-loader-dot-2" cx="63" cy="56" r="8" />
+          </svg>
+          ${label ? `<span class="ml-1.5">${label}</span>` : ''}
+        </span>
+      `;
+    }
+
+    const dims = size === 'sm' ? { w: 32, h: 32, stroke: 6, r: 5 } : (size === 'lg' ? { w: 68, h: 68, stroke: 5, r: 8 } : { w: 48, h: 48, stroke: 6, r: 6 });
+    const containerPad = size === 'sm' ? 'py-4' : (size === 'lg' ? 'py-14' : 'py-8');
+
+    return `
+      <div class="homecell-loader-container ${containerPad} ${extraClass}" role="status" aria-live="polite">
+        <div class="relative flex items-center justify-center">
+          <svg class="homecell-loader-svg" width="${dims.w}" height="${dims.h}" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path class="homecell-loader-path-left" d="M50 14 L14 44 L14 86 L50 86" stroke="currentColor" stroke-width="${dims.stroke}" stroke-linejoin="miter" />
+            <path class="homecell-loader-path-right" d="M50 14 L86 44 L86 86 L50 86" stroke="currentColor" stroke-width="${dims.stroke}" stroke-linejoin="miter" />
+            <circle class="homecell-loader-dot-1" cx="37" cy="56" r="${dims.r}" />
+            <circle class="homecell-loader-dot-2" cx="63" cy="56" r="${dims.r}" />
+          </svg>
+        </div>
+        ${label ? `<p class="mt-3 text-xs font-semibold tracking-wide text-slate-300">${label}</p>` : ''}
+        <span class="sr-only">Loading...</span>
+      </div>
+    `;
+  };
+
+  window.setButtonLoading = function(buttonEl, isLoading, loadingText = 'Processing...') {
+    if (!buttonEl) return;
+    if (isLoading) {
+      if (!buttonEl.dataset.originalHtml) {
+        buttonEl.dataset.originalHtml = buttonEl.innerHTML;
+      }
+      buttonEl.disabled = true;
+      buttonEl.classList.add('opacity-80', 'cursor-not-allowed');
+      buttonEl.innerHTML = window.renderHomecellLoader('btn', loadingText);
+    } else {
+      buttonEl.disabled = false;
+      buttonEl.classList.remove('opacity-80', 'cursor-not-allowed');
+      if (buttonEl.dataset.originalHtml) {
+        buttonEl.innerHTML = buttonEl.dataset.originalHtml;
+      }
+    }
+  };
+
+  window.renderHomecellError = function(message = 'Something went wrong.', retryAction = null, extraClass = '') {
+    return `
+      <div class="glass-panel rounded-3xl p-8 text-center space-y-4 max-w-md mx-auto ${extraClass}">
+        <div class="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-400 flex items-center justify-center mx-auto">
+          <svg width="24" height="24" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M50 14 L86 44 L86 86 L14 86 L14 44 Z" stroke="currentColor" stroke-width="7" />
+            <circle cx="50" cy="55" r="8" fill="#f43f5e" />
+          </svg>
+        </div>
+        <p class="text-xs text-slate-300 leading-relaxed font-medium">${message}</p>
+        ${retryAction ? `
+          <button onclick="${retryAction}" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-md cursor-pointer">
+            Try Again
+          </button>
+        ` : ''}
+      </div>
+    `;
+  };
 
   window.initThemeSystem = initThemeSystem;
   window.applyTheme = applyTheme;
