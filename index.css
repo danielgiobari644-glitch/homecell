@@ -5,46 +5,55 @@
   --font-display: 'Playfair Display', Georgia, serif;
   
   /* Primary Dark Blue Theme (Home.cell Official Brand Identity) */
-  --bg-color: #080c1a;
-  --bg-mesh: radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.14) 0px, transparent 50%),
-             radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.10) 0px, transparent 50%),
-             radial-gradient(at 50% 100%, rgba(15, 23, 42, 0.7) 0px, transparent 60%);
-  --text-primary: #f8fafc;
+  --bg-color: #060914;
+  --bg-secondary: #0a1024;
+  --bg-mesh: radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.16) 0px, transparent 50%),
+             radial-gradient(at 100% 0%, rgba(168, 85, 247, 0.12) 0px, transparent 50%),
+             radial-gradient(at 50% 100%, rgba(10, 16, 36, 0.85) 0px, transparent 60%);
+  --text-primary: #ffffff;
   --text-secondary: #cbd5e1;
   --text-muted: #94a3b8;
-  --card-bg: rgba(16, 22, 47, 0.88);
-  --card-border: rgba(99, 102, 241, 0.18);
-  --card-border-hover: rgba(139, 92, 246, 0.45);
-  --header-bg: rgba(10, 14, 30, 0.94);
-  --drawer-bg: rgba(12, 17, 36, 0.96);
-  --accent-gold: #f59e0b;
-  --accent-blue: #6366f1;
-  --accent-purple: #8b5cf6;
-  --pill-bg: rgba(26, 35, 71, 0.7);
-  --pill-hover: rgba(35, 48, 96, 0.85);
-  --shadow-sm: 0 2px 8px -1px rgba(0, 0, 0, 0.35);
-  --shadow-md: 0 10px 25px -3px rgba(0, 0, 0, 0.45), 0 4px 6px -4px rgba(0, 0, 0, 0.3);
-  --shadow-lg: 0 20px 35px -4px rgba(0, 0, 0, 0.55), 0 8px 16px -6px rgba(0, 0, 0, 0.4);
+  --text-disabled: #64748b;
+  --card-bg: rgba(16, 25, 52, 0.94);
+  --card-border: rgba(147, 197, 253, 0.22);
+  --card-border-hover: rgba(168, 85, 247, 0.45);
+  --input-bg: #090e22;
+  --input-border: #2b3e6c;
+  --header-bg: rgba(10, 16, 36, 0.96);
+  --drawer-bg: rgba(12, 18, 40, 0.98);
+  --accent-gold: #fbbf24;
+  --accent-blue: #3b82f6;
+  --accent-purple: #a855f7;
+  --accent-magenta: #d946ef;
+  --pill-bg: rgba(22, 34, 70, 0.85);
+  --pill-hover: rgba(33, 49, 98, 0.95);
+  --shadow-sm: 0 2px 8px -1px rgba(0, 0, 0, 0.45);
+  --shadow-md: 0 10px 25px -3px rgba(0, 0, 0, 0.55), 0 4px 6px -4px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 20px 35px -4px rgba(0, 0, 0, 0.65), 0 8px 16px -6px rgba(0, 0, 0, 0.5);
 }
 
-html.dark {
-  --bg-color: #080c1a;
-  --bg-mesh: radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.14) 0px, transparent 50%),
-             radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.10) 0px, transparent 50%),
-             radial-gradient(at 50% 100%, rgba(15, 23, 42, 0.7) 0px, transparent 60%);
-  --text-primary: #f8fafc;
+html.dark, html.navy {
+  --bg-color: #060914;
+  --bg-secondary: #0a1024;
+  --bg-mesh: radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.16) 0px, transparent 50%),
+             radial-gradient(at 100% 0%, rgba(168, 85, 247, 0.12) 0px, transparent 50%),
+             radial-gradient(at 50% 100%, rgba(10, 16, 36, 0.85) 0px, transparent 60%);
+  --text-primary: #ffffff;
   --text-secondary: #cbd5e1;
   --text-muted: #94a3b8;
-  --card-bg: rgba(16, 22, 47, 0.88);
-  --card-border: rgba(99, 102, 241, 0.18);
-  --card-border-hover: rgba(139, 92, 246, 0.45);
-  --header-bg: rgba(10, 14, 30, 0.94);
-  --drawer-bg: rgba(12, 17, 36, 0.96);
-  --pill-bg: rgba(26, 35, 71, 0.7);
-  --pill-hover: rgba(35, 48, 96, 0.85);
-  --shadow-sm: 0 2px 8px -1px rgba(0, 0, 0, 0.35);
-  --shadow-md: 0 10px 25px -3px rgba(0, 0, 0, 0.45);
-  --shadow-lg: 0 20px 35px -4px rgba(0, 0, 0, 0.55);
+  --text-disabled: #64748b;
+  --card-bg: rgba(16, 25, 52, 0.94);
+  --card-border: rgba(147, 197, 253, 0.22);
+  --card-border-hover: rgba(168, 85, 247, 0.45);
+  --input-bg: #090e22;
+  --input-border: #2b3e6c;
+  --header-bg: rgba(10, 16, 36, 0.96);
+  --drawer-bg: rgba(12, 18, 40, 0.98);
+  --pill-bg: rgba(22, 34, 70, 0.85);
+  --pill-hover: rgba(33, 49, 98, 0.95);
+  --shadow-sm: 0 2px 8px -1px rgba(0, 0, 0, 0.45);
+  --shadow-md: 0 10px 25px -3px rgba(0, 0, 0, 0.55);
+  --shadow-lg: 0 20px 35px -4px rgba(0, 0, 0, 0.65);
 }
 
 html.sanctuary {
@@ -563,94 +572,308 @@ body.sidebar-collapsed .sidebar-nav-btn:hover {
   transform: scale(0.95) translateY(-6px);
 }
 
-/* High Contrast & Accessibility Guarantees (No white on white, no grey on white, crisp legibility) */
-.text-slate-400 {
-  color: #334155 !important;
-}
-html.dark .text-slate-400,
-html.sanctuary .text-slate-400 {
-  color: #cbd5e1 !important;
+/* ========================================================================= */
+/* ACCESSIBILITY & HIGH-CONTRAST DEEP NAVY BLUE SYSTEM (WCAG AA COMPLIANT)   */
+/* Strictly maintains Dark Blue theme while maximizing clarity & legibility  */
+/* ========================================================================= */
+
+/* 1. Global Typography & Text Contrast Hierarchy in Dark Blue */
+html.dark body,
+html.navy body {
+  color: #ffffff;
 }
 
-.text-zinc-400 {
-  color: #3f3f46 !important;
-}
-html.dark .text-zinc-400,
-html.sanctuary .text-zinc-400 {
-  color: #d4d4d8 !important;
+html.dark h1, html.dark h2, html.dark h3, html.dark h4, html.dark h5, html.dark h6,
+html.navy h1, html.navy h2, html.navy h3, html.navy h4, html.navy h5, html.navy h6,
+html.dark .text-slate-900, html.dark .text-zinc-900, html.dark .text-zinc-100, html.dark .text-zinc-50,
+html.navy .text-slate-900, html.navy .text-zinc-900, html.navy .text-zinc-100, html.navy .text-zinc-50,
+html.dark .dark\:text-zinc-100, html.dark .dark\:text-zinc-50, html.dark .dark\:text-white,
+html.navy .dark\:text-zinc-100, html.navy .dark\:text-zinc-50, html.navy .dark\:text-white {
+  color: #ffffff !important;
 }
 
-.text-slate-500 {
-  color: #1e293b !important;
+/* Secondary & Body Text — Crisp, high-contrast readable blue-white */
+html.dark p, html.dark span,
+html.navy p, html.navy span {
+  /* Inherit high contrast by default */
 }
-html.dark .text-slate-500,
-html.sanctuary .text-slate-500 {
+
+html.dark .text-slate-800, html.dark .text-zinc-800, html.dark .text-zinc-200,
+html.navy .text-slate-800, html.navy .text-zinc-800, html.navy .text-zinc-200,
+html.dark .dark\:text-zinc-200, html.dark .dark\:text-slate-200,
+html.navy .dark\:text-zinc-200, html.navy .dark\:text-slate-200,
+html.dark .bible-verse-body-text, html.navy .bible-verse-body-text {
+  color: #f1f5f9 !important;
+}
+
+html.dark .text-slate-700, html.dark .text-zinc-700, html.dark .text-zinc-300,
+html.navy .text-slate-700, html.navy .text-zinc-700, html.navy .text-zinc-300,
+html.dark .dark\:text-zinc-300, html.dark .dark\:text-slate-300,
+html.navy .dark\:text-zinc-300, html.navy .dark\:text-slate-300 {
   color: #e2e8f0 !important;
 }
 
-.text-zinc-500 {
-  color: #27272a !important;
-}
-html.dark .text-zinc-500,
-html.sanctuary .text-zinc-500 {
-  color: #e4e4e7 !important;
-}
-
-.text-gray-400 {
-  color: #374151 !important;
-}
-html.dark .text-gray-400,
-html.sanctuary .text-gray-400 {
+/* Subtitles, labels, descriptions & metadata — Soft bright blue-gray (always > 6:1 contrast) */
+html.dark .text-slate-600, html.dark .text-zinc-600,
+html.navy .text-slate-600, html.navy .text-zinc-600,
+html.dark .dark\:text-zinc-400, html.dark .dark\:text-slate-400,
+html.navy .dark\:text-zinc-400, html.navy .dark\:text-slate-400 {
   color: #cbd5e1 !important;
 }
 
-.text-gray-500 {
-  color: #1f2937 !important;
-}
-html.dark .text-gray-500,
-html.sanctuary .text-gray-500 {
-  color: #e5e7eb !important;
+/* Timestamps, counters, icons & helper notes — Distinguishable muted (always > 4.6:1 WCAG AA) */
+html.dark .text-slate-500, html.dark .text-zinc-500, html.dark .text-slate-400,
+html.navy .text-slate-500, html.navy .text-zinc-500, html.navy .text-slate-400,
+html.dark .dark\:text-zinc-500, html.dark .dark\:text-slate-500,
+html.navy .dark\:text-zinc-500, html.navy .dark\:text-slate-500 {
+  color: #94a3b8 !important;
 }
 
-/* Ensure crisp input placeholders and label text */
-input::placeholder,
-textarea::placeholder {
-  color: #475569 !important;
-  opacity: 1 !important;
+/* Retain high-contrast dark text inside explicitly bright badges (e.g. amber, gold, yellow, white) */
+html.dark .bg-amber-400, html.dark .bg-amber-500, html.dark .bg-yellow-400, html.dark .bg-white,
+html.navy .bg-amber-400, html.navy .bg-amber-500, html.navy .bg-yellow-400, html.navy .bg-white {
+  color: #060914 !important;
 }
-html.dark input::placeholder,
-html.dark textarea::placeholder,
-html.sanctuary input::placeholder,
-html.sanctuary textarea::placeholder {
+html.dark [class*="bg-amber-"] .text-slate-950, html.dark [class*="bg-amber-"] .text-slate-900,
+html.navy [class*="bg-amber-"] .text-slate-950, html.navy [class*="bg-amber-"] .text-slate-900 {
+  color: #060914 !important;
+}
+
+/* 2. Elevated Dark Blue Surfaces, Cards & Panels */
+html.dark .glass-panel, html.navy .glass-panel,
+html.dark .dark-blue-card, html.navy .dark-blue-card {
+  background-color: rgba(16, 25, 52, 0.94) !important;
+  border: 1px solid rgba(147, 197, 253, 0.22) !important;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.55), 0 4px 6px -2px rgba(0, 0, 0, 0.35) !important;
+}
+
+html.dark .glass-panel:hover, html.navy .glass-panel:hover,
+html.dark .dark-blue-card:hover, html.navy .dark-blue-card:hover {
+  border-color: rgba(168, 85, 247, 0.45) !important;
+  box-shadow: 0 14px 35px -5px rgba(0, 0, 0, 0.65) !important;
+}
+
+/* Surface backgrounds */
+html.dark .dark\:bg-zinc-950, html.dark .dark\:bg-slate-950, html.dark .bg-slate-950,
+html.navy .dark\:bg-zinc-950, html.navy .dark\:bg-slate-950, html.navy .bg-slate-950 {
+  background-color: #060914 !important;
+}
+
+html.dark .dark\:bg-zinc-900, html.dark .dark\:bg-slate-900,
+html.navy .dark\:bg-zinc-900, html.navy .dark\:bg-slate-900 {
+  background-color: #0a1024 !important;
+}
+
+html.dark .dark\:bg-zinc-850, html.dark .dark\:bg-zinc-800, html.dark .dark\:bg-slate-800,
+html.navy .dark\:bg-zinc-850, html.navy .dark\:bg-zinc-800, html.navy .dark\:bg-slate-800 {
+  background-color: #121c3b !important;
+}
+
+html.dark .dark\:hover\:bg-zinc-800:hover, html.dark .dark\:hover\:bg-slate-800:hover,
+html.navy .dark\:hover\:bg-zinc-800:hover, html.navy .dark\:hover\:bg-slate-800:hover {
+  background-color: #1a2750 !important;
+}
+
+/* Visible Borders in Dark Blue */
+html.dark .border-slate-100, html.dark .border-slate-200, html.dark .border-slate-700, html.dark .border-slate-800,
+html.navy .border-slate-100, html.navy .border-slate-200, html.navy .border-slate-700, html.navy .border-slate-800,
+html.dark .dark\:border-zinc-800, html.dark .dark\:border-zinc-700, html.dark .dark\:border-slate-800, html.dark .dark\:border-slate-700,
+html.navy .dark\:border-zinc-800, html.navy .dark\:border-zinc-700, html.navy .dark\:border-slate-800, html.navy .dark\:border-slate-700 {
+  border-color: rgba(147, 197, 253, 0.22) !important;
+}
+
+/* 3. Distinct Dark-Blue Form Inputs, Textareas & Selects */
+html.dark input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="submit"]):not([type="button"]):not([type="reset"]),
+html.navy input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="submit"]):not([type="button"]):not([type="reset"]),
+html.dark textarea, html.navy textarea,
+html.dark select, html.navy select {
+  background-color: #090e22 !important;
+  border: 1px solid #2b3e6c !important;
+  color: #ffffff !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+html.dark input::placeholder, html.navy input::placeholder,
+html.dark textarea::placeholder, html.navy textarea::placeholder {
   color: #94a3b8 !important;
   opacity: 1 !important;
 }
 
-/* Guarantee select option legibility across all browser platforms */
-select option {
-  background-color: #ffffff;
-  color: #0f172a;
-}
-html.dark select option,
-html.sanctuary select option {
-  background-color: #18181b;
-  color: #f8fafc;
+html.dark input:focus, html.navy input:focus,
+html.dark textarea:focus, html.navy textarea:focus,
+html.dark select:focus, html.navy select:focus {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.35) !important;
+  outline: none !important;
+  background-color: #0c132c !important;
 }
 
-/* Table header & metadata contrast enforcement */
-th {
-  color: #0f172a;
-}
-html.dark th,
-html.sanctuary th {
-  color: #f1f5f9;
+/* Form labels */
+html.dark label, html.navy label {
+  color: #cbd5e1;
 }
 
-/* Table text and badge legibility */
-html.dark .glass-panel,
-html.sanctuary .glass-panel {
-  border-color: rgba(99, 102, 241, 0.16);
-  background-color: rgba(16, 22, 47, 0.88);
+/* Select dropdown options */
+html.dark select option, html.navy select option {
+  background-color: #0c142e !important;
+  color: #f8fafc !important;
+}
+
+/* 4. High-Contrast Interactive Action Buttons */
+html.dark button.bg-blue-600, html.navy button.bg-blue-600,
+html.dark a.bg-blue-600, html.navy a.bg-blue-600,
+html.dark .btn-primary, html.navy .btn-primary {
+  background: linear-gradient(135deg, #2563eb, #4f46e5) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.45) !important;
+  font-weight: 800 !important;
+}
+
+html.dark button.bg-blue-600:hover, html.navy button.bg-blue-600:hover,
+html.dark a.bg-blue-600:hover, html.navy a.bg-blue-600:hover {
+  background: linear-gradient(135deg, #1d4ed8, #4338ca) !important;
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.55) !important;
+  transform: translateY(-1px);
+}
+
+/* Secondary Buttons */
+html.dark button.bg-slate-100, html.navy button.bg-slate-100,
+html.dark button.bg-zinc-800, html.navy button.bg-zinc-800 {
+  background-color: #141f3e !important;
+  border: 1px solid #283a66 !important;
+  color: #e2e8f0 !important;
+}
+
+html.dark button.bg-slate-100:hover, html.navy button.bg-slate-100:hover,
+html.dark button.bg-zinc-800:hover, html.navy button.bg-zinc-800:hover {
+  background-color: #1c2b54 !important;
+  border-color: #3b528a !important;
+  color: #ffffff !important;
+}
+
+/* Focus visibility for accessibility */
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid #60a5fa !important;
+  outline-offset: 2px !important;
+}
+
+/* 5. Navigation Items & Active States */
+/* Desktop Sidebar Active & Inactive Items */
+html.dark .sidebar-nav-btn.active, html.navy .sidebar-nav-btn.active,
+html.dark #app-desktop-sidebar .sidebar-nav-btn.active, html.navy #app-desktop-sidebar .sidebar-nav-btn.active {
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.38), rgba(79, 70, 229, 0.28)) !important;
+  border-left: 3.5px solid #3b82f6 !important;
+  color: #ffffff !important;
+  box-shadow: inset 0 0 14px rgba(59, 130, 246, 0.25) !important;
+}
+
+html.dark .sidebar-nav-btn:not(.active), html.navy .sidebar-nav-btn:not(.active) {
+  color: #cbd5e1 !important;
+}
+
+html.dark .sidebar-nav-btn:not(.active):hover, html.navy .sidebar-nav-btn:not(.active):hover {
+  background-color: #152246 !important;
+  color: #ffffff !important;
+}
+
+/* Filter Pills */
+#feed-filter-pills button:not(.bg-blue-600),
+.study-notes-filter-pill:not(.bg-blue-600) {
+  background-color: #121c3b !important;
+  border: 1px solid #25355e !important;
+  color: #cbd5e1 !important;
+}
+
+#feed-filter-pills button:not(.bg-blue-600):hover,
+.study-notes-filter-pill:not(.bg-blue-600):hover {
+  background-color: #192750 !important;
+  color: #ffffff !important;
+  border-color: #3b528a !important;
+}
+
+/* Mobile Bottom Navigation */
+html.dark .floating-glass-nav, html.navy .floating-glass-nav {
+  background-color: rgba(10, 16, 36, 0.96) !important;
+  border: 1px solid rgba(147, 197, 253, 0.25) !important;
+  box-shadow: 0 -4px 25px rgba(0, 0, 0, 0.5) !important;
+}
+
+html.dark .floating-nav-item.bottom-nav-active, html.navy .floating-nav-item.bottom-nav-active {
+  color: #60a5fa !important;
+}
+
+html.dark .floating-nav-item:not(.bottom-nav-active), html.navy .floating-nav-item:not(.bottom-nav-active) {
+  color: #94a3b8 !important;
+}
+
+html.dark .floating-nav-item:not(.bottom-nav-active):hover, html.navy .floating-nav-item:not(.bottom-nav-active):hover {
+  color: #ffffff !important;
+}
+
+/* 6. Fellowship Identity Markers & Badges */
+.fellowship-badge,
+[id*="fellowship-badge"],
+span:has(> i[data-lucide="home"]) {
+  background-color: #131d3d !important;
+  border-color: rgba(147, 197, 253, 0.35) !important;
+  color: #93c5fd !important;
+  font-weight: 700 !important;
+}
+
+/* 7. Modals & Popovers in Dark Blue */
+html.dark div[id$="-modal"] > div,
+html.navy div[id$="-modal"] > div,
+html.dark #theme-palette-dropdown, html.navy #theme-palette-dropdown,
+html.dark #profile-dropdown, html.navy #profile-dropdown,
+html.dark .tablet-popover, html.navy .tablet-popover {
+  background-color: #0d152e !important;
+  border: 1px solid rgba(147, 197, 253, 0.25) !important;
+  box-shadow: 0 25px 65px -10px rgba(0, 0, 0, 0.8) !important;
+}
+
+/* 8. Table Contrast Enforcement */
+html.dark th, html.navy th {
+  background-color: #0e1633 !important;
+  color: #93c5fd !important;
+  border-bottom: 2px solid rgba(147, 197, 253, 0.25) !important;
+  font-weight: 800 !important;
+}
+
+html.dark tr, html.navy tr {
+  border-bottom: 1px solid rgba(147, 197, 253, 0.15) !important;
+}
+
+html.dark tr:hover, html.navy tr:hover {
+  background-color: rgba(22, 34, 68, 0.6) !important;
+}
+
+html.dark td, html.navy td {
+  color: #e2e8f0 !important;
+}
+
+/* 9. Toast Notification System Contrast */
+#toast-container > div {
+  background-color: #0d152e !important;
+  border: 1px solid rgba(147, 197, 253, 0.3) !important;
+  color: #ffffff !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.65) !important;
+}
+
+/* 10. Quizzes & Trivia Option Clarity */
+#quiz-play-options button {
+  background-color: #0e1633 !important;
+  border: 1px solid #283a66 !important;
+  color: #f8fafc !important;
+}
+
+#quiz-play-options button:hover {
+  border-color: #3b82f6 !important;
+  background-color: #152246 !important;
+}
+
+#quiz-play-options button:focus {
+  outline: 2px solid #60a5fa !important;
 }
 
 /* ========================================================================= */

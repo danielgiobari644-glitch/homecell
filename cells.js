@@ -521,13 +521,13 @@ window.loadFellowshipMessages = function() {
           </div>
           <div class="space-y-1 max-w-[85%]">
             <div class="flex items-center gap-2 ${isMe ? 'justify-end' : ''}">
-              <span class="text-[11px] font-black text-slate-700 dark:text-zinc-300">${isMe ? 'You' : msg.authorName}</span>
-              <span class="text-[10px] text-slate-400 font-mono">${timeStr}</span>
+              <span class="text-[11px] font-black text-slate-700 dark:text-blue-300">${isMe ? 'You' : msg.authorName}</span>
+              <span class="text-[10px] text-slate-400 dark:text-slate-300 font-mono">${timeStr}</span>
             </div>
             <div class="p-3.5 rounded-2xl text-xs leading-relaxed ${
               isMe
-                ? 'bg-blue-600 text-white rounded-tr-xs shadow-xs'
-                : 'bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700/80 text-slate-800 dark:text-zinc-200 rounded-tl-xs shadow-xs'
+                ? 'bg-blue-600 text-white rounded-tr-xs shadow-xs font-medium'
+                : 'bg-white dark:bg-[#121c3b] border border-slate-200 dark:border-[#283c6f] text-slate-800 dark:text-slate-100 rounded-tl-xs shadow-xs'
             }">
               ${msg.text ? `<p class="whitespace-pre-wrap break-words">${msg.text}</p>` : ''}
               ${msg.mediaUrl ? `

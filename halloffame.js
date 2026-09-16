@@ -185,7 +185,9 @@ function renderGlobalHofView(users) {
       const rank = idx + 1;
       const score = u[sortField] || 0;
       const rankBadge = rank === 1 ? '🥇 1st' : (rank === 2 ? '🥈 2nd' : '🥉 3rd');
-      const badgeColor = rank === 1 ? 'border-amber-400 bg-amber-500/10 text-amber-500' : (rank === 2 ? 'border-slate-300 bg-slate-500/10 text-slate-400' : 'border-amber-700 bg-amber-700/10 text-amber-700');
+      const badgeColor = rank === 1 
+        ? 'border-amber-400 bg-amber-500/15 text-amber-300' 
+        : (rank === 2 ? 'border-slate-300 bg-slate-500/20 text-slate-200' : 'border-amber-500/50 bg-amber-500/15 text-amber-300');
 
       const fellowshipInfo = resolveUserFellowship(u);
       const isLeader = fellowshipInfo.role === 'leader';

@@ -1,17 +1,17 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" shape-rendering="geometricPrecision">
   <defs>
-    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#2563eb" />
-      <stop offset="50%" stop-color="#4f46e5" />
-      <stop offset="100%" stop-color="#7c3aed" />
+    <linearGradient id="hc-navy-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#070b1c"/>
+      <stop offset="100%" stop-color="#0f1738"/>
     </linearGradient>
-    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#3b82f6" flood-opacity="0.4"/>
-    </filter>
   </defs>
-  <rect width="100" height="100" rx="28" fill="url(#grad)" filter="url(#glow)" />
-  <!-- Golden Cross Motif -->
-  <path d="M50 18 V82" stroke="#ffffff" stroke-width="10" stroke-linecap="round" />
-  <path d="M28 38 H72" stroke="#ffffff" stroke-width="10" stroke-linecap="round" />
-  <circle cx="50" cy="38" r="4" fill="#fbbf24" />
+  <!-- Dark Navy Squircle Base for high-contrast visibility on any browser tab -->
+  <rect width="100" height="100" rx="22" fill="url(#hc-navy-bg)" stroke="#a855f7" stroke-width="2.5" stroke-opacity="0.4"/>
+  
+  <!-- Official Home.cell House Outline (Pure Crisp White) -->
+  <path d="M50 16L84 45V82H16V45L50 16Z" fill="none" stroke="#ffffff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- Official Home.cell Twin Inner Dots (Purple & Magenta) -->
+  <circle cx="39" cy="58" r="7" fill="#a855f7"/>
+  <circle cx="61" cy="58" r="7" fill="#e879f9"/>
 </svg>
