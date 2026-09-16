@@ -557,7 +557,7 @@ function renderAdminUsersView() {
           <h3 class="font-display font-black text-xl text-slate-900 dark:text-zinc-100">Registered Believers</h3>
           <p class="text-xs text-slate-500">Assign members directly into cells, promote administrators, or review accounts.</p>
         </div>
-        <button onclick="window.openAdminDevotionalModal()" class="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer inline-flex items-center gap-1.5 shadow-2xs">
+        <button onclick="window.openAdminDevotionalModal()" class="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer inline-flex items-center gap-1.5 shadow-2xs">
           <i data-lucide="book-open" class="w-4 h-4"></i> Publish Devotional
         </button>
       </div>

@@ -262,7 +262,7 @@ function switchBibleSubTab(subTab) {
   } else {
     if (readerView) readerView.classList.add('hidden');
     if (notesView) notesView.classList.remove('hidden');
-    if (btnNotes) btnNotes.className = "px-4 py-2 rounded-xl text-xs font-black bg-amber-500 text-slate-950 shadow-sm flex items-center gap-1.5 transition-all cursor-pointer";
+    if (btnNotes) btnNotes.className = "px-4 py-2 rounded-xl text-xs font-black bg-amber-500 text-white shadow-sm flex items-center gap-1.5 transition-all cursor-pointer";
     if (btnReader) btnReader.className = "px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 flex items-center gap-1.5 transition-all cursor-pointer";
     renderStudyNotesList();
   }
@@ -961,7 +961,7 @@ function renderStudyNotesList() {
         <p class="text-xs text-slate-500 dark:text-zinc-400 mt-1 max-w-sm mx-auto">
           Capture what the Holy Spirit is teaching you! Tap the <span class="font-bold text-amber-600 dark:text-amber-400">📝 Note</span> icon while reading verses or create a new note.
         </p>
-        <button onclick="openStudyNoteModal()" class="mt-4 px-5 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-black text-xs rounded-xl cursor-pointer hover:shadow-md transition-all">
+        <button onclick="openStudyNoteModal()" class="mt-4 px-5 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-500 text-white font-black text-xs rounded-xl cursor-pointer hover:shadow-md transition-all">
           + Create First Study Note (+5 KC)
         </button>
       </div>

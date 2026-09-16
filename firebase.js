@@ -37,6 +37,16 @@
 
   console.error = function(...args) {
     const msg = args.map(a => String(a || '')).join(' ');
+    const lower = msg.toLowerCase();
+    if (
+      lower.includes('metamask') ||
+      lower.includes('failed to connect to metamask') ||
+      lower.includes('chrome-extension://') ||
+      lower.includes('moz-extension://') ||
+      lower.includes('ethereum')
+    ) {
+      return;
+    }
     if (msg.includes('INTERNAL ASSERTION FAILED')) {
       originalWarn.call(console, 'Firestore SDK internal assertion caught:', msg);
       return;
@@ -49,6 +59,15 @@
   };
   console.warn = function(...args) {
     const msg = args.map(a => String(a || '')).join(' ');
+    const lower = msg.toLowerCase();
+    if (
+      lower.includes('metamask') ||
+      lower.includes('failed to connect to metamask') ||
+      lower.includes('chrome-extension://') ||
+      lower.includes('moz-extension://')
+    ) {
+      return;
+    }
     if (msg.includes('enableIndexedDbPersistence() will be deprecated')) {
       return;
     }
@@ -61,11 +80,20 @@
 
   window.addEventListener('unhandledrejection', function(event) {
     const reasonMsg = String(event?.reason?.message || event?.reason || '');
-    if (reasonMsg.includes('INTERNAL ASSERTION FAILED') || reasonMsg.includes('Unexpected state')) {
+    const lower = reasonMsg.toLowerCase();
+    if (
+      lower.includes('metamask') ||
+      lower.includes('failed to connect to metamask') ||
+      lower.includes('chrome-extension://') ||
+      lower.includes('moz-extension://') ||
+      lower.includes('ethereum') ||
+      lower.includes('internal assertion failed') ||
+      lower.includes('unexpected state')
+    ) {
       event.preventDefault();
-      console.warn('Caught unhandled Firestore assertion rejection:', reasonMsg);
+      event.stopImmediatePropagation?.();
     }
-  });
+  }, true);
 })();
 
 const firebaseConfig = {

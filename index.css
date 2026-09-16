@@ -185,37 +185,50 @@ body {
 /* 3. HIGH-CONTRAST TYPOGRAPHY HIERARCHY AUDIT (WCAG AA COMPLIANT)           */
 /* ========================================================================= */
 
-/* Dark Theme Typography (Default) */
+/* Dark Theme Typography (Default) — All text, headings, badges & buttons on dark blue must be white */
 html.dark h1, html.dark h2, html.dark h3, html.dark h4, html.dark h5, html.dark h6,
 html.navy h1, html.navy h2, html.navy h3, html.navy h4, html.navy h5, html.navy h6,
 html.dark .text-slate-900, html.dark .text-zinc-900, html.dark .text-zinc-100, html.dark .text-zinc-50,
 html.navy .text-slate-900, html.navy .text-zinc-900, html.navy .text-zinc-100, html.navy .text-zinc-50,
 html.dark .dark\:text-zinc-100, html.dark .dark\:text-zinc-50, html.dark .dark\:text-white,
-html.navy .dark\:text-zinc-100, html.navy .dark\:text-zinc-50, html.navy .dark\:text-white {
+html.navy .dark\:text-zinc-100, html.navy .dark\:text-zinc-50, html.navy .dark\:text-white,
+html.dark .text-slate-950, html.navy .text-slate-950,
+html.dark .text-black, html.navy .text-black,
+html.dark .text-zinc-950, html.navy .text-zinc-950,
+html.dark .text-gray-950, html.navy .text-gray-950,
+html.dark .text-slate-800, html.navy .text-slate-800,
+html.dark .text-zinc-800, html.navy .text-zinc-800,
+html.dark .text-slate-700, html.navy .text-slate-700,
+html.dark .text-zinc-700, html.navy .text-zinc-700,
+html.dark .dark\:text-zinc-200, html.dark .dark\:text-slate-200,
+html.navy .dark\:text-zinc-200, html.navy .dark\:text-slate-200,
+html.dark .dark\:text-zinc-300, html.dark .dark\:text-slate-300,
+html.navy .dark\:text-zinc-300, html.navy .dark\:text-slate-300,
+html.dark .dark\:text-zinc-400, html.navy .dark\:text-zinc-400,
+html.dark .dark\:text-slate-100, html.navy .dark\:text-slate-100,
+html.dark .dark\:text-slate-50, html.navy .dark\:text-slate-50,
+html.dark .bible-verse-body-text, html.navy .bible-verse-body-text {
   color: #ffffff !important;
 }
 
-html.dark .text-slate-800, html.dark .text-zinc-800, html.dark .text-zinc-200,
-html.navy .text-slate-800, html.navy .text-zinc-800, html.navy .text-zinc-200,
-html.dark .dark\:text-zinc-200, html.dark .dark\:text-slate-200,
-html.navy .dark\:text-zinc-200, html.navy .dark\:text-slate-200,
-html.dark .bible-verse-body-text, html.navy .bible-verse-body-text {
-  color: #f1f5f9 !important;
+/* Ensure buttons, badges, gold/amber actions on dark blue have white text instead of black */
+html.dark .bg-amber-400, html.dark .bg-amber-500, html.dark .bg-yellow-400,
+html.navy .bg-amber-400, html.navy .bg-amber-500, html.navy .bg-yellow-400,
+html.dark [class*="bg-amber-"], html.navy [class*="bg-amber-"],
+html.dark [class*="bg-yellow-"], html.navy [class*="bg-yellow-"],
+html.dark [class*="bg-emerald-"], html.navy [class*="bg-emerald-"] {
+  color: #ffffff !important;
+}
+html.dark [class*="bg-amber-"] .text-slate-950, html.dark [class*="bg-amber-"] .text-slate-900,
+html.navy [class*="bg-amber-"] .text-slate-950, html.navy [class*="bg-amber-"] .text-slate-900,
+html.dark [class*="bg-amber-"] *, html.navy [class*="bg-amber-"] * {
+  color: #ffffff !important;
 }
 
-html.dark .text-slate-700, html.dark .text-zinc-700, html.dark .text-zinc-300,
-html.navy .text-slate-700, html.navy .text-zinc-700, html.navy .text-zinc-300,
-html.dark .dark\:text-zinc-300, html.dark .dark\:text-slate-300,
-html.navy .dark\:text-zinc-300, html.navy .dark\:text-slate-300 {
-  color: #e2e8f0 !important;
-}
-
-/* Secondary & body text — crisp light blue-gray */
+/* Secondary & body text — crisp light blue-slate */
 html.dark .text-slate-600, html.dark .text-zinc-600,
-html.navy .text-slate-600, html.navy .text-zinc-600,
-html.dark .dark\:text-zinc-400, html.dark .dark\:text-slate-400,
-html.navy .dark\:text-zinc-400, html.navy .dark\:text-slate-400 {
-  color: #cbd5e1 !important;
+html.navy .text-slate-600, html.navy .text-zinc-600 {
+  color: #e2e8f0 !important;
 }
 
 /* Muted metadata, timestamps & subtitles */
@@ -223,17 +236,13 @@ html.dark .text-slate-500, html.dark .text-zinc-500, html.dark .text-slate-400,
 html.navy .text-slate-500, html.navy .text-zinc-500, html.navy .text-slate-400,
 html.dark .dark\:text-zinc-500, html.dark .dark\:text-slate-500,
 html.navy .dark\:text-zinc-500, html.navy .dark\:text-slate-500 {
-  color: #94a3b8 !important;
+  color: #cbd5e1 !important;
 }
 
-/* Retain high-contrast dark text inside gold/amber badges */
-html.dark .bg-amber-400, html.dark .bg-amber-500, html.dark .bg-yellow-400,
-html.navy .bg-amber-400, html.navy .bg-amber-500, html.navy .bg-yellow-400 {
-  color: #060914 !important;
-}
-html.dark [class*="bg-amber-"] .text-slate-950, html.dark [class*="bg-amber-"] .text-slate-900,
-html.navy [class*="bg-amber-"] .text-slate-950, html.navy [class*="bg-amber-"] .text-slate-900 {
-  color: #060914 !important;
+/* Selection */
+html.dark ::selection, html.navy ::selection {
+  background-color: #3b82f6 !important;
+  color: #ffffff !important;
 }
 
 /* Light Theme Typography */

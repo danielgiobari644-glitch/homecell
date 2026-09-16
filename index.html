@@ -14,6 +14,67 @@
     <meta name="theme-color" content="#060914" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
+    <!-- Global Extension & MetaMask Error Boundary Shield -->
+    <script>
+      (function() {
+        const isExtensionOrMetaMask = function(val) {
+          if (!val) return false;
+          try {
+            const str = (typeof val === 'string' ? val : (val.message || val.stack || JSON.stringify(val) || '')).toLowerCase();
+            return str.includes('metamask') ||
+                   str.includes('failed to connect to metamask') ||
+                   str.includes('chrome-extension://') ||
+                   str.includes('moz-extension://') ||
+                   str.includes('safari-extension://') ||
+                   str.includes('ethereum') ||
+                   str.includes('web3');
+          } catch (e) {
+            return false;
+          }
+        };
+
+        // Capture window error events from browser extension injections
+        window.addEventListener('error', function(event) {
+          if (isExtensionOrMetaMask(event.message) || isExtensionOrMetaMask(event.filename) || isExtensionOrMetaMask(event.error)) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            return true;
+          }
+        }, true);
+
+        // Capture unhandled promise rejections from browser extension injections
+        window.addEventListener('unhandledrejection', function(event) {
+          if (isExtensionOrMetaMask(event.reason)) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            return true;
+          }
+        }, true);
+
+        // Fallback for window.onerror
+        const prevOnError = window.onerror;
+        window.onerror = function(msg, url, lineNo, colNo, error) {
+          if (isExtensionOrMetaMask(msg) || isExtensionOrMetaMask(url) || isExtensionOrMetaMask(error)) {
+            return true;
+          }
+          if (typeof prevOnError === 'function') {
+            return prevOnError.apply(this, arguments);
+          }
+          return false;
+        };
+
+        // Filter console.error from extension probes
+        const origConsoleError = console.error;
+        console.error = function(...args) {
+          const joined = args.map(a => (typeof a === 'string' ? a : (a?.message || ''))).join(' ');
+          if (isExtensionOrMetaMask(joined)) {
+            return;
+          }
+          origConsoleError.apply(console, args);
+        };
+      })();
+    </script>
+
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -150,7 +211,7 @@
       };
     </script>
   </head>
-  <body class="bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 min-h-screen flex flex-col antialiased selection:bg-amber-400 selection:text-slate-950">
+  <body class="bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 min-h-screen flex flex-col antialiased selection:bg-blue-600 selection:text-white">
 
     <!-- ========================================================================= -->
     <!-- 0. SCREEN 0: PREMIUM HOME.CELL LOADING & SPLASH EXPERIENCE                 -->
@@ -746,7 +807,7 @@
               <button id="nav-btn-profile" onclick="switchTab('profile')" class="px-3.5 py-1.5 rounded-xl text-xs font-black text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer">
                 Profile
               </button>
-              <button id="nav-btn-admin" onclick="switchTab('admin')" style="display: none;" class="super-admin-only hidden px-3.5 py-1.5 rounded-xl text-xs font-black bg-amber-500 text-slate-950 transition-all cursor-pointer shadow-xs">
+              <button id="nav-btn-admin" onclick="switchTab('admin')" style="display: none;" class="super-admin-only hidden px-3.5 py-1.5 rounded-xl text-xs font-black bg-amber-500 text-white transition-all cursor-pointer shadow-xs">
                 Admin
               </button>
             </nav>
@@ -768,7 +829,7 @@
                   <div class="px-3 py-1.5 text-[10px] font-black uppercase text-slate-400 tracking-wider">Appearance Theme</div>
                   <!-- Dark Theme (Default) -->
                   <button type="button" data-theme-choice="dark" onclick="window.applyTheme('dark'); window.toggleThemePaletteMenu(event)" class="w-full px-3 py-2 rounded-xl text-xs font-bold text-left flex items-center gap-2.5 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer">
-                    <span class="w-3.5 h-3.5 rounded-full bg-[#060914] border-2 border-purple-400 shrink-0"></span>
+                    <span class="w-3.5 h-3.5 rounded-full bg-blue-600 border-2 border-white shrink-0"></span>
                     <div class="flex-1 min-w-0">
                       <div class="text-slate-900 dark:text-zinc-100 text-[11px] font-black flex items-center justify-between">
                         <span>Dark Theme</span>
@@ -1086,7 +1147,7 @@
                 <h4 class="font-black text-base text-slate-900 dark:text-zinc-100">Fellowship Gatherings & Rallies</h4>
                 <p class="text-xs text-slate-500">Weekly meetings, prayer vigils, and outreach</p>
               </div>
-              <button onclick="window.openCreateEventModal()" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl transition-all cursor-pointer shadow-xs inline-flex items-center gap-1.5">
+              <button onclick="window.openCreateEventModal()" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl transition-all cursor-pointer shadow-xs inline-flex items-center gap-1.5">
                 <i data-lucide="plus" class="w-4 h-4"></i> Schedule Gathering
               </button>
             </div>
@@ -1115,7 +1176,7 @@
 
               <!-- Super Admin Publish Devotional Button -->
               <div class="super-admin-only hidden shrink-0">
-                <button onclick="window.openAdminDevotionalModal()" class="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-black transition-all cursor-pointer shadow-md inline-flex items-center gap-1.5">
+                <button onclick="window.openAdminDevotionalModal()" class="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-black transition-all cursor-pointer shadow-md inline-flex items-center gap-1.5">
                   <i data-lucide="plus-circle" class="w-4 h-4"></i> New Devotional
                 </button>
               </div>
@@ -1298,7 +1359,7 @@
 
           <!-- Category Filter Pills -->
           <div class="flex items-center justify-center gap-2 overflow-x-auto no-scrollbar pb-2">
-            <button id="hof-tab-streak" onclick="window.setHofCategory('streak')" class="px-4 py-2 text-xs font-black rounded-xl bg-amber-500 text-slate-950 shadow-xs flex items-center gap-1.5 cursor-pointer">
+            <button id="hof-tab-streak" onclick="window.setHofCategory('streak')" class="px-4 py-2 text-xs font-black rounded-xl bg-amber-500 text-white shadow-xs flex items-center gap-1.5 cursor-pointer">
               🔥 Scripture Streak
             </button>
             <button id="hof-tab-chaptersRead" onclick="window.setHofCategory('chaptersRead')" class="px-4 py-2 text-xs font-black rounded-xl text-slate-500 hover:text-slate-800 dark:hover:text-zinc-200 flex items-center gap-1.5 cursor-pointer">
@@ -1404,7 +1465,7 @@
                 class="flex-1 p-3.5 rounded-2xl border-2 border-blue-500 bg-blue-600/15 text-white font-black text-xs flex items-center justify-between shadow-sm cursor-pointer transition-all"
               >
                 <div class="flex items-center gap-3">
-                  <div class="w-8 h-8 rounded-xl bg-[#060914] border border-blue-400/40 flex items-center justify-center text-blue-400">
+                  <div class="w-8 h-8 rounded-xl bg-blue-600/30 border border-blue-400/40 flex items-center justify-center text-blue-300">
                     <i data-lucide="moon" class="w-4 h-4"></i>
                   </div>
                   <div class="text-left">
@@ -1756,7 +1817,7 @@
             </div>
           </div>
 
-          <button type="submit" id="create-event-submit-btn" class="w-full py-3 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-md">
+          <button type="submit" id="create-event-submit-btn" class="w-full py-3 bg-amber-500 hover:bg-amber-600 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-md">
             Publish Gathering
           </button>
         </form>
@@ -1823,7 +1884,7 @@
 
           <div class="flex items-center justify-end gap-2 pt-2">
             <button type="button" onclick="window.closeEditEventModal()" class="px-4 py-2 text-xs font-bold text-slate-400 cursor-pointer">Cancel</button>
-            <button type="submit" id="edit-event-submit-btn" class="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-md">
+            <button type="submit" id="edit-event-submit-btn" class="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-md">
               Save Changes
             </button>
           </div>
@@ -1932,7 +1993,7 @@
 
           <div class="flex items-center justify-end gap-2 pt-2">
             <button type="button" onclick="window.closeAdminAddMemberModal()" class="px-4 py-2 text-xs font-bold text-slate-400 cursor-pointer">Cancel</button>
-            <button type="submit" id="admin-add-member-submit-btn" class="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-xs">
+            <button type="submit" id="admin-add-member-submit-btn" class="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-xs">
               Confirm & Add
             </button>
           </div>
@@ -1955,7 +2016,7 @@
 
         <div class="flex items-center justify-between">
           <span id="admin-roster-count-text" class="text-xs font-mono text-slate-500">0 Believers Registered</span>
-          <button onclick="window.openAdminAddMemberFromRoster()" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold rounded-xl transition-all cursor-pointer inline-flex items-center gap-1.5">
+          <button onclick="window.openAdminAddMemberFromRoster()" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl transition-all cursor-pointer inline-flex items-center gap-1.5">
             <i data-lucide="user-plus" class="w-3.5 h-3.5"></i> Add Member to Cell
           </button>
         </div>
@@ -2011,7 +2072,7 @@
 
           <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-zinc-800">
             <button type="button" onclick="window.closeAdminDevotionalModal()" class="px-4 py-2 text-xs font-bold text-slate-400 cursor-pointer">Cancel</button>
-            <button type="submit" id="admin-devotional-submit-btn" class="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-xs">
+            <button type="submit" id="admin-devotional-submit-btn" class="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-xs">
               Publish to All Believers
             </button>
           </div>
@@ -2430,7 +2491,7 @@
           if (t === 'admin') {
             if (!isSuperAdmin) {
               if (btn) {
-                btn.className = "super-admin-only hidden px-3.5 py-1.5 rounded-xl text-xs font-black bg-amber-500 text-slate-950 transition-all cursor-pointer shadow-xs";
+                btn.className = "super-admin-only hidden px-3.5 py-1.5 rounded-xl text-xs font-black bg-amber-500 text-white transition-all cursor-pointer shadow-xs";
                 btn.style.display = 'none';
               }
               if (mobileBtn) {
@@ -2454,7 +2515,7 @@
           if (btn) {
             if (t === 'admin') {
               if (t === tabName) {
-                btn.className = "super-admin-only px-3.5 py-1.5 rounded-xl text-xs font-black bg-amber-400 text-slate-950 transition-all cursor-pointer shadow-md";
+                btn.className = "super-admin-only px-3.5 py-1.5 rounded-xl text-xs font-black bg-amber-400 text-white transition-all cursor-pointer shadow-md";
               } else {
                 btn.className = "super-admin-only px-3.5 py-1.5 rounded-xl text-xs font-black text-amber-300 hover:bg-amber-500/20 transition-all cursor-pointer";
               }

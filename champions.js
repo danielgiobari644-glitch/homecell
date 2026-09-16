@@ -261,7 +261,7 @@ function renderRealMissionsList() {
           <div class="space-y-1 min-w-0">
             <h4 class="font-bold text-sm text-slate-100 flex items-center gap-2">
               <span class="truncate">${m.title}</span>
-              ${isDone ? '<span class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-500 text-slate-950">Completed</span>' : ''}
+              ${isDone ? '<span class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-500 text-white">Completed</span>' : ''}
             </h4>
             <p class="text-xs text-slate-400 line-clamp-1">${m.desc}</p>
           </div>

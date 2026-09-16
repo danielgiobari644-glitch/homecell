@@ -324,7 +324,7 @@ window.syncFellowshipDashboard = function() {
               <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-600/90 text-white backdrop-blur-xs">
                 📍 ${f.city || 'Home Cell'}
               </span>
-              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/90 text-slate-950 backdrop-blur-xs">
+              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/90 text-white backdrop-blur-xs">
                 Your Role: ${roleText}
               </span>
             </div>
@@ -448,7 +448,7 @@ window.syncFellowshipDashboard = function() {
               As Cell Leader, you can schedule events, create fellowship quizzes, and coordinate members.
             </p>
             <div class="flex gap-2">
-              <button onclick="window.openCreateQuizModal('${f.id}')" class="flex-1 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-black rounded-xl transition-all cursor-pointer shadow-xs">
+              <button onclick="window.openCreateQuizModal('${f.id}')" class="flex-1 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-black rounded-xl transition-all cursor-pointer shadow-xs">
                 + Create Quiz
               </button>
               <button onclick="window.openCreateEventModal('${f.id}')" class="flex-1 py-2 bg-slate-900 hover:bg-slate-800 text-white dark:bg-zinc-800 dark:hover:bg-zinc-700 text-xs font-black rounded-xl transition-all cursor-pointer shadow-xs">

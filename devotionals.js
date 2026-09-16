@@ -105,7 +105,7 @@ function renderDevotionalsGrid(items) {
         </div>
 
         <div class="p-5 pt-0">
-          <button onclick="openFullDevotionalModal('${d.id}')" class="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer shadow-xs transition-all">
+          <button onclick="openFullDevotionalModal('${d.id}')" class="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-black rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer shadow-xs transition-all">
             <i data-lucide="book-open" class="w-4 h-4"></i> Read Devotional
           </button>
         </div>
