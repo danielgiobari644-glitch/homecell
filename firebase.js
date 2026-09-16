@@ -286,7 +286,15 @@ auth.onAuthStateChanged(async (user) => {
         } else {
           window.showMainAppView();
         }
-      }, err => console.warn("Memberships listener error:", err));
+
+        // Signal to splash screen that initial session & view routing is ready
+        if (typeof window.markAppReady === 'function') {
+          window.markAppReady();
+        }
+      }, err => {
+        console.warn("Memberships listener error:", err);
+        if (typeof window.markAppReady === 'function') window.markAppReady();
+      });
 
   } else {
     // User is logged out: teardown listeners & show strict auth screen
@@ -309,6 +317,11 @@ auth.onAuthStateChanged(async (user) => {
     document.querySelectorAll('.super-admin-only').forEach(el => el.classList.add('hidden'));
 
     showAuthScreen();
+
+    // Signal to splash screen that auth screen is ready
+    if (typeof window.markAppReady === 'function') {
+      window.markAppReady();
+    }
   }
 });
 
