@@ -1,143 +1,157 @@
-/* Home.cell — Modernized Premium Design System, Fluid Animations & Responsive UI */
+/* Home.cell — Unified Two-Theme Accessibility & Contrast System
+   Theme 1: Dark Theme (Default) — Sophisticated Deep Navy Blue & Violet Ambiance with Crisp White Readability
+   Theme 2: Light Theme (Optional) — Luminous Daybreak Grace with High-Contrast Deep Navy Readability
+*/
 
 :root {
   --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-display: 'Playfair Display', Georgia, serif;
-  
-  /* Primary Dark Blue Theme (Home.cell Official Brand Identity) */
-  --bg-color: #060914;
-  --bg-secondary: #0a1024;
-  --bg-mesh: radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.16) 0px, transparent 50%),
-             radial-gradient(at 100% 0%, rgba(168, 85, 247, 0.12) 0px, transparent 50%),
-             radial-gradient(at 50% 100%, rgba(10, 16, 36, 0.85) 0px, transparent 60%);
-  --text-primary: #ffffff;
-  --text-secondary: #cbd5e1;
-  --text-muted: #94a3b8;
+
+  /* ========================================================================= */
+  /* 1. DARK THEME COLOR SYSTEM (DEFAULT FOR EVERY NEW USER)                   */
+  /* ========================================================================= */
+  --bg-primary: #060914;               /* Deepest navy base canvas */
+  --bg-secondary: #0a1026;             /* Slightly lighter navy secondary background */
+  --bg-card: rgba(16, 25, 52, 0.96);   /* Clearly lighter dark-blue card surface */
+  --bg-elevated: #152246;              /* Elevated surface with depth */
+  --bg-input: #090e22;                 /* Clearly distinguishable dark-blue input surface */
+  --header-bg: rgba(10, 16, 36, 0.96); /* Sticky top header background */
+  --drawer-bg: rgba(12, 18, 40, 0.98); /* Drawer & modal background */
+
+  --text-primary: #ffffff;             /* Bright white for headings, important labels & content */
+  --text-secondary: #cbd5e1;           /* Crisp light blue-gray / near-white for body & descriptions */
+  --text-muted: #94a3b8;               /* Clearly readable muted blue-gray for metadata & timestamps */
   --text-disabled: #64748b;
-  --card-bg: rgba(16, 25, 52, 0.94);
-  --card-border: rgba(147, 197, 253, 0.22);
-  --card-border-hover: rgba(168, 85, 247, 0.45);
-  --input-bg: #090e22;
-  --input-border: #2b3e6c;
-  --header-bg: rgba(10, 16, 36, 0.96);
-  --drawer-bg: rgba(12, 18, 40, 0.98);
-  --accent-gold: #fbbf24;
-  --accent-blue: #3b82f6;
-  --accent-purple: #a855f7;
-  --accent-magenta: #d946ef;
+
+  --border: rgba(147, 197, 253, 0.22); /* Elegant, visible translucent blue-white border */
+  --border-card: rgba(147, 197, 253, 0.22);
+  --border-card-hover: rgba(168, 85, 247, 0.45);
+  --border-input: #2b3e6c;             /* Clearly visible input border */
+  --border-focus: #3b82f6;
+
+  --accent-primary: #3b82f6;           /* Royal Blue */
+  --accent-purple: #a855f7;            /* Home.cell Logo Dot 1 (Indigo/Purple) */
+  --accent-magenta: #d946ef;           /* Home.cell Logo Dot 2 (Radiant Orchid) */
+  --accent-gold: #fbbf24;              /* Very restrained gold */
+  
+  --success: #10b981;
+  --warning: #f59e0b;
+  --error: #ef4444;
+
   --pill-bg: rgba(22, 34, 70, 0.85);
   --pill-hover: rgba(33, 49, 98, 0.95);
+
   --shadow-sm: 0 2px 8px -1px rgba(0, 0, 0, 0.45);
   --shadow-md: 0 10px 25px -3px rgba(0, 0, 0, 0.55), 0 4px 6px -4px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 20px 35px -4px rgba(0, 0, 0, 0.65), 0 8px 16px -6px rgba(0, 0, 0, 0.5);
-}
 
-html.dark, html.navy {
-  --bg-color: #060914;
-  --bg-secondary: #0a1024;
   --bg-mesh: radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.16) 0px, transparent 50%),
              radial-gradient(at 100% 0%, rgba(168, 85, 247, 0.12) 0px, transparent 50%),
              radial-gradient(at 50% 100%, rgba(10, 16, 36, 0.85) 0px, transparent 60%);
+
+  /* Backward Compatibility Aliases */
+  --bg-color: var(--bg-primary);
+  --card-bg: var(--bg-card);
+  --card-border: var(--border-card);
+  --card-border-hover: var(--border-card-hover);
+  --input-bg: var(--bg-input);
+  --input-border: var(--border-input);
+}
+
+/* Dark Theme Enforced (Class 'dark' or 'navy') */
+html.dark, html.navy {
+  --bg-primary: #060914;
+  --bg-secondary: #0a1024;
+  --bg-card: rgba(16, 25, 52, 0.96);
+  --bg-elevated: #152246;
+  --bg-input: #090e22;
+  --header-bg: rgba(10, 16, 36, 0.96);
+  --drawer-bg: rgba(12, 18, 40, 0.98);
+
   --text-primary: #ffffff;
   --text-secondary: #cbd5e1;
   --text-muted: #94a3b8;
   --text-disabled: #64748b;
-  --card-bg: rgba(16, 25, 52, 0.94);
-  --card-border: rgba(147, 197, 253, 0.22);
-  --card-border-hover: rgba(168, 85, 247, 0.45);
-  --input-bg: #090e22;
-  --input-border: #2b3e6c;
-  --header-bg: rgba(10, 16, 36, 0.96);
-  --drawer-bg: rgba(12, 18, 40, 0.98);
+
+  --border: rgba(147, 197, 253, 0.22);
+  --border-card: rgba(147, 197, 253, 0.22);
+  --border-card-hover: rgba(168, 85, 247, 0.45);
+  --border-input: #2b3e6c;
+  --border-focus: #3b82f6;
+
+  --accent-primary: #3b82f6;
+  --accent-purple: #a855f7;
+  --accent-magenta: #d946ef;
+  --accent-gold: #fbbf24;
+
+  --success: #10b981;
+  --warning: #f59e0b;
+  --error: #ef4444;
+
   --pill-bg: rgba(22, 34, 70, 0.85);
   --pill-hover: rgba(33, 49, 98, 0.95);
-  --shadow-sm: 0 2px 8px -1px rgba(0, 0, 0, 0.45);
-  --shadow-md: 0 10px 25px -3px rgba(0, 0, 0, 0.55);
-  --shadow-lg: 0 20px 35px -4px rgba(0, 0, 0, 0.65);
+
+  --bg-color: var(--bg-primary);
+  --card-bg: var(--bg-card);
+  --card-border: var(--border-card);
+  --card-border-hover: var(--border-card-hover);
+  --input-bg: var(--bg-input);
+  --input-border: var(--border-input);
 }
 
-html.sanctuary {
-  --bg-color: #080912;
-  --bg-mesh: radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.16) 0px, transparent 50%),
-             radial-gradient(at 100% 0%, rgba(245, 158, 11, 0.12) 0px, transparent 50%),
-             radial-gradient(at 50% 100%, rgba(139, 92, 246, 0.14) 0px, transparent 60%);
-  --text-primary: #f8fafc;
-  --text-secondary: #cbd5e1;
-  --text-muted: #94a3b8;
-  --card-bg: rgba(14, 17, 30, 0.9);
-  --card-border: rgba(45, 55, 90, 0.7);
-  --card-border-hover: rgba(245, 158, 11, 0.45);
-  --header-bg: rgba(10, 12, 22, 0.94);
-  --drawer-bg: rgba(12, 15, 28, 0.98);
-  --pill-bg: #141829;
-  --pill-hover: #1d233a;
-  --shadow-sm: 0 2px 8px -1px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 10px 25px -3px rgba(0, 0, 0, 0.5);
-  --shadow-lg: 0 20px 35px -4px rgba(0, 0, 0, 0.6);
+/* ========================================================================= */
+/* 2. LIGHT THEME COLOR SYSTEM (OPTIONAL FOR USERS WHO CHOOSE IT)            */
+/* ========================================================================= */
+html.light, html:not(.dark):not(.navy) {
+  --bg-primary: #f8fafc;               /* Crisp light base canvas */
+  --bg-secondary: #f1f5f9;             /* Lighter secondary background */
+  --bg-card: #ffffff;                  /* Pure white card surface */
+  --bg-elevated: #ffffff;              /* Elevated card surface */
+  --bg-input: #ffffff;                 /* Pure white input surface */
+  --header-bg: rgba(255, 255, 255, 0.96);
+  --drawer-bg: rgba(255, 255, 255, 0.98);
+
+  --text-primary: #090e24;             /* High-contrast deep navy for headings & primary text */
+  --text-secondary: #334155;           /* Clearly legible dark blue-gray for body text */
+  --text-muted: #64748b;               /* Legible muted slate for metadata & timestamps */
+  --text-disabled: #94a3b8;
+
+  --border: #cbd5e1;                   /* Visible crisp light border */
+  --border-card: #cbd5e1;
+  --border-card-hover: #7c3aed;
+  --border-input: #94a3b8;             /* Clearly visible border on light inputs */
+  --border-focus: #2563eb;
+
+  --accent-primary: #2563eb;           /* Deep Blue */
+  --accent-purple: #7c3aed;            /* Vibrant Purple */
+  --accent-magenta: #c026d3;           /* Magenta */
+  --accent-gold: #d97706;              /* Warm Gold */
+
+  --success: #059669;
+  --warning: #d97706;
+  --error: #dc2626;
+
+  --pill-bg: #e2e8f0;
+  --pill-hover: #cbd5e1;
+
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.08), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+
+  --bg-mesh: radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.05) 0px, transparent 50%),
+             radial-gradient(at 100% 0%, rgba(168, 85, 247, 0.04) 0px, transparent 50%);
+
+  --bg-color: var(--bg-primary);
+  --card-bg: var(--bg-card);
+  --card-border: var(--border-card);
+  --card-border-hover: var(--border-card-hover);
+  --input-bg: var(--bg-input);
+  --input-border: var(--border-input);
 }
 
-/* Ancient Scrolls / Biblical Parchment Theme */
-html.parchment {
-  --bg-color: #f7f2ea;
-  --bg-mesh: radial-gradient(at 0% 0%, rgba(180, 83, 9, 0.08) 0px, transparent 50%),
-             radial-gradient(at 100% 100%, rgba(217, 119, 6, 0.06) 0px, transparent 50%);
-  --text-primary: #2d2216;
-  --text-secondary: #574635;
-  --text-muted: #7c6853;
-  --card-bg: rgba(254, 252, 247, 0.94);
-  --card-border: rgba(224, 210, 192, 0.9);
-  --card-border-hover: rgba(217, 119, 6, 0.4);
-  --header-bg: rgba(248, 243, 235, 0.95);
-  --drawer-bg: rgba(254, 251, 246, 0.98);
-  --accent-gold: #b45309;
-  --accent-blue: #92400e;
-  --pill-bg: #eee5d8;
-  --pill-hover: #e3d6c3;
-  --shadow-sm: 0 2px 8px -1px rgba(67, 43, 20, 0.05);
-  --shadow-md: 0 10px 25px -3px rgba(67, 43, 20, 0.08);
-  --shadow-lg: 0 20px 35px -4px rgba(67, 43, 20, 0.12);
-}
-
-/* Mount of Olives / Sacred Forest Theme */
-html.olive {
-  --bg-color: #0b140f;
-  --bg-mesh: radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.15) 0px, transparent 50%),
-             radial-gradient(at 100% 100%, rgba(5, 150, 105, 0.1) 0px, transparent 50%);
-  --text-primary: #ecfdf5;
-  --text-secondary: #a7f3d0;
-  --text-muted: #6ee7b7;
-  --card-bg: rgba(16, 28, 22, 0.9);
-  --card-border: rgba(30, 58, 44, 0.8);
-  --card-border-hover: rgba(16, 185, 129, 0.45);
-  --header-bg: rgba(12, 22, 17, 0.94);
-  --drawer-bg: rgba(14, 26, 20, 0.98);
-  --pill-bg: #14231b;
-  --pill-hover: #1e3629;
-  --shadow-sm: 0 2px 8px -1px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 10px 25px -3px rgba(0, 0, 0, 0.5);
-  --shadow-lg: 0 20px 35px -4px rgba(0, 0, 0, 0.6);
-}
-
-/* Royal Covenant / Imperial Violet Theme */
-html.covenant {
-  --bg-color: #12091f;
-  --bg-mesh: radial-gradient(at 0% 0%, rgba(168, 85, 247, 0.18) 0px, transparent 50%),
-             radial-gradient(at 100% 100%, rgba(234, 179, 8, 0.12) 0px, transparent 50%);
-  --text-primary: #faf5ff;
-  --text-secondary: #e9d5ff;
-  --text-muted: #c084fc;
-  --card-bg: rgba(26, 15, 43, 0.9);
-  --card-border: rgba(67, 39, 110, 0.8);
-  --card-border-hover: rgba(234, 179, 8, 0.45);
-  --header-bg: rgba(19, 10, 32, 0.94);
-  --drawer-bg: rgba(22, 12, 37, 0.98);
-  --pill-bg: #221338;
-  --pill-hover: #311c50;
-  --shadow-sm: 0 2px 8px -1px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 10px 25px -3px rgba(0, 0, 0, 0.5);
-  --shadow-lg: 0 20px 35px -4px rgba(0, 0, 0, 0.6);
-}
-
+/* ========================================================================= */
+/* BASE HTML & BODY LAYOUT                                                   */
+/* ========================================================================= */
 html {
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
@@ -148,7 +162,7 @@ html {
 
 body {
   font-family: var(--font-sans);
-  background-color: var(--bg-color);
+  background-color: var(--bg-primary);
   background-image: var(--bg-mesh);
   background-attachment: fixed;
   color: var(--text-primary);
@@ -157,20 +171,9 @@ body {
   min-height: 100vh;
   overflow-x: hidden;
   overflow-y: auto;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition: background-color 0.25s ease, color 0.25s ease;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
-
-/* Strict Super Admin Navigation Access Enforcement:
-   No other user can ever see the Admin button or tab unless verified as Super Admin */
-body:not(.is-super-admin) #nav-btn-admin,
-body:not(.is-super-admin) #mobile-nav-admin,
-body:not(.is-super-admin) #tab-admin,
-body:not(.is-super-admin) .super-admin-only {
-  display: none !important;
-  visibility: hidden !important;
-  pointer-events: none !important;
 }
 
 /* Typography Hierarchy */
@@ -178,411 +181,11 @@ body:not(.is-super-admin) .super-admin-only {
   font-family: var(--font-display);
 }
 
-/* Glassmorphic Cards & Elevated Panels */
-.glass-panel {
-  background-color: var(--card-bg);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--card-border);
-  box-shadow: var(--shadow-sm);
-  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, border-color 0.25s ease;
-}
-
-.glass-panel:hover {
-  border-color: var(--card-border-hover);
-  box-shadow: var(--shadow-md);
-}
-
-/* View Transition Animations */
-@keyframes tabEnter {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.tab-animate-in {
-  animation: tabEnter 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-/* Modernized Sidebar / Drawer Animations */
-.drawer-backdrop {
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), backdrop-filter 0.35s ease;
-}
-
-.drawer-backdrop.active {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.drawer-panel {
-  transform: translateX(100%);
-  background-color: var(--drawer-bg);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  transition: transform 0.38s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.38s ease;
-}
-
-.drawer-panel.active {
-  transform: translateX(0);
-  box-shadow: -10px 0 40px -10px rgba(0, 0, 0, 0.25);
-}
-
-/* Animated Drawer Nav Items */
-.drawer-nav-item {
-  position: relative;
-  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-  overflow: hidden;
-}
-
-.drawer-nav-item::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 15%;
-  bottom: 15%;
-  width: 3px;
-  border-radius: 9999px;
-  background: transparent;
-  transition: all 0.2s ease;
-}
-
-.drawer-nav-item:hover {
-  transform: translateX(4px);
-  background-color: var(--pill-hover);
-}
-
-.drawer-nav-item.active {
-  background-color: rgba(37, 99, 235, 0.08);
-  color: #2563eb;
-}
-
-.drawer-nav-item.active::before {
-  background: linear-gradient(180deg, #2563eb, #6366f1);
-}
-
-.dark .drawer-nav-item.active {
-  background-color: rgba(96, 165, 250, 0.12);
-  color: #60a5fa;
-}
-
-/* Desktop Navigation Pill Bar Micro-Interactions */
-.main-nav-pill {
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.main-nav-pill:hover {
-  transform: translateY(-1px);
-}
-
-.main-nav-pill:active {
-  transform: translateY(1px) scale(0.98);
-}
-
-/* Mobile Bottom Navigation Active Indicators */
-.bottom-nav-active {
-  color: #2563eb !important;
-  position: relative;
-}
-
-.dark .bottom-nav-active,
-.sanctuary .bottom-nav-active {
-  color: #60a5fa !important;
-}
-
-.bottom-nav-active::after {
-  content: '';
-  position: absolute;
-  bottom: -2px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 20px;
-  height: 3.5px;
-  border-radius: 9999px;
-  background: linear-gradient(90deg, #2563eb, #6366f1);
-  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.4);
-}
-
-/* Clean Custom Scrollbars */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.35);
-  border-radius: 9999px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.6);
-}
-
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-.smooth-scroll {
-  -webkit-overflow-scrolling: touch;
-  scroll-behavior: smooth;
-}
-
-@media (max-width: 768px) {
-  body {
-    padding-bottom: 6rem;
-  }
-}
-
-/* Floating Glass Bottom Navigation */
-.floating-glass-nav {
-  background: var(--drawer-bg);
-  backdrop-filter: blur(28px);
-  -webkit-backdrop-filter: blur(28px);
-  border: 1px solid var(--card-border);
-  box-shadow: 0 16px 36px -4px rgba(0, 0, 0, 0.18), 0 6px 16px -2px rgba(0, 0, 0, 0.08);
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.floating-nav-item {
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  position: relative;
-}
-
-.floating-nav-item:active {
-  transform: scale(0.92);
-}
-
-.floating-create-btn {
-  background: linear-gradient(135deg, #2563eb, #6366f1);
-  box-shadow: 0 8px 20px -2px rgba(37, 99, 235, 0.45);
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.floating-create-btn:hover {
-  transform: translateY(-2px) scale(1.05);
-  box-shadow: 0 12px 24px -2px rgba(37, 99, 235, 0.55);
-}
-
-.floating-create-btn:active {
-  transform: translateY(1px) scale(0.95);
-}
-
-/* Action Sheet Modal */
-.action-sheet-backdrop {
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.25s ease;
-}
-
-.action-sheet-backdrop.active {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.action-sheet-content {
-  transform: translateY(100%);
-  transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.action-sheet-backdrop.active .action-sheet-content {
-  transform: translateY(0);
-}
-
-/* Collapsible Desktop Sidebar */
-.desktop-sidebar {
-  background-color: var(--header-bg);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border-right: 1px solid var(--card-border);
-  transition: width 0.28s cubic-bezier(0.16, 1, 0.3, 1), padding 0.28s cubic-bezier(0.16, 1, 0.3, 1);
-  overflow-x: hidden;
-}
-
-header#app-top-header {
-  transition: margin-left 0.28s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-main#app-main-content {
-  transition: margin-left 0.28s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-/* Collapsed Desktop Sidebar Mode */
-body.sidebar-collapsed #app-desktop-sidebar {
-  width: 4.75rem !important; /* 76px */
-  padding: 1rem 0.5rem !important;
-}
-
-body.sidebar-collapsed header#app-top-header {
-  margin-left: 0;
-}
-
-@media (min-width: 1024px) {
-  body.sidebar-collapsed header#app-top-header {
-    margin-left: 4.75rem !important;
-  }
-  body.sidebar-collapsed main#app-main-content {
-    margin-left: 4.75rem !important;
-  }
-}
-
-body.sidebar-collapsed .sidebar-text-label,
-body.sidebar-collapsed .sidebar-btn-text {
-  display: none !important;
-}
-
-body.sidebar-collapsed .sidebar-brand-expanded {
-  display: none !important;
-}
-
-body.sidebar-collapsed .sidebar-brand-collapsed {
-  display: flex !important;
-}
-
-body.sidebar-collapsed .sidebar-category-header {
-  height: 1px !important;
-  margin: 0.5rem 0.35rem !important;
-  background-color: var(--card-border) !important;
-  font-size: 0 !important;
-  line-height: 0 !important;
-  color: transparent !important;
-  padding: 0 !important;
-}
-
-body.sidebar-collapsed .sidebar-nav-btn {
-  justify-content: center !important;
-  padding: 0.55rem 0 !important;
-  width: 100% !important;
-  border-radius: 0.875rem !important;
-}
-
-body.sidebar-collapsed .sidebar-nav-btn.active {
-  border-left: none !important;
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.4) !important;
-}
-
-body.sidebar-collapsed #sidebar-profile-card {
-  padding: 0.35rem !important;
-  justify-content: center !important;
-}
-
-body.sidebar-collapsed #sidebar-bottom-utils {
-  flex-direction: column !important;
-  align-items: center !important;
-  gap: 0.35rem !important;
-  padding: 0.5rem 0 0 0 !important;
-}
-
-body.sidebar-collapsed #sidebar-bottom-utils button {
-  width: 2.25rem !important;
-  height: 2.25rem !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  padding: 0 !important;
-}
-
-body.sidebar-collapsed .sidebar-nav-btn {
-  position: relative;
-}
-
-/* Hover Tooltip for Collapsed Sidebar Items */
-body.sidebar-collapsed .sidebar-nav-btn:hover::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  left: calc(100% + 10px);
-  top: 50%;
-  transform: translateY(-50%);
-  background-color: #0f172a;
-  color: #ffffff;
-  padding: 5px 11px;
-  font-size: 11px;
-  font-weight: 700;
-  border-radius: 8px;
-  white-space: nowrap;
-  pointer-events: none;
-  z-index: 100;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  animation: tabEnter 0.12s ease-out forwards;
-}
-
-html.dark body.sidebar-collapsed .sidebar-nav-btn:hover::after,
-html.sanctuary body.sidebar-collapsed .sidebar-nav-btn:hover::after {
-  background-color: #18181b;
-  color: #f4f4f5;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
-}
-
-.sidebar-nav-btn {
-  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
-  position: relative;
-  overflow: visible;
-}
-
-.sidebar-nav-btn:hover {
-  transform: translateX(3px);
-  background-color: var(--pill-hover);
-}
-
-body.sidebar-collapsed .sidebar-nav-btn:hover {
-  transform: scale(1.06);
-}
-
-.sidebar-nav-btn.active {
-  background: linear-gradient(90deg, rgba(37, 99, 235, 0.14), rgba(99, 102, 241, 0.08));
-  color: #2563eb;
-  font-weight: 800;
-  border-left: 3px solid #2563eb;
-}
-
-.dark .sidebar-nav-btn.active,
-.sanctuary .sidebar-nav-btn.active {
-  background: linear-gradient(90deg, rgba(96, 165, 250, 0.18), rgba(129, 140, 248, 0.1));
-  color: #60a5fa;
-  font-weight: 800;
-  border-left: 3px solid #60a5fa;
-}
-
-/* Tablet Dropdown Popover */
-.tablet-popover {
-  background-color: var(--drawer-bg);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid var(--card-border);
-  box-shadow: var(--shadow-lg);
-  transform-origin: top right;
-  transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.tablet-popover.hidden {
-  display: none;
-  opacity: 0;
-  transform: scale(0.95) translateY(-6px);
-}
-
 /* ========================================================================= */
-/* ACCESSIBILITY & HIGH-CONTRAST DEEP NAVY BLUE SYSTEM (WCAG AA COMPLIANT)   */
-/* Strictly maintains Dark Blue theme while maximizing clarity & legibility  */
+/* 3. HIGH-CONTRAST TYPOGRAPHY HIERARCHY AUDIT (WCAG AA COMPLIANT)           */
 /* ========================================================================= */
 
-/* 1. Global Typography & Text Contrast Hierarchy in Dark Blue */
-html.dark body,
-html.navy body {
-  color: #ffffff;
-}
-
+/* Dark Theme Typography (Default) */
 html.dark h1, html.dark h2, html.dark h3, html.dark h4, html.dark h5, html.dark h6,
 html.navy h1, html.navy h2, html.navy h3, html.navy h4, html.navy h5, html.navy h6,
 html.dark .text-slate-900, html.dark .text-zinc-900, html.dark .text-zinc-100, html.dark .text-zinc-50,
@@ -590,12 +193,6 @@ html.navy .text-slate-900, html.navy .text-zinc-900, html.navy .text-zinc-100, h
 html.dark .dark\:text-zinc-100, html.dark .dark\:text-zinc-50, html.dark .dark\:text-white,
 html.navy .dark\:text-zinc-100, html.navy .dark\:text-zinc-50, html.navy .dark\:text-white {
   color: #ffffff !important;
-}
-
-/* Secondary & Body Text — Crisp, high-contrast readable blue-white */
-html.dark p, html.dark span,
-html.navy p, html.navy span {
-  /* Inherit high contrast by default */
 }
 
 html.dark .text-slate-800, html.dark .text-zinc-800, html.dark .text-zinc-200,
@@ -613,7 +210,7 @@ html.navy .dark\:text-zinc-300, html.navy .dark\:text-slate-300 {
   color: #e2e8f0 !important;
 }
 
-/* Subtitles, labels, descriptions & metadata — Soft bright blue-gray (always > 6:1 contrast) */
+/* Secondary & body text — crisp light blue-gray */
 html.dark .text-slate-600, html.dark .text-zinc-600,
 html.navy .text-slate-600, html.navy .text-zinc-600,
 html.dark .dark\:text-zinc-400, html.dark .dark\:text-slate-400,
@@ -621,7 +218,7 @@ html.navy .dark\:text-zinc-400, html.navy .dark\:text-slate-400 {
   color: #cbd5e1 !important;
 }
 
-/* Timestamps, counters, icons & helper notes — Distinguishable muted (always > 4.6:1 WCAG AA) */
+/* Muted metadata, timestamps & subtitles */
 html.dark .text-slate-500, html.dark .text-zinc-500, html.dark .text-slate-400,
 html.navy .text-slate-500, html.navy .text-zinc-500, html.navy .text-slate-400,
 html.dark .dark\:text-zinc-500, html.dark .dark\:text-slate-500,
@@ -629,9 +226,9 @@ html.navy .dark\:text-zinc-500, html.navy .dark\:text-slate-500 {
   color: #94a3b8 !important;
 }
 
-/* Retain high-contrast dark text inside explicitly bright badges (e.g. amber, gold, yellow, white) */
-html.dark .bg-amber-400, html.dark .bg-amber-500, html.dark .bg-yellow-400, html.dark .bg-white,
-html.navy .bg-amber-400, html.navy .bg-amber-500, html.navy .bg-yellow-400, html.navy .bg-white {
+/* Retain high-contrast dark text inside gold/amber badges */
+html.dark .bg-amber-400, html.dark .bg-amber-500, html.dark .bg-yellow-400,
+html.navy .bg-amber-400, html.navy .bg-amber-500, html.navy .bg-yellow-400 {
   color: #060914 !important;
 }
 html.dark [class*="bg-amber-"] .text-slate-950, html.dark [class*="bg-amber-"] .text-slate-900,
@@ -639,10 +236,37 @@ html.navy [class*="bg-amber-"] .text-slate-950, html.navy [class*="bg-amber-"] .
   color: #060914 !important;
 }
 
-/* 2. Elevated Dark Blue Surfaces, Cards & Panels */
+/* Light Theme Typography */
+html.light h1, html.light h2, html.light h3, html.light h4, html.light h5, html.light h6 {
+  color: #090e24 !important;
+}
+
+html.light p, html.light span {
+  /* Inherit clear readability */
+}
+
+/* ========================================================================= */
+/* 4. CARDS & ELEVATED PANELS (CLEARLY DISTINCT FROM BACKGROUND)             */
+/* ========================================================================= */
+
+.glass-panel, .dark-blue-card {
+  background-color: var(--bg-card);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border-card);
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.glass-panel:hover, .dark-blue-card:hover {
+  border-color: var(--border-card-hover);
+  box-shadow: var(--shadow-md);
+}
+
+/* Dark Theme Surface Enforcement */
 html.dark .glass-panel, html.navy .glass-panel,
 html.dark .dark-blue-card, html.navy .dark-blue-card {
-  background-color: rgba(16, 25, 52, 0.94) !important;
+  background-color: rgba(16, 25, 52, 0.96) !important;
   border: 1px solid rgba(147, 197, 253, 0.22) !important;
   box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.55), 0 4px 6px -2px rgba(0, 0, 0, 0.35) !important;
 }
@@ -653,7 +277,7 @@ html.dark .dark-blue-card:hover, html.navy .dark-blue-card:hover {
   box-shadow: 0 14px 35px -5px rgba(0, 0, 0, 0.65) !important;
 }
 
-/* Surface backgrounds */
+/* Specific surface backgrounds in Dark Theme */
 html.dark .dark\:bg-zinc-950, html.dark .dark\:bg-slate-950, html.dark .bg-slate-950,
 html.navy .dark\:bg-zinc-950, html.navy .dark\:bg-slate-950, html.navy .bg-slate-950 {
   background-color: #060914 !important;
@@ -674,7 +298,22 @@ html.navy .dark\:hover\:bg-zinc-800:hover, html.navy .dark\:hover\:bg-slate-800:
   background-color: #1a2750 !important;
 }
 
-/* Visible Borders in Dark Blue */
+/* Light Theme Card Enforcement */
+html.light .glass-panel, html.light .dark-blue-card {
+  background-color: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
+}
+
+html.light .glass-panel:hover, html.light .dark-blue-card:hover {
+  border-color: #93c5fd !important;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* ========================================================================= */
+/* 5. VISIBLE BORDERS ACROSS THE ENTIRE UI                                   */
+/* ========================================================================= */
+
 html.dark .border-slate-100, html.dark .border-slate-200, html.dark .border-slate-700, html.dark .border-slate-800,
 html.navy .border-slate-100, html.navy .border-slate-200, html.navy .border-slate-700, html.navy .border-slate-800,
 html.dark .dark\:border-zinc-800, html.dark .dark\:border-zinc-700, html.dark .dark\:border-slate-800, html.dark .dark\:border-slate-700,
@@ -682,7 +321,14 @@ html.navy .dark\:border-zinc-800, html.navy .dark\:border-zinc-700, html.navy .d
   border-color: rgba(147, 197, 253, 0.22) !important;
 }
 
-/* 3. Distinct Dark-Blue Form Inputs, Textareas & Selects */
+html.light .border-slate-100, html.light .border-slate-200, html.light .border-slate-700, html.light .border-slate-800 {
+  border-color: #cbd5e1 !important;
+}
+
+/* ========================================================================= */
+/* 6. INPUTS, TEXTAREAS & SELECTS (CRISP, READABLE, DISTINCT)                */
+/* ========================================================================= */
+
 html.dark input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="submit"]):not([type="button"]):not([type="reset"]),
 html.navy input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="submit"]):not([type="button"]):not([type="reset"]),
 html.dark textarea, html.navy textarea,
@@ -708,24 +354,53 @@ html.dark select:focus, html.navy select:focus {
   background-color: #0c132c !important;
 }
 
-/* Form labels */
 html.dark label, html.navy label {
-  color: #cbd5e1;
+  color: #cbd5e1 !important;
 }
 
-/* Select dropdown options */
 html.dark select option, html.navy select option {
   background-color: #0c142e !important;
   color: #f8fafc !important;
 }
 
-/* 4. High-Contrast Interactive Action Buttons */
+/* Light Theme Input Treatment */
+html.light input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="submit"]):not([type="button"]):not([type="reset"]),
+html.light textarea,
+html.light select {
+  background-color: #ffffff !important;
+  border: 1px solid #94a3b8 !important;
+  color: #090e24 !important;
+}
+
+html.light input::placeholder,
+html.light textarea::placeholder {
+  color: #64748b !important;
+  opacity: 1 !important;
+}
+
+html.light input:focus,
+html.light textarea:focus,
+html.light select:focus {
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2) !important;
+  outline: none !important;
+}
+
+html.light label {
+  color: #334155 !important;
+}
+
+/* ========================================================================= */
+/* 7. HIGH-CONTRAST INTERACTIVE BUTTONS                                      */
+/* ========================================================================= */
+
+/* Primary Action Buttons */
 html.dark button.bg-blue-600, html.navy button.bg-blue-600,
 html.dark a.bg-blue-600, html.navy a.bg-blue-600,
 html.dark .btn-primary, html.navy .btn-primary {
   background: linear-gradient(135deg, #2563eb, #4f46e5) !important;
   color: #ffffff !important;
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
   box-shadow: 0 4px 14px rgba(37, 99, 235, 0.45) !important;
   font-weight: 800 !important;
 }
@@ -737,7 +412,7 @@ html.dark a.bg-blue-600:hover, html.navy a.bg-blue-600:hover {
   transform: translateY(-1px);
 }
 
-/* Secondary Buttons */
+/* Secondary Buttons in Dark Theme */
 html.dark button.bg-slate-100, html.navy button.bg-slate-100,
 html.dark button.bg-zinc-800, html.navy button.bg-zinc-800 {
   background-color: #141f3e !important;
@@ -752,14 +427,44 @@ html.dark button.bg-zinc-800:hover, html.navy button.bg-zinc-800:hover {
   color: #ffffff !important;
 }
 
-/* Focus visibility for accessibility */
+/* Secondary Buttons in Light Theme */
+html.light button.bg-slate-100,
+html.light button.bg-zinc-800 {
+  background-color: #f1f5f9 !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #1e293b !important;
+}
+
+html.light button.bg-slate-100:hover,
+html.light button.bg-zinc-800:hover {
+  background-color: #e2e8f0 !important;
+  color: #090e24 !important;
+}
+
+/* Focus Visibility for Accessibility */
 button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
   outline: 2px solid #60a5fa !important;
   outline-offset: 2px !important;
 }
 
-/* 5. Navigation Items & Active States */
-/* Desktop Sidebar Active & Inactive Items */
+/* ========================================================================= */
+/* 8. NAVIGATION (DESKTOP TABS, SIDEBAR & MOBILE BOTTOM NAV)                 */
+/* ========================================================================= */
+
+/* Desktop Header */
+html.dark header#app-top-header,
+html.navy header#app-top-header,
+html.dark header, html.navy header {
+  background-color: rgba(10, 16, 36, 0.96) !important;
+  border-bottom: 1px solid rgba(147, 197, 253, 0.22) !important;
+}
+
+html.light header {
+  background-color: rgba(255, 255, 255, 0.96) !important;
+  border-bottom: 1px solid #cbd5e1 !important;
+}
+
+/* Desktop Sidebar Nav */
 html.dark .sidebar-nav-btn.active, html.navy .sidebar-nav-btn.active,
 html.dark #app-desktop-sidebar .sidebar-nav-btn.active, html.navy #app-desktop-sidebar .sidebar-nav-btn.active {
   background: linear-gradient(135deg, rgba(37, 99, 235, 0.38), rgba(79, 70, 229, 0.28)) !important;
@@ -777,54 +482,69 @@ html.dark .sidebar-nav-btn:not(.active):hover, html.navy .sidebar-nav-btn:not(.a
   color: #ffffff !important;
 }
 
-/* Filter Pills */
-#feed-filter-pills button:not(.bg-blue-600),
-.study-notes-filter-pill:not(.bg-blue-600) {
-  background-color: #121c3b !important;
-  border: 1px solid #25355e !important;
-  color: #cbd5e1 !important;
+/* Light Mode Sidebar */
+html.light .sidebar-nav-btn.active {
+  background: rgba(37, 99, 235, 0.12) !important;
+  border-left: 3.5px solid #2563eb !important;
+  color: #2563eb !important;
 }
 
-#feed-filter-pills button:not(.bg-blue-600):hover,
-.study-notes-filter-pill:not(.bg-blue-600):hover {
-  background-color: #192750 !important;
-  color: #ffffff !important;
-  border-color: #3b528a !important;
+html.light .sidebar-nav-btn:not(.active) {
+  color: #475569 !important;
+}
+
+html.light .sidebar-nav-btn:not(.active):hover {
+  background-color: #f1f5f9 !important;
+  color: #090e24 !important;
 }
 
 /* Mobile Bottom Navigation */
-html.dark .floating-glass-nav, html.navy .floating-glass-nav {
+html.dark .floating-glass-nav, html.navy .floating-glass-nav,
+html.dark nav.fixed.bottom-0, html.navy nav.fixed.bottom-0 {
   background-color: rgba(10, 16, 36, 0.96) !important;
-  border: 1px solid rgba(147, 197, 253, 0.25) !important;
+  border-top: 1px solid rgba(147, 197, 253, 0.25) !important;
   box-shadow: 0 -4px 25px rgba(0, 0, 0, 0.5) !important;
 }
 
-html.dark .floating-nav-item.bottom-nav-active, html.navy .floating-nav-item.bottom-nav-active {
+html.light nav.fixed.bottom-0 {
+  background-color: rgba(255, 255, 255, 0.96) !important;
+  border-top: 1px solid #cbd5e1 !important;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Active bottom nav */
+html.dark .bottom-nav-active, html.navy .bottom-nav-active {
   color: #60a5fa !important;
 }
 
-html.dark .floating-nav-item:not(.bottom-nav-active), html.navy .floating-nav-item:not(.bottom-nav-active) {
-  color: #94a3b8 !important;
-}
+/* ========================================================================= */
+/* 9. FELLOWSHIP IDENTITY MARKERS & BADGES                                   */
+/* ========================================================================= */
 
-html.dark .floating-nav-item:not(.bottom-nav-active):hover, html.navy .floating-nav-item:not(.bottom-nav-active):hover {
-  color: #ffffff !important;
-}
-
-/* 6. Fellowship Identity Markers & Badges */
 .fellowship-badge,
-[id*="fellowship-badge"],
-span:has(> i[data-lucide="home"]) {
+[id*="fellowship-badge"] {
   background-color: #131d3d !important;
-  border-color: rgba(147, 197, 253, 0.35) !important;
+  border: 1px solid rgba(147, 197, 253, 0.35) !important;
   color: #93c5fd !important;
   font-weight: 700 !important;
 }
 
-/* 7. Modals & Popovers in Dark Blue */
+html.light .fellowship-badge,
+html.light [id*="fellowship-badge"] {
+  background-color: #eff6ff !important;
+  border-color: #bfdbfe !important;
+  color: #1d4ed8 !important;
+}
+
+/* ========================================================================= */
+/* 10. MODALS, POPOVERS & DIALOGS                                            */
+/* ========================================================================= */
+
 html.dark div[id$="-modal"] > div,
 html.navy div[id$="-modal"] > div,
 html.dark #theme-palette-dropdown, html.navy #theme-palette-dropdown,
+html.dark #header-theme-palette-menu, html.navy #header-theme-palette-menu,
+html.dark #fellowship-switcher-dropdown, html.navy #fellowship-switcher-dropdown,
 html.dark #profile-dropdown, html.navy #profile-dropdown,
 html.dark .tablet-popover, html.navy .tablet-popover {
   background-color: #0d152e !important;
@@ -832,7 +552,19 @@ html.dark .tablet-popover, html.navy .tablet-popover {
   box-shadow: 0 25px 65px -10px rgba(0, 0, 0, 0.8) !important;
 }
 
-/* 8. Table Contrast Enforcement */
+html.light div[id$="-modal"] > div,
+html.light #header-theme-palette-menu,
+html.light #fellowship-switcher-dropdown,
+html.light .tablet-popover {
+  background-color: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* ========================================================================= */
+/* 11. TABLE CONTRAST ENFORCEMENT                                            */
+/* ========================================================================= */
+
 html.dark th, html.navy th {
   background-color: #0e1633 !important;
   color: #93c5fd !important;
@@ -852,7 +584,20 @@ html.dark td, html.navy td {
   color: #e2e8f0 !important;
 }
 
-/* 9. Toast Notification System Contrast */
+html.light th {
+  background-color: #f1f5f9 !important;
+  color: #1e3a8a !important;
+  border-bottom: 2px solid #cbd5e1 !important;
+}
+
+html.light td {
+  color: #1e293b !important;
+}
+
+/* ========================================================================= */
+/* 12. TOAST NOTIFICATION CONTRAST                                           */
+/* ========================================================================= */
+
 #toast-container > div {
   background-color: #0d152e !important;
   border: 1px solid rgba(147, 197, 253, 0.3) !important;
@@ -860,11 +605,22 @@ html.dark td, html.navy td {
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.65) !important;
 }
 
-/* 10. Quizzes & Trivia Option Clarity */
+html.light #toast-container > div {
+  background-color: #090e24 !important;
+  border: 1px solid #3b82f6 !important;
+  color: #ffffff !important;
+}
+
+/* ========================================================================= */
+/* 13. QUIZZES & TRIVIA OPTION CLARITY                                       */
+/* ========================================================================= */
+
 #quiz-play-options button {
   background-color: #0e1633 !important;
   border: 1px solid #283a66 !important;
   color: #f8fafc !important;
+  font-weight: 600;
+  transition: all 0.18s ease;
 }
 
 #quiz-play-options button:hover {
@@ -877,8 +633,8 @@ html.dark td, html.navy td {
 }
 
 /* ========================================================================= */
-/* UNIVERSAL HOME.CELL LOADING SYSTEM (OFFICIAL LOADING PATTERN)            */
-/* House Line Drawing + Alternating Two Dots (Indigo & Orchid-Magenta)       */
+/* 14. UNIVERSAL HOME.CELL LOADING SYSTEM                                    */
+/* (Official Identity: House Line Drawing + Two Pulsing Dots)                */
 /* ========================================================================= */
 
 .homecell-loader-container {
@@ -903,7 +659,6 @@ html.dark td, html.navy td {
   display: inline-block;
 }
 
-/* House lines */
 .homecell-loader-path-left {
   stroke-dasharray: 215;
   stroke-dashoffset: 0;
@@ -930,15 +685,15 @@ html.dark td, html.navy td {
   100% { stroke-dashoffset: 0; opacity: 1; }
 }
 
-/* The Official Two Dots: DOT 1 (Indigo-Purple) & DOT 2 (Radiant Orchid-Magenta) */
+/* The Official Two Dots: Dot 1 (Indigo-Purple) & Dot 2 (Radiant Orchid-Magenta) */
 .homecell-loader-dot-1 {
-  fill: #6366f1;
+  fill: #a855f7;
   transform-origin: center;
   animation: homecellPulseDot1 1.5s ease-in-out infinite;
 }
 
 .homecell-loader-dot-2 {
-  fill: #c048db;
+  fill: #d946ef;
   transform-origin: center;
   animation: homecellPulseDot2 1.5s ease-in-out infinite;
 }
@@ -947,17 +702,17 @@ html.dark td, html.navy td {
   0%, 100% {
     opacity: 0.45;
     transform: scale(0.92);
-    filter: drop-shadow(0 0 0px rgba(99, 102, 241, 0));
+    filter: drop-shadow(0 0 0px rgba(168, 85, 247, 0));
   }
   25% {
     opacity: 1;
     transform: scale(1.28);
-    filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.95));
+    filter: drop-shadow(0 0 8px rgba(168, 85, 247, 0.95));
   }
   50% {
     opacity: 0.45;
     transform: scale(0.92);
-    filter: drop-shadow(0 0 0px rgba(99, 102, 241, 0));
+    filter: drop-shadow(0 0 0px rgba(168, 85, 247, 0));
   }
 }
 
@@ -965,21 +720,25 @@ html.dark td, html.navy td {
   0%, 100% {
     opacity: 0.45;
     transform: scale(0.92);
-    filter: drop-shadow(0 0 0px rgba(192, 72, 219, 0));
+    filter: drop-shadow(0 0 0px rgba(217, 70, 239, 0));
   }
   50% {
     opacity: 0.45;
     transform: scale(0.92);
-    filter: drop-shadow(0 0 0px rgba(192, 72, 219, 0));
+    filter: drop-shadow(0 0 0px rgba(217, 70, 239, 0));
   }
   75% {
     opacity: 1;
     transform: scale(1.28);
-    filter: drop-shadow(0 0 8px rgba(192, 72, 219, 0.95));
+    filter: drop-shadow(0 0 8px rgba(217, 70, 239, 0.95));
   }
 }
 
-/* Reduced Motion Compliance */
+.homecell-loader-label {
+  color: var(--text-secondary);
+}
+
+/* Reduced Motion Support */
 @media (prefers-reduced-motion: reduce) {
   .homecell-loader-path-left,
   .homecell-loader-path-right {
@@ -994,27 +753,36 @@ html.dark td, html.navy td {
   }
 }
 
-/* Dark Blue Atmosphere Component Accents */
-.dark-blue-card {
-  background-color: rgba(16, 22, 47, 0.88);
-  border: 1px solid rgba(99, 102, 241, 0.18);
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.4);
+/* Clean Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.35);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.6);
 }
 
-.dark-blue-card:hover {
-  border-color: rgba(139, 92, 246, 0.4);
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
-.dark-blue-input {
-  background-color: rgba(12, 17, 38, 0.9);
-  border: 1px solid rgba(99, 102, 241, 0.22);
-  color: #f8fafc;
+/* Strict Super Admin Access: Hide Admin Navigation unless authenticated as Super Admin */
+body:not(.is-super-admin) #nav-btn-admin,
+body:not(.is-super-admin) #mobile-nav-admin,
+body:not(.is-super-admin) #tab-admin,
+body:not(.is-super-admin) .super-admin-only {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
 }
-
-.dark-blue-input:focus {
-  border-color: #6366f1;
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25);
-}
-
-
-

@@ -11,7 +11,7 @@
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <link rel="shortcut icon" type="image/svg+xml" href="./favicon.svg" />
     <link rel="apple-touch-icon" href="./favicon.svg" />
-    <meta name="theme-color" content="#070b1c" />
+    <meta name="theme-color" content="#060914" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
     <!-- Google Fonts -->
@@ -163,13 +163,36 @@
         will-change: opacity;
       }
 
+      html.light #app-splash-screen {
+        background: radial-gradient(ellipse at 50% 42%, #ffffff 0%, #f8fafc 55%, #f1f5f9 100%) !important;
+      }
+
       #splash-ambient-glow {
         background: radial-gradient(circle at 50% 42%, rgba(139, 92, 246, 0.16) 0%, rgba(99, 102, 241, 0.07) 42%, transparent 72%);
+      }
+
+      html.light #splash-ambient-glow {
+        background: radial-gradient(circle at 50% 42%, rgba(139, 92, 246, 0.08) 0%, rgba(99, 102, 241, 0.04) 42%, transparent 72%) !important;
+      }
+
+      html.light #splash-house-path-left,
+      html.light #splash-house-path-right {
+        stroke: #090e24 !important;
+      }
+
+      html.light #splash-wordmark-text {
+        color: #090e24 !important;
       }
 
       #splash-halo-backdrop {
         opacity: 0;
         animation: splashHaloReveal 0.9s ease-out 0.85s forwards;
+      }
+
+      html.light #splash-halo-backdrop {
+        background: rgba(99, 102, 241, 0.05) !important;
+        border-color: rgba(99, 102, 241, 0.15) !important;
+        box-shadow: 0 0 60px rgba(99, 102, 241, 0.1) !important;
       }
 
       @keyframes splashHaloReveal {
@@ -734,55 +757,32 @@
                 <i data-lucide="moon" class="w-4 h-4"></i>
               </button>
 
-              <!-- Themes Palette Menu Trigger -->
+              <!-- Themes Menu Trigger -->
               <div class="relative">
-                <button onclick="window.toggleThemePaletteMenu(event)" id="header-theme-palette-btn" class="p-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 transition-all cursor-pointer" title="Choose from 6 Liturgical Themes">
+                <button onclick="window.toggleThemePaletteMenu(event)" id="header-theme-palette-btn" class="p-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 transition-all cursor-pointer" title="Theme Settings (Dark Default / Light)">
                   <i data-lucide="palette" class="w-4 h-4"></i>
                 </button>
 
                 <!-- Floating Theme Selection Menu -->
                 <div id="header-theme-palette-menu" class="hidden absolute right-0 top-full mt-2 w-64 rounded-2xl glass-panel shadow-2xl border border-slate-200 dark:border-zinc-800 p-2 z-50 bg-white dark:bg-zinc-900 space-y-1">
-                  <div class="px-3 py-1.5 text-[10px] font-black uppercase text-slate-400 tracking-wider">Themes & Ambience</div>
-                  <button type="button" onclick="window.applyTheme('light'); window.toggleThemePaletteMenu(event)" class="w-full px-3 py-2 rounded-xl text-xs font-bold text-left flex items-center gap-2 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer">
+                  <div class="px-3 py-1.5 text-[10px] font-black uppercase text-slate-400 tracking-wider">Appearance Theme</div>
+                  <!-- Dark Theme (Default) -->
+                  <button type="button" data-theme-choice="dark" onclick="window.applyTheme('dark'); window.toggleThemePaletteMenu(event)" class="w-full px-3 py-2 rounded-xl text-xs font-bold text-left flex items-center gap-2.5 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer">
+                    <span class="w-3.5 h-3.5 rounded-full bg-[#060914] border-2 border-purple-400 shrink-0"></span>
+                    <div class="flex-1 min-w-0">
+                      <div class="text-slate-900 dark:text-zinc-100 text-[11px] font-black flex items-center justify-between">
+                        <span>Dark Theme</span>
+                        <span class="text-[9px] px-1.5 py-0.2 rounded-full bg-blue-500/20 text-blue-400 font-mono">Default</span>
+                      </div>
+                      <div class="text-[9px] text-slate-500">Deep Navy & Violet Ambiance</div>
+                    </div>
+                  </button>
+                  <!-- Light Theme -->
+                  <button type="button" data-theme-choice="light" onclick="window.applyTheme('light'); window.toggleThemePaletteMenu(event)" class="w-full px-3 py-2 rounded-xl text-xs font-bold text-left flex items-center gap-2.5 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer">
                     <span class="w-3.5 h-3.5 rounded-full bg-amber-400 border border-amber-500 shrink-0"></span>
                     <div class="flex-1 min-w-0">
-                      <div class="text-slate-900 dark:text-zinc-100 text-[11px] font-black">Daybreak Grace</div>
-                      <div class="text-[9px] text-slate-500">Luminous Light Mode</div>
-                    </div>
-                  </button>
-                  <button type="button" onclick="window.applyTheme('dark'); window.toggleThemePaletteMenu(event)" class="w-full px-3 py-2 rounded-xl text-xs font-bold text-left flex items-center gap-2 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer">
-                    <span class="w-3.5 h-3.5 rounded-full bg-zinc-900 border border-zinc-700 shrink-0"></span>
-                    <div class="flex-1 min-w-0">
-                      <div class="text-slate-900 dark:text-zinc-100 text-[11px] font-black">Midnight Cathedral</div>
-                      <div class="text-[9px] text-slate-500">Obsidian Dark Mode</div>
-                    </div>
-                  </button>
-                  <button type="button" onclick="window.applyTheme('sanctuary'); window.toggleThemePaletteMenu(event)" class="w-full px-3 py-2 rounded-xl text-xs font-bold text-left flex items-center gap-2 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer">
-                    <span class="w-3.5 h-3.5 rounded-full bg-indigo-900 border border-indigo-500 shrink-0"></span>
-                    <div class="flex-1 min-w-0">
-                      <div class="text-slate-900 dark:text-zinc-100 text-[11px] font-black">Celestial Sanctuary</div>
-                      <div class="text-[9px] text-slate-500">Midnight Indigo & Stars</div>
-                    </div>
-                  </button>
-                  <button type="button" onclick="window.applyTheme('parchment'); window.toggleThemePaletteMenu(event)" class="w-full px-3 py-2 rounded-xl text-xs font-bold text-left flex items-center gap-2 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer">
-                    <span class="w-3.5 h-3.5 rounded-full bg-[#ebd5b3] border border-[#c8aa7a] shrink-0"></span>
-                    <div class="flex-1 min-w-0">
-                      <div class="text-slate-900 dark:text-zinc-100 text-[11px] font-black">Ancient Scrolls</div>
-                      <div class="text-[9px] text-slate-500">Papyrus & Warm Sepia</div>
-                    </div>
-                  </button>
-                  <button type="button" onclick="window.applyTheme('olive'); window.toggleThemePaletteMenu(event)" class="w-full px-3 py-2 rounded-xl text-xs font-bold text-left flex items-center gap-2 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer">
-                    <span class="w-3.5 h-3.5 rounded-full bg-emerald-950 border border-emerald-600 shrink-0"></span>
-                    <div class="flex-1 min-w-0">
-                      <div class="text-slate-900 dark:text-zinc-100 text-[11px] font-black">Mount of Olives</div>
-                      <div class="text-[9px] text-slate-500">Forest Green Serenity</div>
-                    </div>
-                  </button>
-                  <button type="button" onclick="window.applyTheme('covenant'); window.toggleThemePaletteMenu(event)" class="w-full px-3 py-2 rounded-xl text-xs font-bold text-left flex items-center gap-2 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all cursor-pointer">
-                    <span class="w-3.5 h-3.5 rounded-full bg-purple-950 border border-purple-600 shrink-0"></span>
-                    <div class="flex-1 min-w-0">
-                      <div class="text-slate-900 dark:text-zinc-100 text-[11px] font-black">Royal Covenant</div>
-                      <div class="text-[9px] text-slate-500">Imperial Violet & Gold</div>
+                      <div class="text-slate-900 dark:text-zinc-100 text-[11px] font-black">Light Theme</div>
+                      <div class="text-[9px] text-slate-500">Luminous Daybreak Grace</div>
                     </div>
                   </button>
                 </div>
@@ -1383,6 +1383,59 @@
                 <span class="text-[10px] font-black uppercase text-slate-400">Fellowships</span>
                 <span id="profile-stat-fellowships" class="text-xl font-black font-mono text-emerald-600 dark:text-emerald-400 block">0</span>
               </div>
+            </div>
+          </div>
+
+          <!-- Appearance & Theme Preferences -->
+          <div class="glass-panel rounded-3xl p-6 border border-slate-200 dark:border-zinc-800 space-y-4 shadow-sm">
+            <div>
+              <h4 class="font-black text-base text-slate-900 dark:text-zinc-100 flex items-center gap-2">
+                <i data-lucide="palette" class="w-4 h-4 text-purple-400"></i> Appearance & Theme
+              </h4>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Choose your preferred visual theme. Dark Theme is default for all new believers.</p>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+              <!-- Dark Theme Button (Default) -->
+              <button
+                type="button"
+                id="theme-setting-dark-btn"
+                onclick="window.applyTheme('dark', true)"
+                class="flex-1 p-3.5 rounded-2xl border-2 border-blue-500 bg-blue-600/15 text-white font-black text-xs flex items-center justify-between shadow-sm cursor-pointer transition-all"
+              >
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 rounded-xl bg-[#060914] border border-blue-400/40 flex items-center justify-center text-blue-400">
+                    <i data-lucide="moon" class="w-4 h-4"></i>
+                  </div>
+                  <div class="text-left">
+                    <div class="font-black text-xs text-slate-900 dark:text-white flex items-center gap-1.5">
+                      <span>Dark Theme</span>
+                      <span class="px-1.5 py-0.2 rounded-full text-[9px] font-black uppercase bg-blue-500/25 text-blue-300 border border-blue-400/40">Default</span>
+                    </div>
+                    <div class="text-[10px] text-slate-500 dark:text-slate-400">Deep navy blue & violet with crisp white text</div>
+                  </div>
+                </div>
+                <i data-lucide="check" class="w-4 h-4 text-blue-400 shrink-0"></i>
+              </button>
+
+              <!-- Light Theme Button (Optional) -->
+              <button
+                type="button"
+                id="theme-setting-light-btn"
+                onclick="window.applyTheme('light', true)"
+                class="flex-1 p-3.5 rounded-2xl border border-slate-300 dark:border-slate-700/60 bg-transparent text-slate-600 dark:text-slate-300 hover:border-slate-400 font-bold text-xs flex items-center justify-between cursor-pointer transition-all"
+              >
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 rounded-xl bg-slate-100 border border-slate-300 flex items-center justify-center text-amber-500">
+                    <i data-lucide="sun" class="w-4 h-4"></i>
+                  </div>
+                  <div class="text-left">
+                    <div class="font-black text-xs text-slate-900 dark:text-white">Light Theme</div>
+                    <div class="text-[10px] text-slate-500 dark:text-slate-400">Luminous daytime mode with deep navy text</div>
+                  </div>
+                </div>
+                <i data-lucide="check" class="w-4 h-4 text-slate-400 opacity-0 shrink-0"></i>
+              </button>
             </div>
           </div>
 
